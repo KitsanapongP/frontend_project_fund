@@ -5,6 +5,8 @@ import { GetDatastrategic } from "../../fetch_api/fetch_api_admin"; // ปรั
 import "bootstrap-icons/font/bootstrap-icons.css";
 import Link from "next/link";
 import Cookies from "js-cookie";
+import { FiEdit2 } from "react-icons/fi";
+import Switch from "react-switch";
 const columns = [
   {
     name: "รหัส",
@@ -43,7 +45,7 @@ const columns = [
     name: "ใช้ไป (บาท)",
     sortable: true,
     cell: (row) =>
-      `${Number(row.budget).toLocaleString("th-TH", {
+      `${Number(row.spend_money).toLocaleString("th-TH", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       })} `,
@@ -52,26 +54,116 @@ const columns = [
     name: "คงเหลือ (บาท)",
     sortable: true,
     cell: (row) =>
-      `${Number(row.budget).toLocaleString("th-TH", {
+      `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       })} `,
   },
   {
+    name: "สถานะ",
+    cell: (row) => (
+      <div style={{ padding: "5px" }}>
+        <Switch
+          onChange={() => confirmToggleStatus(row)}
+          checked={row.status === 1}
+          onColor="#4caf50"
+          offColor="#d9534f"
+          checkedIcon={
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
+                color: "white",
+                fontSize: "12px",
+              }}
+            >
+              เปิด
+            </div>
+          }
+          uncheckedIcon={
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
+                color: "white",
+                fontSize: "12px",
+              }}
+            >
+              ปิด
+            </div>
+          }
+        />
+      </div>
+    ),
+    ignoreRowClick: true,
+  },
+  {
     name: "ดำเนินการ",
     cell: (row) => (
       <div style={{ padding: "5px" }}>
-        <Link
-          href={{
-            pathname: `/admin/strategic/${row.strategic_number}`,
-            query: { name: row.strategic_name ,
-              budget: row.budget
-             },
+        <button
+          className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
+          onClick={() => {
+            // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
+            sessionStorage.setItem(
+              "strategic_data",
+              JSON.stringify({
+                name: row.strategic_name,
+                budget: row.budget,
+              })
+            );
+
+            // เปลี่ยนหน้า
+            window.location.href = `/admin/strategic/${row.strategic_number}`;
           }}
-          className="btn btn-outline-primary"
         >
-          <i className="bi bi-eye text-gray-500 text-xl"></i>
-        </Link>
+          <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
+        </button>
+      </div>
+    ),
+    ignoreRowClick: true,
+  },
+  {
+    name: "แก้ไข",
+    cell: (row) => (
+      <div style={{ padding: "5px" }}>
+        <button
+          className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
+          onClick={() => {
+            // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
+            sessionStorage.setItem(
+              "strategic_data",
+              JSON.stringify({
+                name: row.strategic_name,
+                budget: row.budget,
+              })
+            );
+
+            // เปลี่ยนหน้า
+            window.location.href = `/admin/strategic/${row.strategic_number}`;
+          }}
+        >
+          <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
+        </button>
+      </div>
+    ),
+    ignoreRowClick: true,
+  },
+  {
+    name: "ลบ",
+    cell: (row) => (
+      <div style={{ padding: "5px" }}>
+        {" "}
+        <button
+          className="rounded border-gray-200 p-2 hover:bg-gray-100 hover:text-red-500 "
+          onClick={() => handleDelete(row)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดปุ่ม
+        >
+          <i className="bi bi-trash text-xl "></i>
+        </button>
       </div>
     ),
     ignoreRowClick: true,
@@ -84,8 +176,8 @@ export default function DatatableStrig() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const token = Cookies.get('token')
-        console.log("token : ", token)
+        const token = Cookies.get("token");
+        console.log("token : ", token);
         const res = await GetDatastrategic(token);
         console.log(res.data);
         setData(res.data);

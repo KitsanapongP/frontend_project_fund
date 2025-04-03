@@ -5,15 +5,24 @@ import {
   Grid,
   Settings,
   User,
+  LogOut
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Aos from "aos";
+import "aos/dist/aos.css";
 export default function Menu() {
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    Aos.init({
+      duration: 300,
+      once: false,
+    });
+  }, []);
   return (
     <>
-
-        {/* แดชบอร์ด */}
+      {/* แดชบอร์ด */}
+      <div className="md:ms-4 ">
         <Link
           href="/"
           className="flex items-center gap-2 text-gray-700 hover:text-blue-600 mb-2.5 "
@@ -65,7 +74,14 @@ export default function Menu() {
           <User size={20} />
           <span>บุคลากร</span>
         </Link>
- 
+        <Link
+          href="/personnel"
+          className="flex items-center  mt-2 gap-2 text-gray-700 hover:text-blue-600"
+        >
+          <LogOut size={20} />
+          <span>ออกจากระบบ</span>
+        </Link>
+      </div>
     </>
   );
 }

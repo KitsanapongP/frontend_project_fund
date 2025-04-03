@@ -1,37 +1,7 @@
-"use client";
-import Image from "next/image";
-import { useState } from "react";
-import Link from "next/link";
-import Menu from "../component/nav";
-import Header from "../component/header";
-import DatatableStrig from "../component/strategic";
+import Menu from "./component/nav";
+import Header from "./component/header";
 
-export default function HomeStrategic() {
-  const yearOptions = [
-    { value: 1, label: "2568" },
-    { value: 2, label: "2567" },
-    { value: 3, label: "2566" },
-  ];
-  const [Year, setYear] = useState({
-    year_id: "2568",
-  });
-  const columns = [
-    {
-      name: "ชื่อ",
-      selector: (row) => row.name,
-      sortable: true,
-    },
-    {
-      name: "ตำแหน่ง",
-      selector: (row) => row.role,
-    },
-  ];
-
-  const data = [
-    { id: 1, name: "สมชาย", role: "ผู้ดูแล" },
-    { id: 2, name: "วิรัตน์", role: "เจ้าหน้าที่" },
-  ];
-
+export default function Dashboard() {
   return (
     <>
       <div className="">
@@ -43,7 +13,9 @@ export default function HomeStrategic() {
           </div>
           <div className="col-span-10 xl:col-span-8  md:col-span-7  mt-5 md:mt-3 ">
             <div className="flex flex-row items-center">
-              <div className="text-lg md:text-2xl me-3 ms-4">จัดการยุทธศาสตร์ประจำปี พ.ศ.</div>
+              <div className="text-lg md:text-2xl me-3 ms-4">
+                จัดการยุทธศาสตร์ประจำปี พ.ศ.
+              </div>
               <select
                 id="year"
                 name="year"
@@ -63,11 +35,11 @@ export default function HomeStrategic() {
                   </option>
                 ))}
                 {/* <option value="2567">2567</option>
-                <option value="2566">2566</option> */}
+                        <option value="2566">2566</option> */}
               </select>
             </div>
             <div>
-              <DatatableStrig />
+              {/* <DatatableStrig /> */}
             </div>
           </div>
         </div>

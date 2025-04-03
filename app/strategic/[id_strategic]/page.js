@@ -43,7 +43,7 @@ export default function HomeStrategic({ params }) {
 
   return (
     <>
-      <div className="mx-8">
+      <div className="">
         <header>
           <div className="flex h-20 w-full  items-center justify-between">
             <div className="">

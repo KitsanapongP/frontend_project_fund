@@ -2,8 +2,8 @@
 import Image from "next/image";
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
-import Menu from "../../component/nav";
-import Header from "../../component/header";
+import Menu from "../../../../component/nav";
+import Header from "../../../../component/header";
 import { useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
@@ -13,14 +13,16 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import DatatableActionplan from "../../component/actionplan";
+import DatatableActivity from "../../../../component/activity";
 
-export default function HomeActionplan({ params }) {
+export default function HomeActivity({ params }) {
   const searchParams = useSearchParams();
   const [strategic, setStrategic] = useState({ name: "", budget: "" });
-
+  const [open, setOpen] = useState(false);
+  const { id_strategic,id_actionplan,id_project } = use(params);
   useEffect(() => {
-    const data = sessionStorage.getItem("strategic_data");
+    const data = sessionStorage.getItem("project_data");
+    console.log(id_strategic)
     if (!data) {
       window.location.href = `/admin/strategic`;
     }
@@ -30,8 +32,7 @@ export default function HomeActionplan({ params }) {
     }
   }, []);
 
-  const [open, setOpen] = useState(false);
-  const { id_strategic } = use(params);
+
   const chanceOptions = [
     { value: 1, label: "2568" },
     { value: 2, label: "2567" },
@@ -71,7 +72,7 @@ export default function HomeActionplan({ params }) {
               <div className="text-lg md:text-2xl me-3 ms-4 font-bold">จัดการกลยุทธ์</div>
               <div className="text-lg md:text-2xl me-3 ms-4 ">
                 {" "}
-                {id_strategic} {strategic.name}
+                {id_project} {strategic.name}
               </div>
               <div className="flex justify-between ">
                 <div className="text-lg md:text-2xl  ms-4 ">
@@ -89,7 +90,7 @@ export default function HomeActionplan({ params }) {
               </div>
             </div>
             <div>
-              <DatatableActionplan data={id_strategic} />
+              <DatatableActivity val={{id_strategic,id_actionplan,id_project}} />
             </div>
           </div>
         </div>
