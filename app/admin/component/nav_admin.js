@@ -22,9 +22,9 @@ export default function Menu() {
   return (
     <>
       {/* แดชบอร์ด */}
-      <div className="md:ms-4 ">
+      <div className="pb-40 md:ms-4 fixed ">
         <Link
-          href="/"
+          href="/admin"
           className="flex items-center gap-2 text-gray-700 hover:text-blue-600 mb-2.5 "
         >
           <LayoutDashboard size={20} />
@@ -41,7 +41,7 @@ export default function Menu() {
             </div>
             <ChevronDown
               size={16}
-              className={`transition-transform duration-500 me-4 ${
+              className={`transition-transform duration-500 ms-16 md:ms-24 ${
                 open ? "rotate-180" : ""
               }`}
             />
@@ -49,15 +49,15 @@ export default function Menu() {
 
           {open && (
             <div className="ml-6 mt-2 space-y-1">
-              <Link
+              {/* <Link
                 href="/overview"
                 className="flex items-center gap-2 text-gray-600 hover:text-blue-600"
               >
                 <Grid size={16} />
                 <span>ภาพรวมระบบ</span>
-              </Link>
+              </Link> */}
               <Link
-                href="/strategy"
+                href="/admin/strategic"
                 className="flex items-center gap-2   mb-2.5"
               >
                 <Settings size={16} />

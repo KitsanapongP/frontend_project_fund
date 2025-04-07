@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Menu from "./admin/component/nav";
+import Menu from "./admin/component/nav_admin";
 import DatatableStrig from "./admin/component/strategic";
 import { GetLogin } from "./fetch_api/fetch_api_admin";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -16,11 +16,21 @@ export default function Home() {
     try {
       console.log("email : ", email);
       console.log("password : ", password);
+      if(!email || !password){
+        Swal.fire({
+          title: "กรุณากรอกข้อมูลให้ครบถ้วน",
+          text: "กรุณาลองใหม่อีกครั้ง",
+          icon: "error",
+          confirmButtonText: "ตกลง",
+        })
+        return
+      }
       const res = await GetLogin(email, password);
       // console.log(res);
       if (res.token) {
         console.log(res.token);
         Cookies.set("token", res.token, { expires: 1 });
+        // Cookies.set("role", "admin", { expires: 1 });
         Swal.fire({
           title: "เข้าสู่ระบบสำเร็จ",
           text: "ยินดีต้อนรับ",
@@ -29,6 +39,13 @@ export default function Home() {
         }).then(() => {
           window.location.href = "/admin/strategic";
         });
+      }else{
+        Swal.fire({
+          title: "ข้อมูลไม่ถูกต้อง",
+          text: "กรุณาลองใหม่อีกครั้ง",
+          icon: "error",
+          confirmButtonText: "ตกลง",
+        })
       }
     } catch (err) {
       console.log(err);

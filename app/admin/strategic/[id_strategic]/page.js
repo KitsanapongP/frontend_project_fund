@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
-import Menu from "../../component/nav";
+import Menu from "../../component/nav_admin";
 import Header from "../../component/header";
 import { useSearchParams } from "next/navigation";
 import {
@@ -62,7 +62,7 @@ export default function HomeActionplan({ params }) {
       <div className="">
         <Header />
         <hr />
-        <div className="grid grid-cols-10 gap-4 w-full min-h-screen">
+        <div className="grid grid-cols-10 gap-4 w-full min-h-screen mt-20">
           <div className="bg-gray-100 col-span-2 xl:col-span-2 hidden md:block md:col-span-3 pt-4 ps-3">
             <Menu />
           </div>

@@ -2,8 +2,8 @@
 import Image from "next/image";
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
-import Menu from "../../../../component/nav_admin";
-import Header from "../../../../component/header";
+import Menu from "../../component/nav";
+import Header from "../../component/header";
 import { useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
@@ -13,16 +13,16 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import DatatableActivity from "../../../../component/activity";
+import DatatableActivity from "../../component/activity";
 
 export default function HomeActivity({ params }) {
   const searchParams = useSearchParams();
   const [strategic, setStrategic] = useState({ name: "", budget: "" });
   const [open, setOpen] = useState(false);
-  const { id_strategic,id_actionplan,id_project } = use(params);
+  const { id_strategic, id_actionplan, id_project } = use(params);
   useEffect(() => {
     const data = sessionStorage.getItem("project_data");
-    console.log(id_strategic)
+    console.log(id_strategic);
     if (!data) {
       window.location.href = `/admin/strategic`;
     }
@@ -31,7 +31,6 @@ export default function HomeActivity({ params }) {
       setStrategic(JSON.parse(data));
     }
   }, []);
-
 
   const chanceOptions = [
     { value: 1, label: "2568" },
@@ -69,7 +68,9 @@ export default function HomeActivity({ params }) {
           </div>
           <div className="col-span-10 xl:col-span-8  md:col-span-7  mt-5 md:mt-3 ">
             <div className="flex flex-col">
-              <div className="text-lg md:text-2xl me-3 ms-4 font-bold">จัดการกลยุทธ์</div>
+              <div className="text-lg md:text-2xl me-3 ms-4 font-bold">
+                จัดการกลยุทธ์
+              </div>
               <div className="text-lg md:text-2xl me-3 ms-4 ">
                 {" "}
                 {id_project} {strategic.name}
@@ -84,13 +85,26 @@ export default function HomeActivity({ params }) {
                   })}{" "}
                   บาท
                 </div>
+              </div>
+              <div className="flex justify-between ">
+                <div className="text-lg md:text-2xl  ms-4 ">
+                  {" "}
+                  คงเหลือ{" "}
+                  {Number(strategic.balance).toLocaleString("th-TH", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}{" "}
+                  บาท
+                </div>
                 <button className="w-20 me-2 md:me-8 justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700">
                   เพิ่มข้อมูล
                 </button>
               </div>
             </div>
             <div>
-              <DatatableActivity val={{id_strategic,id_actionplan,id_project}} />
+              <DatatableActivity
+                val={{ id_strategic, id_actionplan, id_project }}
+              />
             </div>
           </div>
         </div>

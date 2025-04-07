@@ -1,7 +1,7 @@
 import { HiMenu } from "react-icons/hi";
 import { useState, useEffect } from "react";
 import { RxCross2 } from "react-icons/rx";
-import Menu from "./nav_admin";
+import Menu from "./nav";
 import Aos from "aos";
 import "aos/dist/aos.css";
 export default function Header() {

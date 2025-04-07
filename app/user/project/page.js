@@ -2,9 +2,9 @@
 import Image from "next/image";
 import { useState } from "react";
 import Link from "next/link";
-import Menu from "../component/nav_admin";
+import Menu from "../component/nav";
 import Header from "../component/header";
-import DatatableStrig from "../component/strategic";
+import DatatableProject from "../component/project";
 
 export default function HomeStrategic() {
   const yearOptions = [
@@ -42,32 +42,19 @@ export default function HomeStrategic() {
             <Menu />
           </div>
           <div className="col-span-10 xl:col-span-8  md:col-span-7  mt-5 md:mt-3 ">
-            <div className="flex flex-row items-center">
-              <div className="text-lg md:text-2xl me-3 ms-4">จัดการยุทธศาสตร์ประจำปี พ.ศ.</div>
-              <select
-                id="year"
-                name="year"
-                value={Year.year_id}
-                onChange={(selectoptin) => {
-                  setYear({
-                    ...Year,
-                    year_id: selectoptin?.value ?? null,
-                  });
-                }}
-                className="block rounded-md p-2 bg-gray-100 border-black shadow-sm hover:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+            <div className="flex flex-row items-center justify-between">
+              <div className="text-lg md:text-2xl me-3 ms-4">
+                โครงการภายใต้การดูแล
+              </div>
+              <a
+                href="/user/project/add_project"
+                className="w-30 me-2 md:me-8 md:w-30 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
               >
-                <option value="">กรุณาเลือกปี</option>
-                {yearOptions.map((data, index) => (
-                  <option key={index} value={data.label}>
-                    {data.label}
-                  </option>
-                ))}
-                {/* <option value="2567">2567</option>
-                <option value="2566">2566</option> */}
-              </select>
+                เพิ่มโครงการ
+              </a>
             </div>
             <div>
-              <DatatableStrig />
+              <DatatableProject />
             </div>
           </div>
         </div>

@@ -5,9 +5,13 @@ export async function middleware(request) {
 //   return NextResponse.redirect(new URL('/home', request.url))
     try{
         const token = request.cookies.get('token')?.value
+        const role = request.cookies.get('role')?.value
         if (!token) {
             return NextResponse.redirect(new URL('/', request.url))
         }
+        // if(role != "admin"){
+        //     return NextResponse.redirect(new URL('/user', request.url))
+        // }
     }catch(err){
         return NextResponse.redirect(new URL('/',request.url))
     }
@@ -15,5 +19,5 @@ export async function middleware(request) {
  
 // See "Matching Paths" below to learn more
 export const config = {
-  matcher: '/admin/:path*',
+    matcher: ["/user/:path*", "/admin/:path*"],
 }

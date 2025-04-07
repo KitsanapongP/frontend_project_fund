@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { useState, use } from "react";
 import Link from "next/link";
-import Menu from "../../admin/component/nav";
+import Menu from "../../admin/component/nav_admin";
 import {
   LayoutDashboard,
   BookOpen,
