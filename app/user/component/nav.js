@@ -41,7 +41,7 @@ import {
               </div>
               <ChevronDown
                 size={16}
-                className={`transition-transform duration-500 ms-16 md:ms-24 ${
+                className={`transition-transform duration-500 ms-16 md:ms-6 xl:ms-24 ${
                   open ? "rotate-180" : ""
                 }`}
               />
@@ -67,13 +67,13 @@ import {
             )}
           </div>
   
-          <Link
+          {/* <Link
             href="/personnel"
             className="flex items-center gap-2 text-gray-700 hover:text-blue-600"
           >
             <User size={20} />
             <span>บุคลากร</span>
-          </Link>
+          </Link> */}
           <Link
             href="/personnel"
             className="flex items-center  mt-2 gap-2 text-gray-700 hover:text-blue-600"

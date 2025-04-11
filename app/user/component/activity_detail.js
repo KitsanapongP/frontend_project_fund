@@ -7,8 +7,8 @@ import Cookies from "js-cookie";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
-import { FiDownload } from "react-icons/fi";
 import { HiOutlineDocumentReport } from "react-icons/hi";
+
 export default function DatatableActivity({ val }) {
   const [data, setData] = useState([]);
   const { id_strategic, id_actionplan, id_project } = val;
@@ -42,12 +42,7 @@ export default function DatatableActivity({ val }) {
       width: "450px",
     },
     {
-      name: "กิจกรรม",
-      selector: (row) => row.status,
-      sortable: true,
-    },
-    {
-      name: "งบประมาณ (บาท)",
+      name: "งบประมาณที่ใช้  (บาท)",
       // selector: (row) => row.budget,
       sortable: true,
       wrap: true,
@@ -56,65 +51,6 @@ export default function DatatableActivity({ val }) {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })} `,
-    },
-    {
-      name: "ใช้ไป (บาท)",
-      sortable: true,
-      cell: (row) =>
-        `${Number(row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })} `,
-    },
-    {
-      name: "คงเหลือ (บาท)",
-      sortable: true,
-      cell: (row) =>
-        `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })} `,
-    },
-    {
-      name: "ดาวน์โหลด",
-      ignoreRowClick: true,
-      cell: (row) => (
-        <button
-          className="flex items-center gap-2 btn btn-sm btn-outline-primary hover:text-blue-500 rounded hover:bg-gray-100 p-2"
-          onClick={() => handleDownloadPDF(row)}
-        >
-          <FiDownload className="text-lg " />
-          PDF
-        </button>
-      ),
-    },
-    {
-      name: "รายงาน",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <button
-            className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
-            onClick={() => {
-              //   เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
-              sessionStorage.setItem(
-                "activity_detail_data",
-                JSON.stringify({
-                  id: row.id,
-                  name: row.name_activity,
-                  budget: row.budget,
-                  balance: row.budget - row.spend_money,
-                })
-              );
-
-              //   // เปลี่ยนหน้า
-              window.location.href = `/user/project/${id_project}/${row.id}`;
-            }}
-          >
-            <HiOutlineDocumentReport className="w-6 h-6 text-gray-500" />
-          </button>
-        </div>
-      ),
-      ignoreRowClick: true,
     },
     {
       name: "แก้ไข",
@@ -142,6 +78,22 @@ export default function DatatableActivity({ val }) {
       ),
       ignoreRowClick: true,
     },
+    {
+      name: "ลบ",
+      cell: (row) => (
+        <div style={{ padding: "0px" }}>
+          {" "}
+          <button
+            className="rounded border-gray-200 p-1 hover:bg-gray-100 hover:text-red-500 "
+            onClick={() => handleDelete(row)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดปุ่ม
+          >
+            <i className="bi bi-trash text-xl "></i>
+          </button>
+        </div>
+      ),
+      ignoreRowClick: true,
+    },
+
   ];
   return (
     <div className="w-full">

@@ -2,8 +2,8 @@
 import Image from "next/image";
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
-import Menu from "../../component/nav";
-import Header from "../../component/header";
+import Menu from "../../../component/nav";
+import Header from "../../../component/header";
 import { useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
@@ -13,16 +13,16 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import DatatableActivity from "../../component/activity";
+import DatatableActivity from "../../../component/activity_detail";
 
 export default function HomeActivity({ params }) {
   const searchParams = useSearchParams();
   const [strategic, setStrategic] = useState({ name: "", budget: "" });
   const [open, setOpen] = useState(false);
-  const { id_strategic, id_actionplan, id_project } = use(params);
+  const { id_strategic, activity_detail, id_project } = use(params);
   useEffect(() => {
-    const data = sessionStorage.getItem("project_data");
-    console.log(id_strategic);
+    const data = sessionStorage.getItem("activity_detail_data");
+    // console.log(id_strategic);
     if (!data) {
       window.location.href = `/admin/strategic`;
     }
@@ -68,8 +68,8 @@ export default function HomeActivity({ params }) {
           </div>
           <div className="col-span-10 xl:col-span-8  md:col-span-7  mt-5 md:mt-3 ">
             <div className="flex flex-col">
-              <div className="text-lg md:text-2xl me-3 ms-4 font-bold">
-                จัดการกลยุทธ์
+              <div className="text-lg md:text-xl me-3 ms-4 font-bold">
+                จัดการรายการกิจกรรม
               </div>
               <div className="text-lg md:text-xl me-3 ms-4 ">
                 {" "}
@@ -96,16 +96,25 @@ export default function HomeActivity({ params }) {
                   })}{" "}
                   บาท
                 </div>
-                <a
-                    href={`/user/project/${id_project}/add_activity`}
-                className="w-20 me-2 md:me-8 flex justify-center md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700">
-                  เพิ่มข้อมูล
-                </a>
+                <div className="flex flex-row">
+                  <a
+                    href={`/user/project/${id_project}/${activity_detail}/report`}
+                    className="w-20 me-2 md:me-8 flex justify-center md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    สรุป
+                  </a>
+                  <a
+                    href={`/user/project/${id_project}/${activity_detail}/report/add_report`}
+                    className="w-20 me-2 md:me-8 flex justify-center md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    เพิ่ม
+                  </a>
+                </div>
               </div>
             </div>
             <div>
               <DatatableActivity
-                val={{ id_strategic, id_actionplan, id_project }}
+                val={{ id_strategic, activity_detail, id_project }}
               />
             </div>
           </div>

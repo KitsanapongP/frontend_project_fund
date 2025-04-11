@@ -7,9 +7,63 @@ import Cookies from "js-cookie";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
+import { FiDownload } from "react-icons/fi";
 import { HiOutlineDocumentReport } from "react-icons/hi";
+import Swal from "sweetalert2";
+import Aos from "aos";
+import { Document, Packer, Paragraph, TextRun } from "docx";
+import { saveAs } from "file-saver";
+import { jsPDF } from "jspdf";
+
 export default function DatatableProject() {
   const [data, setData] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  const handleDownloadClick = (row) => {
+    setSelectedRow(row);
+    setShowModal(true);
+  };
+
+  const handleModalSelect = (type, row) => {
+    setShowModal(false);
+    if (type === "word") {
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun("สวัสดีจากไฟล์ Word!"),
+                  new TextRun({
+                    text: " ตัวหนา",
+                    bold: true,
+                  }),
+                ],
+              }),
+            ],
+          },
+        ],
+      });
+
+      Packer.toBlob(doc).then((blob) => {
+        saveAs(blob, "example.docx");
+      });
+    } else if (type === "pdf") {
+      const doc = new jsPDF();
+      doc.setFont("THSarabunNew"); // ถ้าใช้ font ภาษาไทย ต้อง embed เพิ่ม
+      doc.setFontSize(16);
+      doc.text("text", 10, 10);
+      doc.save("output.pdf");
+    }
+  };
+  useEffect(() => {
+    Aos.init({
+      duration: 500,
+      once: false,
+    });
+  });
   useEffect(() => {
     async function fetchData() {
       try {
@@ -74,26 +128,41 @@ export default function DatatableProject() {
         })} `,
     },
     {
+      name: "ดาวน์โหลด",
+      ignoreRowClick: true,
+      cell: (row) => (
+        <button
+          className="flex items-center gap-2 btn btn-sm btn-outline-primary hover:text-blue-500 rounded hover:bg-gray-100 p-2"
+          onClick={() => handleDownloadClick(row)}
+        >
+          <FiDownload className="text-lg " />
+          PDF
+        </button>
+      ),
+    },
+    {
       name: "รายงาน",
       cell: (row) => (
         <div style={{ padding: "5px" }}>
           <button
             className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
             onClick={() => {
-              // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
-            //   sessionStorage.setItem(
-            //     "project_data",
-            //     JSON.stringify({
-            //       name: row.project_name,
-            //       budget: row.budget,
-            //     })
-            //   );
+              //   เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
+              sessionStorage.setItem(
+                "project_data",
+                JSON.stringify({
+                  id: row.id_project,
+                  number: row.project_number,
+                  name: row.project_name,
+                  budget: row.budget,
+                })
+              );
 
-            //   // เปลี่ยนหน้า
-            //   window.location.href = `/user/project/${row.project_number}`;
+              //   // เปลี่ยนหน้า
+              window.location.href = `/user/project/report`;
             }}
           >
-            <HiOutlineDocumentReport className="w-6 h-6 text-gray-500" />
+            <HiOutlineDocumentReport className="w-6 h-6 text-gray-500 " />
           </button>
         </div>
       ),
@@ -132,9 +201,7 @@ export default function DatatableProject() {
         <div style={{ padding: "5px" }}>
           <button
             className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
-            onClick={() => {
-            
-            }}
+            onClick={() => {}}
           >
             <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
           </button>
@@ -153,6 +220,81 @@ export default function DatatableProject() {
       ) : (
         <DataTable columns={columns} data={data} />
       )}
+      <DownloadModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSelect={handleModalSelect}
+        row={selectedRow}
+      />
+    </div>
+  );
+}
+
+function DownloadModal({ isOpen, onClose, onSelect, row }) {
+  useEffect(() => {
+    // กด esc แล้วปืด
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    // handleKeyDown คือฟังก์ชันที่ฟัง event การกดปุ่มบนคีย์บอร์ด (เช่น Escape)
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    // ใช้ลบ event listener เพื่อป้องกันปัญหา memory leak หรือ event ถูกเรียกซ้ำซ้อน
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-500/75 bg-opacity-50">
+      <div
+        data-aos="fade-down"
+        className="relative bg-white rounded-lg shadow-lg p-6 w-full max-w-md"
+      >
+        {/* ปุ่มกากบาท */}
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-4 cursor-pointer text-gray-400 hover:text-gray-600"
+        >
+          <span className="text-3xl">&times;</span>
+        </button>
+
+        <div className="flex justify-center items-center flex-col">
+          <div className="flex items-center justify-center bg-yellow-300 text-white rounded-full w-16 h-16 text-3xl font-bold shadow-lg mb-4">
+            ?
+          </div>
+
+          <h2 className="text-lg font-semibold text-center mb-4">
+            เลือกประเภทไฟล์ที่ต้องการดาวน์โหลด
+          </h2>
+        </div>
+
+        <div className="flex justify-center gap-2">
+          <button
+            onClick={() => onSelect("pdf", row)}
+            className="bg-red-600 text-white px-4  py-2 cursor-pointer rounded hover:bg-red-400"
+          >
+            PDF
+          </button>
+          <button
+            onClick={() => onSelect("word", row)}
+            className="bg-blue-600 text-white px-4 py-2 cursor-pointer rounded hover:bg-blue-400"
+          >
+            Word
+          </button>
+          <button
+            onClick={onClose}
+            className="bg-gray-300 text-black px-4 py-2 cursor-pointer rounded hover:bg-gray-400"
+          >
+            ยกเลิก
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
