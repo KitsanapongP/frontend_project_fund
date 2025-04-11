@@ -19,6 +19,9 @@ export default function Menu() {
       once: false,
     });
   }, []);
+  const handlelogout = (()=>{
+
+  })
   return (
     <>
       {/* แดชบอร์ด */}
@@ -74,13 +77,14 @@ export default function Menu() {
           <User size={20} />
           <span>บุคลากร</span>
         </Link>
-        <Link
-          href="/personnel"
+        <button
+          // href="/personnel"
+          onClick={handlelogout}
           className="flex items-center  mt-2 gap-2 text-gray-700 hover:text-blue-600"
         >
           <LogOut size={20} />
           <span>ออกจากระบบ</span>
-        </Link>
+        </button>
       </div>
     </>
   );

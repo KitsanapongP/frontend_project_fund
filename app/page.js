@@ -30,6 +30,9 @@ export default function Home() {
       if (res.token) {
         console.log(res.token);
         Cookies.set("token", res.token, { expires: 1 });
+        Cookies.set("fullname", res.fullname, { expires: 1 });
+        Cookies.set("id", res.id, { expires: 1 });
+
         // Cookies.set("role", "admin", { expires: 1 });
         Swal.fire({
           title: "เข้าสู่ระบบสำเร็จ",

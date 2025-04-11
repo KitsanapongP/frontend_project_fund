@@ -14,6 +14,13 @@ import Aos from "aos";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
+import {
+  FaClock,
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaPaperPlane,
+} from "react-icons/fa";
+// ยังไม่รายงาน,รายงานแล้ว,เกินกำหนด,ส่งรายงาน
 
 export default function DatatableProject() {
   const [data, setData] = useState([]);
@@ -126,6 +133,15 @@ export default function DatatableProject() {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })} `,
+    },
+    {
+      name: "สถานะ",
+      sortable: true,
+      cell: (row) => (
+        <div>
+          <FaClock className="text-yellow-500 text-2xl ms-2" />
+        </div>
+      ),
     },
     {
       name: "ดาวน์โหลด",

@@ -4,15 +4,17 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Menu from "../../component/nav";
 import Header from "../../component/header";
+import Cookies from "js-cookie";
 
 export default function addProject() {
   const [projectData, setprojectData] = useState({
     id: "",
     number: "",
     name: "",
-    budget: "",
+    budget: 0,
+    spend_money: 0,
   });
-
+  const [fullname, setfullname] = useState("");
   useEffect(() => {
     const data = sessionStorage.getItem("project_data");
     if (!data) {
@@ -20,7 +22,19 @@ export default function addProject() {
     } else {
       setprojectData(JSON.parse(data));
     }
+    const fullname = Cookies.get("fullname");
+    setfullname(fullname);
   }, []);
+
+  const handleChange_spendMoney = (e) => {
+    const raw = e.target.value.replace(/,/g, ""); // ลบ comma
+    const numberValue = parseFloat(raw);
+    if (!isNaN(numberValue)) {
+      setprojectData((prev) => ({ ...prev, spend_money: numberValue }));
+    } else if (raw === "") {
+      setprojectData((prev) => ({ ...prev, spend_money: 0 }));
+    }
+  };
   return (
     <>
       <div className="">
@@ -51,24 +65,25 @@ export default function addProject() {
                   รหัสโครงการ
                 </span>
                 <input
-                  type="email"
-                  id="email"
+                  type="text"
+                  id="project_number"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@flowbite.com"
+                  placeholder="รหัสโครงการ"
                   readOnly
-                  value={"CP1-1-1"}
+                  value={`CP1-${projectData.number}`}
                 />
               </div>
-              <div className="col-span-9 md:col-span-3">
+              <div className="col-span-9 md:col-span-6">
                 <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                   ชื่อโครงการ
                 </span>
                 <input
-                  type="email"
-                  id="email"
+                  type="text"
+                  id="project_name"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@flowbite.com"
-                  required
+                  placeholder="ชื่อโครงการ"
+                  readOnly
+                  value={`${projectData.name}`}
                 />
               </div>
               <div className="col-span-9 md:col-span-3">
@@ -76,10 +91,10 @@ export default function addProject() {
                   ผู้รับผิดชอบระดับนโยบาย
                 </span>
                 <input
-                  type="email"
+                  type="text"
                   id="email"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@flowbite.com"
+                  placeholder="กรอกชื่อผู้รับผิดชอบ"
                   required
                 />
               </div>
@@ -147,10 +162,10 @@ export default function addProject() {
                   สถานที่ดำเนินการ
                 </span>
                 <input
-                  type="email"
+                  type="text"
                   id="email"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@flowbite.com"
+                  placeholder="กรอกสถานที่ดำเนินการ"
                   required
                 />
               </div>
@@ -160,11 +175,12 @@ export default function addProject() {
                   ผู้รายงานข้อมูล
                 </span>
                 <input
-                  type="email"
-                  id="email"
+                  type="text"
+                  id="fullname"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@flowbite.com"
-                  required
+                  placeholder="ผู้รายงานข้อมูล"
+                  readOnly
+                  value={fullname}
                 />
               </div>
 
@@ -173,11 +189,16 @@ export default function addProject() {
                   งบประมาณ
                 </span>
                 <input
-                  type="email"
-                  id="email"
+                  type="text"
+                  id="budget"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@flowbite.com"
-                  required
+                  placeholder="0"
+                  readOnly
+                  value={
+                    projectData.budget !== undefined
+                      ? parseFloat(projectData.budget).toLocaleString("th-TH")
+                      : "0"
+                  }
                 />
               </div>
 
@@ -186,11 +207,16 @@ export default function addProject() {
                   งบประมาณใช้จริง
                 </span>
                 <input
-                  type="email"
-                  id="email"
+                  type="text"
+                  id="spend_money"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   placeholder="name@flowbite.com"
-                  required
+                  value={
+                    projectData.spend_money !== undefined
+                      ? projectData.spend_money.toLocaleString("th-TH")
+                      : "0"
+                  }
+                  onChange={handleChange_spendMoney}
                 />
               </div>
               <div className="col-span-9 md:col-span-3">
@@ -202,7 +228,15 @@ export default function addProject() {
                   id="email"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   placeholder="name@flowbite.com"
-                  required
+                  readOnly
+                  value={
+                    projectData.spend_money !== undefined 
+                    &&  projectData.budget > projectData.spend_money
+                      ? (
+                          projectData.budget - projectData.spend_money
+                        ).toLocaleString("th-TH")
+                      : "0"
+                  }
                 />
               </div>
               <div className="col-span-9 ">
