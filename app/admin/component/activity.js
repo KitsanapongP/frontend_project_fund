@@ -1,21 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
-import { GetDataactivity } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
+import { GetDataactionplanByidproject } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
-export default function DatatableActivity({ val }) {
+export default function DatatableActivity({id_projectref, val }) {
   const [data, setData] = useState([]);
   const { id_strategic, id_actionplan, id_project } = val;
   useEffect(() => {
     async function fetchData() {
       try {
         const token = Cookies.get("token");
-        console.log("token : ", token);
-        const res = await GetDataactivity(token, id_project);
+        console.log("token : ", id_projectref);
+        const res = await GetDataactionplanByidproject(token, id_projectref);
         console.log(res.data);
         setData(res.data);
       } catch (err) {

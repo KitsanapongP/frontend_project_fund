@@ -17,16 +17,17 @@ import DatatableActionplan from "../../component/actionplan";
 
 export default function HomeActionplan({ params }) {
   const searchParams = useSearchParams();
-  const [strategic, setStrategic] = useState({ name: "", budget: "" });
+  const [strategic, setStrategic] = useState({ id: "", name: "", budget: "" });
 
   useEffect(() => {
     const data = sessionStorage.getItem("strategic_data");
     if (!data) {
       window.location.href = `/admin/strategic`;
     }
-    console.log(data);
     if (data) {
-      setStrategic(JSON.parse(data));
+      const parsed = JSON.parse(data);
+      setStrategic(parsed);
+      console.log("set strategic:", parsed);
     }
   }, []);
 
@@ -68,7 +69,9 @@ export default function HomeActionplan({ params }) {
           </div>
           <div className="col-span-10 xl:col-span-8  md:col-span-7  mt-5 md:mt-3 ">
             <div className="flex flex-col">
-              <div className="text-lg md:text-2xl me-3 ms-4 font-bold">จัดการกลยุทธ์</div>
+              <div className="text-lg md:text-2xl me-3 ms-4 font-bold">
+                จัดการกลยุทธ์
+              </div>
               <div className="text-lg md:text-2xl me-3 ms-4 ">
                 {" "}
                 {id_strategic} {strategic.name}
@@ -89,7 +92,12 @@ export default function HomeActionplan({ params }) {
               </div>
             </div>
             <div>
-              <DatatableActionplan data={id_strategic} />
+              {strategic.id && (
+                <DatatableActionplan
+                  number_strategic={id_strategic}
+                  id_strategic={strategic.id}
+                />
+              )}
             </div>
           </div>
         </div>

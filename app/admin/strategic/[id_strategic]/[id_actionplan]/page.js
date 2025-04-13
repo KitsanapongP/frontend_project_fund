@@ -17,9 +17,10 @@ import DatatableProject from "../../../component/project";
 
 export default function HomeProject({ params }) {
   const searchParams = useSearchParams();
-  const [strategic, setStrategic] = useState({ name: "", budget: "" });
+  const [Project, setProject] = useState({ id: "", name: "", budget: "" });
   const [open, setOpen] = useState(false);
-  const { id_strategic,id_actionplan } = use(params);
+  const { id_strategic, id_actionplan } = use(params);
+
   useEffect(() => {
     const data = sessionStorage.getItem("actionplan_data");
     if (!data) {
@@ -27,19 +28,11 @@ export default function HomeProject({ params }) {
     }
     console.log(data);
     if (data) {
-      setStrategic(JSON.parse(data));
+      const par_data = JSON.parse(data);
+      setProject(par_data);
     }
   }, []);
 
-
-  const chanceOptions = [
-    { value: 1, label: "2568" },
-    { value: 2, label: "2567" },
-    { value: 3, label: "2566" },
-  ];
-  const [Year, setYear] = useState({
-    year_id: "2568",
-  });
   const columns = [
     {
       name: "ชื่อ",
@@ -68,16 +61,18 @@ export default function HomeProject({ params }) {
           </div>
           <div className="col-span-10 xl:col-span-8  md:col-span-7  mt-5 md:mt-3 ">
             <div className="flex flex-col">
-              <div className="text-lg md:text-2xl me-3 ms-4 font-bold">จัดการโครงการ</div>
+              <div className="text-lg md:text-2xl me-3 ms-4 font-bold">
+                จัดการโครงการ
+              </div>
               <div className="text-lg md:text-2xl me-3 ms-4 ">
                 {" "}
-                {id_actionplan} {strategic.name}
+                {id_actionplan} {Project.name}
               </div>
               <div className="flex justify-between ">
                 <div className="text-lg md:text-2xl  ms-4 ">
                   {" "}
                   งบประมาณ{" "}
-                  {Number(strategic.budget).toLocaleString("th-TH", {
+                  {Number(Project.budget).toLocaleString("th-TH", {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0,
                   })}{" "}
@@ -89,7 +84,12 @@ export default function HomeProject({ params }) {
               </div>
             </div>
             <div>
-              <DatatableProject val={{id_strategic,id_actionplan}} />
+              {Project.id && (
+                <DatatableProject
+                  id_action={Project.id}
+                  val={{ id_strategic, id_actionplan }}
+                />
+              )}
             </div>
           </div>
         </div>

@@ -17,21 +17,20 @@ import DatatableActivity from "../../../../component/activity";
 
 export default function HomeActivity({ params }) {
   const searchParams = useSearchParams();
-  const [strategic, setStrategic] = useState({ name: "", budget: "" });
+  const [Activity, setActivity] = useState({ id: "", name: "", budget: "" });
   const [open, setOpen] = useState(false);
-  const { id_strategic,id_actionplan,id_project } = use(params);
+  const { id_strategic, id_actionplan, id_project } = use(params);
   useEffect(() => {
     const data = sessionStorage.getItem("project_data");
-    console.log(id_strategic)
+    // console.log(data)
     if (!data) {
       window.location.href = `/admin/strategic`;
     }
     console.log(data);
     if (data) {
-      setStrategic(JSON.parse(data));
+      setActivity(JSON.parse(data));
     }
   }, []);
-
 
   const chanceOptions = [
     { value: 1, label: "2568" },
@@ -69,16 +68,18 @@ export default function HomeActivity({ params }) {
           </div>
           <div className="col-span-10 xl:col-span-8  md:col-span-7  mt-5 md:mt-3 ">
             <div className="flex flex-col">
-              <div className="text-lg md:text-2xl me-3 ms-4 font-bold">จัดการกลยุทธ์</div>
+              <div className="text-lg md:text-2xl me-3 ms-4 font-bold">
+                จัดการกิจกรรม
+              </div>
               <div className="text-lg md:text-2xl me-3 ms-4 ">
                 {" "}
-                {id_project} {strategic.name}
+                {id_project} {Activity.name}
               </div>
               <div className="flex justify-between ">
                 <div className="text-lg md:text-2xl  ms-4 ">
                   {" "}
                   งบประมาณ{" "}
-                  {Number(strategic.budget).toLocaleString("th-TH", {
+                  {Number(Activity.budget).toLocaleString("th-TH", {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0,
                   })}{" "}
@@ -90,7 +91,12 @@ export default function HomeActivity({ params }) {
               </div>
             </div>
             <div>
-              <DatatableActivity val={{id_strategic,id_actionplan,id_project}} />
+              {Activity.id && (
+                <DatatableActivity
+                  id_projectref={Activity.id}
+                  val={{ id_strategic, id_actionplan, id_project }}
+                />
+              )}
             </div>
           </div>
         </div>

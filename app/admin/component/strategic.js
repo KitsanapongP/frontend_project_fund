@@ -112,6 +112,7 @@ const columns = [
             sessionStorage.setItem(
               "strategic_data",
               JSON.stringify({
+                id: row.id_strategic,
                 name: row.strategic_name,
                 budget: row.budget,
               })
@@ -138,6 +139,7 @@ const columns = [
             sessionStorage.setItem(
               "strategic_data",
               JSON.stringify({
+                id:row.id_strategic,
                 name: row.strategic_name,
                 budget: row.budget,
               })

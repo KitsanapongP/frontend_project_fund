@@ -1,14 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
-import { GetDataactionplan } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
+import { GetDataactionplanByidstrategic } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
-export default function DatatableActionplan(id_strategic) {
+export default function DatatableActionplan({ number_strategic,id_strategic }) {
   const [data, setData] = useState([]);
+
   const columns = [
     {
       name: "รหัส",
@@ -114,13 +115,14 @@ export default function DatatableActionplan(id_strategic) {
               sessionStorage.setItem(
                 "actionplan_data",
                 JSON.stringify({
+                  id: row.action_plan_id,
                   name: row.name_ap,
                   budget: row.budget,
                 })
               );
 
               // เปลี่ยนหน้า
-              window.location.href = `/admin/strategic/${id_strategic.data}/${row.action_plan_number}`;
+              window.location.href = `/admin/strategic/${number_strategic}/${row.action_plan_number}`;
             }}
           >
             <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
@@ -138,8 +140,9 @@ export default function DatatableActionplan(id_strategic) {
             onClick={() => {
               // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
               sessionStorage.setItem(
-                "strategic_data",
+                "action_data",
                 JSON.stringify({
+                  id:row.action_plan_id,
                   name: row.strategic_name,
                   budget: row.budget,
                 })
@@ -176,8 +179,8 @@ export default function DatatableActionplan(id_strategic) {
       try {
         const token = Cookies.get("token");
         console.log("token : ", token);
-        console.log("id_strategic : ", id_strategic.data);
-        const res = await GetDataactionplan(token, id_strategic.data);
+        console.log("id_strategic : ", id_strategic);
+        const res = await GetDataactionplanByidstrategic(token, id_strategic);
         console.log(res.data);
         setData(res.data);
       } catch (err) {
