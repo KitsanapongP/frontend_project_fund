@@ -90,6 +90,8 @@ export default function HomeProject({ params }) {
                   val={{ id_strategic, id_actionplan }}
                 />
               )}
+
+              
             </div>
           </div>
         </div>
