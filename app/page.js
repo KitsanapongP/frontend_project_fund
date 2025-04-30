@@ -40,7 +40,12 @@ export default function Home() {
           icon: "success",
           confirmButtonText: "ตกลง",
         }).then(() => {
-          window.location.href = "/admin/strategic";
+          if(res.role == 0){
+            window.location.href = "/admin";
+          }else{
+            window.location.href = "/user";
+          }
+
         });
       }else{
         Swal.fire({

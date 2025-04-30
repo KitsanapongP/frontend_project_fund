@@ -56,20 +56,89 @@ export default function HomeProject({ params }) {
         <Header />
         <hr />
         <div className="grid grid-cols-10 gap-4 w-full min-h-screen mt-20">
-          <div className="bg-gray-100 col-span-2 xl:col-span-2 hidden md:block md:col-span-3 pt-4 ps-3">
+          <div className="bg-gray-100 col-span-2 xl:col-span-2 hidden md:block md:col-span-2 pt-4 ps-3">
             <Menu />
           </div>
-          <div className="col-span-10 xl:col-span-8  md:col-span-7  mt-5 md:mt-3 ">
+          <div className="col-span-10 xl:col-span-8 ms-4 md:ms-0  md:col-span-8  mt-5 md:mt-3 ">
             <div className="flex flex-col">
-              <div className="text-lg md:text-2xl me-3 ms-4 font-bold">
+              <nav className="flex mb-2" aria-label="Breadcrumb">
+                <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                  <li className="inline-flex items-center">
+                    <a
+                      href="/admin/strategic"
+                      className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white"
+                    >
+                      <svg
+                        className="w-3 h-3 me-2.5"
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z" />
+                      </svg>
+                      หน้าแรก
+                    </a>
+                  </li>
+                  <li>
+                    <div className="flex items-center">
+                      <svg
+                        className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1"
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 6 10"
+                      >
+                        <path
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="m1 9 4-4-4-4"
+                        />
+                      </svg>
+                      <a
+                        href={`/admin/strategic/${id_strategic}`}
+                        className="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white"
+                      >
+                        {id_strategic}
+                      </a>
+                    </div>
+                  </li>
+                  <li aria-current="page">
+                    <div className="flex items-center">
+                      <svg
+                        className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1"
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 6 10"
+                      >
+                        <path
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="m1 9 4-4-4-4"
+                        />
+                      </svg>
+                      <span className="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">
+                        {id_actionplan} : {Project.name}
+                      </span>
+                    </div>
+                  </li>
+                </ol>
+              </nav>
+
+              <div className="text-lg md:text-2xl  font-bold">
                 จัดการโครงการ
               </div>
-              <div className="text-lg md:text-2xl me-3 ms-4 ">
+              <div className="text-lg md:text-2xl  ">
                 {" "}
                 {id_actionplan} {Project.name}
               </div>
               <div className="flex justify-between ">
-                <div className="text-lg md:text-2xl  ms-4 ">
+                <div className="text-lg md:text-2xl  ">
                   {" "}
                   งบประมาณ{" "}
                   {Number(Project.budget).toLocaleString("th-TH", {
@@ -78,7 +147,7 @@ export default function HomeProject({ params }) {
                   })}{" "}
                   บาท
                 </div>
-                <button className="w-20 me-2 md:me-8 justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700">
+                <button className="w-20 me-4 md:me-8 justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700">
                   เพิ่มข้อมูล
                 </button>
               </div>
@@ -90,8 +159,6 @@ export default function HomeProject({ params }) {
                   val={{ id_strategic, id_actionplan }}
                 />
               )}
-
-              
             </div>
           </div>
         </div>

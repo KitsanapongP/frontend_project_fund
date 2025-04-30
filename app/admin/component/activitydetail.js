@@ -2,39 +2,69 @@
 import { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 import {
-  GetDataactionplanByidstrategic,
-  UpdatestatusActionplan,
+  GetDataactivitydetailByidactivity,
+  UpdatestatusActivity,
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
+import { HiOutlineDocumentReport } from "react-icons/hi";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import Swal from "sweetalert2";
-export default function DatatableActionplan({
-  number_strategic,
-  strategic_id,
-}) {
+export default function DatatableActivityDetail({ id_activityref, val }) {
   const [data, setData] = useState([]);
+  const { id_strategic, id_actionplan, id_project } = val;
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const token = Cookies.get("token");
+        console.log("token : ", id_activityref);
+        const res = await GetDataactivitydetailByidactivity(
+          token,
+          id_activityref
+        );
+        console.log(res.data);
+        setData(res.data);
+      } catch (err) {
+        console.error("Error loading data:", err);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   const columns = [
     {
       name: "รหัส",
-      selector: (row) => row.action_plan_number,
+      cell: (row, index) => index + 1,
       sortable: true,
-      width: "90px",
+      width: "80px",
     },
     {
       name: "ชื่อ",
-      selector: (row) => row.name_ap,
+      selector: (row) => (row.detail ? row.detail : "-"),
       sortable: true,
       wrap: true,
       width: "250px",
+      cell: (row) => <div style={{ padding: "10px 0px" }}>{row.detail}</div>,
     },
     {
-      name: "โครงการ",
-      selector: (row) => row.status,
+      name: "วันที่ดำเนินงาน ( ว/ด/ป )",
+      selector: (row) => row.start_date,
       sortable: true,
+      wrap: true,
+      width: "200px",
+      cell: (row) => {
+        const date = new Date(row.start_date);
+        const formatted =
+          date.getDate().toString().padStart(2, "0") +
+          "/" +
+          (date.getMonth() + 1).toString().padStart(2, "0") +
+          "/" +
+          date.getFullYear();
+        return formatted;
+      },
     },
     {
       name: "งบประมาณ (บาท)",
@@ -42,28 +72,37 @@ export default function DatatableActionplan({
       sortable: true,
       wrap: true,
       cell: (row) =>
-        `${Number(row.budget).toLocaleString("th-TH", {
+        `${Number(row.price).toLocaleString("th-TH", {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })} `,
     },
     {
-      name: "ใช้ไป (บาท)",
+      name: "สถานที่",
+      selector: (row) => row.station,
       sortable: true,
-      cell: (row) =>
-        `${Number(row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })} `,
+      width: "200px",
+      cell: (row) => (
+        <div className="flex items-center h-full">{row.station}</div>
+      ),
     },
     {
-      name: "คงเหลือ (บาท)",
-      sortable: true,
+      name: "ไฟล์",
+      ignoreRowClick: true,
       cell: (row) =>
-        `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })} `,
+        row.report_date !== "-" || row.report_date ? (
+          <a
+            className="flex items-center gap-2 btn btn-sm btn-outline-primary hover:text-blue-500 rounded hover:bg-gray-100 p-2"
+            href={row.report_data}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <HiOutlineDocumentReport className="text-lg " />
+            ไฟล์
+          </a>
+        ) : (
+          "-"
+        ),
     },
     {
       name: "สถานะ",
@@ -108,32 +147,9 @@ export default function DatatableActionplan({
       ignoreRowClick: true,
     },
     {
-      name: "จัดการ",
-      width: "200px",
+      name: "ดำเนินการ",
       cell: (row) => (
         <>
-          <div style={{ padding: "5px" }}>
-            <button
-              className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
-              onClick={() => {
-                // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
-                sessionStorage.setItem(
-                  "actionplan_data",
-                  JSON.stringify({
-                    id: row.action_plan_id,
-                    // id_actionplan: row.action_plan_number,
-                    name: row.name_ap,
-                    budget: row.budget,
-                  })
-                );
-
-                // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${number_strategic}/${row.action_plan_number}`;
-              }}
-            >
-              <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
-            </button>
-          </div>
           <div style={{ padding: "5px" }}>
             <button
               className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
@@ -142,7 +158,6 @@ export default function DatatableActionplan({
                 sessionStorage.setItem(
                   "strategic_data",
                   JSON.stringify({
-                    id: row.strategic_id,
                     name: row.strategic_name,
                     budget: row.budget,
                   })
@@ -169,22 +184,6 @@ export default function DatatableActionplan({
       ignoreRowClick: true,
     },
   ];
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const token = Cookies.get("token");
-        console.log("token : ", token);
-        console.log("id_strategic : ", strategic_id);
-        const res = await GetDataactionplanByidstrategic(token, strategic_id);
-        console.log(res.data);
-        setData(res.data);
-      } catch (err) {
-        console.error("Error loading data:", err);
-      }
-    }
-
-    fetchData();
-  }, []);
 
   const handlechageStatus = async (row) => {
     const newStatus = row.status === 1 ? 0 : 1;
@@ -192,8 +191,8 @@ export default function DatatableActionplan({
     const result = await Swal.fire({
       title: "คุณแน่ใจหรือไม่ ?",
       text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
-        สำหรับ  "${row.name_ap}" หรือไม่
-        `,
+            สำหรับ  "${row.name_activity}" หรือไม่
+            `,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: newStatus === 1 ? "#4caf50" : "#d33",
@@ -205,25 +204,20 @@ export default function DatatableActionplan({
     if (result.isConfirmed) {
       try {
         const token = Cookies.get("token");
-        const response = await UpdatestatusActionplan(
-          token,
-          row.action_plan_id
-        );
+        const response = await UpdatestatusActivity(token, row.activity_id);
         // if(response)
         console.log(response);
         if (response) {
           console.log("การอัปเดตสถานะสำเร็จ");
           setData((prevData) =>
             prevData.map((item) =>
-              item.action_plan_id === row.action_plan_id
+              item.activity_id === row.activity_id
                 ? { ...item, status: newStatus }
                 : item
             )
           );
-          // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
           Swal.fire({
             title: "อัปเดตข้อมูลสำเร็จ",
-            // text: ` ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"} ${row.name_ap}`,
             text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
             icon: "success",
             confirmButtonText: "ตกลง",
@@ -248,17 +242,6 @@ export default function DatatableActionplan({
     }
   };
 
-  const customStyles = {
-    headCells: {
-      style: {
-        backgroundColor: "#f0f0f0", // สีพื้นหลังหัวตาราง
-        color: "#1f2937", // สีตัวอักษร (เทาเข้ม)
-        fontWeight: "bold",
-        fontSize: "14px",
-      },
-    },
-  };
-
   return (
     <div className="w-full">
       {data.length === 0 ? (
@@ -268,18 +251,14 @@ export default function DatatableActionplan({
         </div>
       ) : (
         <div
-          className="bg-white rounded-md border
-        border-gray-200 shadow-xl mt-3 
-        "
-          style={{ height: "90vh", display: "flex", flexDirection: "column" }}
+          className="bg-white shadow-xl rounded-md border border-gray-200 me-3 mt-4 flex flex-col"
+          style={{ height: "90vh" }}
         >
           <DataTable
             columns={columns}
             data={data}
-            customStyles={customStyles}
             pagination
-            fixedHeader
-            fixedHeaderScrollHeight="100%"
+            keyField="activity_id"
           />
         </div>
       )}

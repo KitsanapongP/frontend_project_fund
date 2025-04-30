@@ -1,13 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
-import { GetDataprojectByidaction } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
+import {
+  GetDataprojectByidaction,
+  UpdatestatusProject,
+} from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
-export default function DatatableProject({id_action, val }) {
+import Swal from "sweetalert2";
+export default function DatatableProject({ id_action, val }) {
   const [data, setData] = useState([]);
   const { id_strategic, id_actionplan } = val;
   useEffect(() => {
@@ -30,13 +34,15 @@ export default function DatatableProject({id_action, val }) {
       name: "รหัส",
       selector: (row) => row.project_number,
       sortable: true,
+      width: "80px",
     },
     {
       name: "ชื่อ",
       selector: (row) => row.project_name,
       sortable: true,
       wrap: true,
-      width: "450px",
+      width: "250px",
+      cell: (row) => <div className="py-[10px]">{row.project_name} </div>,
     },
     {
       name: "กิจกรรม",
@@ -77,7 +83,7 @@ export default function DatatableProject({id_action, val }) {
       cell: (row) => (
         <div style={{ padding: "5px" }}>
           <Switch
-            onChange={() => confirmToggleStatus(row)}
+            onChange={() => handlechageStatus(row)}
             checked={row.status === 1}
             onColor="#4caf50"
             offColor="#d9534f"
@@ -115,74 +121,122 @@ export default function DatatableProject({id_action, val }) {
       ignoreRowClick: true,
     },
     {
-      name: "ดำเนินการ",
+      name: "จัดการ",
       cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <button
-            className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
-            onClick={() => {
-              // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
-              sessionStorage.setItem(
-                "project_data",
-                JSON.stringify({
-                  id:row.project_id,
-                  name: row.project_name,
-                  budget: row.budget,
-                })
-              );
+        <>
+          <div style={{ padding: "5px" }}>
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
+              onClick={() => {
+                // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
+                sessionStorage.setItem(
+                  "project_data",
+                  JSON.stringify({
+                    id: row.project_id,
+                    name: row.project_name,
+                    budget: row.budget,
+                  })
+                );
 
-              // เปลี่ยนหน้า
-              window.location.href = `/admin/strategic/${id_strategic}/${id_actionplan}/${row.project_number}`;
-            }}
-          >
-            <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
-          </button>
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
-    {
-      name: "แก้ไข",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <button
-            className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
-            onClick={() => {
-              // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
-              sessionStorage.setItem(
-                "strategic_data",
-                JSON.stringify({
-                  name: row.strategic_name,
-                  budget: row.budget,
-                })
-              );
+                // เปลี่ยนหน้า
+                window.location.href = `/admin/strategic/${id_strategic}/${id_actionplan}/${row.project_number}`;
+              }}
+            >
+              <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
+            </button>
+          </div>
+          <div style={{ padding: "5px" }}>
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
+              onClick={() => {
+                // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
+                sessionStorage.setItem(
+                  "strategic_data",
+                  JSON.stringify({
+                    name: row.strategic_name,
+                    budget: row.budget,
+                  })
+                );
 
-              // เปลี่ยนหน้า
-              window.location.href = `/admin/strategic/${row.strategic_number}`;
-            }}
-          >
-            <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
-          </button>
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
-    {
-      name: "ลบ",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          {" "}
-          <button
-            className="rounded border-gray-200 p-2 hover:bg-gray-100 hover:text-red-500 "
-            onClick={() => handleDelete(row)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดปุ่ม
-          >
-            <i className="bi bi-trash text-xl "></i>
-          </button>
-        </div>
+                // เปลี่ยนหน้า
+                window.location.href = `/admin/strategic/${row.strategic_number}`;
+              }}
+            >
+              <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
+            </button>
+          </div>
+          <div style={{ padding: "5px" }}>
+            {" "}
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100 hover:text-red-500 "
+              onClick={() => handleDelete(row)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดปุ่ม
+            >
+              <i className="bi bi-trash text-xl "></i>
+            </button>
+          </div>
+        </>
       ),
       ignoreRowClick: true,
     },
   ];
+
+  const handlechageStatus = async (row) => {
+    const newStatus = row.status === 1 ? 0 : 1;
+
+    const result = await Swal.fire({
+      title: "คุณแน่ใจหรือไม่ ?",
+      text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
+          สำหรับ  "${row.project_name}" หรือไม่
+          `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: newStatus === 1 ? "#4caf50" : "#d33",
+      cancelButtonColor: "gray",
+      confirmButtonText: newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน",
+      cancelButtonText: "ยกเลิก",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const token = Cookies.get("token");
+        const response = await UpdatestatusProject(token, row.project_id);
+        // if(response)
+        console.log(response);
+        if (response) {
+          console.log("การอัปเดตสถานะสำเร็จ");
+          setData((prevData) =>
+            prevData.map((item) =>
+              item.project_id === row.project_id
+                ? { ...item, status: newStatus }
+                : item
+            )
+          );
+          Swal.fire({
+            title: "อัปเดตข้อมูลสำเร็จ",
+            text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
+            icon: "success",
+            confirmButtonText: "ตกลง",
+          });
+        } else {
+          Swal.fire({
+            title: "เกิดข้อผิดพลาด",
+            text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
+            icon: "error",
+            confirmButtonText: "ตกลง",
+          });
+        }
+      } catch (err) {
+        Swal.fire({
+          title: "เกิดข้อผิดพลาด",
+          text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
+          icon: "error",
+          confirmButtonText: "ตกลง",
+        });
+        console.log(err);
+      }
+    }
+  };
+
   return (
     <div className="w-full">
       {data.length === 0 ? (
@@ -191,7 +245,15 @@ export default function DatatableProject({id_action, val }) {
           <span className="ml-3 text-gray-300">กำลังโหลดข้อมูล...</span>
         </div>
       ) : (
-        <DataTable columns={columns} data={data} />
+        <div
+          className="bg-white rounded-md border border-gray-200
+         shadow-xl me-4 mt-3 flex flex-col"
+          style={{
+            height: "90vh",
+          }}
+        >
+          <DataTable columns={columns} data={data} pagination />
+        </div>
       )}
     </div>
   );

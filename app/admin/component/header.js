@@ -17,7 +17,7 @@ export default function Header() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-gray-50 shadow">
         <div className="flex h-20 w-full  items-center justify-between">
           <div className="">
-            <img src="/image_icon/iconcpkku.png" className="w-40 ms-8" alt="" />
+            <img src="/image_icon/iconcpkku.png" className="w-40 ms-4 md:ms-8" alt="" />
           </div>
 
           <div className="flex flex-row items-center">

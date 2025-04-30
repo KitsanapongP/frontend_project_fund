@@ -2,8 +2,8 @@
 import Image from "next/image";
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
-import Menu from "../../../../component/nav_admin";
-import Header from "../../../../component/header";
+import Menu from "../../../../../component/nav_admin";
+import Header from "../../../../../component/header";
 import { useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
@@ -13,15 +13,15 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import DatatableActivity from "../../../../component/activity";
+import DatatableActivityDetail from "../../../../../component/activitydetail";
 
 export default function HomeActivity({ params }) {
   const searchParams = useSearchParams();
   const [Activity, setActivity] = useState({ id: "", name: "", budget: "" });
   const [open, setOpen] = useState(false);
-  const { id_strategic, id_actionplan, id_project } = use(params);
+  const { id_strategic, id_actionplan, id_project,id_activity } = use(params);
   useEffect(() => {
-    const data = sessionStorage.getItem("project_data");
+    const data = sessionStorage.getItem("activitydetail_data");
     // console.log(data)
     if (!data) {
       window.location.href = `/admin/strategic`;
@@ -73,7 +73,7 @@ export default function HomeActivity({ params }) {
               </div>
               <div className="text-lg md:text-2xl me-3  ">
                 {" "}
-                {id_project} {Activity.name}
+                {id_activity} {Activity.name}
               </div>
               <div className="flex justify-between ">
                 <div className="text-lg md:text-2xl   ">
@@ -85,16 +85,18 @@ export default function HomeActivity({ params }) {
                   })}{" "}
                   บาท
                 </div>
-                <button className="px-1 me-2 md:me-8 justify-end md:w-25 py-2 bg-blue-400 text-white rounded-lg hover:bg-blue-700">
-                  เพิ่มกิจกรรม
-                </button>
+                <a className="w-20 me-2 md:me-8 text-center justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
+                href={`./${id_activity}/add`}
+                >
+                  รายงานผล
+                </a>
               </div>
             </div>
             <div>
               {Activity.id && (
-                <DatatableActivity
-                  id_projectref={Activity.id}
-                  val={{ id_strategic, id_actionplan, id_project }}
+                <DatatableActivityDetail
+                  id_activityref={Activity.id}
+                  val={{ id_strategic, id_actionplan, id_project, id_activity }}
                 />
               )}
             </div>

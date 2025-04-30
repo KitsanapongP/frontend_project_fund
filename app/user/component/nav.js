@@ -48,7 +48,7 @@ export default function Menu() {
             </div>
             <ChevronDown
               size={16}
-              className={`transition-transform duration-500 ms-16 md:ms-6 xl:ms-24 ${
+              className={`transition-transform duration-500 ms-16 md:ms-4 xl:ms-24 ${
                 open ? "rotate-180" : ""
               }`}
             />

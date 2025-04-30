@@ -5,7 +5,7 @@ import {
   Grid,
   Settings,
   User,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -19,9 +19,12 @@ export default function Menu() {
       once: false,
     });
   }, []);
-  const handlelogout = (()=>{
-
-  })
+  const handleLogout = () => {
+    Cookies.remove("token"); // แค่นี้พอ ไม่ต้องส่งค่าอื่น
+    Cookies.remove("fullname");
+    Cookies.remove("id");
+    window.location.href = "/"; // เปลี่ยนหน้า หรือ redirect ออกหลัง logout
+  };
   return (
     <>
       {/* แดชบอร์ด */}
@@ -44,7 +47,7 @@ export default function Menu() {
             </div>
             <ChevronDown
               size={16}
-              className={`transition-transform duration-500 ms-16 md:ms-24 ${
+              className={`transition-transform duration-500 ms-16 md:ms-4 ${
                 open ? "rotate-180" : ""
               }`}
             />
@@ -79,7 +82,7 @@ export default function Menu() {
         </Link>
         <button
           // href="/personnel"
-          onClick={handlelogout}
+          onClick={handleLogout}
           className="flex items-center  mt-2 gap-2 text-gray-700 hover:text-blue-600"
         >
           <LogOut size={20} />
