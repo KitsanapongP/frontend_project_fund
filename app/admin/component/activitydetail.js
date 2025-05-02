@@ -14,10 +14,12 @@ import Switch from "react-switch";
 import Swal from "sweetalert2";
 export default function DatatableActivityDetail({ id_activityref, val }) {
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { id_strategic, id_actionplan, id_project } = val;
   useEffect(() => {
     async function fetchData() {
       try {
+        setLoading(true);
         const token = Cookies.get("token");
         console.log("token : ", id_activityref);
         const res = await GetDataactivitydetailByidactivity(
@@ -28,6 +30,8 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
         setData(res.data);
       } catch (err) {
         console.error("Error loading data:", err);
+      }finally{
+        setLoading(false);
       }
     }
 
@@ -244,10 +248,14 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
 
   return (
     <div className="w-full">
-      {data.length === 0 ? (
+      {loading ? (
         <div className="flex justify-center items-center h-40">
           <div className="animate-spin rounded-full h-20 w-20 border-t-2 border-b-2 border-gray-300"></div>
           <span className="ml-3 text-gray-300">กำลังโหลดข้อมูล...</span>
+        </div>
+      ) : data.length === 0 ? (
+        <div className="flex justify-center items-center h-40 text-gray-400">
+          ยังไม่มีข้อมูล
         </div>
       ) : (
         <div

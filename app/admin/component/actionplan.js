@@ -169,22 +169,43 @@ export default function DatatableActionplan({
       ignoreRowClick: true,
     },
   ];
+  const [loading, setLoading] = useState(true);
+  const [SecrchData, setSecrchData] = useState([]);
+  const [SearchTerm, setSearchTerm] = useState("");
   useEffect(() => {
     async function fetchData() {
       try {
+        setLoading(true);
         const token = Cookies.get("token");
-        console.log("token : ", token);
-        console.log("id_strategic : ", strategic_id);
+        // console.log("token : ", token);
+        // console.log("id_strategic : ", strategic_id);
         const res = await GetDataactionplanByidstrategic(token, strategic_id);
-        console.log(res.data);
+        // console.log(res.data);
         setData(res.data);
+        setSecrchData(res.data)
       } catch (err) {
         console.error("Error loading data:", err);
+      } finally {
+        setLoading(false);
       }
     }
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const filtered = data.filter((data) => {
+      const budget = Number(data.budget);
+      const spendMoney = Number(data.spend_money);
+      const remainingBudget = budget - spendMoney; // คำนวณเหมือนใน cell
+
+      return `${data.name_ap} ${data.strategic_number} ${budget} ${spendMoney} ${remainingBudget}`
+        .toLowerCase()
+        .includes(SearchTerm.toLowerCase());
+    });
+
+    setSecrchData(filtered);
+  }, [SearchTerm, data]);
 
   const handlechageStatus = async (row) => {
     const newStatus = row.status === 1 ? 0 : 1;
@@ -261,26 +282,39 @@ export default function DatatableActionplan({
 
   return (
     <div className="w-full">
-      {data.length === 0 ? (
+      {loading ? (
         <div className="flex justify-center items-center h-40">
           <div className="animate-spin rounded-full h-20 w-20 border-t-2 border-b-2 border-gray-300"></div>
           <span className="ml-3 text-gray-300">กำลังโหลดข้อมูล...</span>
         </div>
+      ) : data.length === 0 ? (
+        <div className="flex justify-center items-center h-40 text-gray-400">
+          ยังไม่มีข้อมูล
+        </div>
       ) : (
-        <div
-          className="bg-white rounded-md border
+        <div>
+          <input
+            type="text"
+            className="form-control my-3  p-2  w-full  border border-gray-300 rounded-md"
+            placeholder="ค้นหา..."
+            value={SearchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <div
+            className="bg-white rounded-md border
         border-gray-200 shadow-xl mt-3 
         "
-          style={{ height: "90vh", display: "flex", flexDirection: "column" }}
-        >
-          <DataTable
-            columns={columns}
-            data={data}
-            customStyles={customStyles}
-            pagination
-            fixedHeader
-            fixedHeaderScrollHeight="100%"
-          />
+            style={{ height: "90vh", display: "flex", flexDirection: "column" }}
+          >
+            <DataTable
+              columns={columns}
+              data={SecrchData}
+              customStyles={customStyles}
+              pagination
+              fixedHeader
+              fixedHeaderScrollHeight="100%"
+            />
+          </div>
         </div>
       )}
     </div>

@@ -13,22 +13,43 @@ import Switch from "react-switch";
 import Swal from "sweetalert2";
 export default function DatatableActivity({ id_projectref, val }) {
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [SecrchData, setSecrchData] = useState([]);
+  const [SearchTerm, setSearchTerm] = useState("");
   const { id_strategic, id_actionplan, id_project } = val;
   useEffect(() => {
     async function fetchData() {
       try {
+        setLoading(true);
         const token = Cookies.get("token");
-        console.log("token : ", id_projectref);
+        // console.log("token : ", id_projectref);
         const res = await GetDataactionplanByidproject(token, id_projectref);
-        console.log(res.data);
+        // console.log(res.data);
         setData(res.data);
+        setSecrchData(res.data);
       } catch (err) {
         console.error("Error loading data:", err);
+      } finally {
+        setLoading(false);
       }
     }
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const filtered = data.filter((data) => {
+      const budget = Number(data.budget);
+      const spendMoney = Number(data.spend_money);
+      const remainingBudget = budget - spendMoney; // คำนวณเหมือนใน cell
+
+      return `${data.name_activity} ${data.id} ${budget} ${spendMoney} ${remainingBudget}`
+        .toLowerCase()
+        .includes(SearchTerm.toLowerCase());
+    });
+
+    setSecrchData(filtered);
+  }, [SearchTerm, data]);
 
   const columns = [
     {
@@ -246,22 +267,37 @@ export default function DatatableActivity({ id_projectref, val }) {
 
   return (
     <div className="w-full">
-      {data.length === 0 ? (
+      {loading ? (
         <div className="flex justify-center items-center h-40">
           <div className="animate-spin rounded-full h-20 w-20 border-t-2 border-b-2 border-gray-300"></div>
           <span className="ml-3 text-gray-300">กำลังโหลดข้อมูล...</span>
         </div>
+      ) : data.length === 0 ? (
+        <div className="flex justify-center items-center h-40 text-gray-400">
+          ยังไม่มีข้อมูล
+        </div>
       ) : (
-        <div
-          className="bg-white shadow-xl rounded-md border border-gray-200 me-3 mt-4 flex flex-col"
-          style={{ height: "90vh" }}
-        >
-          <DataTable
-            columns={columns}
-            data={data}
-            pagination
-            keyField="activity_id"
-          />
+        <div>
+          <div className="me-4">
+            <input
+              type="text"
+              className="form-control my-3  p-2  w-full  border border-gray-300 rounded-md"
+              placeholder="ค้นหา..."
+              value={SearchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div
+            className="bg-white shadow-xl rounded-md border border-gray-200 me-4 mt-4 flex flex-col"
+            style={{ height: "90vh" }}
+          >
+            <DataTable
+              columns={columns}
+              data={SecrchData}
+              pagination
+              keyField="activity_id"
+            />
+          </div>
         </div>
       )}
     </div>

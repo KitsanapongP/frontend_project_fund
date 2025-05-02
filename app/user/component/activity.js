@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
-import { GetDataactivity } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
+import { GetDataactionplanByidproject } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -9,15 +9,15 @@ import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import { FiDownload } from "react-icons/fi";
 import { HiOutlineDocumentReport } from "react-icons/hi";
-export default function DatatableActivity({ val }) {
+export default function DatatableActivity({ val ,project_id}) {
   const [data, setData] = useState([]);
   const { id_strategic, id_actionplan, id_project } = val;
   useEffect(() => {
     async function fetchData() {
       try {
         const token = Cookies.get("token");
-        console.log("token : ", token);
-        const res = await GetDataactivity(token, id_project);
+        console.log("token : ", project_id);
+        const res = await GetDataactionplanByidproject(token, project_id);
         console.log(res.data);
         setData(res.data);
       } catch (err) {
@@ -42,7 +42,7 @@ export default function DatatableActivity({ val }) {
       width: "450px",
     },
     {
-      name: "กิจกรรม",
+      name: "รายงาน",
       selector: (row) => row.status,
       sortable: true,
     },
@@ -143,6 +143,16 @@ export default function DatatableActivity({ val }) {
       ignoreRowClick: true,
     },
   ];
+  const customStyles = {
+    headCells: {
+      style: {
+        backgroundColor: "#f0f0f0", // สีพื้นหลังหัวตาราง
+        color: "#1f2937", // สีตัวอักษร (เทาเข้ม)
+        fontWeight: "bold",
+        fontSize: "14px",
+      },
+    },
+  };
   return (
     <div className="w-full">
       {data.length === 0 ? (
@@ -151,7 +161,15 @@ export default function DatatableActivity({ val }) {
           <span className="ml-3 text-gray-300">กำลังโหลดข้อมูล...</span>
         </div>
       ) : (
-        <DataTable columns={columns} data={data} keyField="activity_id" />
+        <div
+          className="bg-white shadow-xl rounded-md border border-gray-200 me-3 mt-4 flex flex-col"
+          style={{ height: "90vh" }}
+        >
+          <DataTable columns={columns} data={data}
+          pagination
+          customStyles={customStyles}
+          keyField="activity_id" />
+        </div>
       )}
     </div>
   );

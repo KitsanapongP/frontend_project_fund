@@ -48,14 +48,14 @@ export async function GetDataactionplan(token, id_strategic) {
 }
 
 export async function GetDataproject(token) {
-//   console.log(id_actionplan);
+  //   console.log(id_actionplan);
   try {
     console.log("token : ", token);
     const response = await axios.get(`${api}/api/v1/admin/project`, {
-    //   params: {
-    //     id_actionplan: id_actionplan,
-    //   }
-    //   ,
+      //   params: {
+      //     id_actionplan: id_actionplan,
+      //   }
+      //   ,
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -71,6 +71,77 @@ export async function GetDataproject(token) {
     throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
   }
 }
+export async function GetDataprojectByUser(token) {
+  //   console.log(id_actionplan);
+  try {
+    console.log("token : ", token);
+    const response = await axios.post(
+      `${api}/api/v1/admin/projectuserallbyiduser`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // const json = await response.json();
+    console.log("data : ", response.data?.data);
+    return response.data?.data ?? [];
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    // Swal.fire("Error", "ไม่สามารถดึงข้อมูลได้", "error");
+    throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
+  }
+}
+export async function GetDataprojectUserByYear(token,id_year) {
+  //   console.log(id_actionplan);
+  try {
+    console.log("token : ", token);
+    const response = await axios.post(
+      `${api}/api/v1/admin/projectuserallbyidyear`,
+      {id_year},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // const json = await response.json();
+    console.log("data : ", response.data?.data);
+    return response.data?.data ?? [];
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    // Swal.fire("Error", "ไม่สามารถดึงข้อมูลได้", "error");
+    throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
+  }
+}
+
+export async function GetDatayear(token) {
+  // console.log(id_project);
+  try {
+    console.log("token : ", token);
+    const response = await axios.get(`${api}/api/v1/admin/year`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+
+    // const json = await response.json();
+    console.log("data : ", response.data?.data);
+    return response.data?.data ?? [];
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    // Swal.fire("Error", "ไม่สามารถดึงข้อมูลได้", "error");
+    throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
+  }
+}
+
 
 export async function GetDataactivity(token, id_project) {
   console.log(id_project);
@@ -95,8 +166,6 @@ export async function GetDataactivity(token, id_project) {
     throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
   }
 }
-
-
 
 export async function GetLogin(email, password) {
   // console.log(id_strategic.data)

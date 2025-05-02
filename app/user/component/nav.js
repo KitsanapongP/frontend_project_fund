@@ -70,6 +70,13 @@ export default function Menu() {
                 <Settings size={16} />
                 <span>โครงการ</span>
               </Link>
+              <Link
+                href="/user/project"
+                className="flex items-center gap-2   mb-2.5"
+              >
+                <Settings size={16} />
+                <span>กิจกรรม</span>
+              </Link>
             </div>
           )}
         </div>

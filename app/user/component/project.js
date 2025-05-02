@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
-import { GetDataproject } from "../../fetch_api/fetch_api_user"; // ปรับ path ตามจริง
+import { GetDataprojectUserByYear } from "../../fetch_api/fetch_api_user"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -22,10 +22,12 @@ import {
 } from "react-icons/fa";
 // ยังไม่รายงาน,รายงานแล้ว,เกินกำหนด,ส่งรายงาน
 
-export default function DatatableProject() {
+export default function DatatableProject({ year_id }) {
   const [data, setData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [SecrchData, setSecrchData] = useState([]);
+  const [SearchTerm, setSearchTerm] = useState("");
 
   const handleDownloadClick = (row) => {
     setSelectedRow(row);
@@ -76,42 +78,58 @@ export default function DatatableProject() {
       try {
         const token = Cookies.get("token");
         // console.log("token : ", id_project);
-        const res = await GetDataproject(token);
-        console.log(res.data);
+        // console.log(year_id);
+        const res = await GetDataprojectUserByYear(token, year_id);
+
         setData(res.data);
+        setSecrchData(res.data);
       } catch (err) {
         console.error("Error loading data:", err);
       }
     }
 
     fetchData();
-  }, []);
+  }, [year_id]);
+
+  useEffect(() => {
+    const filtered = data.filter((data) => {
+      const budget = Number(data.budget);
+      const spendMoney = Number(data.spend_money);
+      const remainingBudget = budget - spendMoney; // คำนวณเหมือนใน cell
+
+      return `${data.project_name} ${data.project_number} ${budget} ${spendMoney} ${remainingBudget}`
+        .toLowerCase()
+        .includes(SearchTerm.toLowerCase());
+    });
+
+    setSecrchData(filtered);
+  }, [SearchTerm, data]);
 
   const columns = [
     {
-      name: "รหัส",
-      selector: (row) => row.project_number,
+      name: "ลำดับ",
+      selector: (row, index) => index + 1,
       sortable: true,
     },
     {
       name: "ชื่อ",
-      selector: (row) => row.project_name,
+      selector: (row) => row.project.project_name,
       sortable: true,
       wrap: true,
       width: "450px",
     },
     {
       name: "กิจกรรม",
-      selector: (row) => row.status,
+      selector: (row) => row.project.status,
       sortable: true,
     },
     {
       name: "งบประมาณ (บาท)",
-      // selector: (row) => row.budget,
+      // selector: (row) => row.project.budget,
       sortable: true,
       wrap: true,
       cell: (row) =>
-        `${Number(row.budget).toLocaleString("th-TH", {
+        `${Number(row.project.budget).toLocaleString("th-TH", {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })} `,
@@ -120,7 +138,7 @@ export default function DatatableProject() {
       name: "ใช้ไป (บาท)",
       sortable: true,
       cell: (row) =>
-        `${Number(row.spend_money).toLocaleString("th-TH", {
+        `${Number(row.project.spend_money).toLocaleString("th-TH", {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })} `,
@@ -129,10 +147,13 @@ export default function DatatableProject() {
       name: "คงเหลือ (บาท)",
       sortable: true,
       cell: (row) =>
-        `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })} `,
+        `${Number(row.project.budget - row.project.spend_money).toLocaleString(
+          "th-TH",
+          {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }
+        )} `,
     },
     {
       name: "สถานะ",
@@ -157,75 +178,64 @@ export default function DatatableProject() {
       ),
     },
     {
-      name: "รายงาน",
+      name: "จัดการ",
+      width: "180px",
       cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <button
-            className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
-            onClick={() => {
-              //   เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
-              sessionStorage.setItem(
-                "project_data",
-                JSON.stringify({
-                  id: row.id_project,
-                  number: row.project_number,
-                  name: row.project_name,
-                  budget: row.budget,
-                })
-              );
+        <>
+          <div style={{ padding: "5px" }}>
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
+              onClick={() => {
+                // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
+                sessionStorage.setItem(
+                  "project_data",
+                  JSON.stringify({
+                    id: row.project.project_id,
+                    name: row.project.project_name,
+                    budget: row.project.budget,
+                    balance: row.project.budget - row.project.spend_money,
+                  })
+                );
 
-              //   // เปลี่ยนหน้า
-              window.location.href = `/user/project/report`;
-            }}
-          >
-            <HiOutlineDocumentReport className="w-6 h-6 text-gray-500 " />
-          </button>
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
-    {
-      name: "ดูกิจกรรม",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <button
-            className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
-            onClick={() => {
-              // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
-              sessionStorage.setItem(
-                "project_data",
-                JSON.stringify({
-                  name: row.project_name,
-                  budget: row.budget,
-                  balance: row.budget - row.spend_money,
-                })
-              );
+                // เปลี่ยนหน้า
+                
+                if (row.project.status_child == 0) {
+                  // project_detail
+                  window.location.href = `/user/project/${row.project.project_number}`;
+                } else {
+                  // activity
+                  window.location.href = `/user/project/${row.project.project_number}`;
+                }
+              }}
+            >
+              <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
+            </button>
+          </div>
 
-              // เปลี่ยนหน้า
-              window.location.href = `/user/project/${row.project_number}`;
-            }}
-          >
-            <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
-          </button>
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
-    {
-      name: "แก้ไข",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <button
-            className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
-            onClick={() => {}}
-          >
-            <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
-          </button>
-        </div>
+          <div style={{ padding: "5px" }}>
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
+              onClick={() => {}}
+            >
+              <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
+            </button>
+          </div>
+        </>
       ),
       ignoreRowClick: true,
     },
   ];
+  const customStyles = {
+    headCells: {
+      style: {
+        backgroundColor: "#f0f0f0", // สีพื้นหลังหัวตาราง
+        color: "#1f2937", // สีตัวอักษร (เทาเข้ม)
+        fontWeight: "bold",
+        fontSize: "14px",
+      },
+    },
+  };
+
   return (
     <div className="w-full">
       {data.length === 0 ? (
@@ -234,7 +244,33 @@ export default function DatatableProject() {
           <span className="ml-3 text-gray-300">กำลังโหลดข้อมูล...</span>
         </div>
       ) : (
-        <DataTable columns={columns} data={data} />
+        <>
+          <div>
+            <div>
+              <input
+                type="text"
+                className="form-control my-3  p-2  w-full  border border-gray-300 rounded-md"
+                placeholder="ค้นหา..."
+                value={SearchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div
+              className="bg-white  rounded-md border border-gray-200 shadow-xl  "
+              style={{
+                height: "90vh",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <DataTable
+                columns={columns}
+                data={SecrchData}
+                customStyles={customStyles}
+              />
+            </div>
+          </div>
+        </>
       )}
       <DownloadModal
         isOpen={showModal}

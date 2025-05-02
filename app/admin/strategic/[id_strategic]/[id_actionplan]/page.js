@@ -55,13 +55,13 @@ export default function HomeProject({ params }) {
       <div className="">
         <Header />
         <hr />
-        <div className="grid grid-cols-10 gap-4 w-full min-h-screen mt-20">
+        <div className="grid grid-cols-9 gap-4 w-full min-h-screen mt-20">
           <div className="bg-gray-100 col-span-2 xl:col-span-2 hidden md:block md:col-span-2 pt-4 ps-3">
             <Menu />
           </div>
-          <div className="col-span-10 xl:col-span-8 ms-4 md:ms-0  md:col-span-8  mt-5 md:mt-3 ">
+          <div className="col-span-9 xl:col-span-7 ms-4 md:ms-0  md:col-span-7  mt-5 md:mt-3 ">
             <div className="flex flex-col">
-              <nav className="flex mb-2" aria-label="Breadcrumb">
+              <nav classme="flex mb-2" aria-label="Breadcrumb">
                 <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                   <li className="inline-flex items-center">
                     <a

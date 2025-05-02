@@ -179,11 +179,11 @@ export default function Dashboard() {
       <div className="">
         <Header />
         <hr />
-        <div className="grid grid-cols-10 gap-4 w-full h-screen  mt-20">
-          <div className="bg-gray-100 col-span-2 xl:col-span-2 hidden md:block md:col-span-3 pt-4 ps-3 ">
+        <div className="grid grid-cols-9 gap-4 w-full h-screen  mt-20">
+          <div className="bg-gray-100 col-span-2 xl:col-span-2 hidden md:block md:col-span-2 pt-4 ps-3 ">
             <Menu />
           </div>
-          <div className="col-span-10 xl:col-span-8  ms-8 md:ms-0 md:col-span-7  mt-5 md:mt-3  me-8">
+          <div className="col-span-9 xl:col-span-8  ms-8 md:ms-0 md:col-span-7  mt-5 md:mt-3  me-8">
             <div className="flex flex-col">
               <div className="grid grid-cols-12 gap-4 w-full mb-8">
                 <div className="col-span-12 sm:col-span-6 md:col-span-6 md:ms-0  xl:col-span-3">

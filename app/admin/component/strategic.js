@@ -172,10 +172,11 @@ export default function DatatableStrig({ year_id }) {
       ignoreRowClick: true,
     },
   ];
-
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     async function fetchData() {
       try {
+        setLoading(true);
         const token = Cookies.get("token");
         console.log("token : ", token);
         const res = await GetDatastrategicYear(token, year_id);
@@ -184,6 +185,8 @@ export default function DatatableStrig({ year_id }) {
         setData(res.data);
       } catch (err) {
         console.error("Error loading data:", err);
+      }finally {
+        setLoading(false);
       }
     }
 
@@ -331,11 +334,15 @@ export default function DatatableStrig({ year_id }) {
 
   return (
     <div className="w-full">
-      {data.length === 0 ? (
+      {loading ? (
         <div className="flex justify-center items-center h-40">
           <div className="animate-spin rounded-full h-20 w-20 border-t-2 border-b-2 border-gray-300"></div>
           <span className="ml-3 text-gray-300">กำลังโหลดข้อมูล...</span>
         </div>
+      ) :  data.length === 0 ? (
+        <div className="flex justify-center items-center h-40 text-gray-400">
+        ยังไม่มีข้อมูล
+      </div>
       ) : (
         <div className="me-4">
           <input

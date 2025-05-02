@@ -3,14 +3,19 @@ import { useState, useEffect } from "react";
 import { RxCross2 } from "react-icons/rx";
 import Menu from "./nav";
 import Aos from "aos";
+import Cookies from "js-cookie";
 import "aos/dist/aos.css";
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const [fullname, setFullname] = useState(false);
   useEffect(() => {
     Aos.init({
       duration: 250,
       once: false,
     });
+    const fullname = Cookies.get("fullname");
+    setFullname(fullname)
+
   },[]);
   return (
     <>
@@ -21,7 +26,7 @@ export default function Header() {
           </div>
 
           <div className="flex flex-row items-center">
-            <div className="hidden md:block md:me-8">admin</div>
+            <div className="hidden md:block md:me-8">{fullname}</div>
             <button
               type="button"
               data-collapse-toggle="navbar-default"

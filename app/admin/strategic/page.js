@@ -37,9 +37,9 @@ export default function HomeStrategic() {
     async function fetchData() {
       try {
         const token = Cookies.get("token");
-        console.log("token : ", token);
+        // console.log("token : ", token);
         const res = await GetDatayear(token);
-        console.log("year : ", res.data);
+        // console.log("year : ", res.data);
         setyearOptions(res.data);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -63,11 +63,11 @@ export default function HomeStrategic() {
       <div className="">
         <Header />
         <hr />
-        <div className="grid grid-cols-10 gap-4 w-full min-h-screen mt-20">
+        <div className="grid grid-cols-9 gap-4 w-full min-h-screen mt-20">
           <div className="bg-gray-100 col-span-2 xl:col-span-2 hidden md:block md:col-span-2 pt-4 ps-3">
             <Menu />
           </div>
-          <div className="col-span-10 xl:col-span-8  md:col-span-8  mt-5 md:mt-3 ">
+          <div className="col-span-9 xl:col-span-7  md:col-span-7  mt-5 md:mt-3 ">
             <div className="flex flex-row justify-between">
               <div className="flex flex-row items-center ">
                 <div className="text-lg md:text-2xl me-3 ">
