@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
-import { GetDataprojectUserByYear } from "../../fetch_api/fetch_api_user"; // ปรับ path ตามจริง
+import { GetDataactivityUserByYear } from "../../fetch_api/fetch_api_user"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -79,7 +79,7 @@ export default function DatatableProject({ year_id }) {
         const token = Cookies.get("token");
         // console.log("token : ", id_project);
         // console.log(year_id);
-        const res = await GetDataprojectUserByYear(token, year_id);
+        const res = await GetDataactivityUserByYear(token, year_id);
 
         setData(res.data);
         setSecrchData(res.data);
@@ -93,11 +93,11 @@ export default function DatatableProject({ year_id }) {
 
   useEffect(() => {
     const filtered = data.filter((data) => {
-      const budget = Number(data.project.budget);
-      const spendMoney = Number(data.project.spend_money);
+      const budget = Number(data.activity.budget);
+      const spendMoney = Number(data.activity.spend_money);
       const remainingBudget = budget - spendMoney; // คำนวณเหมือนใน cell
 
-      return `${data.project.project_name} ${data.project.project_number} ${budget} ${spendMoney} ${remainingBudget}`
+      return `${data.activity.name_activity} ${budget} ${spendMoney} ${remainingBudget}`
         .toLowerCase()
         .includes(SearchTerm.toLowerCase());
     });
@@ -113,23 +113,26 @@ export default function DatatableProject({ year_id }) {
     },
     {
       name: "ชื่อ",
-      selector: (row) => row.project.project_name,
+      selector: (row) => row.activity.name_activity,
       sortable: true,
       wrap: true,
       width: "450px",
     },
     {
-      name: "กิจกรรม",
-      selector: (row) => row.project.status,
+      name: "รายงานผล",
+      selector: (row) => row.activity.status,
       sortable: true,
+      cell: (row) => (
+        <div className="flex items-center h-full">{row.activity.status}</div>
+      ),
     },
     {
       name: "งบประมาณ (บาท)",
-      // selector: (row) => row.project.budget,
+      // selector: (row) => row.activity.budget,
       sortable: true,
       wrap: true,
       cell: (row) =>
-        `${Number(row.project.budget).toLocaleString("th-TH", {
+        `${Number(row.activity.budget).toLocaleString("th-TH", {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })} `,
@@ -138,7 +141,7 @@ export default function DatatableProject({ year_id }) {
       name: "ใช้ไป (บาท)",
       sortable: true,
       cell: (row) =>
-        `${Number(row.project.spend_money).toLocaleString("th-TH", {
+        `${Number(row.activity.spend_money).toLocaleString("th-TH", {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })} `,
@@ -147,13 +150,12 @@ export default function DatatableProject({ year_id }) {
       name: "คงเหลือ (บาท)",
       sortable: true,
       cell: (row) =>
-        `${Number(row.project.budget - row.project.spend_money).toLocaleString(
-          "th-TH",
-          {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          }
-        )} `,
+        `${Number(
+          row.activity.budget - row.activity.spend_money
+        ).toLocaleString("th-TH", {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        })} `,
     },
     {
       name: "สถานะ",
@@ -173,7 +175,6 @@ export default function DatatableProject({ year_id }) {
           onClick={() => handleDownloadClick(row)}
         >
           <FiDownload className="text-lg " />
-          PDF
         </button>
       ),
     },
@@ -188,24 +189,19 @@ export default function DatatableProject({ year_id }) {
               onClick={() => {
                 // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
                 sessionStorage.setItem(
-                  "project_data",
+                  "activitydetail_data",
                   JSON.stringify({
-                    id: row.project.project_id,
-                    name: row.project.project_name,
-                    budget: row.project.budget,
-                    balance: row.project.budget - row.project.spend_money,
+                    id: row.activity.activity_id,
+                    name: row.activity.name_activity,
+                    budget: row.activity.budget,
+                    Balance: row.activity.budget - row.activity.spend_money,
                   })
                 );
 
                 // เปลี่ยนหน้า
-                
-                if (row.project.status_child == 0) {
-                  // project_detail
-                  window.location.href = `/user/project/${row.project.project_number}`;
-                } else {
-                  // activity
-                  window.location.href = `/user/project/${row.project.project_number}`;
-                }
+
+                // activity
+                window.location.href = `/user/activity/${row.activity.id}`;
               }}
             >
               <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>

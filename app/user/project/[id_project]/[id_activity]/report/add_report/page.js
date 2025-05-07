@@ -1,97 +1,112 @@
 "use client";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, use, useEffect } from "react";
 import Link from "next/link";
 import Menu from "../../../../../component/nav";
 import Header from "../../../../../component/header";
-
-export default function addProject() {
+import Cookies from "js-cookie";
+export default function addActivtydetail({ params }) {
   const [projectData, setprojectData] = useState({
     id: "",
     number: "",
     name: "",
     budget: "",
   });
+  const [activityData, setactivityData] = useState({
+    id: "",
+    number: "",
+    name: "",
+    budget: "",
+  });
+
+  const [dataAddsend, setdataAddsend] = useState({
+    station: "",
+    total_price: 0,
+    url: "",
+  });
+  const [fullname, setFullname] = useState("");
+  const [rounded, setRounded] = useState(0);
+  const { id_strategic, id_actionplan, id_project, id_activity } = use(params);
+  const date = new Date();
+  const formatted =
+    date.getDate().toString().padStart(2, "0") +
+    "/" +
+    (date.getMonth() + 1).toString().padStart(2, "0") +
+    "/" +
+    date.getFullYear();
 
   useEffect(() => {
-    const data = sessionStorage.getItem("project_data");
-    if (!data) {
+    const data = sessionStorage.getItem("activitydetail_data");
+    const data_activity = sessionStorage.getItem("project_data");
+    const fullname = Cookies.get("fullname");
+    const rounded = Cookies.get("rounded");
+    if (!data || !data_activity || !fullname || !rounded) {
       window.location.href = `/user/project`;
     } else {
       setprojectData(JSON.parse(data));
+      setactivityData(JSON.parse(data_activity));
+      setFullname(fullname);
+      setRounded(rounded)
     }
   }, []);
+
   return (
     <>
       <div className="">
         <Header />
         <hr />
-        <div className="grid grid-cols-10 gap-4 w-full min-h-screen mt-20">
-          <div className="bg-gray-100 col-span-2 xl:col-span-2 hidden md:block md:col-span-3 pt-4 ps-3">
+        <div className="grid grid-cols-9 gap-4 w-full min-h-screen mt-20">
+          <div className="bg-gray-100 col-span-2 xl:col-span-2 hidden md:block md:col-span-2 pt-4 ps-3">
             <Menu />
           </div>
-          <div className="col-span-10 xl:col-span-8  md:col-span-7  mt-5 md:mt-3 ms-8 md:ms-0 me-8">
+          <div className="col-span-9 xl:col-span-7  md:col-span-7  mt-5 md:mt-3 ms-8 md:ms-0 me-4">
             <div className="flex flex-row items-center justify-between">
-              <div className="text-lg md:text-2xl">
+              <div className="text-lg md:text-xl xl:text-2xl">
                 รายงานผลการดำเนินงานโครงการกิจกรรมตามแผนปฏิบัติการประจำปีงบประมาณ
                 พ.ศ. 2568
               </div>
             </div>
-            <div className="grid grid-cols-9 gap-x-8 gap-y-6 mt-3">
-              <div className="col-span-9 md:col-span-3">
+            <div className="grid grid-cols-8 gap-x-8 gap-y-6 mt-3">
+              <div className="col-span-8 md:col-span-4">
                 <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  รหัสโครงการ
+                  ภายใต้โครงการ
                 </span>
                 <input
-                  type="email"
-                  id="email"
+                  type="text"
+                  id="name_project"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   placeholder="name@flowbite.com"
                   readOnly
-                  value={"123456"}
+                  value={`${id_project} : ${activityData.name}`}
                 />
               </div>
-              <div className="col-span-9 md:col-span-3">
+              <div className="col-span-8 md:col-span-4">
                 <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  ชื่อโครงการ
+                  ภายใต้กิจกรรม
                 </span>
                 <input
-                  type="email"
-                  id="email"
+                  type="text"
+                  id="name_project"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   placeholder="name@flowbite.com"
                   readOnly
-                  value={"123456"}
+                  value={`${id_activity} : ${projectData.name}`}
                 />
               </div>
-              <div className="col-span-9 md:col-span-3">
+              <div className="col-span-8 md:col-span-4">
                 <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                   ครั้งที่
                 </span>
                 <input
-                  type="email"
-                  id="email"
+                  type="text"
+                  id="round"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   placeholder="name@flowbite.com"
                   readOnly
-                  value={"123456"}
+                  value={parseInt(rounded, 10) + 1} 
                 />
               </div>
-
-              <div className="col-span-9 md:col-span-3">
-                <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  สถานที่ดำเนินงาน
-                </span>
-                <input
-                  type="email"
-                  id="email"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@flowbite.com"
-                  required
-                />
-              </div>
-
-              <div className="col-span-9 md:col-span-6 xl:col-span-3">
+              <div className="col-span-8 md:col-span-4">
                 <div className="flex flex-col ">
                   <div className="flex flex-row justify-between mb-0.5">
                     <h2>วันที่ดำเนินการ </h2>
@@ -149,77 +164,89 @@ export default function addProject() {
                 </div>
               </div>
 
-              <div className="col-span-9 md:col-span-3">
+              <div className="col-span-8 md:col-span-4">
+                <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                  สถานที่ดำเนินงาน
+                </span>
+                <input
+                  type="text"
+                  id="station"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  placeholder="กรุณากรอกสถานที่"
+                  required
+                  value={dataAddsend.station || ""}
+                  onChange={(e) =>
+                    setdataAddsend({ ...dataAddsend, station: e.target.value })
+                  }
+                />
+              </div>
+              <div className="col-span-8 md:col-span-4">
+                <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                  งบประมาณ
+                </span>
+                <input
+                  type="number"
+                  id="total_price"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  placeholder="กรุณากรอกจำนวนเงิน"
+                  required
+                  value={dataAddsend.total_price || 0}
+                  onChange={(e) =>
+                    setdataAddsend({
+                      ...dataAddsend,
+                      total_price: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="col-span-8 md:col-span-4">
                 <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                   ผู้รายงานข้อมูล
                 </span>
                 <input
                   type="email"
-                  id="email"
+                  id="user_report"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   placeholder="name@flowbite.com"
-                  required
+                  readOnly
+                  value={fullname}
                 />
               </div>
 
-              <div className="col-span-9 md:col-span-3">
-                <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  งบประมาณ
-                </span>
-                <input
-                  type="email"
-                  id="email"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@flowbite.com"
-                  required
-                />
-              </div>
-
-              <div className="col-span-9 md:col-span-3">
+              <div className="col-span-8 md:col-span-4">
                 <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                   วันที่รายงาน
                 </span>
                 <input
-                  type="email"
+                  type="text"
                   id="email"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   placeholder="name@flowbite.com"
-                  required
+                  readOnly
+                  value={formatted}
                 />
               </div>
-              <div className="col-span-9 md:col-span-9">
-                <div className="flex flex-col ">
-                  <div className="flex flex-row justify-between mb-2">
-                    <h2>Link ข่าว ภาพ รายละเอียด (ถ้ามี) </h2>
-                    <button
-                      type="button"
-                      className=" top-9 right-2 bg-blue-500 text-white text-sm px-4 py-1 rounded-lg hover:bg-blue-600"
-                    >
-                      เพิ่ม
-                    </button>
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      type="text"
-                      id="objective"
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pr-20 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                      placeholder="ไฟล์"
-                      readOnly
-                    />
-                    <button
-                      type="button"
-                      className="absolute top-1.5 right-2 bg-blue-500 text-white text-sm px-4 py-1 rounded-lg hover:bg-blue-600"
-                    >
-                      ลบ
-                    </button>
-                  </div>
-                </div>
+              <div className="col-span-8">
+                <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                  Link ข่าว ภาพ รายละเอียด (ถ้ามี)
+                </span>
+                <input
+                  type="text"
+                  id="url"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  placeholder="กรุณากรอกที่อยู่ของไฟล์ทั้งหมด"
+                  required
+                  value={dataAddsend.url || ""}
+                  onChange={(e) =>
+                    setdataAddsend({ dataAddsend, url: e.target.value })
+                  }
+                />
               </div>
-              <div className="col-span-9 mt-4 flex flex-row justify-end">
+
+              <div className="col-span-9 mt-4 flex flex-row justify-end me-8">
                 <button
                   type="button"
-                  className="bg-blue-500 text-white text-sm px-4 py-1 rounded-lg hover:bg-blue-600"
+                  className="bg-blue-500 text-white text-md px-14 py-2  rounded-lg hover:bg-blue-600"
                 >
                   บันทึก
                 </button>

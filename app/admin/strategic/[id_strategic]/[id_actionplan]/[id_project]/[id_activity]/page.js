@@ -187,11 +187,11 @@ export default function HomeActivity({ params }) {
                 </ol>
               </nav>
               <div className="text-lg md:text-2xl me-3  font-bold">
-                จัดการกิจกรรม
+                จัดการรายละเอียดกิจกรรม
               </div>
               <div className="text-lg md:text-2xl me-3  ">
                 {" "}
-                {id_activity} {Activity.name}
+                {id_activity} ​:  {Activity.name}
               </div>
               <div className="flex justify-between ">
                 <div className="text-lg md:text-2xl   ">

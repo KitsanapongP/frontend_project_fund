@@ -4,7 +4,7 @@ import DataTable from "react-data-table-component";
 import {
   GetDataactivitydetailByidactivity,
   UpdatestatusActivity,
-} from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
+} from "../../fetch_api/fetch_api_user"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
 import { HiOutlineDocumentReport } from "react-icons/hi";
@@ -15,7 +15,7 @@ import Swal from "sweetalert2";
 export default function DatatableActivityDetail({ id_activityref, val }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { id_strategic, id_actionplan, id_project } = val;
+  const { id_strategic, id_activity, id_project } = val;
   useEffect(() => {
     async function fetchData() {
       try {
@@ -26,7 +26,8 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
           token,
           id_activityref
         );
-        console.log(res.data);
+        console.log(res.total);
+        const rounded = Cookies.set("rounded", res.total, { expires: 1 });
         setData(res.data);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -109,48 +110,6 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
         ),
     },
     {
-      name: "สถานะ",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <Switch
-            onChange={() => handlechageStatus(row)}
-            checked={row.status === 1}
-            onColor="#4caf50"
-            offColor="#d9534f"
-            checkedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                เปิด
-              </div>
-            }
-            uncheckedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                ปิด
-              </div>
-            }
-          />
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
-    {
       name: "ดำเนินการ",
       cell: (row) => (
         <>
@@ -168,7 +127,7 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
                 );
 
                 // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${row.strategic_number}`;
+                window.location.href = `/user/project/${id_project}/${id_activity}/report/edit_report`;
               }}
             >
               <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />

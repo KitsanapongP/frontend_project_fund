@@ -71,7 +71,7 @@ export default function Menu() {
                 <span>โครงการ</span>
               </Link>
               <Link
-                href="/user/project"
+                href="/user/activity"
                 className="flex items-center gap-2   mb-2.5"
               >
                 <Settings size={16} />

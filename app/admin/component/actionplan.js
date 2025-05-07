@@ -4,6 +4,7 @@ import DataTable from "react-data-table-component";
 import {
   GetDataactionplanByidstrategic,
   UpdatestatusActionplan,
+  DeleteActionplan
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
@@ -16,6 +17,62 @@ export default function DatatableActionplan({
   strategic_id,
 }) {
   const [data, setData] = useState([]);
+
+  const handleDelete = async (row) => {
+    // const newStatus = row.status === 1 ? 0 : 1;
+
+    const result = await Swal.fire({
+      title: "คุณแน่ใจหรือไม่ ?",
+      text: `คุณต้องการคุณต้องการลบ "${row.name_ap}" หรือไม่
+        `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "gray",
+      confirmButtonText: "ยืนยันการลบ",
+      cancelButtonText: "ยกเลิก",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const token = Cookies.get("token");
+        const response = await DeleteActionplan(token, row.action_plan_id);
+        // if(response)
+        console.log(response);
+        if (response) {
+          // setData((prevData) =>
+          //   prevData.filter((item) => item.strategic_id !== row.strategic_id)
+          // );
+          console.log("การลบสำเร็จ");
+          setData((prevData) =>
+            prevData.filter((item) => item.action_plan_id != row.action_plan_id)
+          );
+          // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
+          Swal.fire({
+            title: "ลบข้อมูลสำเร็จ",
+            text: "ข้อมูลถูกลบออกจากระบบแล้ว",
+            icon: "success",
+            confirmButtonText: "ตกลง",
+          });
+        } else {
+          Swal.fire({
+            title: "เกิดข้อผิดพลาด",
+            text: "ไม่สามารถลบได้ กรุณาลองใหม่อีกครั้ง",
+            icon: "error",
+            confirmButtonText: "ตกลง",
+          });
+        }
+      } catch (err) {
+        Swal.fire({
+          title: "เกิดข้อผิดพลาด",
+          text: "กรุณาลองใหม่อีกครั้ง",
+          icon: "error",
+          confirmButtonText: "ตกลง",
+        });
+        console.log(err);
+      }
+    }
+  };
 
   const columns = [
     {
@@ -124,6 +181,7 @@ export default function DatatableActionplan({
                     // id_actionplan: row.action_plan_number,
                     name: row.name_ap,
                     budget: row.budget,
+                    Balance: row.budget - row.spend_money,
                   })
                 );
 
@@ -182,7 +240,7 @@ export default function DatatableActionplan({
         const res = await GetDataactionplanByidstrategic(token, strategic_id);
         // console.log(res.data);
         setData(res.data);
-        setSecrchData(res.data)
+        setSecrchData(res.data);
       } catch (err) {
         console.error("Error loading data:", err);
       } finally {

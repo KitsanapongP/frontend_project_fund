@@ -113,7 +113,7 @@ export default function HomeActivity({ params }) {
               </nav>
 
               <div className="text-lg md:text-2xl me-3  font-bold">
-                จัดการกลยุทธ์
+                จัดการกิจกรรม
               </div>
               <div className="text-lg md:text-xl me-3  ">
                 {" "}

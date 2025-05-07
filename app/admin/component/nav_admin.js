@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import Aos from "aos";
+import Cookies from "js-cookie";
 import "aos/dist/aos.css";
 export default function Menu() {
   const [open, setOpen] = useState(false);
@@ -68,6 +69,27 @@ export default function Menu() {
               >
                 <Settings size={16} />
                 <span>แผนยุทธศาสตร์</span>
+              </Link>
+              <Link
+                href="/admin/actionplan"
+                className="flex items-center gap-2   mb-2.5"
+              >
+                <Settings size={16} />
+                <span>แผนกลยุทธ์</span>
+              </Link>
+              <Link
+                href="/admin/strategic"
+                className="flex items-center gap-2   mb-2.5"
+              >
+                <Settings size={16} />
+                <span>โครงการ</span>
+              </Link>
+              <Link
+                href="/admin/strategic"
+                className="flex items-center gap-2   mb-2.5"
+              >
+                <Settings size={16} />
+                <span>กิจกรรม</span>
               </Link>
             </div>
           )}

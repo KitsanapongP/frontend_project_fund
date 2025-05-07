@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
-import { GetDataactionplanByidproject } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
+import { GetDataactionplanByidproject } from "../../fetch_api/fetch_api_user"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -88,57 +88,73 @@ export default function DatatableActivity({ val ,project_id}) {
         </button>
       ),
     },
-    {
-      name: "รายงาน",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <button
-            className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
-            onClick={() => {
-              //   เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
-              sessionStorage.setItem(
-                "activity_detail_data",
-                JSON.stringify({
-                  id: row.id,
-                  name: row.name_activity,
-                  budget: row.budget,
-                  balance: row.budget - row.spend_money,
-                })
-              );
+    // {
+    //   name: "รายงาน",
+    //   cell: (row) => (
+    //     <div style={{ padding: "5px" }}>
+    //       <button
+    //         className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
+    //         onClick={() => {
+    //           //   เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
+    //           sessionStorage.setItem(
+    //             "activity_detail_data",
+    //             JSON.stringify({
+    //               id: row.id,
+    //               name: row.name_activity,
+    //               budget: row.budget,
+    //               balance: row.budget - row.spend_money,
+    //             })
+    //           );
 
-              //   // เปลี่ยนหน้า
-              window.location.href = `/user/project/${id_project}/${row.id}`;
-            }}
-          >
-            <HiOutlineDocumentReport className="w-6 h-6 text-gray-500" />
-          </button>
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
+    //           //   // เปลี่ยนหน้า
+    //           window.location.href = `/user/project/${id_project}/${row.id}`;
+    //         }}
+    //       >
+    //         <HiOutlineDocumentReport className="w-6 h-6 text-gray-500" />
+    //       </button>
+    //     </div>
+    //   ),
+    //   ignoreRowClick: true,
+    // },
     {
-      name: "แก้ไข",
+      name: "จัดการ",
+      width: "180px",
       cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <button
-            className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
-            onClick={() => {
-              // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
-              sessionStorage.setItem(
-                "strategic_data",
-                JSON.stringify({
-                  name: row.strategic_name,
-                  budget: row.budget,
-                })
-              );
+        <>
+          <div style={{ padding: "5px" }}>
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
+              onClick={() => {
+                // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
+                sessionStorage.setItem(
+                  "activity_detail_data",
+                  JSON.stringify({
+                    id: row.activity_id,
+                    name: row.name_activity,
+                    budget: row.budget,
+                    balance: row.budget - row.spend_money,
+                  })
+                );
 
-              // เปลี่ยนหน้า
-              window.location.href = `/admin/strategic/${row.strategic_number}`;
-            }}
-          >
-            <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
-          </button>
-        </div>
+                // เปลี่ยนหน้า
+
+                // activity
+                window.location.href = `/user/project/${id_project}/${row.id}`;
+              }}
+            >
+              <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
+            </button>
+          </div>
+
+          <div style={{ padding: "5px" }}>
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
+              onClick={() => {}}
+            >
+              <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
+            </button>
+          </div>
+        </>
       ),
       ignoreRowClick: true,
     },

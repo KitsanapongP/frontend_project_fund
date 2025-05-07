@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 import {
   GetDataactivitydetailByidactivity,
-  UpdatestatusActivity,
+  UpdatestatusActivityDetail,
+  DeleteActivityDetail,
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
@@ -30,7 +31,7 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
         setData(res.data);
       } catch (err) {
         console.error("Error loading data:", err);
-      }finally{
+      } finally {
         setLoading(false);
       }
     }
@@ -208,14 +209,17 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
     if (result.isConfirmed) {
       try {
         const token = Cookies.get("token");
-        const response = await UpdatestatusActivity(token, row.activity_id);
+        const response = await UpdatestatusActivityDetail(
+          token,
+          row.activity_detail_id
+        );
         // if(response)
         console.log(response);
         if (response) {
           console.log("การอัปเดตสถานะสำเร็จ");
           setData((prevData) =>
             prevData.map((item) =>
-              item.activity_id === row.activity_id
+              item.activity_detail_id === row.activity_detail_id
                 ? { ...item, status: newStatus }
                 : item
             )
@@ -238,6 +242,62 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
         Swal.fire({
           title: "เกิดข้อผิดพลาด",
           text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
+          icon: "error",
+          confirmButtonText: "ตกลง",
+        });
+        console.log(err);
+      }
+    }
+  };
+
+  const handleDelete = async (row) => {
+    // const newStatus = row.status === 1 ? 0 : 1;
+
+    const result = await Swal.fire({
+      title: "คุณแน่ใจหรือไม่ ?",
+      text: `คุณต้องการคุณต้องการลบ "${row.detail}" หรือไม่
+              `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "gray",
+      confirmButtonText: "ยืนยันการลบ",
+      cancelButtonText: "ยกเลิก",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const token = Cookies.get("token");
+        const response = await DeleteActivityDetail(token, row.activity_detail_id);
+        // if(response)
+        console.log(response);
+        if (response) {
+          // setData((prevData) =>
+          //   prevData.filter((item) => item.strategic_id !== row.strategic_id)
+          // );
+          console.log("การลบสำเร็จ");
+          setData((prevData) =>
+            prevData.filter((item) => item.activity_detail_id != row.activity_detail_id)
+          );
+          // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
+          Swal.fire({
+            title: "ลบข้อมูลสำเร็จ",
+            text: "ข้อมูลถูกลบออกจากระบบแล้ว",
+            icon: "success",
+            confirmButtonText: "ตกลง",
+          });
+        } else {
+          Swal.fire({
+            title: "เกิดข้อผิดพลาด",
+            text: "ไม่สามารถลบได้ กรุณาลองใหม่อีกครั้ง",
+            icon: "error",
+            confirmButtonText: "ตกลง",
+          });
+        }
+      } catch (err) {
+        Swal.fire({
+          title: "เกิดข้อผิดพลาด",
+          text: "กรุณาลองใหม่อีกครั้ง",
           icon: "error",
           confirmButtonText: "ตกลง",
         });

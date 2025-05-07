@@ -200,7 +200,7 @@ export async function GetDataactionplanByidproject(token, id_project) {
   try {
     // console.log("token : ", token);
     const response = await axios.post(
-      `${api}/api/v1/admin/activitybyidproject`,
+      `${api}/api/v1/admin/activitybyidprojectAdmin`,
       { id_project },
       {
         headers: {
@@ -226,7 +226,7 @@ export async function GetDataactivitydetailByidactivity(token, id_activity) {
   try {
     // console.log("token : ", token);
     const response = await axios.post(
-      `${api}/api/v1/admin/activitydetailbyidactivity`,
+      `${api}/api/v1/admin/activitydetailbyidactivityadmin`,
       { id_activity },
       {
         headers: {
@@ -351,12 +351,135 @@ export async function UpdatestatusActivity(token, id) {
   }
 }
 
+
+export async function UpdatestatusActivityDetail(token, id) {
+  // console.log(id_project);
+  try {
+    // console.log("token : ", token);
+    const response = await axios.post(
+      `${api}/api/v1/admin/updatestatusactivitydetail`,
+      { id_activitydetail: id },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
+    );
+
+    // const json = await response.json();
+    console.log("data : ", response.data?.data);
+    return response.data?.data ?? [];
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    // Swal.fire("Error", "ไม่สามารถดึงข้อมูลได้", "error");
+    throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
+  }
+}
+
+
 export async function DeleteStrategic(token, id) {
   // console.log(id_project);
   try {
     // console.log("token : ", token);
     const response = await axios.delete(`${api}/api/v1/admin/deletestrategic`, {
       data: { id_strategic: id },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+
+    // const json = await response.json();
+    console.log("data : ", response.data?.data);
+    return response.data?.data ?? [];
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    // Swal.fire("Error", "ไม่สามารถดึงข้อมูลได้", "error");
+    throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
+  }
+}
+
+
+export async function DeleteActionplan(token, id_actionplan) {
+  // console.log(id_project);
+  try {
+    // console.log("token : ", token);
+    const response = await axios.delete(`${api}/api/v1/admin/deleteactionplan`, {
+      data: { id_actionplan },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+
+    // const json = await response.json();
+    console.log("data : ", response.data?.data);
+    return response.data?.data ?? [];
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    // Swal.fire("Error", "ไม่สามารถดึงข้อมูลได้", "error");
+    throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
+  }
+}
+
+
+export async function DeleteProject(token, id_project) {
+  // console.log(id_project);
+  try {
+    // console.log("token : ", token);
+    const response = await axios.delete(`${api}/api/v1/admin/deleteproject`, {
+      data: { id_project },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+
+    // const json = await response.json();
+    console.log("data : ", response.data?.data);
+    return response.data?.data ?? [];
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    // Swal.fire("Error", "ไม่สามารถดึงข้อมูลได้", "error");
+    throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
+  }
+}
+
+export async function DeleteActivity(token, id_activity) {
+  // console.log(id_activity);
+  try {
+    // console.log("token : ", token);
+    const response = await axios.delete(`${api}/api/v1/admin/deleteactivity`, {
+      data: { id_activity },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+
+    // const json = await response.json();
+    console.log("data : ", response.data?.data);
+    return response.data?.data ?? [];
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    // Swal.fire("Error", "ไม่สามารถดึงข้อมูลได้", "error");
+    throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
+  }
+}
+
+
+export async function DeleteActivityDetail(token, id_activitydetail) {
+  // console.log(id_activitydetail);
+  try {
+    // console.log("token : ", token);
+    const response = await axios.delete(`${api}/api/v1/admin/deleteactivitydetail`, {
+      data: { id_activitydetail },
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",

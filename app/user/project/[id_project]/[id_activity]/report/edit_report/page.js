@@ -2,8 +2,8 @@
 import Image from "next/image";
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
-import Menu from "../../../../../../component/nav_admin";
-import Header from "../../../../../../component/header";
+import Menu from "../../../../../component/nav";
+import Header from "../../../../../component/header";
 import Cookies from "js-cookie";
 export default function addActivtydetail({ params }) {
   const [projectData, setprojectData] = useState({
@@ -25,6 +25,7 @@ export default function addActivtydetail({ params }) {
     url: "",
   });
   const [fullname, setFullname] = useState("");
+  const [rounded, setRounded] = useState(0);
   const { id_strategic, id_actionplan, id_project, id_activity } = use(params);
   const date = new Date();
   const formatted =
@@ -38,13 +39,14 @@ export default function addActivtydetail({ params }) {
     const data = sessionStorage.getItem("activitydetail_data");
     const data_activity = sessionStorage.getItem("project_data");
     const fullname = Cookies.get("fullname");
-
-    if (!data || !data_activity || !fullname) {
+    const rounded = Cookies.get("rounded");
+    if (!data || !data_activity || !fullname || !rounded) {
       window.location.href = `/user/project`;
     } else {
       setprojectData(JSON.parse(data));
       setactivityData(JSON.parse(data_activity));
       setFullname(fullname);
+      setRounded(rounded)
     }
   }, []);
 
@@ -101,7 +103,7 @@ export default function addActivtydetail({ params }) {
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   placeholder="name@flowbite.com"
                   readOnly
-                  value={"1"}
+                  value={parseInt(rounded, 10) + 1} 
                 />
               </div>
               <div className="col-span-8 md:col-span-4">

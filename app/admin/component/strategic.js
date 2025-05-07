@@ -12,6 +12,7 @@ import Cookies from "js-cookie";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import Swal from "sweetalert2";
+import { FaBalanceScale } from "react-icons/fa";
 
 export default function DatatableStrig({ year_id }) {
   const [data, setData] = useState([]);
@@ -127,6 +128,7 @@ export default function DatatableStrig({ year_id }) {
                     id: row.strategic_id,
                     name: row.strategic_name,
                     budget: row.budget,
+                    Balance: row.budget - row.spend_money,
                   })
                 );
 
