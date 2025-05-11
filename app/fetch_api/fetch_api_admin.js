@@ -26,11 +26,13 @@ export async function GetDatayear(token) {
   }
 }
 
-export async function GetDatastrategicYear(token, year_id) {
+export async function GetDatastrategicYear(token, year_id,page,per_page) {
   try {
+    // `${api}/api/v1/admin/actionplanallbyidyear?page=${page}&per_page=${per_page}`,
+ 
     console.log("token : ", token);
     const response = await axios.post(
-      `${api}/api/v1/admin/yearstrategic`,
+      `${api}/api/v1/admin/yearstrategic?page=${page}&per_page=${per_page}`,
       {
         year_id,
       },
@@ -496,6 +498,59 @@ export async function DeleteActivityDetail(token, id_activitydetail) {
     throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
   }
 }
+
+
+export async function GetDataactionplanByYear(token,id_year, page = 1, per_page = 10) {
+  //   console.log(id_actionplan);
+  try {
+    console.log("token : ", token);
+    const response = await axios.post(
+      `${api}/api/v1/admin/actionplanallbyidyear?page=${page}&per_page=${per_page}`,
+      { id_year },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // const json = await response.json();
+    console.log("data : ", response.data?.data);
+    return response.data?.data ?? [];
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    // Swal.fire("Error", "ไม่สามารถดึงข้อมูลได้", "error");
+    throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
+  }
+}
+
+export async function GetDataprojectByYear(token,id_year, page = 1, per_page = 10) {
+  //   console.log(id_actionplan);
+  try {
+    console.log("token : ", page);
+    const response = await axios.post(
+      `${api}/api/v1/admin/projectallbyidyear?page=${page}&per_page=${per_page}`,
+      { id_year },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // const json = await response.json();
+    console.log("data : ", response.data?.data);
+    return response.data?.data ?? [];
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    // Swal.fire("Error", "ไม่สามารถดึงข้อมูลได้", "error");
+    throw error; // ส่ง Error ออกไปให้จัดการในที่เรียกใช้
+  }
+}
+
+
 
 export async function GetLogin(email, password) {
   // console.log(id_strategic.data)

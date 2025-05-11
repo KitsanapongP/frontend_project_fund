@@ -1,6 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Anuphan } from "next/font/google";
+import 'flowbite';
+import 'flowbite/dist/flowbite.css';
 
 const anuphan = Anuphan({
   subsets: ["thai"],

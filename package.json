@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-build-classic": "^41.4.2",
+    "@ckeditor/ckeditor5-list": "^45.0.0",
+    "@ckeditor/ckeditor5-react": "^9.5.0",
     "aos": "^2.3.4",
     "axios": "^1.8.4",
     "bootstrap": "^5.3.3",
@@ -18,11 +21,12 @@
     "datatables.net-react": "^1.0.0",
     "docx": "^9.3.0",
     "file-saver": "^2.0.5",
+    "flowbite": "^3.1.2",
     "jquery": "^3.7.1",
     "js-cookie": "^3.0.5",
     "jspdf": "^3.0.1",
     "lucide-react": "^0.484.0",
-    "next": "15.2.3",
+    "next": "^15.3.2",
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",
     "react-data-table-component": "^7.7.0",

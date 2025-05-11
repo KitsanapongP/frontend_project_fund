@@ -28,11 +28,11 @@ export default function addProject() {
       <div className="">
         <Header />
         <hr />
-        <div className="grid grid-cols-10 gap-4 w-full min-h-screen mt-20">
-          <div className="bg-gray-100 col-span-2 xl:col-span-2 hidden md:block md:col-span-2 pt-4 ps-3">
+        <div className="grid grid-cols-12  gap-0 w-full min-h-screen mt-20">
+          <div className="bg-gray-100  xl:col-span-2 hidden md:block md:col-span-3 pt-4 ps-3">
             <Menu />
           </div>
-          <div className="col-span-10 xl:col-span-8  md:col-span-8  mt-5 md:mt-3 ms-8 md:ms-0 me-8">
+          <div className="col-span-12 xl:col-span-10  md:col-span-9 mt-5 ms-4 md:mt-3 me-4 md:me-6">
             <div className="flex flex-row items-center justify-between">
               <div className="text-lg md:text-2xl">
                 รายละเอียดกิจกรรมตามแผนปฏิบัติการ

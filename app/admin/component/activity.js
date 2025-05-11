@@ -337,7 +337,7 @@ export default function DatatableActivity({ id_projectref, val }) {
         </div>
       ) : (
         <div>
-          <div className="me-4">
+          <div className="">
             <input
               type="text"
               className="form-control my-3  p-2  w-full  border border-gray-300 rounded-md"
@@ -347,7 +347,7 @@ export default function DatatableActivity({ id_projectref, val }) {
             />
           </div>
           <div
-            className="bg-white shadow-xl rounded-md border border-gray-200 me-4 mt-4 flex flex-col"
+            className="bg-white shadow-xl rounded-md border border-gray-200 mt-4 flex flex-col"
             style={{ height: "90vh" }}
           >
             <DataTable

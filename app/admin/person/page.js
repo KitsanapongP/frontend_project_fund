@@ -1,12 +1,21 @@
 "use client";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, use, useEffect } from "react";
 import Link from "next/link";
+import Menu from "../component/nav_admin";
 import Cookies from "js-cookie";
-import Menu from "../component/nav";
 import Header from "../component/header";
-import { GetDatayear } from "../../fetch_api/fetch_api_user";
-import DatatableProject from "../component/project";
+import { useSearchParams } from "next/navigation";
+import {
+  LayoutDashboard,
+  BookOpen,
+  ChevronDown,
+  Grid,
+  Settings,
+  User,
+} from "lucide-react";
+import { GetDatayear } from "../../fetch_api/fetch_api_admin";
+import DatatableActionplan from "../componentTable/actionplan";
 
 export default function HomeStrategic() {
   const [yearOptions, setyearOptions] = useState([
@@ -68,7 +77,7 @@ export default function HomeStrategic() {
             <div className="flex flex-row items-center justify-between">
               <div className="flex flex-row items-center">
                 <div className="text-lg md:text-2xl me-3 ms-4">
-                  โครงการภายใต้การดูแล
+                    พนักงานทั้งหมด
                 </div>
                 <select
                   id="year"
@@ -105,7 +114,7 @@ export default function HomeStrategic() {
             </div>
             <div>
               {Year.year_id !== null && (
-                <DatatableProject year_id={Year.year_id} />
+                <DatatableActionplan year_id={Year.year_id} />
               )}
               {/* <DatatableProject /> */}
             </div>

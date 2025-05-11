@@ -2,9 +2,9 @@
 import { useEffect, useState, useCallback } from "react";
 import DataTable from "react-data-table-component";
 import {
-  GetDataactionplanByYear,
-  UpdatestatusActionplan,
-  DeleteActionplan,
+  GetDataprojectByYear,
+  UpdatestatusProject,
+  DeleteProject,
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
@@ -24,7 +24,7 @@ export default function DatatableActionplan({ year_id }) {
 
     const result = await Swal.fire({
       title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการคุณต้องการลบ "${row.name_ap}" หรือไม่
+      text: `คุณต้องการคุณต้องการลบ "${row.project_name}" หรือไม่
         `,
       icon: "warning",
       showCancelButton: true,
@@ -37,16 +37,16 @@ export default function DatatableActionplan({ year_id }) {
     if (result.isConfirmed) {
       try {
         const token = Cookies.get("token");
-        const response = await DeleteActionplan(token, row.action_plan_id);
+        const response = await DeleteProject(token, row.project_id);
         // if(response)
         console.log(response);
         if (response) {
           // setData((prevData) =>
-          //   prevData.filter((item) => item.strategic_id !== row.strategic_id)
+          //   prevData.filter((item) => item.project_id !== row.project_id)
           // );
           console.log("การลบสำเร็จ");
           setData((prevData) =>
-            prevData.filter((item) => item.action_plan_id != row.action_plan_id)
+            prevData.filter((item) => item.project_id != row.project_id)
           );
           // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
           Swal.fire({
@@ -90,13 +90,13 @@ export default function DatatableActionplan({ year_id }) {
     // },
     {
       name: "ยุทธศาสตร์",
-      selector: (row) => row.strategic.strategic_number,
+      selector: (row) => row.project_number,
       sortable: true,
       width: "120px",
     },
     {
       name: "ชื่อ",
-      selector: (row) => row.name_ap,
+      selector: (row) => row.project_name,
       sortable: true,
       wrap: true,
       width: "250px",
@@ -190,9 +190,9 @@ export default function DatatableActionplan({ year_id }) {
                 sessionStorage.setItem(
                   "actionplan_data",
                   JSON.stringify({
-                    id: row.action_plan_id,
+                    id: row.project_id,
                     // id_actionplan: row.action_plan_number,
-                    name: row.name_ap,
+                    name: row.project_name,
                     budget: row.budget,
                     Balance: row.budget - row.spend_money,
                   })
@@ -213,14 +213,14 @@ export default function DatatableActionplan({ year_id }) {
                 sessionStorage.setItem(
                   "strategic_data",
                   JSON.stringify({
-                    id: row.strategic_id,
+                    id: row.project_id,
                     name: row.strategic_name,
                     budget: row.budget,
                   })
                 );
 
                 // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${row.strategic_number}`;
+                window.location.href = `/admin/strategic/${row.project_number}`;
               }}
             >
               <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
@@ -247,7 +247,7 @@ export default function DatatableActionplan({ year_id }) {
       const spendMoney = Number(data.spend_money);
       const remainingBudget = budget - spendMoney; // คำนวณเหมือนใน cell
 
-      return `${data.name_ap} ${data.strategic_number} ${budget} ${spendMoney} ${remainingBudget}`
+      return `${data.project_name} ${data.project_number} ${budget} ${spendMoney} ${remainingBudget}`
         .toLowerCase()
         .includes(SearchTerm.toLowerCase());
     });
@@ -261,7 +261,7 @@ export default function DatatableActionplan({ year_id }) {
     const result = await Swal.fire({
       title: "คุณแน่ใจหรือไม่ ?",
       text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
-        สำหรับ  "${row.name_ap}" หรือไม่
+        สำหรับ  "${row.project_name}" หรือไม่
         `,
       icon: "warning",
       showCancelButton: true,
@@ -274,17 +274,14 @@ export default function DatatableActionplan({ year_id }) {
     if (result.isConfirmed) {
       try {
         const token = Cookies.get("token");
-        const response = await UpdatestatusActionplan(
-          token,
-          row.action_plan_id
-        );
+        const response = await UpdatestatusProject(token, row.project_id);
         // if(response)
         console.log(response);
         if (response) {
           console.log("การอัปเดตสถานะสำเร็จ");
           setData((prevData) =>
             prevData.map((item) =>
-              item.action_plan_id === row.action_plan_id
+              item.project_id === row.project_id
                 ? { ...item, status: newStatus }
                 : item
             )
@@ -292,7 +289,7 @@ export default function DatatableActionplan({ year_id }) {
           // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
           Swal.fire({
             title: "อัปเดตข้อมูลสำเร็จ",
-            // text: ` ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"} ${row.name_ap}`,
+            // text: ` ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"} ${row.project_name}`,
             text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
             icon: "success",
             confirmButtonText: "ตกลง",
@@ -338,15 +335,11 @@ export default function DatatableActionplan({ year_id }) {
       try {
         setLoading(true);
         const token = Cookies.get("token");
-        const res = await GetDataactionplanByYear(
-          token,
-          year_id,
-          page,
-          perPage
-        );
+        const res = await GetDataprojectByYear(token, year_id, page, perPage);
         setData(res.data);
         setSecrchData(res.data);
         setTotalRows(res.total);
+        
         console.log(res);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -367,16 +360,17 @@ export default function DatatableActionplan({ year_id }) {
     }
   }, [fetchData, hasMounted, page, perPage]);
 
+  // Fixed handlePageChange function
   const handlePageChange = (newPage) => {
-    console.log(newPage);
     setPage(newPage);
   };
 
-  // ฟังก์ชันจัดการการเปลี่ยนจำนวนแถวต่อหน้า
+  // Fixed handlePerRowsChange function
   const handlePerRowsChange = (newPerPage, newPage) => {
     setPerPage(newPerPage);
     setPage(newPage);
   };
+  
   return (
     <div className="w-full">
       {loading ? (
@@ -401,7 +395,7 @@ export default function DatatableActionplan({ year_id }) {
             className="bg-white rounded-md border
         border-gray-200 shadow-xl mt-3 
         "
-            style={{ height: "90vh", display: "flex", flexDirection: "column" }}
+            style={{ display: "flex", flexDirection: "column" }}
           >
             <DataTable
               columns={columns}

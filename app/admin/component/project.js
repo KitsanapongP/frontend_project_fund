@@ -328,7 +328,7 @@ export default function DatatableProject({ id_action, val }) {
           ยังไม่มีข้อมูล
         </div>
       ) : (
-        <div>
+        <div className="">
           <input
             type="text"
             className="form-control my-3  p-2  w-full  border border-gray-300 rounded-md"
@@ -338,7 +338,7 @@ export default function DatatableProject({ id_action, val }) {
           />
           <div
             className="bg-white rounded-md border border-gray-200
-         shadow-xl me-4 mt-3 flex flex-col"
+ mt-3 flex flex-col"
             style={{
               height: "90vh",
             }}

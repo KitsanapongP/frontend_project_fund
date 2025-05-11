@@ -42,13 +42,13 @@ export default function Menu() {
             className="flex items-center justify-between  mb-2.5 cursor-pointer hover:text-blue-600"
             onClick={() => setOpen(!open)}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center  gap-2">
               <BookOpen size={20} />
               <span>แผนยุทธศาสตร์</span>
             </div>
             <ChevronDown
               size={16}
-              className={`transition-transform duration-500 ms-16 md:ms-4 xl:ms-24 ${
+              className={`transition-transform duration-500 ms-16 md:ms-4 xl:ms-12 ${
                 open ? "rotate-180" : ""
               }`}
             />
@@ -65,14 +65,14 @@ export default function Menu() {
                 </Link> */}
               <Link
                 href="/user/project"
-                className="flex items-center gap-2   mb-2.5"
+                className="flex items-center gap-2  cursor-pointer  mb-2.5 hover:text-blue-500"
               >
                 <Settings size={16} />
                 <span>โครงการ</span>
               </Link>
               <Link
                 href="/user/activity"
-                className="flex items-center gap-2   mb-2.5"
+                className="flex items-center gap-2 cursor-pointer  hover:text-blue-500 mb-2.5"
               >
                 <Settings size={16} />
                 <span>กิจกรรม</span>

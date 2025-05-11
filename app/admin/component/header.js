@@ -29,7 +29,7 @@ export default function Header() {
           </div>
 
           <div className="flex flex-row items-center">
-            <div className="hidden md:block md:me-8">{fullname}</div>
+            <div className="hidden md:block md:me-6">{fullname}</div>
             <button
               type="button"
               data-collapse-toggle="navbar-default"

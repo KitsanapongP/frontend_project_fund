@@ -60,11 +60,11 @@ export default function HomeActivity() {
       <div className="">
         <Header />
         <hr />
-        <div className="grid grid-cols-9 gap-4 w-full min-h-screen mt-20">
-          <div className="bg-gray-100 col-span-2 xl:col-span-2 hidden md:block md:col-span-2 pt-4 ps-3">
+        <div className="grid grid-cols-12  gap-0 w-full min-h-screen mt-20">
+          <div className="bg-gray-100  xl:col-span-2 hidden md:block md:col-span-3 pt-4 ps-3">
             <Menu />
           </div>
-          <div className="col-span-9 xl:col-span-7  md:col-span-7  mt-5 md:mt-3 ">
+          <div className="col-span-12 xl:col-span-10  md:col-span-9 mt-5 ms-4 md:mt-3 me-4 md:me-6">
             <div className="flex flex-row items-center justify-between">
               <div className="flex flex-row items-center">
                 <div className="text-lg md:text-2xl me-3 ms-4">
@@ -80,16 +80,20 @@ export default function HomeActivity() {
                       year_id: e.target.value,
                     });
                   }}
-                  className="block rounded-md px-6 p-2 bg-gray-100 border-black shadow-sm hover:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                  className="block rounded-md px-4 py-2 bg-gray-100 border border-gray-300 shadow-sm hover:border-blue-500 focus:outline-none focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200"
+                  style={{
+                    appearance: "none",
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 0.75rem center",
+                    backgroundSize: "0.75em",
+                    paddingRight: "3rem",
+                  }}
                 >
-                  {/* <option value="">กรุณาเลือกปี</option> */}
                   {yearOptions.map((data, index) => (
                     <option key={index} value={data.year_id}>
                       {data.year}
                     </option>
                   ))}
-                  {/* <option value="2567">2567</option>
-                <option value="2566">2566</option> */}
                 </select>
               </div>
               <a
