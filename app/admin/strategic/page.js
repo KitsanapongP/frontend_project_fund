@@ -34,8 +34,38 @@ export default function HomeStrategic() {
     });
   }, []);
 
+  const [type, settype] = useState(null);
+  const [data, setdata] = useState({
+    name: null,
+    number: null,
+    budget: null,
+    id_year: null,
+  });
+  const [totalRows, setTotalRows] = useState(0);
   const toggleModalAdd = () => {
+    settype(1);
+    setdata((prev) => ({
+      ...prev,
+      name: "",
+      number: "S" + (totalRows + 1),
+      budget: null,
+      id_year: Year.year_id,
+    }));
     setIsOpenModalAdd(!isOpenModalAdd); // เปลี่ยนสถานะของ modal
+  };
+
+  const toggleModalEdit = (newname, id, number, budget, id_year) => {
+    settype(2);
+    console.log(newname);
+    setdata((prev) => ({
+      ...prev,
+      strategic_id: id,
+      name: newname,
+      number: number,
+      budget: budget,
+      id_year: id_year,
+    }));
+    toggleModalAddNew();
   };
 
   const toggleModalAddNew = () => {
@@ -73,23 +103,6 @@ export default function HomeStrategic() {
     // console.log("ชื่อยุทธศาสตร์ที่เลือก:", newStrategicName); // ทำการจัดการข้อมูลที่ได้รับ
   };
 
-  const columns = [
-    {
-      name: "ชื่อ",
-      selector: (row) => row.name,
-      sortable: true,
-    },
-    {
-      name: "ตำแหน่ง",
-      selector: (row) => row.role,
-    },
-  ];
-
-  const data = [
-    { id: 1, name: "สมชาย", role: "ผู้ดูแล" },
-    { id: 2, name: "วิรัตน์", role: "เจ้าหน้าที่" },
-  ];
-
   useEffect(() => {
     async function fetchData() {
       try {
@@ -125,9 +138,9 @@ export default function HomeStrategic() {
             <Menu />
           </div>
           <div className="col-span-12 xl:col-span-10  md:col-span-9 mt-5 ms-4 md:mt-3 me-4 md:me-6">
-            <div className="flex flex-row justify-between flex-wrap mb-4 ">
-              <div className="flex flex-row items-center mb-2 md:mb-0">
-                <div className="text-lg md:text-2xl me-3">
+            <div className="flex flex-row justify-between items-center mb-4 flex-wrap md:flex-nowrap gap-4">
+              <div className="flex flex-row items-center gap-3">
+                <div className="text-lg md:text-2xl">
                   จัดการยุทธศาสตร์ประจำปี พ.ศ.
                 </div>
                 <select
@@ -135,10 +148,7 @@ export default function HomeStrategic() {
                   name="year"
                   value={Year.year_id ?? ""}
                   onChange={(e) => {
-                    setYear({
-                      ...Year,
-                      year_id: e.target.value,
-                    });
+                    setYear({ ...Year, year_id: e.target.value });
                   }}
                   className="block rounded-md px-4 py-2 bg-gray-100 border border-gray-300 shadow-sm hover:border-blue-500 focus:outline-none focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200"
                   style={{
@@ -156,20 +166,23 @@ export default function HomeStrategic() {
                   ))}
                 </select>
               </div>
-              <div className="flex flex-row items-center gap-3 ">
-                <button
-                  data-modal-target="popup-modal"
-                  data-modal-toggle="popup-modal"
-                  onClick={toggleModalAdd}
-                  className="w-20 me-2  justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
-                >
-                  เพิ่มข้อมูล
-                </button>
-              </div>
+
+              <button
+                data-modal-target="popup-modal"
+                data-modal-toggle="popup-modal"
+                onClick={toggleModalAdd}
+                className="w-24 py-2 px-3 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
+              >
+                เพิ่มข้อมูล
+              </button>
             </div>
             <div>
               {Year.year_id !== null && (
-                <DatatableStrig year_id={Year.year_id} />
+                <DatatableStrig
+                  year_id={Year.year_id}
+                  onTotalChange={setTotalRows}
+                  onEdit={toggleModalEdit}
+                />
               )}{" "}
             </div>
           </div>
@@ -180,12 +193,16 @@ export default function HomeStrategic() {
         onClose={() => setIsOpenModalAdd(false)}
         onSelect={handleModalSelect}
       />
-
-      <ModalAddStrategicNew
-        isOpen={isOpenModalAddNew}
-        onStrategicNameChange={handleStrategicNameChange}
-        onClose={() => setIsOpenModalAddNew(false)}
-      />
+      {yearOptions && (
+        <ModalAddStrategicNew
+          isOpen={isOpenModalAddNew}
+          yearall={yearOptions}
+          type={type}
+          data={data}
+          onStrategicNameChange={handleStrategicNameChange}
+          onClose={() => setIsOpenModalAddNew(false)}
+        />
+      )}
     </>
   );
 }

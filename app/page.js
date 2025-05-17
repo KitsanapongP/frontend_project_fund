@@ -8,6 +8,8 @@ import { GetLogin } from "./fetch_api/fetch_api_admin";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Cookies from "js-cookie";
 import Swal from "sweetalert2";
+
+
 export default function Home() {
   const [email, setemail] = useState("");
   const [password, setpassword] = useState("");
@@ -16,14 +18,14 @@ export default function Home() {
     try {
       console.log("email : ", email);
       console.log("password : ", password);
-      if(!email || !password){
+      if (!email || !password) {
         Swal.fire({
           title: "กรุณากรอกข้อมูลให้ครบถ้วน",
           text: "กรุณาลองใหม่อีกครั้ง",
           icon: "error",
           confirmButtonText: "ตกลง",
-        })
-        return
+        });
+        return;
       }
       const res = await GetLogin(email, password);
       // console.log(res);
@@ -40,32 +42,36 @@ export default function Home() {
           icon: "success",
           confirmButtonText: "ตกลง",
         }).then(() => {
-          if(res.role == 0){
+          if (res.role == 0) {
             window.location.href = "/admin";
-          }else{
+          } else {
             window.location.href = "/user";
           }
-
         });
-      }else{
+      } else {
         Swal.fire({
           title: "ข้อมูลไม่ถูกต้อง",
           text: "กรุณาลองใหม่อีกครั้ง",
           icon: "error",
           confirmButtonText: "ตกลง",
-        })
+        });
       }
     } catch (err) {
-      console.log(err);
+      Swal.fire({
+        title: "ข้อมูลไม่ถูกต้อง",
+        text: "กรุณาลองใหม่อีกครั้ง",
+        icon: "error",
+        confirmButtonText: "ตกลง",
+      });
     }
   };
   useEffect(() => {
     const token = Cookies.get("token");
     // console.log("token : ", token);
-    if(token){
+    if (token) {
       window.location.href = "/admin/strategic";
     }
-  },[]);
+  }, []);
   return (
     <>
       <div className="flex justify-center items-center min-h-screen bg-gray-300  ">

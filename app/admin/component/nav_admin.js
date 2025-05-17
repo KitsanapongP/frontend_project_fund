@@ -7,12 +7,30 @@ import {
   User,
   LogOut,
 } from "lucide-react";
+
+import {
+  FaBookOpen,
+  FaRegClipboard,
+  FaProjectDiagram,
+  FaTasks,
+  FaRegCalendarCheck,
+  FaDatabase,
+  FaBuilding,
+  FaShapes,
+  FaBalanceScale,
+  FaUserTag,
+  FaUserCircle,
+  FaChartLine,
+  FaRegCalendarAlt
+} from "react-icons/fa";
+
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import Aos from "aos";
 import Cookies from "js-cookie";
 import "aos/dist/aos.css";
 import { usePathname } from "next/navigation";
+import Swal from "sweetalert2";
 export default function Menu() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -24,11 +42,24 @@ export default function Menu() {
     });
   }, []);
   const handleLogout = () => {
-    Cookies.remove("token"); // แค่นี้พอ ไม่ต้องส่งค่าอื่น
-    Cookies.remove("fullname");
-    Cookies.remove("id");
-    window.location.href = "/"; // เปลี่ยนหน้า หรือ redirect ออกหลัง logout
+    Swal.fire({
+      title: "คุณต้องการออกจากระบบหรือไม่ ?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "ใช่, ออกจากระบบ",
+      cancelButtonText: "ยกเลิก",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Cookies.remove("token");
+        Cookies.remove("fullname");
+        Cookies.remove("id");
+        window.location.href = "/";
+      }
+    });
   };
+
   // const isActive = location.pathname.startsWith("/admin");
 
   const activePaths = [
@@ -36,6 +67,13 @@ export default function Menu() {
     "/admin/actionplan",
     "/admin/project",
     "/admin/activity",
+  ];
+
+  const activemanagePaths = [
+    "/admin/manage/deparment",
+    "/admin/manage/type",
+    "/admin/manage/principle",
+    "/admin/manage/position",
   ];
   return (
     <>
@@ -62,12 +100,12 @@ export default function Menu() {
             onClick={() => setOpen(!open)}
           >
             <div className="flex items-center gap-2">
-              <BookOpen size={20} />
+              <FaBookOpen size={20} />
               <span className="text-md">แผนยุทธศาสตร์</span>
             </div>
             <ChevronDown
               size={16}
-              className={`transition-transform duration-500 ms-16 md:ms-12 ${
+              className={`transition-transform duration-500 ms-16 md:ms-8 2xl:ms-22.5 ${
                 open ? "rotate-180" : ""
               }`}
             />
@@ -92,7 +130,7 @@ export default function Menu() {
                   }
                   `}
               >
-                <Settings size={16} />
+                <FaRegClipboard size={16} />
                 <span className="text-sm">แผนยุทธศาสตร์</span>
               </Link>
               <Link
@@ -105,7 +143,7 @@ export default function Menu() {
                   }
                   `}
               >
-                <Settings size={16} />
+                <FaProjectDiagram size={16} />
                 <span className="text-sm">แผนกลยุทธ์</span>
               </Link>
               <Link
@@ -118,7 +156,7 @@ export default function Menu() {
                   }
                   `}
               >
-                <Settings size={16} />
+                <FaTasks size={16} />
                 <span className="text-sm">โครงการ</span>
               </Link>
               <Link
@@ -131,7 +169,7 @@ export default function Menu() {
                   }
                   `}
               >
-                <Settings size={16} />
+                <FaRegCalendarCheck size={16} />
                 <span className="text-sm">กิจกรรม</span>
               </Link>
             </div>
@@ -141,19 +179,19 @@ export default function Menu() {
         <div>
           <div
             className={`flex items-center gap-2 mb-2.5 ${
-              activePaths.some((path) => pathname.startsWith(path))
+              activemanagePaths.some((path) => pathname.startsWith(path))
                 ? "text-blue-500 font-semibold"
                 : "text-gray-700"
             }`}
             onClick={() => setOpendata(!opendata)}
           >
             <div className="flex items-center gap-2">
-              <BookOpen size={20} />
+              <FaDatabase size={20} />
               <span className="text-md">จัดการข้อมูล</span>
             </div>
             <ChevronDown
               size={16}
-              className={`transition-transform duration-500 ms-16 md:ms-18 ${
+              className={`transition-transform duration-500 ms-16 md:ms-15 2xl:ms-28 ${
                 opendata ? "rotate-180" : ""
               }`}
             />
@@ -167,71 +205,85 @@ export default function Menu() {
               >
                 <Grid size={16} />
                 <span>ภาพรวมระบบ</span>
+                
               </Link> */}
               <Link
-                href="/admin/strategic"
+                href="/admin/manage/year"
                 className={`flex items-center gap-2   mb-2.5 
                   ${
-                    pathname.startsWith("/admin/strategic")
+                    pathname.startsWith("/admin/manage/year")
                       ? "text-blue-500 font-semibold"
                       : "text-gray-700"
                   }
                   `}
               >
-                <Settings size={16} />
-                <span  className="text-sm">หน่วยงาน</span>
+                <FaRegCalendarAlt size={16} />
+                <span className="text-sm">ปีงบประมาณ</span>
               </Link>
               <Link
-                href="/admin/actionplan"
+                href="/admin/manage/deparment"
                 className={`flex items-center gap-2   mb-2.5 
                   ${
-                    pathname.startsWith("/admin/actionplan")
+                    pathname.startsWith("/admin/manage/deparment")
                       ? "text-blue-500 font-semibold"
                       : "text-gray-700"
                   }
                   `}
               >
-                <Settings size={16} />
+                <FaBuilding size={16} />
+                <span className="text-sm">หน่วยงาน</span>
+              </Link>
+              <Link
+                href="/admin/manage/type"
+                className={`flex items-center gap-2   mb-2.5 
+                  ${
+                    pathname.startsWith("/admin/manage/type")
+                      ? "text-blue-500 font-semibold"
+                      : "text-gray-700"
+                  }
+                  `}
+              >
+                <FaShapes size={16} />
                 <span className="text-sm">ลักษณะโครงการ </span>
               </Link>
               <Link
-                href="/admin/project"
+                href="/admin/manage/principles"
                 className={`flex items-center gap-2   mb-2.5 
                   ${
-                    pathname === "/admin/project"
+                    pathname === "/admin/manage/principles"
                       ? "text-blue-500 font-semibold"
                       : "text-gray-700"
                   }
                   `}
               >
-                <Settings size={16} />
+                <FaBalanceScale size={16} />
                 <span className="text-sm">หลักธรรมาภิบาล</span>
               </Link>
               <Link
-                href="/admin/activity"
+                href="/admin/manage/position"
                 className={`flex items-center gap-2   mb-2.5 
                   ${
-                    pathname === "/admin/activity"
+                    pathname === "/admin/manage/position"
                       ? "text-blue-500 font-semibold"
                       : "text-gray-700"
                   }
                   `}
               >
-                <Settings size={16} />
-                <span className="text-sm">กิจกรรม</span>
+                <FaUserTag size={16} />
+                <span className="text-sm">ตำแหน่ง</span>
               </Link>
             </div>
           )}
         </div>
         <Link
-          href="/admin/person"
+          href="/admin/okr"
           className={`flex items-center gap-2 mb-2.5 hover:text-blue-500 ${
-            pathname === "/admin/person"
+            pathname === "/admin/okr"
               ? "text-blue-500 font-semibold"
               : "text-gray-700"
           }`}
         >
-          <User size={20} />
+          <FaChartLine size={20} />
           <span className="text-md">OKR</span>
         </Link>
 

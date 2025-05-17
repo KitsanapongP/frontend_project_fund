@@ -27,7 +27,7 @@ export default function HomeProject({ params }) {
 
   const [isOpenModalAdd, setIsOpenModalAdd] = useState(false);
   const [isOpenModalAddNew, setIsOpenModalAddNew] = useState(false);
-
+  const [totalRows, setTotalRows] = useState(0);
   useEffect(() => {
     const data = sessionStorage.getItem("actionplan_data");
     if (!data) {
@@ -51,7 +51,6 @@ export default function HomeProject({ params }) {
     setIsOpenModalAdd(!isOpenModalAdd); // เปลี่ยนสถานะของ modal
   };
 
- 
   useEffect(() => {
     // กด esc แล้วปืด
     console.log(isOpenModalAddNew);
@@ -60,7 +59,6 @@ export default function HomeProject({ params }) {
         if (isOpenModalAdd) {
           toggleModalAdd(); // ปิด Modal ถ้าเปิดอยู่
         }
-        
       }
     };
     // handleKeyDown คือฟังก์ชันที่ฟัง event การกดปุ่มบนคีย์บอร์ด (เช่น Escape)
@@ -193,9 +191,22 @@ export default function HomeProject({ params }) {
                   })}{" "}
                   บาท
                 </div>
+              </div>
+              <div className="flex justify-between ">
+                <div className="text-lg md:text-2xl   ">
+                  {" "}
+                  คงเหลือ{" "}
+                  {Number(Project.Balance).toLocaleString("th-TH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  บาท
+                </div>
                 <button
+                  data-modal-target="popup-modal"
+                  data-modal-toggle="popup-modal"
                   onClick={toggleModalAdd}
-                  className="w-20 justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
+                  className="w-22 justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
                 >
                   เพิ่มข้อมูล
                 </button>
@@ -206,6 +217,7 @@ export default function HomeProject({ params }) {
                 <DatatableProject
                   id_action={Project.id}
                   val={{ id_strategic, id_actionplan }}
+                  onTotalChange={setTotalRows}
                 />
               )}
             </div>

@@ -2,9 +2,9 @@
 import { useEffect, useState, useCallback } from "react";
 import DataTable from "react-data-table-component";
 import {
-  GetDataactionplanByidstrategic,
-  UpdatestatusActionplan,
-  DeleteActionplan,
+  GetDataprincipleall,
+  UpdatestatusPrinciple,
+  DeleteActivity,
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
@@ -12,20 +12,19 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import Swal from "sweetalert2";
-export default function DatatableActionplan({
-  number_strategic,
-  strategic_id,
-  onTotalChange,
-  onEdit,
-}) {
+export default function DatatablePrinciple({ onEdit }) {
   const [data, setData] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [SecrchData, setSecrchData] = useState([]);
+  const [SearchTerm, setSearchTerm] = useState("");
 
   const handleDelete = async (row) => {
     // const newStatus = row.status === 1 ? 0 : 1;
 
     const result = await Swal.fire({
       title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการคุณต้องการลบ "${row.name_ap}" หรือไม่
+      text: `คุณต้องการคุณต้องการลบ "${row.principle_name}" หรือไม่
         `,
       icon: "warning",
       showCancelButton: true,
@@ -38,16 +37,16 @@ export default function DatatableActionplan({
     if (result.isConfirmed) {
       try {
         const token = Cookies.get("token");
-        const response = await DeleteActionplan(token, row.action_plan_id);
+        const response = await DeleteActivity(token, row.principle_id);
         // if(response)
         console.log(response);
         if (response) {
           // setData((prevData) =>
-          //   prevData.filter((item) => item.strategic_id !== row.strategic_id)
+          //   prevData.filter((item) => item.principle_id !== row.principle_id)
           // );
           console.log("การลบสำเร็จ");
           setData((prevData) =>
-            prevData.filter((item) => item.action_plan_id != row.action_plan_id)
+            prevData.filter((item) => item.principle_id != row.principle_id)
           );
           // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
           Swal.fire({
@@ -78,59 +77,24 @@ export default function DatatableActionplan({
 
   const columns = [
     {
-      name: "รหัส",
-      selector: (row) => row.action_plan_number,
+      name: "ลำดับ",
+      selector: (row, index) => (page - 1) * perPage + index + 1,
       sortable: true,
       width: "90px",
     },
+    // {
+    //   name: "กลยุทธ์",
+    //   selector: (row) => row.action_plan_number,
+    //   sortable: true,
+    //   width: "120px",
+    // },
+
     {
       name: "ชื่อ",
-      selector: (row) => row.name_ap,
+      selector: (row) => row.principle_name,
       sortable: true,
       wrap: true,
-      width: "250px",
-    },
-    {
-      name: "โครงการ",
-      selector: (row) => row.projects_count,
-      sortable: true,
-      center: "true",
-      width: "140px",
-    },
-    {
-      name: "งบประมาณ (บาท)",
-      // selector: (row) => row.budget,
-      sortable: true,
-      wrap: true,
-      right: "true",
-      width: "160px",
-      cell: (row) =>
-        `${Number(row.budget).toLocaleString("th-TH", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })} `,
-    },
-    {
-      name: "ใช้ไป (บาท)",
-      sortable: true,
-      right: "true",
-      width: "160px",
-      cell: (row) =>
-        `${Number(row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })} `,
-    },
-    {
-      name: "คงเหลือ (บาท)",
-      sortable: true,
-      right: "true",
-      width: "160px",
-      cell: (row) =>
-        `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })} `,
+      width: "350px",
     },
     {
       name: "สถานะ",
@@ -172,7 +136,7 @@ export default function DatatableActionplan({
           />
         </div>
       ),
-      ignoreRowClick: true,
+      //   ignoreRowClick: true,
     },
     {
       name: "จัดการ",
@@ -181,40 +145,9 @@ export default function DatatableActionplan({
         <>
           <div style={{ padding: "5px" }}>
             <button
-              className="rounded border-gray-200 p-2 hover:bg-gray-100 group "
-              onClick={() => {
-                // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
-                sessionStorage.setItem(
-                  "actionplan_data",
-                  JSON.stringify({
-                    id: row.action_plan_id,
-                    // id_actionplan: row.action_plan_number,
-                    name: row.name_ap,
-                    budget: row.budget,
-                    Balance: row.budget - row.spend_money,
-                  })
-                );
-
-                // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${number_strategic}/${row.action_plan_number}`;
-              }}
-            >
-              <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
-            </button>
-          </div>
-          <div style={{ padding: "5px" }}>
-            <button
               className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
               onClick={() => {
-                // newname, id, number, budget, id_year
-                onEdit(
-                  row.action_plan_id,
-                  row.name_ap,
-                  row.action_plan_number,
-                  row.budget,
-                  row.id_year,
-                  row.id_strategic,
-                );
+                onEdit(row.principle_name, row.principle_id);
               }}
             >
               <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
@@ -231,68 +164,17 @@ export default function DatatableActionplan({
           </div>
         </>
       ),
-      ignoreRowClick: true,
+      //   ignoreRowClick: true,
     },
   ];
-  const [loading, setLoading] = useState(true);
-  const [SecrchData, setSecrchData] = useState([]);
-  const [SearchTerm, setSearchTerm] = useState("");
-  const [totalRows, setTotalRows] = useState(0);
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10); // default เป็น 10
-  const [hasMounted, setHasMounted] = useState(false);
 
-  const fetchData = useCallback(async (page = 1, perPage = 10) => {
-    try {
-      setLoading(true);
-      const token = Cookies.get("token");
-      const res = await GetDataactionplanByidstrategic(
-        token,
-        strategic_id,
-        page,
-        perPage
-      );
-      setData(res.data);
-      setSecrchData(res.data);
-      setTotalRows(res.total);
-      if (onTotalChange) {
-        onTotalChange(res.total);
-      }
-
-      // console.log(res);
-    } catch (err) {
-      console.error("Error loading data:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (hasMounted) {
-      fetchData(page, perPage);
-    }
-  }, [fetchData, hasMounted, page, perPage]);
-
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-  };
-
-  // Fixed handlePerRowsChange function
-  const handlePerRowsChange = (newPerPage, newPage) => {
-    setPerPage(newPerPage);
-    setPage(newPage);
-  };
   useEffect(() => {
     const filtered = data.filter((data) => {
       const budget = Number(data.budget);
       const spendMoney = Number(data.spend_money);
       const remainingBudget = budget - spendMoney; // คำนวณเหมือนใน cell
 
-      return `${data.name_ap} ${data.strategic_number} ${budget} ${spendMoney} ${remainingBudget}`
+      return `${data.principle_name} ${data.project_number} ${budget} ${spendMoney} ${remainingBudget}`
         .toLowerCase()
         .includes(SearchTerm.toLowerCase());
     });
@@ -306,7 +188,7 @@ export default function DatatableActionplan({
     const result = await Swal.fire({
       title: "คุณแน่ใจหรือไม่ ?",
       text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
-        สำหรับ  "${row.name_ap}" หรือไม่
+        สำหรับ  "${row.principle_name}" หรือไม่
         `,
       icon: "warning",
       showCancelButton: true,
@@ -319,17 +201,14 @@ export default function DatatableActionplan({
     if (result.isConfirmed) {
       try {
         const token = Cookies.get("token");
-        const response = await UpdatestatusActionplan(
-          token,
-          row.action_plan_id
-        );
+        const response = await UpdatestatusPrinciple(token, row.principle_id);
         // if(response)
         console.log(response);
         if (response) {
           console.log("การอัปเดตสถานะสำเร็จ");
           setData((prevData) =>
             prevData.map((item) =>
-              item.action_plan_id === row.action_plan_id
+              item.principle_id === row.principle_id
                 ? { ...item, status: newStatus }
                 : item
             )
@@ -337,7 +216,7 @@ export default function DatatableActionplan({
           // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
           Swal.fire({
             title: "อัปเดตข้อมูลสำเร็จ",
-            // text: ` ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"} ${row.name_ap}`,
+            // text: ` ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"} ${row.principle_name}`,
             text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
             icon: "success",
             confirmButtonText: "ตกลง",
@@ -373,6 +252,49 @@ export default function DatatableActionplan({
     },
   };
 
+  const [totalRows, setTotalRows] = useState(0);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10); // default เป็น 10
+  const [hasMounted, setHasMounted] = useState(false);
+
+  const fetchData = useCallback(async (page = 1, perPage = 10) => {
+    try {
+      setLoading(true);
+      const token = Cookies.get("token");
+      const res = await GetDataprincipleall(token, page, perPage);
+      setData(res.data);
+      setSecrchData(res.data);
+      setTotalRows(res.total);
+
+      console.log(res);
+    } catch (err) {
+      console.error("Error loading data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (hasMounted) {
+      fetchData(page, perPage);
+    }
+  }, [fetchData, hasMounted, page, perPage]);
+
+  // Fixed handlePageChange function
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  // Fixed handlePerRowsChange function
+  const handlePerRowsChange = (newPerPage, newPage) => {
+    setPerPage(newPerPage);
+    setPage(newPage);
+  };
+
   return (
     <div className="w-full">
       {loading ? (
@@ -397,9 +319,10 @@ export default function DatatableActionplan({
             className="bg-white rounded-md border
         border-gray-200 shadow-xl mt-3 
         "
-            style={{ height: "90vh", display: "flex", flexDirection: "column" }}
+            style={{ display: "flex", flexDirection: "column" }}
           >
             <DataTable
+              keyField="principle_id"
               columns={columns}
               data={SecrchData}
               customStyles={customStyles}

@@ -14,10 +14,9 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import { GetDatayear } from "../../fetch_api/fetch_api_admin";
-import DatatableActionplan from "../componentTable/actionplan";
+import DatatableUser from "../componentTable/user";
 
-export default function HomeStrategic() {
+export default function HomePerson() {
   const [yearOptions, setyearOptions] = useState([
     // { value: 1, label: "2568" },
     // { value: 2, label: "2567" },
@@ -44,19 +43,6 @@ export default function HomeStrategic() {
   ];
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const token = Cookies.get("token");
-        const res = await GetDatayear(token);
-        setyearOptions(res.data);
-      } catch (err) {
-        console.error("Error loading data:", err);
-      }
-    }
-
-    fetchData();
-  }, []);
-  useEffect(() => {
     if (yearOptions.length > 0 && !Year.year_id) {
       setYear({
         ...Year,
@@ -77,33 +63,8 @@ export default function HomeStrategic() {
             <div className="flex flex-row items-center justify-between">
               <div className="flex flex-row items-center">
                 <div className="text-lg md:text-2xl me-3 ms-4">
-                    พนักงานทั้งหมด
+                  พนักงานทั้งหมด
                 </div>
-                <select
-                  id="year"
-                  name="year"
-                  value={Year.year_id ?? ""}
-                  onChange={(e) => {
-                    setYear({
-                      ...Year,
-                      year_id: e.target.value,
-                    });
-                  }}
-                  className="block rounded-md px-4 py-2 bg-gray-100 border border-gray-300 shadow-sm hover:border-blue-500 focus:outline-none focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200"
-                  style={{
-                    appearance: "none",
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "right 0.75rem center",
-                    backgroundSize: "0.75em",
-                    paddingRight: "3rem",
-                  }}
-                >
-                  {yearOptions.map((data, index) => (
-                    <option key={index} value={data.year_id}>
-                      {data.year}
-                    </option>
-                  ))}
-                </select>
               </div>
               <a
                 href="/user/project/add_project"
@@ -113,9 +74,7 @@ export default function HomeStrategic() {
               </a>
             </div>
             <div>
-              {Year.year_id !== null && (
-                <DatatableActionplan year_id={Year.year_id} />
-              )}
+              <DatatableUser />
               {/* <DatatableProject /> */}
             </div>
           </div>

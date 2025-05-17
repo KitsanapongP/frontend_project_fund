@@ -4,6 +4,7 @@ import { useState, use, useEffect } from "react";
 import Link from "next/link";
 import Menu from "../../component/nav_admin";
 import Header from "../../component/header";
+import Cookies from "js-cookie";
 import { useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
@@ -14,6 +15,10 @@ import {
   User,
 } from "lucide-react";
 import DatatableActionplan from "../../component/actionplan";
+import {
+  GetDatayear,
+  GetDatastrategicForAdd,
+} from "../../../fetch_api/fetch_api_admin";
 import Aos from "aos";
 import {
   ModalAddActionplan,
@@ -25,24 +30,56 @@ export default function HomeActionplan({ params }) {
   const [strategic, setStrategic] = useState({ id: "", name: "", budget: "" });
   const [isOpenModalAdd, setIsOpenModalAdd] = useState(false);
   const [isOpenModalAddNew, setIsOpenModalAddNew] = useState(false);
-  const [open, setOpen] = useState(false);
   const { id_strategic } = use(params);
-  const [selectedStrategicOption, setSelectedStrategicOption] = useState(null);
-  const [actionplanName, setActionplanName] = useState("");
+  const [totalRows, setTotalRows] = useState(0);
+  const [data, setdata] = useState({
+    id_actionplan: null,
+    name: null,
+    number: null,
+    budget: null,
+    id_year: null,
+    id_strategic: null,
+  });
+  const [type, settype] = useState(null);
+  const [yearOptions, setyearOptions] = useState([]);
+  const [strategicOptions, setstrategicOptions] = useState([]);
+  const [Year, setYear] = useState({
+    year_id: null,
+  });
 
-  const handleChange = (selectedOption) => {
-    setSelectedStrategicOption(selectedOption);
-  };
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const token = Cookies.get("token");
+        // console.log("token : ", token);
+        const res = await GetDatayear(token);
+        // console.log("year : ", res.data);
+        setyearOptions(res.data);
+        if (res.data.length > 0) {
+          const res_strategic = await GetDatastrategicForAdd(
+            token,
+            res.data[0].year_id
+          );
+          setstrategicOptions(res_strategic.data);
+          console.log(res.data[0].year);
+          console.log(res_strategic);
+        }
+      } catch (err) {
+        console.error("Error loading data:", err);
+      }
+    }
 
-  const handleActionplanNameChange = (newActionplanName) => {
-    setActionplanName(newActionplanName);
-    // console.log("newName Actionplan : ",selectedStrategicOption)
-  };
-  const options = [
-    { value: "S1", label: "S1 : สร้างงงงง" },
-    { value: "S2", label: "S2 : สร้างงงงงeeeee" },
-    { value: "S3", label: "S3 : fdfdfdfdfd" },
-  ];
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (yearOptions.length > 0 && !Year.year_id) {
+      setYear({
+        ...Year,
+        year_id: yearOptions[0].year_id,
+      });
+    }
+  }, [yearOptions]);
 
   useEffect(() => {
     const data = sessionStorage.getItem("strategic_data");
@@ -81,7 +118,6 @@ export default function HomeActionplan({ params }) {
         }
         if (isOpenModalAddNew) {
           toggleModalAddNew(); // ปิด Modal ถ้าเปิดอยู่
-          setSelectedStrategicOption(null);
         }
       }
     };
@@ -96,27 +132,33 @@ export default function HomeActionplan({ params }) {
 
   const handleModalSelect = (type) => {
     if (type === "new") {
+      settype(1);
       toggleModalAdd();
       toggleModalAddNew();
+      setdata((prev) => ({
+        ...prev,
+        id_actionplan: "",
+        name: "",
+        number: "A" + (totalRows + 1),
+        budget: null,
+        id_year: Year.year_id,
+        id_strategic: strategic.id,
+      }));
     }
   };
-
-  const columns = [
-    {
-      name: "ชื่อ",
-      selector: (row) => row.name,
-      sortable: true,
-    },
-    {
-      name: "ตำแหน่ง",
-      selector: (row) => row.role,
-    },
-  ];
-
-  const data = [
-    { id: 1, name: "สมชาย", role: "ผู้ดูแล" },
-    { id: 2, name: "วิรัตน์", role: "เจ้าหน้าที่" },
-  ];
+  const toggleModalEdit = (id,name,number,budget,id_year,id_strategic) => {
+    settype(2);
+    setdata((prev) => ({
+      ...prev,
+      id_actionplan: id,
+      name: name,
+      number: number,
+      budget: budget,
+      id_year: id_year,
+      id_strategic: id_strategic,
+    }));
+    toggleModalAddNew();
+  };
 
   return (
     <>
@@ -166,7 +208,7 @@ export default function HomeActionplan({ params }) {
                         />
                       </svg>
                       <span className="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400 dark:hover:text-white">
-                        {id_strategic} {strategic.name}
+                        {id_strategic} : {strategic.name}
                       </span>
                     </div>
                   </li>
@@ -184,8 +226,8 @@ export default function HomeActionplan({ params }) {
                   {" "}
                   งบประมาณ{" "}
                   {Number(strategic.budget).toLocaleString("th-TH", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   })}{" "}
                   บาท
                 </div>
@@ -195,8 +237,8 @@ export default function HomeActionplan({ params }) {
                   {" "}
                   คงเหลือ{" "}
                   {Number(strategic.Balance).toLocaleString("th-TH", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   })}{" "}
                   บาท
                 </div>
@@ -215,6 +257,8 @@ export default function HomeActionplan({ params }) {
                 <DatatableActionplan
                   number_strategic={id_strategic}
                   strategic_id={strategic.id}
+                  onTotalChange={setTotalRows}
+                  onEdit={toggleModalEdit}
                 />
               )}
             </div>
@@ -229,11 +273,12 @@ export default function HomeActionplan({ params }) {
 
       <ModalAddActionplanNew
         isOpen={isOpenModalAddNew}
-        selectedOption={selectedStrategicOption} // กำหนดค่าให้กับ Select
-        handleChange={handleChange} // เมื่อมีการเลือก
-        options={options}
-        onActionplanNameChange={handleActionplanNameChange}
         onClose={() => setIsOpenModalAddNew(false)}
+        type={type}
+        data={data}
+        yearall={yearOptions}
+        strategic={strategicOptions}
+        maxBudget={parseFloat(strategic.Balance)}
       />
     </>
   );

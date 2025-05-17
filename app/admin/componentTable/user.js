@@ -2,9 +2,9 @@
 import { useEffect, useState, useCallback } from "react";
 import DataTable from "react-data-table-component";
 import {
-  GetDataactionplanByidstrategic,
-  UpdatestatusActionplan,
-  DeleteActionplan,
+  GetDataUserall,
+  UpdatestatusActivity,
+  DeleteUser,
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
@@ -12,20 +12,19 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import Swal from "sweetalert2";
-export default function DatatableActionplan({
-  number_strategic,
-  strategic_id,
-  onTotalChange,
-  onEdit,
-}) {
+export default function DatatableUser({}) {
   const [data, setData] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [SecrchData, setSecrchData] = useState([]);
+  const [SearchTerm, setSearchTerm] = useState("");
 
   const handleDelete = async (row) => {
     // const newStatus = row.status === 1 ? 0 : 1;
 
     const result = await Swal.fire({
       title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการคุณต้องการลบ "${row.name_ap}" หรือไม่
+      text: `คุณต้องการคุณต้องการลบ "${row.name}" หรือไม่
         `,
       icon: "warning",
       showCancelButton: true,
@@ -38,16 +37,16 @@ export default function DatatableActionplan({
     if (result.isConfirmed) {
       try {
         const token = Cookies.get("token");
-        const response = await DeleteActionplan(token, row.action_plan_id);
+        const response = await DeleteUser(token, row.id);
         // if(response)
         console.log(response);
         if (response) {
           // setData((prevData) =>
-          //   prevData.filter((item) => item.strategic_id !== row.strategic_id)
+          //   prevData.filter((item) => item.id !== row.id)
           // );
           console.log("การลบสำเร็จ");
           setData((prevData) =>
-            prevData.filter((item) => item.action_plan_id != row.action_plan_id)
+            prevData.filter((item) => item.id != row.id)
           );
           // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
           Swal.fire({
@@ -78,102 +77,50 @@ export default function DatatableActionplan({
 
   const columns = [
     {
-      name: "รหัส",
-      selector: (row) => row.action_plan_number,
+      name: "ลำดับ",
+      selector: (row, index) => (page - 1) * perPage + index + 1,
       sortable: true,
       width: "90px",
     },
+    // {
+    //   name: "กลยุทธ์",
+    //   selector: (row) => row.action_plan_number,
+    //   sortable: true,
+    //   width: "120px",
+    // },
+
     {
       name: "ชื่อ",
-      selector: (row) => row.name_ap,
+      selector: (row) => row.name,
       sortable: true,
       wrap: true,
       width: "250px",
     },
     {
-      name: "โครงการ",
-      selector: (row) => row.projects_count,
-      sortable: true,
-      center: "true",
-      width: "140px",
-    },
-    {
-      name: "งบประมาณ (บาท)",
-      // selector: (row) => row.budget,
+      name: "ตำแหน่ง",
+      selector: (row) => row.position.position_name,
       sortable: true,
       wrap: true,
-      right: "true",
-      width: "160px",
-      cell: (row) =>
-        `${Number(row.budget).toLocaleString("th-TH", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })} `,
+      width: "250px",
     },
     {
-      name: "ใช้ไป (บาท)",
+      name: "จำนวนโครงการรับผิดชอบ",
       sortable: true,
-      right: "true",
-      width: "160px",
-      cell: (row) =>
-        `${Number(row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })} `,
-    },
-    {
-      name: "คงเหลือ (บาท)",
-      sortable: true,
-      right: "true",
-      width: "160px",
       cell: (row) =>
         `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
         })} `,
     },
     {
-      name: "สถานะ",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <Switch
-            onChange={() => handlechageStatus(row)}
-            checked={row.status === 1}
-            onColor="#4caf50"
-            offColor="#d9534f"
-            checkedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                เปิด
-              </div>
-            }
-            uncheckedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                ปิด
-              </div>
-            }
-          />
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
+        name: "จำนวนกิจกรรมที่รับผิดชอบ",
+        sortable: true,
+        cell: (row) =>
+          `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          })} `,
+      },
     {
       name: "จัดการ",
       width: "200px",
@@ -187,9 +134,9 @@ export default function DatatableActionplan({
                 sessionStorage.setItem(
                   "actionplan_data",
                   JSON.stringify({
-                    id: row.action_plan_id,
+                    id: row.id,
                     // id_actionplan: row.action_plan_number,
-                    name: row.name_ap,
+                    name: row.name,
                     budget: row.budget,
                     Balance: row.budget - row.spend_money,
                   })
@@ -206,15 +153,18 @@ export default function DatatableActionplan({
             <button
               className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
               onClick={() => {
-                // newname, id, number, budget, id_year
-                onEdit(
-                  row.action_plan_id,
-                  row.name_ap,
-                  row.action_plan_number,
-                  row.budget,
-                  row.id_year,
-                  row.id_strategic,
+                // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
+                sessionStorage.setItem(
+                  "strategic_data",
+                  JSON.stringify({
+                    id: row.id,
+                    name: row.strategic_name,
+                    budget: row.budget,
+                  })
                 );
+
+                // เปลี่ยนหน้า
+                window.location.href = `/admin/strategic/${row.project_number}`;
               }}
             >
               <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
@@ -234,9 +184,33 @@ export default function DatatableActionplan({
       ignoreRowClick: true,
     },
   ];
-  const [loading, setLoading] = useState(true);
-  const [SecrchData, setSecrchData] = useState([]);
-  const [SearchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const filtered = data.filter((data) => {
+      const budget = Number(data.budget);
+      const spendMoney = Number(data.spend_money);
+      const remainingBudget = budget - spendMoney; // คำนวณเหมือนใน cell
+
+      return `${data.name} ${data.project_number} ${budget} ${spendMoney} ${remainingBudget}`
+        .toLowerCase()
+        .includes(SearchTerm.toLowerCase());
+    });
+
+    setSecrchData(filtered);
+  }, [SearchTerm, data]);
+
+
+  const customStyles = {
+    headCells: {
+      style: {
+        backgroundColor: "#f0f0f0", // สีพื้นหลังหัวตาราง
+        color: "#1f2937", // สีตัวอักษร (เทาเข้ม)
+        fontWeight: "bold",
+        fontSize: "14px",
+      },
+    },
+  };
+
   const [totalRows, setTotalRows] = useState(0);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10); // default เป็น 10
@@ -246,20 +220,12 @@ export default function DatatableActionplan({
     try {
       setLoading(true);
       const token = Cookies.get("token");
-      const res = await GetDataactionplanByidstrategic(
-        token,
-        strategic_id,
-        page,
-        perPage
-      );
+      const res = await GetDataUserall(token, page, perPage);
       setData(res.data);
       setSecrchData(res.data);
       setTotalRows(res.total);
-      if (onTotalChange) {
-        onTotalChange(res.total);
-      }
 
-      // console.log(res);
+      console.log(res);
     } catch (err) {
       console.error("Error loading data:", err);
     } finally {
@@ -277,6 +243,7 @@ export default function DatatableActionplan({
     }
   }, [fetchData, hasMounted, page, perPage]);
 
+  // Fixed handlePageChange function
   const handlePageChange = (newPage) => {
     setPage(newPage);
   };
@@ -285,92 +252,6 @@ export default function DatatableActionplan({
   const handlePerRowsChange = (newPerPage, newPage) => {
     setPerPage(newPerPage);
     setPage(newPage);
-  };
-  useEffect(() => {
-    const filtered = data.filter((data) => {
-      const budget = Number(data.budget);
-      const spendMoney = Number(data.spend_money);
-      const remainingBudget = budget - spendMoney; // คำนวณเหมือนใน cell
-
-      return `${data.name_ap} ${data.strategic_number} ${budget} ${spendMoney} ${remainingBudget}`
-        .toLowerCase()
-        .includes(SearchTerm.toLowerCase());
-    });
-
-    setSecrchData(filtered);
-  }, [SearchTerm, data]);
-
-  const handlechageStatus = async (row) => {
-    const newStatus = row.status === 1 ? 0 : 1;
-
-    const result = await Swal.fire({
-      title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
-        สำหรับ  "${row.name_ap}" หรือไม่
-        `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: newStatus === 1 ? "#4caf50" : "#d33",
-      cancelButtonColor: "gray",
-      confirmButtonText: newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน",
-      cancelButtonText: "ยกเลิก",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = Cookies.get("token");
-        const response = await UpdatestatusActionplan(
-          token,
-          row.action_plan_id
-        );
-        // if(response)
-        console.log(response);
-        if (response) {
-          console.log("การอัปเดตสถานะสำเร็จ");
-          setData((prevData) =>
-            prevData.map((item) =>
-              item.action_plan_id === row.action_plan_id
-                ? { ...item, status: newStatus }
-                : item
-            )
-          );
-          // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
-          Swal.fire({
-            title: "อัปเดตข้อมูลสำเร็จ",
-            // text: ` ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"} ${row.name_ap}`,
-            text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
-            icon: "success",
-            confirmButtonText: "ตกลง",
-          });
-        } else {
-          Swal.fire({
-            title: "เกิดข้อผิดพลาด",
-            text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-            icon: "error",
-            confirmButtonText: "ตกลง",
-          });
-        }
-      } catch (err) {
-        Swal.fire({
-          title: "เกิดข้อผิดพลาด",
-          text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-          icon: "error",
-          confirmButtonText: "ตกลง",
-        });
-        console.log(err);
-      }
-    }
-  };
-
-  const customStyles = {
-    headCells: {
-      style: {
-        backgroundColor: "#f0f0f0", // สีพื้นหลังหัวตาราง
-        color: "#1f2937", // สีตัวอักษร (เทาเข้ม)
-        fontWeight: "bold",
-        fontSize: "14px",
-      },
-    },
   };
 
   return (
@@ -397,9 +278,10 @@ export default function DatatableActionplan({
             className="bg-white rounded-md border
         border-gray-200 shadow-xl mt-3 
         "
-            style={{ height: "90vh", display: "flex", flexDirection: "column" }}
+            style={{ display: "flex", flexDirection: "column" }}
           >
             <DataTable
+              keyField="id"
               columns={columns}
               data={SecrchData}
               customStyles={customStyles}
