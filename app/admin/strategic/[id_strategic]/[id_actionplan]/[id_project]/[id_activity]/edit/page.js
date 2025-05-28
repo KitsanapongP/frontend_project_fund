@@ -8,7 +8,7 @@ import Cookies from "js-cookie";
 import Swal from "sweetalert2";
 import _ from "lodash";
 import { useSearchParams } from "next/navigation";
-import { AddDataActivitydetail } from "../../../../../../../fetch_api/fetch_api_admin";
+import { EditDataActivitydetail } from "../../../../../../../fetch_api/fetch_api_admin";
 export default function addActivtydetail({ params }) {
   const [loading, setLoading] = useState(true);
   const [id_employee, setIdemployee] = useState(null);
@@ -51,12 +51,13 @@ export default function addActivtydetail({ params }) {
         const strategic_data = sessionStorage.getItem("strategic_data");
         const actionplan_data = sessionStorage.getItem("actionplan_data");
         const data_project = sessionStorage.getItem("project_data");
+        const data_activity_edit = sessionStorage.getItem("activity_data_edit");
 
         const parsedData = JSON.parse(data);
         const parsedProjectData = JSON.parse(data_project);
         const parsedStrategicData = JSON.parse(strategic_data);
         const parsedActionplanData = JSON.parse(actionplan_data);
-
+        const parseddData_activity_edit = JSON.parse(data_activity_edit);
         // Set state
         setParsed(parsedData);
         setParsedProject(parsedProjectData);
@@ -70,6 +71,13 @@ export default function addActivtydetail({ params }) {
           id_project: parsedProjectData.id,
           name_project: parsedProjectData.name,
           id_employee: id_employee,
+          id: parseddData_activity_edit.id,
+          detail: parseddData_activity_edit.detail,
+          station: parseddData_activity_edit.station,
+          total_price: parseddData_activity_edit.total_price,
+          start_date: parseddData_activity_edit.start_date?.slice(0, 10),
+          end_date: parseddData_activity_edit.end_date?.slice(0, 10),
+          report_data: parseddData_activity_edit.report_data,
         });
         setOlddataAddsend({
           ...dataAddsend,
@@ -78,7 +86,15 @@ export default function addActivtydetail({ params }) {
           id_project: parsedProjectData.id,
           name_project: parsedProjectData.name,
           id_employee: id_employee,
+          id: parseddData_activity_edit.id,
+          detail: parseddData_activity_edit.detail,
+          station: parseddData_activity_edit.station,
+          total_price: parseddData_activity_edit.total_price,
+          start_date: parseddData_activity_edit.start_date?.slice(0, 10),
+          end_date: parseddData_activity_edit.end_date?.slice(0, 10),
+          report_data: parseddData_activity_edit.report_data,
         });
+        console.log(parseddData_activity_edit);
         setFullname(fullname);
         setIdemployee(id_employee);
       }
@@ -108,6 +124,7 @@ export default function addActivtydetail({ params }) {
     date.getDate().toString().padStart(2, "0");
 
   const [OlddataAddsend, setOlddataAddsend] = useState({
+    id: "",
     detail: "",
     station: "",
     total_price: null,
@@ -119,6 +136,7 @@ export default function addActivtydetail({ params }) {
   });
 
   const [dataAddsend, setdataAddsend] = useState({
+    id: "",
     detail: "",
     station: "",
     total_price: null,
@@ -148,29 +166,13 @@ export default function addActivtydetail({ params }) {
     //   });
     //   return;
     // }
-    if (
-      !checkActivitydetail.detail ||
-      !checkActivitydetail.total_price ||
-      !checkActivitydetail.start_date ||
-      !checkActivitydetail.end_date ||
-      !checkActivitydetail.station ||
-      !checkActivitydetail.report_data
-    ) {
-      let missingField = "";
-
-      if (!checkActivitydetail.detail) missingField = "รายละเอียด";
-      else if (!checkActivitydetail.total_price) missingField = "จำนวนเงิน";
-      else if (!checkActivitydetail.start_date) missingField = "วันที่เริ่มต้น";
-      else if (!checkActivitydetail.end_date) missingField = "วันที่สิ้นสุด";
-      else if (!checkActivitydetail.report_data) missingField = "ลิงก์หลักฐาน";
-      else if (!checkActivitydetail.station) missingField = "สถานที่";
+    if (_.isEqual(OlddataAddsend, dataAddsend)) {
       Swal.fire({
         title: "เกิดข้อผิดพลาด",
-        text: `กรุณากรอก${missingField}`,
+        text: "ไม่สามารถแก้ไขข้อมูลเป็นค่าเดิมได้",
         icon: "error",
         confirmButtonText: "ตกลง",
       });
-
       return;
     }
     const isValidUrl = /^https?:\/\/.+/.test(dataAddsend.report_data);
@@ -210,8 +212,8 @@ export default function addActivtydetail({ params }) {
         }
         try {
           const token = Cookies.get("token");
-          // console.log(dataAddsend)
-          const response = await AddDataActivitydetail(token, dataAddsend);
+          console.log(dataAddsend)
+          const response = await EditDataActivitydetail(token, dataAddsend);
 
           // if(response)
           // console.log(response);
@@ -426,10 +428,10 @@ export default function addActivtydetail({ params }) {
                             placeholder="Select date start"
                             value={dataAddsend.start_date ?? ""}
                             onChange={(e) =>
-                              setdataAddsend((prev) => ({
-                                ...prev,
+                              setdataAddsend({
+                                ...dataAddsend,
                                 start_date: e.target.value,
-                              }))
+                              })
                             }
                             onBlur={() =>
                               setcheckActivitydetail({
@@ -466,10 +468,10 @@ export default function addActivtydetail({ params }) {
                             value={dataAddsend.end_date ?? ""}
                             min={dataAddsend.start_date || ""}
                             onChange={(e) =>
-                              setdataAddsend((prev) => ({
-                                ...prev,
+                              setdataAddsend({
+                                ...dataAddsend,
                                 end_date: e.target.value,
-                              }))
+                              })
                             }
                             onBlur={() =>
                               setcheckActivitydetail({
@@ -494,10 +496,10 @@ export default function addActivtydetail({ params }) {
                       required
                       value={dataAddsend.detail || ""}
                       onChange={(e) =>
-                        setdataAddsend((prev) => ({
-                          ...prev,
+                        setdataAddsend({
+                          ...dataAddsend,
                           detail: e.target.value,
-                        }))
+                        })
                       }
                       onBlur={() =>
                         setcheckActivitydetail({
@@ -525,10 +527,10 @@ export default function addActivtydetail({ params }) {
                       required
                       value={dataAddsend.station || ""}
                       onChange={(e) =>
-                        setdataAddsend((prev) => ({
-                          ...prev,
+                        setdataAddsend({
+                          ...dataAddsend,
                           station: e.target.value,
-                        }))
+                        })
                       }
                       onBlur={() =>
                         setcheckActivitydetail({
@@ -576,10 +578,10 @@ export default function addActivtydetail({ params }) {
                           }
 
                           if (rawValue <= maxBalace) {
-                            setdataAddsend((prev) => ({
-                              ...prev,
+                            setdataAddsend({
+                              ...dataAddsend,
                               total_price: raw,
-                            }));
+                            });
                           }
                         }
                       }}
@@ -629,10 +631,11 @@ export default function addActivtydetail({ params }) {
                       required
                       value={dataAddsend.report_data || ""}
                       onChange={(e) =>
-                        setdataAddsend((prev) => ({
-                          ...prev,
+                        setdataAddsend({
+                          ...dataAddsend,
+
                           report_data: e.target.value,
-                        }))
+                        })
                       }
                       onBlur={() =>
                         setcheckActivitydetail({

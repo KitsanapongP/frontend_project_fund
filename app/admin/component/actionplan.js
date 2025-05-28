@@ -88,11 +88,12 @@ export default function DatatableActionplan({
       selector: (row) => row.name_ap,
       sortable: true,
       wrap: true,
-      width: "250px",
+      width: "350px",
     },
     {
       name: "โครงการ",
       selector: (row) => row.projects_count,
+      
       sortable: true,
       center: "true",
       width: "140px",
@@ -104,6 +105,7 @@ export default function DatatableActionplan({
       wrap: true,
       right: "true",
       width: "160px",
+      selector: (row) => row.budget,
       cell: (row) =>
         `${Number(row.budget).toLocaleString("th-TH", {
           minimumFractionDigits: 2,
@@ -115,6 +117,7 @@ export default function DatatableActionplan({
       sortable: true,
       right: "true",
       width: "160px",
+      selector: (row) => row.spend_money,
       cell: (row) =>
         `${Number(row.spend_money).toLocaleString("th-TH", {
           minimumFractionDigits: 2,
@@ -125,6 +128,7 @@ export default function DatatableActionplan({
       name: "คงเหลือ (บาท)",
       sortable: true,
       right: "true",
+      selector: (row) => (row.budget - row.spend_money),
       width: "160px",
       cell: (row) =>
         `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {

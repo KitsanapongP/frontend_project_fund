@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import DataTable from "react-data-table-component";
 import {
   GetDataactivitydetailByidactivity,
@@ -13,31 +13,72 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import Swal from "sweetalert2";
-export default function DatatableActivityDetail({ id_activityref, val }) {
+export default function DatatableActivityDetail({
+  id_activityref,
+  val,
+  onEditTotal,
+  Balance
+}) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { id_strategic, id_actionplan, id_project } = val;
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const token = Cookies.get("token");
-        console.log("token : ", id_activityref);
-        const res = await GetDataactivitydetailByidactivity(
-          token,
-          id_activityref
-        );
-        console.log(res.data);
-        setData(res.data);
-      } catch (err) {
-        console.error("Error loading data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
+  const [SecrchData, setSecrchData] = useState([]);
+  const { id_strategic, id_actionplan, id_project ,id_activity,total} = val;
+  const [SearchTerm, setSearchTerm] = useState("");
+  const [totalRows, setTotalRows] = useState(0);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10); // default เป็น 10
+  const [hasMounted, setHasMounted] = useState(false);
 
-    fetchData();
+  const fetchData = useCallback(async (page = 1, perPage = 10) => {
+    try {
+      setLoading(true);
+      const token = Cookies.get("token");
+      console.log("token : ", id_activityref);
+      const res = await GetDataactivitydetailByidactivity(
+        token,
+        id_activityref,
+        page,
+        perPage
+      );
+      console.log(res.data);
+      setData(res.data);
+      setSecrchData(res.data);
+      setTotalRows(res.total);
+      onEditTotal(res.total);
+    } catch (err) {
+      console.error("Error loading data:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (hasMounted) {
+      fetchData(page, perPage);
+    }
+  }, [fetchData, hasMounted, page, perPage]);
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+  const handlePerRowsChange = (newPerPage, newPage) => {
+    setPerPage(newPerPage);
+    setPage(newPage);
+  };
+  useEffect(() => {
+    const filtered = data.filter((data) => {
+      const budget = Number(data.budget);
+      return `${data.detail} ${data.start_date} ${data.price} ${data.station} `
+        .toLowerCase()
+        .includes(SearchTerm.toLowerCase());
+    });
+
+    setSecrchData(filtered);
+  }, [SearchTerm, data]);
 
   const columns = [
     {
@@ -58,6 +99,7 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
       name: "วันที่ดำเนินงาน ( ว/ด/ป )",
       selector: (row) => row.start_date,
       sortable: true,
+      center: "true",
       wrap: true,
       width: "200px",
       cell: (row) => {
@@ -72,18 +114,39 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
       },
     },
     {
+      name: "วันที่รายงาน ( ว/ด/ป )",
+      selector: (row) => row.created_at,
+      sortable: true,
+      center: "true",
+      wrap: true,
+      width: "200px",
+      cell: (row) => {
+        const date = new Date(row.created_at);
+        const formatted =
+          date.getDate().toString().padStart(2, "0") +
+          "/" +
+          (date.getMonth() + 1).toString().padStart(2, "0") +
+          "/" +
+          date.getFullYear();
+        return formatted;
+      },
+    },
+    {
       name: "งบประมาณ (บาท)",
       // selector: (row) => row.budget,
       sortable: true,
       wrap: true,
+      right: "true",
+      width: "160px",
       cell: (row) =>
         `${Number(row.price).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "สถานที่",
+      center: "true",
       selector: (row) => row.station,
       sortable: true,
       width: "200px",
@@ -95,7 +158,7 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
       name: "ไฟล์",
       ignoreRowClick: true,
       cell: (row) =>
-        row.report_date !== "-" || row.report_date ? (
+        row.report_data !== "-" || row.report_data ? (
           <a
             className="flex items-center gap-2 btn btn-sm btn-outline-primary hover:text-blue-500 rounded hover:bg-gray-100 p-2"
             href={row.report_data}
@@ -109,51 +172,10 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
           "-"
         ),
     },
-    {
-      name: "สถานะ",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <Switch
-            onChange={() => handlechageStatus(row)}
-            checked={row.status === 1}
-            onColor="#4caf50"
-            offColor="#d9534f"
-            checkedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                เปิด
-              </div>
-            }
-            uncheckedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                ปิด
-              </div>
-            }
-          />
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
+
     {
       name: "ดำเนินการ",
-      cell: (row) => (
+      cell: (row,index) => (
         <>
           <div style={{ padding: "5px" }}>
             <button
@@ -168,9 +190,21 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
                   })
                 );
 
+                sessionStorage.setItem(
+                  "activity_data_edit",
+                  JSON.stringify({
+                    id: row.activity_detail_id,
+                    detail: row.detail,
+                    station: row.station,
+                    total_price: row.price,
+                    start_date: row.start_date,
+                    end_date: row.end_date,
+                    report_data: row.report_data,
+                  })
+                );
+
                 // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${row.strategic_number}`;
-              }}
+                window.location.href = `./${id_activity}/edit?total=${index+1}&maxBudget=${Balance}`;     }}
             >
               <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
             </button>
@@ -268,7 +302,10 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
     if (result.isConfirmed) {
       try {
         const token = Cookies.get("token");
-        const response = await DeleteActivityDetail(token, row.activity_detail_id);
+        const response = await DeleteActivityDetail(
+          token,
+          row.activity_detail_id
+        );
         // if(response)
         console.log(response);
         if (response) {
@@ -276,8 +313,66 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
           //   prevData.filter((item) => item.strategic_id !== row.strategic_id)
           // );
           console.log("การลบสำเร็จ");
+          // 1. Parse ข้อมูลจาก sessionStorage
+          const parsedData = JSON.parse(
+            sessionStorage.getItem("activitydetail_data") || "{}"
+          );
+          const parsedProjectData = JSON.parse(
+            sessionStorage.getItem("project_data") || "{}"
+          );
+          const parsedStrategicData = JSON.parse(
+            sessionStorage.getItem("strategic_data") || "{}"
+          );
+          const parsedActionplanData = JSON.parse(
+            sessionStorage.getItem("actionplan_data") || "{}"
+          );
+
+          // 2. ดึงข้อมูล spend summary จาก response
+          const spendSummary = response?.original?.remain_budget_summary ?? {};
+
+          // 3. อัปเดต Balance
+          const updatedParsed = {
+            ...parsedData,
+            // actionplan_remain_budget
+            Balance: spendSummary.activity_remain_budget ?? 0,
+          };
+
+          const updatedStrategic = {
+            ...parsedStrategicData,
+            Balance: spendSummary.strategic_remain_budget ?? 0,
+          };
+
+          const updatedActionplan = {
+            ...parsedActionplanData,
+            Balance: spendSummary.actionplan_remain_budget ?? 0,
+          };
+
+          const updatedProject = {
+            ...parsedProjectData,
+            Balance: spendSummary.project_remain_budget ?? 0,
+          };
+
+          // 4. เซฟกลับเข้า sessionStorage
+          sessionStorage.setItem(
+            "activitydetail_data",
+            JSON.stringify(updatedParsed)
+          );
+          sessionStorage.setItem(
+            "strategic_data",
+            JSON.stringify(updatedStrategic)
+          );
+          sessionStorage.setItem(
+            "actionplan_data",
+            JSON.stringify(updatedActionplan)
+          );
+          sessionStorage.setItem(
+            "project_data",
+            JSON.stringify(updatedProject)
+          );
           setData((prevData) =>
-            prevData.filter((item) => item.activity_detail_id != row.activity_detail_id)
+            prevData.filter(
+              (item) => item.activity_detail_id != row.activity_detail_id
+            )
           );
           // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
           Swal.fire({
@@ -285,6 +380,8 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
             text: "ข้อมูลถูกลบออกจากระบบแล้ว",
             icon: "success",
             confirmButtonText: "ตกลง",
+          }).then(() => {
+            window.location.reload();
           });
         } else {
           Swal.fire({
@@ -306,6 +403,17 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
     }
   };
 
+  const customStyles = {
+    headCells: {
+      style: {
+        backgroundColor: "#f0f0f0", // สีพื้นหลังหัวตาราง
+        color: "#1f2937", // สีตัวอักษร (เทาเข้ม)
+        fontWeight: "bold",
+        fontSize: "14px",
+      },
+    },
+  };
+
   return (
     <div className="w-full">
       {loading ? (
@@ -318,16 +426,34 @@ export default function DatatableActivityDetail({ id_activityref, val }) {
           ยังไม่มีข้อมูล
         </div>
       ) : (
-        <div
-          className="bg-white shadow-xl rounded-md border border-gray-200 me-3 mt-4 flex flex-col"
-          style={{ height: "90vh" }}
-        >
-          <DataTable
-            columns={columns}
-            data={data}
-            pagination
-            keyField="activity_id"
+        <div>
+          <input
+            type="text"
+            className="form-control my-3  p-2  w-full  border border-gray-300 rounded-md"
+            placeholder="ค้นหา..."
+            value={SearchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
+          <div
+            className="bg-white rounded-md border
+      border-gray-200 shadow-xl mt-3 
+      "
+            style={{ height: "90vh", display: "flex", flexDirection: "column" }}
+          >
+            <DataTable
+              columns={columns}
+              data={SecrchData}
+              customStyles={customStyles}
+              pagination
+              paginationServer // ← สำคัญ: ใช้ pagination แบบ server
+              paginationPerPage={perPage}
+              paginationDefaultPage={page}
+              paginationTotalRows={totalRows} // ← ส่งจำนวน row ทั้งหมดมาจาก Laravel
+              onChangePage={handlePageChange} // ← เรียกเมื่อเปลี่ยนหน้า
+              onChangeRowsPerPage={handlePerRowsChange}
+              fixedHeaderScrollHeight="100%"
+            />
+          </div>
         </div>
       )}
     </div>

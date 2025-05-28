@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState,useCallback } from "react";
 import DataTable from "react-data-table-component";
 import {
   GetDataactionplanByidproject,
   UpdatestatusActivity,
-  DeleteActivity
+  DeleteActivity,
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
@@ -12,32 +12,63 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import Swal from "sweetalert2";
-export default function DatatableActivity({ id_projectref, val }) {
+export default function DatatableActivity({ id_projectref, val,onTotalChange}) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [SecrchData, setSecrchData] = useState([]);
   const [SearchTerm, setSearchTerm] = useState("");
-  const { id_strategic, id_actionplan, id_project } = val;
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const token = Cookies.get("token");
-        // console.log("token : ", id_projectref);
-        const res = await GetDataactionplanByidproject(token, id_projectref);
-        // console.log(res.data);
-        setData(res.data);
-        setSecrchData(res.data);
-      } catch (err) {
-        console.error("Error loading data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
+  const [totalRows, setTotalRows] = useState(0);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10); // default เป็น 10
+  const [hasMounted, setHasMounted] = useState(false);
 
-    fetchData();
+  const { id_strategic, id_actionplan, id_project } = val;
+  const fetchData = useCallback(async (page = 1, perPage = 10) => {
+    try {
+      setLoading(true);
+      const token = Cookies.get("token");
+      // console.log("token : ", id_projectref);
+      const res = await GetDataactionplanByidproject(
+        token,
+        id_projectref,
+        page,
+        perPage
+      );
+      // console.log(res.data);
+      setData(res.data);
+      setSecrchData(res.data);
+      setTotalRows(res.total);
+      if (onTotalChange) {
+        onTotalChange(res.total);
+      }
+
+      // console.log(res);
+    } catch (err) {
+      console.error("Error loading data:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (hasMounted) {
+      fetchData(page, perPage);
+    }
+  }, [fetchData, hasMounted, page, perPage]);
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  // Fixed handlePerRowsChange function
+  const handlePerRowsChange = (newPerPage, newPage) => {
+    setPerPage(newPerPage);
+    setPage(newPage);
+  };
   useEffect(() => {
     const filtered = data.filter((data) => {
       const budget = Number(data.budget);
@@ -54,57 +85,101 @@ export default function DatatableActivity({ id_projectref, val }) {
 
   const columns = [
     {
-      name: "รหัส",
+      name: "ลำดับ",
       selector: (row) => row.id,
       sortable: true,
-      width: "80px",
+      width: "100px",
     },
     {
       name: "ชื่อ",
       selector: (row) => row.name_activity,
       sortable: true,
       wrap: true,
-      width: "250px",
+      width: "300px",
       cell: (row) => (
         <div style={{ padding: "10px 0px" }}>{row.name_activity}</div>
       ),
     },
     {
       name: "รายงานผล",
-      selector: (row) => row.status,
+      selector: (row) => row.activity_detail_count,
       sortable: true,
+      center: "true",
+      width: "160px",
       cell: (row) => (
-        <div className="flex items-center h-full">{row.status}</div>
+        <div className="flex items-center h-full">{row.activity_detail_count}</div>
       ),
     },
     {
       name: "งบประมาณ (บาท)",
-      // selector: (row) => row.budget,
+      selector: (row) => row.budget,
       sortable: true,
       wrap: true,
+      right: "true",
+      width: "160px",
       cell: (row) =>
         `${Number(row.budget).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "ใช้ไป (บาท)",
       sortable: true,
+      selector: (row) => row.spend_money,
+      right: "true",
+      width: "160px",
       cell: (row) =>
         `${Number(row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "คงเหลือ (บาท)",
       sortable: true,
+      right: "true",
+      selector: (row) => (row.budget - row.spend_money),
+      width: "160px",
       cell: (row) =>
         `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
+    },
+    {
+      name: "สถานะรายงาน",
+      width: "200px",
+      sortable: true,
+      center : "true",
+      cell: (row) => {
+        let text = "";
+        let bg = "";
+    
+        switch (row.status_report) {
+          case 0:
+            text = "ยังไม่มีการรายงาน";
+            bg = "bg-yellow-200 text-yellow-800";
+            break;
+          case 1:
+            text = "มีการรายงานเรียบร้อย";
+            bg = "bg-green-200 text-green-800";
+            break;
+          case 2:
+            text = "หมดเวลารายงานโดยไม่มีการรายงาน";
+            bg = "bg-red-200 text-red-800";
+            break;
+          default:
+            text = "-";
+            bg = "bg-gray-200 text-gray-800";
+        }
+    
+        return (
+          <span className={`px-2 py-1 rounded text-sm font-medium ${bg}`}>
+            {text}
+          </span>
+        );
+      },
     },
     {
       name: "สถานะ",
@@ -209,6 +284,17 @@ export default function DatatableActivity({ id_projectref, val }) {
       ignoreRowClick: true,
     },
   ];
+  const customStyles = {
+    headCells: {
+      style: {
+        backgroundColor: "#f0f0f0", // สีพื้นหลังหัวตาราง
+        color: "#1f2937", // สีตัวอักษร (เทาเข้ม)
+        fontWeight: "bold",
+        fontSize: "14px",
+      },
+    },
+  };
+
 
   const handlechageStatus = async (row) => {
     const newStatus = row.status === 1 ? 0 : 1;
@@ -267,62 +353,61 @@ export default function DatatableActivity({ id_projectref, val }) {
     }
   };
 
+  const handleDelete = async (row) => {
+    // const newStatus = row.status === 1 ? 0 : 1;
 
-   const handleDelete = async (row) => {
-      // const newStatus = row.status === 1 ? 0 : 1;
-  
-      const result = await Swal.fire({
-        title: "คุณแน่ใจหรือไม่ ?",
-        text: `คุณต้องการคุณต้องการลบ "${row.name_activity}" หรือไม่
+    const result = await Swal.fire({
+      title: "คุณแน่ใจหรือไม่ ?",
+      text: `คุณต้องการคุณต้องการลบ "${row.name_activity}" หรือไม่
             `,
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonColor: "gray",
-        confirmButtonText: "ยืนยันการลบ",
-        cancelButtonText: "ยกเลิก",
-      });
-  
-      if (result.isConfirmed) {
-        try {
-          const token = Cookies.get("token");
-          const response = await DeleteActivity(token, row.activity_id);
-          // if(response)
-          console.log(response);
-          if (response) {
-            // setData((prevData) =>
-            //   prevData.filter((item) => item.strategic_id !== row.strategic_id)
-            // );
-            console.log("การลบสำเร็จ");
-            setData((prevData) =>
-              prevData.filter((item) => item.activity_id != row.activity_id)
-            );
-            // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
-            Swal.fire({
-              title: "ลบข้อมูลสำเร็จ",
-              text: "ข้อมูลถูกลบออกจากระบบแล้ว",
-              icon: "success",
-              confirmButtonText: "ตกลง",
-            });
-          } else {
-            Swal.fire({
-              title: "เกิดข้อผิดพลาด",
-              text: "ไม่สามารถลบได้ กรุณาลองใหม่อีกครั้ง",
-              icon: "error",
-              confirmButtonText: "ตกลง",
-            });
-          }
-        } catch (err) {
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "gray",
+      confirmButtonText: "ยืนยันการลบ",
+      cancelButtonText: "ยกเลิก",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const token = Cookies.get("token");
+        const response = await DeleteActivity(token, row.activity_id);
+        // if(response)
+        console.log(response);
+        if (response) {
+          // setData((prevData) =>
+          //   prevData.filter((item) => item.strategic_id !== row.strategic_id)
+          // );
+          console.log("การลบสำเร็จ");
+          setData((prevData) =>
+            prevData.filter((item) => item.activity_id != row.activity_id)
+          );
+          // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
+          Swal.fire({
+            title: "ลบข้อมูลสำเร็จ",
+            text: "ข้อมูลถูกลบออกจากระบบแล้ว",
+            icon: "success",
+            confirmButtonText: "ตกลง",
+          });
+        } else {
           Swal.fire({
             title: "เกิดข้อผิดพลาด",
-            text: "กรุณาลองใหม่อีกครั้ง",
+            text: "ไม่สามารถลบได้ กรุณาลองใหม่อีกครั้ง",
             icon: "error",
             confirmButtonText: "ตกลง",
           });
-          console.log(err);
         }
+      } catch (err) {
+        Swal.fire({
+          title: "เกิดข้อผิดพลาด",
+          text: "กรุณาลองใหม่อีกครั้ง",
+          icon: "error",
+          confirmButtonText: "ตกลง",
+        });
+        console.log(err);
       }
-    };
+    }
+  };
 
   return (
     <div className="w-full">
@@ -353,8 +438,16 @@ export default function DatatableActivity({ id_projectref, val }) {
             <DataTable
               columns={columns}
               data={SecrchData}
-              pagination
               keyField="activity_id"
+              pagination
+              paginationServer // ← สำคัญ: ใช้ pagination แบบ server
+              customStyles={customStyles}
+              paginationPerPage={perPage}
+              paginationDefaultPage={page}
+              paginationTotalRows={totalRows} // ← ส่งจำนวน row ทั้งหมดมาจาก Laravel
+              onChangePage={handlePageChange} // ← เรียกเมื่อเปลี่ยนหน้า
+              onChangeRowsPerPage={handlePerRowsChange}
+              fixedHeaderScrollHeight="100%"
             />
           </div>
         </div>

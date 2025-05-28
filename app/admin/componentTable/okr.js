@@ -12,7 +12,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import Swal from "sweetalert2";
-export default function DatatableOkr({  }) {
+export default function DatatableOkr({ year_id ,year}) {
   const [data, setData] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -97,12 +97,62 @@ export default function DatatableOkr({  }) {
       width: "140px",
     },
     {
-        name: "ชื่อ",
-        selector: (row) => row.okr_name,
-        sortable: true,
-        wrap: true,
-        width: "600px",
+      name: "ชื่อ",
+      selector: (row) => row.okr_name,
+      sortable: true,
+      wrap: true,
+      width: "350px",
+    },
+    {
+      name: "เป้าหมาย",
+      selector: (row) => row.goal,
+      sortable: true,
+      center: "true",
+      wrap: true,
+      width: "140px",
+    },
+    {
+      name: "ผลลัพธ์",
+      selector: (row) => row.result,
+      sortable: true,
+      wrap: true,
+      center: "true",
+      width: "140px",
+    },
+    {
+      name: "สถานะรายงาน",
+      width: "200px",
+      sortable: true,
+      center: "true",
+      cell: (row) => {
+        let text = "";
+        let bg = "";
+
+        switch (row.status_report) {
+          case 0:
+            text = "ยังไม่มีการรายงาน";
+            bg = "bg-yellow-200 text-yellow-800";
+            break;
+          case 1:
+            text = "มีการรายงานเรียบร้อย";
+            bg = "bg-green-200 text-green-800";
+            break;
+          case 2:
+            text = "หมดเวลารายงานโดยไม่มีการรายงาน";
+            bg = "bg-red-200 text-red-800";
+            break;
+          default:
+            text = "-";
+            bg = "bg-gray-200 text-gray-800";
+        }
+
+        return (
+          <span className={`px-2 py-1 rounded text-sm font-medium ${bg}`}>
+            {text}
+          </span>
+        );
       },
+    },
     {
       name: "สถานะ",
       cell: (row) => (
@@ -155,18 +205,23 @@ export default function DatatableOkr({  }) {
               onClick={() => {
                 // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
                 sessionStorage.setItem(
-                  "actionplan_data",
+                  "okr_detail",
                   JSON.stringify({
                     id: row.okr_id,
-                    // id_actionplan: row.action_plan_number,
                     name: row.okr_name,
-                    budget: row.budget,
-                    Balance: row.budget - row.spend_money,
+                    year: year,
+                    user_teacher :  row.okr_name,
+                    user_employee :  row.okr_name,
+                    start_date :  row.start_date,
+                    end_date :  row.end_date,
+                    goal :  row.goal,
+                    result :  row.result,
+                    report_data :  row.report_data,
                   })
                 );
 
                 // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${number_strategic}/${row.action_plan_number}`;
+                window.location.href = `/admin/okr/detail`;
               }}
             >
               <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
@@ -244,9 +299,7 @@ export default function DatatableOkr({  }) {
           console.log("การอัปเดตสถานะสำเร็จ");
           setData((prevData) =>
             prevData.map((item) =>
-              item.okr_id === row.okr_id
-                ? { ...item, status: newStatus }
-                : item
+              item.okr_id === row.okr_id ? { ...item, status: newStatus } : item
             )
           );
           // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
@@ -293,35 +346,35 @@ export default function DatatableOkr({  }) {
   const [perPage, setPerPage] = useState(10); // default เป็น 10
   const [hasMounted, setHasMounted] = useState(false);
 
-  const fetchData = useCallback(
-    async (page = 1, perPage = 10) => {
-      try {
-        setLoading(true);
-        const token = Cookies.get("token");
-        const res = await GetDataokrall(token,page, perPage);
-        setData(res.data);
-        setSecrchData(res.data);
-        setTotalRows(res.total);
+  const fetchData = useCallback(async (page = 1, perPage = 10,year_id) => {
+    try {
+      setLoading(true);
+      console.log(year_id)
+      const token = Cookies.get("token");
+      const res = await GetDataokrall(token, page, perPage,year_id);
+      setData(res.data);
+      setSecrchData(res.data);
+      setTotalRows(res.total);
 
-        console.log(res);
-      } catch (err) {
-        console.error("Error loading data:", err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+      console.log(res);
+    } catch (err) {
+      console.error("Error loading data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
   useEffect(() => {
+    // console.log(year_id)
+    // console.log(year)
     if (hasMounted) {
-      fetchData(page, perPage);
+      fetchData(page, perPage,year_id);
     }
-  }, [fetchData, hasMounted, page, perPage]);
+  }, [fetchData, hasMounted, page, perPage,year_id]);
 
   // Fixed handlePageChange function
   const handlePageChange = (newPage) => {

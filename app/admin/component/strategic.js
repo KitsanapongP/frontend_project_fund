@@ -14,7 +14,12 @@ import Switch from "react-switch";
 import Swal from "sweetalert2";
 import { FaBalanceScale } from "react-icons/fa";
 
-export default function DatatableStrig({ year_id, onTotalChange,onEdit }) {
+export default function DatatableStrig({
+  year_id,
+  onTotalChange,
+  onEdit,
+  year,
+}) {
   const [data, setData] = useState([]);
   const [SecrchData, setSecrchData] = useState([]);
   const [SearchTerm, setSearchTerm] = useState("");
@@ -50,6 +55,7 @@ export default function DatatableStrig({ year_id, onTotalChange,onEdit }) {
       sortable: true,
       right: "true",
       width: "160px",
+      selector: (row) => row.budget,
       wrap: true,
       cell: (row) =>
         `${parseFloat(row.budget).toLocaleString("th-TH", {
@@ -62,6 +68,7 @@ export default function DatatableStrig({ year_id, onTotalChange,onEdit }) {
       sortable: true,
       right: "true",
       width: "160px",
+      selector: (row) => row.spend_money,
       cell: (row) =>
         `${parseFloat(row.spend_money).toLocaleString("th-TH", {
           minimumFractionDigits: 2,
@@ -73,6 +80,7 @@ export default function DatatableStrig({ year_id, onTotalChange,onEdit }) {
       sortable: true,
       right: "true",
       width: "160px",
+      selector: (row) => row.budget - row.spend_money,
       cell: (row) =>
         `${parseFloat(row.budget - row.spend_money).toLocaleString("th-TH", {
           minimumFractionDigits: 2,
@@ -138,6 +146,8 @@ export default function DatatableStrig({ year_id, onTotalChange,onEdit }) {
                     name: row.strategic_name,
                     budget: row.budget,
                     Balance: row.budget - row.spend_money,
+                    year_id: year_id,
+                    year: year,
                   })
                 );
 

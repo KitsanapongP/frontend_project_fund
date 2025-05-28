@@ -24,7 +24,6 @@ export default function HomeProject({ params }) {
   const [Project, setProject] = useState({ id: "", name: "", budget: "" });
   const [open, setOpen] = useState(false);
   const { id_strategic, id_actionplan } = use(params);
-
   const [isOpenModalAdd, setIsOpenModalAdd] = useState(false);
   const [isOpenModalAddNew, setIsOpenModalAddNew] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
@@ -73,26 +72,9 @@ export default function HomeProject({ params }) {
   const handleModalSelect = (type) => {
     if (type === "new") {
       toggleModalAdd();
-      router.push(`./${id_actionplan}/addnewproject`);
+      router.push(`./${id_actionplan}/addnewproject?total=${totalRows+1}`);
     }
   };
-
-  const columns = [
-    {
-      name: "ชื่อ",
-      selector: (row) => row.name,
-      sortable: true,
-    },
-    {
-      name: "ตำแหน่ง",
-      selector: (row) => row.role,
-    },
-  ];
-
-  const data = [
-    { id: 1, name: "สมชาย", role: "ผู้ดูแล" },
-    { id: 2, name: "วิรัตน์", role: "เจ้าหน้าที่" },
-  ];
 
   return (
     <>

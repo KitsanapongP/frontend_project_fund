@@ -14,6 +14,7 @@ import { GetDatayear } from "../../fetch_api/fetch_api_admin";
 import Aos from "aos";
 
 export default function HomeStrategic() {
+  
   const [yearOptions, setyearOptions] = useState([
     // { value: 1, label: "2568" },
     // { value: 2, label: "2567" },
@@ -119,14 +120,18 @@ export default function HomeStrategic() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (yearOptions.length > 0 && !Year.year_id) {
-      setYear({
-        ...Year,
-        year_id: yearOptions[0].year_id,
-      });
-    }
-  }, [yearOptions]);
+ useEffect(() => {
+  if (yearOptions.length > 0 && !Year.year_id) {
+    const { year_id, year } = yearOptions[0]; // หรือ .value, .label ถ้าเป็น react-select
+    setYear((prev) => ({
+      ...prev,
+      year_id,
+      year_label:year,
+    }));
+    console.log(year)
+  }
+  
+}, [yearOptions]);
 
   return (
     <>
@@ -148,7 +153,14 @@ export default function HomeStrategic() {
                   name="year"
                   value={Year.year_id ?? ""}
                   onChange={(e) => {
-                    setYear({ ...Year, year_id: e.target.value });
+                    const value = e.target.value;
+                    const label = e.target.options[e.target.selectedIndex].text;
+                    console.log(label)
+                    setYear({
+                      ...Year,
+                      year_id: value,
+                      year_label: label,
+                    });
                   }}
                   className="block rounded-md px-4 py-2 bg-gray-100 border border-gray-300 shadow-sm hover:border-blue-500 focus:outline-none focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200"
                   style={{
@@ -177,9 +189,10 @@ export default function HomeStrategic() {
               </button>
             </div>
             <div>
-              {Year.year_id !== null && (
+              {Year.year_id !== Year.year_label !== null && (
                 <DatatableStrig
                   year_id={Year.year_id}
+                  year={Year.year_label}
                   onTotalChange={setTotalRows}
                   onEdit={toggleModalEdit}
                 />

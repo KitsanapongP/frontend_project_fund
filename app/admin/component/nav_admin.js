@@ -105,7 +105,7 @@ export default function Menu() {
             </div>
             <ChevronDown
               size={16}
-              className={`transition-transform duration-500 ms-16 md:ms-8 2xl:ms-22.5 ${
+              className={`transition-transform duration-500 ms-16 md:ms-8 2xl:ms-14 ${
                 open ? "rotate-180" : ""
               }`}
             />
@@ -191,7 +191,7 @@ export default function Menu() {
             </div>
             <ChevronDown
               size={16}
-              className={`transition-transform duration-500 ms-16 md:ms-15 2xl:ms-28 ${
+              className={`transition-transform duration-500 ms-16 md:ms-15 2xl:ms-19 ${
                 opendata ? "rotate-180" : ""
               }`}
             />

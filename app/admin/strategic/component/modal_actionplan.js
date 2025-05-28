@@ -7,7 +7,7 @@ import Swal from "sweetalert2";
 import Select from "react-select";
 import {
   AddDataActionplan,
-  EditDataActionpla,
+  EditDataActionplan,
 } from "../../../fetch_api/fetch_api_admin";
 import Cookies from "js-cookie";
 
@@ -91,7 +91,6 @@ export function ModalAddActionplan({ isOpen, onClose, onSelect }) {
 export function ModalAddActionplanNew({
   isOpen,
   onClose,
-  yearall,
   type,
   data,
   strategic,
@@ -220,7 +219,7 @@ export function ModalAddActionplanNew({
             response = await AddDataActionplan(token, actionplan);
           } else {
             console.log(actionplan);
-            response = await EditDataActionpla(token, actionplan);
+            response = await EditDataActionplan(token, actionplan);
           }
 
           // if(response)
@@ -317,10 +316,10 @@ export function ModalAddActionplanNew({
                   required
                   value={actionplan.name || ""}
                   onChange={(e) => {
-                    setActionplan({
-                      ...actionplan,
+                    setActionplan((prev) => ({
+                      ...prev,
                       name: e.target.value,
-                    });
+                    }));
                   }}
                   // เมื่อหลุดโฟกัส
                   onBlur={() =>
@@ -363,10 +362,10 @@ export function ModalAddActionplanNew({
                         const numericPart = input.slice(1).replace(/\D/g, ""); // ลบที่ไม่ใช่ตัวเลข
                         input = "A" + numericPart;
                       }
-                      setActionplan({
-                        ...actionplan,
+                      setActionplan((prev) => ({
+                        ...prev,
                         number: input,
-                      });
+                      }));
                     }}
                     onBlur={() =>
                       setcheckActionplan({
@@ -417,10 +416,10 @@ export function ModalAddActionplanNew({
                         }
 
                         if (rawValue <= maxBudget) {
-                          setActionplan({
-                            ...actionplan,
+                          setActionplan((prev) => ({
+                            ...prev,
                             budget: raw,
-                          });
+                          }));
                         }
                       }
                     }}
@@ -457,10 +456,10 @@ export function ModalAddActionplanNew({
                   )}
                   onChange={(e) => {
                     console.log("Selected Value:", e.value);
-                    setActionplan({
-                      ...actionplan,
+                    setActionplan((prev) => ({
+                      ...prev,
                       id_strategic: e.value,
-                    });
+                    }));
                   }}
                   options={strategicOptions} // ตัวเลือกทั้งหมด
                   styles={customStyles}

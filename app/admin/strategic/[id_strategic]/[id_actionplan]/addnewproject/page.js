@@ -14,8 +14,29 @@ import dynamic from "next/dynamic";
 const CustomEditor = dynamic(() => import("../../../component/editor"), {
   ssr: false,
 });
+import Cookies from "js-cookie";
+import { useSearchParams } from "next/navigation";
+import {
+  GetDataprincipleUse,
+  GetDatadepartmentUse,
+  GetDatastrategicForAdd,
+  GetDataOkrUse,
+  GetDatateacherUse,
+  GetDataemployeeUse,
+} from "../../../../../fetch_api/fetch_api_admin";
+import {
+  ModalAddOkrNew,
+  ModalAddObjectiveNew,
+  ModalAddUserNew,
+} from "../addnewproject/component/modal";
+import { type } from "jquery";
 
-export default function addProject() {
+export default function addProject({}) {
+  const searchParams = useSearchParams();
+  const total = searchParams.get("total");
+  const [isOpenModalOKRAdd, setIsOpenModalOKRAdd] = useState(false);
+  const [isOpenModalObjectiveAdd, setIsOpenModalObjectiveAdd] = useState(false);
+  const [isOpenModalUserAdd, setIsOpenModalUserAdd] = useState(false);
   const [dataAddNewProject, setdataAddNewProject] = useState({
     id_project: "",
     name: "",
@@ -29,6 +50,10 @@ export default function addProject() {
     start_date: "",
     end_date: "",
     type: [],
+    okr: [],
+    objective: [],
+    employee: [],
+    teacher: [],
     reason: "",
     obstacle: "",
     result: "",
@@ -36,12 +61,130 @@ export default function addProject() {
 
   useEffect(() => {
     console.log(dataAddNewProject);
+    const handleSaveToCookie = () => {
+      Cookies.set("dataAddNewProject", JSON.stringify(dataAddNewProject), {
+        expires: 7,
+        path: "/",
+      });
+    };
+
+    // 1. บันทึกตอนก่อนออกจากหน้า (รวมกด refresh, ปิดแท็บ)
+    window.addEventListener("beforeunload", handleSaveToCookie);
+
+    // 2. บันทึกตอนผู้ใช้กด back/forward (popstate)
+    window.addEventListener("popstate", handleSaveToCookie);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleSaveToCookie);
+      window.removeEventListener("popstate", handleSaveToCookie);
+    };
   }, [dataAddNewProject]);
+
+  const [strategic, setStrategic] = useState({
+    id: "",
+    name: "",
+    budget: "",
+    year_id: "",
+    year: "",
+  });
+
+  useEffect(() => {
+    async function fetchStrategicData() {
+      const data = sessionStorage.getItem("strategic_data");
+      if (!data) {
+        window.location.href = `/admin/strategic`;
+        return;
+      }
+
+      const parsed = JSON.parse(data);
+      setStrategic(parsed); // set state
+      // console.log("set strategic:", parsed);
+      setdataAddNewProject((prev) => ({
+        ...prev,
+        year: parsed.year_id,
+      }));
+      try {
+        const token = Cookies.get("token"); // อย่าลืมดึง token ด้วย
+        const res_strategic = await GetDatastrategicForAdd(
+          token,
+          parsed.year_id
+        );
+
+        const mappedOptions = res_strategic.data.map((item) => ({
+          value: item.strategic_id,
+          label: `${item.strategic_number} : ${item.strategic_name}`,
+        }));
+
+        setoptionsStrategic(mappedOptions);
+
+        const res_Okr = await GetDataOkrUse(token, parsed.year_id);
+        const mappedOkrOptions = res_Okr.map((item) => ({
+          value: item.okr_id,
+          label: `${item.okr_number} : ${item.okr_name}`,
+        }));
+        setoptionsOkr(mappedOkrOptions);
+      } catch (err) {
+        console.error("Error loading strategic options:", err);
+      }
+    }
+
+    fetchStrategicData();
+  }, []);
+
+  const [optionsOkr, setoptionsOkr] = useState([
+    // { value: "1", label: "2567" },
+    // { value: "2", label: "2568" },
+    // { value: "3", label: "2569" },
+  ]);
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const token = Cookies.get("token");
+        // console.log("token : ", token);
+        const res = await GetDataprincipleUse(token);
+        const mappedOptions = res.map((item) => ({
+          value: item.principle_id,
+          label: item.principle_name,
+        }));
+        setoptionsprinciples(mappedOptions);
+
+        const res_Deparment = await GetDatadepartmentUse(token);
+        const mappedDeparmentOptions = res_Deparment.map((item) => ({
+          value: item.departments_id,
+          label: item.departments_name,
+        }));
+        setOptionsDeparment(mappedDeparmentOptions);
+
+        const res_employee = await GetDataemployeeUse(token);
+        console.log(res_employee);
+        const mappedemployeeOptions = res_employee.map((item) => ({
+          value: item.id,
+          label: `${item.name}  `,
+          position: item.position?.position_name,
+        }));
+        setoptionsemployee(mappedemployeeOptions);
+
+        const res_teacher = await GetDatateacherUse(token);
+        // console.log(res_teacher);
+        const mappedteacherOptions = res_teacher.map((item) => ({
+          value: item.id,
+          label: `${item.name}  `,
+          position: item.position?.position_name,
+        }));
+        setoptionsteacher(mappedteacherOptions);
+      } catch (err) {
+        console.error("Error loading data:", err);
+      }
+    }
+
+    fetchData();
+  }, []);
+
   // const [selecteddeparment, setSelecteddeparment] = useState(null);
   const [optionsDeparment, setOptionsDeparment] = useState([
-    { value: "D1", label: "IT" },
-    { value: "D2", label: "AI" },
-    { value: "D3", label: "CS" },
+    // { value: "D1", label: "IT" },
+    // { value: "D2", label: "AI" },
+    // { value: "D3", label: "CS" },
   ]);
 
   const [optionsYear, setoptionsYear] = useState([
@@ -51,12 +194,12 @@ export default function addProject() {
   ]);
 
   const [optionsStrategic, setoptionsStrategic] = useState([
-    { value: "S1", label: "S1 : ยุทธศาสตร์ด้านการจัดการศึกษา" },
-    { value: "S2", label: "S2 : ยุทธศาสตร์ด้านการวิจัย" },
-    {
-      value: "S3",
-      label: "S3 : ยุทธศาสตร์ด้านการบริการวิชาการเพื่อสร้างประโยชน์ให้สังคม",
-    },
+    // { value: "S1", label: "S1 : ยุทธศาสตร์ด้านการจัดการศึกษา" },
+    // { value: "S2", label: "S2 : ยุทธศาสตร์ด้านการวิจัย" },
+    // {
+    //   value: "S3",
+    //   label: "S3 : ยุทธศาสตร์ด้านการบริการวิชาการเพื่อสร้างประโยชน์ให้สังคม",
+    // },
   ]);
 
   const [optionsActionplan, setoptionsActionplan] = useState([
@@ -76,22 +219,22 @@ export default function addProject() {
   ]);
 
   const [optionsprinciples, setoptionsprinciples] = useState([
-    {
-      value: "PP1",
-      label: "A1 : การพัฒนาหลักสูตรใหม่ ",
-    },
-    {
-      value: "PP2",
-      label: "A2 : การพัฒนา",
-    },
-    {
-      value: "PP3",
-      label: "A3 : การจัดการ",
-    },
-    {
-      value: "PP4",
-      label: "A4 : การจัดการศึกษา)",
-    },
+    // {
+    //   value: "PP1",
+    //   label: "A1 : การพัฒนาหลักสูตรใหม่ ",
+    // },
+    // {
+    //   value: "PP2",
+    //   label: "A2 : การพัฒนา",
+    // },
+    // {
+    //   value: "PP3",
+    //   label: "A3 : การจัดการ",
+    // },
+    // {
+    //   value: "PP4",
+    //   label: "A4 : การจัดการศึกษา)",
+    // },
   ]);
 
   const [optionstype, setoptionstype] = useState([
@@ -104,7 +247,9 @@ export default function addProject() {
       label: "งานเชิงยุทธศาสตร์",
     },
   ]);
-
+  const [typeUser, setTypeuser] = useState();
+  const [optionsteacher, setoptionsteacher] = useState([]);
+  const [optionsemployee, setoptionsemployee] = useState([]);
   // const handleChange = (selectedOption) => {
   //   setSelecteddeparment(selectedOption);
   // };
@@ -115,6 +260,20 @@ export default function addProject() {
   // สำหรับโค้ดที่ต้องรอให้โหลดในเบราว์เซอร์ก่อน
 
   useEffect(() => {
+    const saved = Cookies.get("dataAddNewProject");
+
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        console.log(parsed);
+        setdataAddNewProject((prev) => ({
+          ...prev,
+          ...parsed, // รวมค่าเดิม + จาก cookie
+        }));
+      } catch (e) {
+        console.error("ไม่สามารถแปลงข้อมูลจาก Cookie ได้", e);
+      }
+    }
     setIsMounted(true); // ตั้งค่าเป็น true เมื่อคอมโพเนนต์ถูก mount แล้วบน client
   }, []);
 
@@ -205,6 +364,165 @@ export default function addProject() {
     },
   ];
 
+  const columns_okr = [
+    {
+      name: "ข้อ",
+      selector: (row, index) => index + 1,
+      sortable: true,
+      width: "100px",
+    },
+    {
+      name: "ชื่อ",
+      selector: (row) => row.name,
+      sortable: true,
+      wrap: true,
+    },
+    {
+      name: "จัดการ",
+      cell: (row) => (
+        <>
+          <div style={{ padding: "5px" }}>
+            {" "}
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100  group"
+              onClick={() =>
+                setdataAddNewProject((prev) => ({
+                  ...prev,
+                  okr: prev.okr.filter((item) => item.id !== row.id),
+                }))
+              } // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดปุ่ม
+            >
+              <i className="bi bi-trash text-xl group-hover:text-red-500"></i>{" "}
+            </button>
+          </div>
+        </>
+      ),
+      ignoreRowClick: true,
+    },
+  ];
+  const columns_objective = [
+    {
+      name: "ข้อ",
+      selector: (row, index) => index + 1,
+      sortable: true,
+      width: "100px",
+    },
+    {
+      name: "ชื่อ",
+      selector: (row) => row.name,
+      sortable: true,
+      wrap: true,
+    },
+    {
+      name: "จัดการ",
+      cell: (row) => (
+        <>
+          <div style={{ padding: "5px" }}>
+            {" "}
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100  group"
+              onClick={() =>
+                setdataAddNewProject((prev) => ({
+                  ...prev,
+                  objective: prev.objective.filter(
+                    (item) => item.id !== row.id
+                  ),
+                }))
+              } // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดปุ่ม
+            >
+              <i className="bi bi-trash text-xl group-hover:text-red-500"></i>{" "}
+            </button>
+          </div>
+        </>
+      ),
+      ignoreRowClick: true,
+    },
+  ];
+
+  const columns_useremployee = [
+    {
+      name: "ลำดับ",
+      selector: (row, index) => index + 1,
+      sortable: true,
+      width: "100px",
+    },
+    {
+      name: "ชื่อ",
+      selector: (row) => row.name,
+      // sortable: true,
+      wrap: true,
+    },
+    {
+      name: "ตำแหน่ง",
+      selector: (row) => row.position || "",
+      // sortable: true,
+      wrap: true,
+    },
+    {
+      name: "จัดการ",
+      cell: (row) => (
+        <>
+          <div style={{ padding: "5px" }}>
+            {" "}
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100  group"
+              onClick={() =>
+                setdataAddNewProject((prev) => ({
+                  ...prev,
+                  employee: prev.employee.filter((item) => item.id !== row.id),
+                }))
+              } // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดปุ่ม
+            >
+              <i className="bi bi-trash text-xl group-hover:text-red-500"></i>{" "}
+            </button>
+          </div>
+        </>
+      ),
+      ignoreRowClick: true,
+    },
+  ];
+  const columns_userteacher = [
+    {
+      name: "ลำดับ",
+      selector: (row, index) => index + 1,
+      sortable: true,
+      width: "100px",
+    },
+    {
+      name: "ชื่อ",
+      selector: (row) => row.name,
+      // sortable: true,
+      wrap: true,
+    },
+    {
+      name: "ตำแหน่ง",
+      selector: (row) => row.position || "",
+      // sortable: true,
+      wrap: true,
+    },
+    {
+      name: "จัดการ",
+      cell: (row) => (
+        <>
+          <div style={{ padding: "5px" }}>
+            {" "}
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100  group"
+              onClick={() =>
+                setdataAddNewProject((prev) => ({
+                  ...prev,
+                  teacher: prev.teacher.filter((item) => item.id !== row.id),
+                }))
+              } // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดปุ่ม
+            >
+              <i className="bi bi-trash text-xl group-hover:text-red-500"></i>{" "}
+            </button>
+          </div>
+        </>
+      ),
+      ignoreRowClick: true,
+    },
+  ];
   const customStylesTable = {
     headCells: {
       style: {
@@ -253,10 +571,10 @@ export default function addProject() {
                     required
                     value={dataAddNewProject.name || ""}
                     onChange={(e) =>
-                      setdataAddNewProject({
-                        ...dataAddNewProject,
+                      setdataAddNewProject((prev) => ({
+                        ...prev,
                         name: e.target.value,
-                      })
+                      }))
                     }
                   />
                 </div>
@@ -270,7 +588,7 @@ export default function addProject() {
                     className="bg-gray-50  shadow-md border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                     placeholder="กรุณากรอกรหัสโครงการ"
                     readOnly
-                    value={"1"}
+                    value={"P" + total}
                   />
                 </div>
                 <div className="col-span-12 md:col-span-6">
@@ -284,10 +602,10 @@ export default function addProject() {
                     placeholder="กรุณากรอกสถานที่"
                     value={dataAddNewProject.location || ""}
                     onChange={(e) =>
-                      setdataAddNewProject({
-                        ...dataAddNewProject,
+                      setdataAddNewProject((prev) => ({
+                        ...prev,
                         location: e.target.value,
-                      })
+                      }))
                     }
                   />
                 </div>
@@ -348,10 +666,10 @@ export default function addProject() {
                           placeholder="Select date start"
                           value={dataAddNewProject.start_date}
                           onChange={(e) =>
-                            setdataAddNewProject({
-                              ...dataAddNewProject,
+                            setdataAddNewProject((prev) => ({
+                              ...prev,
                               start_date: e.target.value,
-                            })
+                            }))
                           }
                         />
                       </div>
@@ -372,14 +690,20 @@ export default function addProject() {
                           id="datepicker-range-end"
                           name="end"
                           type="date"
-                          className="bg-gray-50 xl:w-67 md:w-38 w-38 shadow-md  border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block  ps-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                          disabled={!dataAddNewProject.start_date}
+                          className={`xl:w-67 md:w-39 w-39 ${
+                            !dataAddNewProject.start_date
+                              ? "bg-gray-100"
+                              : "bg-white"
+                          }   border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block  ps-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500`}
                           placeholder="Select date end"
                           value={dataAddNewProject.end_date}
+                          min={dataAddNewProject.start_date || ""}
                           onChange={(e) =>
-                            setdataAddNewProject({
-                              ...dataAddNewProject,
+                            setdataAddNewProject((prev) => ({
+                              ...prev,
                               end_date: e.target.value,
-                            })
+                            }))
                           }
                         />
                       </div>
@@ -422,7 +746,16 @@ export default function addProject() {
                     ปีงบประมาณ
                   </label>
 
-                  <Select
+                  <input
+                    id="year"
+                    name="year"
+                    type="text"
+                    className="bg-gray-50  shadow-md border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                    placeholder="ปีงบประมาณ"
+                    value={strategic.year || ""}
+                    readOnly
+                  />
+                  {/* <Select
                     id="idYear"
                     value={optionsYear.find(
                       (option) => option.value === dataAddNewProject.year
@@ -438,7 +771,7 @@ export default function addProject() {
                     className="text-sm shadow-md"
                     placeholder="กรุณาเลือกปีงบประมาณ"
                     instanceId="deparment-select" // Add this line to fix duplicate IDs
-                  />
+                  /> */}
                 </div>
                 <div className="col-span-12">
                   <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -584,6 +917,7 @@ export default function addProject() {
                       <h2>OKR </h2>
                       <button
                         type="button"
+                        onClick={() => setIsOpenModalOKRAdd(true)}
                         className=" top-9 right-2 bg-blue-500 text-white text-sm px-8 py-1.5 rounded-md hover:bg-blue-600"
                       >
                         เพิ่ม
@@ -594,10 +928,15 @@ export default function addProject() {
                       {" "}
                       <div className="bg-white rounded-md border border-gray-200 shadow-md mt-3 ">
                         <DataTable
-                          columns={columns}
-                          data={SecrchData}
+                          columns={columns_okr}
+                          data={dataAddNewProject.okr}
                           customStyles={customStylesTable}
                           fixedHeaderScrollHeight="100%"
+                          noDataComponent={
+                            <div className="text-gray-500 py-4 text-center">
+                              ยังไม่เพิ่มข้อมูลวัตถุประสงค์
+                            </div>
+                          }
                         />
                       </div>
                     </div>
@@ -638,6 +977,7 @@ export default function addProject() {
                       <h2>วัตถุประสงค์ </h2>
                       <button
                         type="button"
+                        onClick={() => setIsOpenModalObjectiveAdd(true)}
                         className=" top-9 right-2 bg-blue-500 text-white text-sm px-8 py-1.5 rounded-md hover:bg-blue-600"
                       >
                         เพิ่ม
@@ -647,10 +987,15 @@ export default function addProject() {
                     <div className="relative">
                       <div className="bg-white rounded-md border border-gray-200 shadow-md mt-3 ">
                         <DataTable
-                          columns={columns}
-                          data={SecrchData}
+                          columns={columns_objective}
+                          data={dataAddNewProject.objective}
                           customStyles={customStylesTable}
                           fixedHeaderScrollHeight="100%"
+                          noDataComponent={
+                            <div className="text-gray-500 py-4 text-center">
+                              ยังไม่เพิ่มข้อมูล OKR
+                            </div>
+                          }
                         />
                       </div>
                     </div>
@@ -663,7 +1008,7 @@ export default function addProject() {
                 <div className="col-span-12">
                   <div className="flex flex-col ">
                     <div className="flex flex-row justify-between mb-2">
-                      <h2>ตัวชี้วัด </h2>
+                      <h2>ตัวชี้วัดและค่าเป้าหมายของโครงการ/กิจกรรม </h2>
                       <button
                         type="button"
                         className=" top-9 right-2 bg-blue-500 text-white text-sm px-8 py-1.5 rounded-md hover:bg-blue-600"
@@ -679,6 +1024,12 @@ export default function addProject() {
                           data={SecrchData}
                           customStyles={customStylesTable}
                           fixedHeaderScrollHeight="100%"
+                          noDataComponent={
+                            <div className="text-gray-500 py-4 text-center">
+                              ยังไม่เพิ่มข้อมูล
+                              ตัวชี้วัดและค่าเป้าหมายของโครงการ
+                            </div>
+                          }
                         />
                       </div>
                     </div>
@@ -747,6 +1098,10 @@ export default function addProject() {
                       <h2>ผู้รับผิดชอบระดับปฏิบัติ </h2>
                       <button
                         type="button"
+                        onClick={() => {
+                          setIsOpenModalUserAdd(true);
+                          setTypeuser(1);
+                        }}
                         className=" top-9 right-2 bg-blue-500 text-white text-sm px-8 py-1.5 rounded-md hover:bg-blue-600"
                       >
                         เพิ่ม
@@ -756,10 +1111,15 @@ export default function addProject() {
                     <div className="relative">
                       <div className="bg-white rounded-md border border-gray-200 shadow-md mt-3 ">
                         <DataTable
-                          columns={columns}
-                          data={SecrchData}
+                          columns={columns_useremployee}
+                          data={dataAddNewProject.employee}
                           customStyles={customStylesTable}
                           fixedHeaderScrollHeight="100%"
+                          noDataComponent={
+                            <div className="text-gray-500 py-4 text-center">
+                              ยังไม่เพิ่มข้อมูลผู้รับผิดชอบระดับปฏิบัติ
+                            </div>
+                          }
                         />
                       </div>
                     </div>
@@ -775,6 +1135,10 @@ export default function addProject() {
                       <h2>ผู้รับผิดชอบระดับนโยบาย / บริหาร </h2>
                       <button
                         type="button"
+                        onClick={() => {
+                          setIsOpenModalUserAdd(true);
+                          setTypeuser(2);
+                        }}
                         className=" top-9 right-2 bg-blue-500 text-white text-sm px-8 py-1.5 rounded-md hover:bg-blue-600"
                       >
                         เพิ่ม
@@ -784,10 +1148,15 @@ export default function addProject() {
                     <div className="relative">
                       <div className="bg-white rounded-md border border-gray-200 shadow-md mt-3 ">
                         <DataTable
-                          columns={columns}
-                          data={SecrchData}
+                          columns={columns_userteacher}
+                          data={dataAddNewProject.teacher}
                           customStyles={customStylesTable}
                           fixedHeaderScrollHeight="100%"
+                          noDataComponent={
+                            <div className="text-gray-500 py-4 text-center">
+                              ยังไม่เพิ่มข้อมูลผู้รับผิดชอบระดับนโยบาย / บริหาร
+                            </div>
+                          }
                         />
                       </div>
                     </div>
@@ -806,6 +1175,133 @@ export default function addProject() {
             </div>
           </div>
         </div>
+      )}
+      {strategic && isOpenModalOKRAdd && (
+        <ModalAddOkrNew
+          onClose={() => setIsOpenModalOKRAdd(false)}
+          isOpen={ModalAddOkrNew}
+          type={1}
+          oleOkr={dataAddNewProject.okr}
+          onSelectOkr={(selectedOkrValue) => {
+            console.log(selectedOkrValue),
+              setdataAddNewProject((prev) => {
+                const exists = (prev.okr || []).some(
+                  (item) => item.id === selectedOkrValue.value
+                );
+
+                if (exists) return prev;
+
+                return {
+                  ...prev,
+                  okr: [
+                    ...(prev.okr || []),
+                    {
+                      id: selectedOkrValue.value,
+                      name: selectedOkrValue.label,
+                    },
+                  ],
+                };
+              });
+          }}
+          okr={optionsOkr}
+        />
+      )}
+
+      {strategic && isOpenModalObjectiveAdd && (
+        <ModalAddObjectiveNew
+          onClose={() => setIsOpenModalObjectiveAdd(false)}
+          isOpen={ModalAddOkrNew}
+          type={1}
+          oleOkr={dataAddNewProject.objective}
+          onSelectOkr={(selectedOkrValue) => {
+            console.log(selectedOkrValue),
+              setdataAddNewProject((prev) => {
+                const exists = (prev.objective || []).some(
+                  (item) => item.name === selectedOkrValue // ตรวจจากชื่อ ไม่ใช้ value แล้ว
+                );
+
+                if (exists) return prev;
+
+                const newId = (prev.objective?.length || 0) + 1;
+
+                return {
+                  ...prev,
+                  objective: [
+                    ...(prev.objective || []),
+                    {
+                      id: newId, // ✅ index + 1
+                      name: selectedOkrValue, // ✅ ถ้า selectedOkrValue เป็น string
+                    },
+                  ],
+                };
+              });
+          }}
+          okr={optionsOkr}
+        />
+      )}
+
+      {strategic && isOpenModalUserAdd && typeUser == 1 && (
+        <ModalAddUserNew
+          onClose={() => setIsOpenModalUserAdd(false)}
+          isOpen={ModalAddUserNew}
+          type={typeUser}
+          olduser={dataAddNewProject.employee}
+          onSelectuser={(selectedOkrValue) => {
+            // console.log(selectedOkrValue),
+              setdataAddNewProject((prev) => {
+                const exists = (prev.employee || []).some(
+                  (item) => item.id === selectedOkrValue.value
+                );
+
+                if (exists) return prev;
+
+                return {
+                  ...prev,
+                  employee: [
+                    ...(prev.employee || []),
+                    {
+                      id: selectedOkrValue.value,
+                      name: selectedOkrValue.label,
+                      position: selectedOkrValue.position,
+                    },
+                  ],
+                };
+              });
+          }}
+          user={optionsemployee}
+        />
+      )}
+
+      {strategic && isOpenModalUserAdd && typeUser == 2 && (
+        <ModalAddUserNew
+          onClose={() => setIsOpenModalUserAdd(false)}
+          isOpen={ModalAddUserNew}
+          type={typeUser}
+          olduser={dataAddNewProject.teacher}
+          onSelectuser={(selectedOkrValue) => {
+            // console.log(selectedOkrValue),
+              setdataAddNewProject((prev) => {
+                const exists = (prev.teacher || []).some(
+                  (item) => item.id === selectedOkrValue.value
+                );
+
+                if (exists) return prev;
+
+                return {
+                  ...prev,
+                  teacher: [
+                    ...(prev.teacher || []),
+                    {
+                      id: selectedOkrValue.value,
+                      name: selectedOkrValue.label,
+                      position: selectedOkrValue.position,
+                    },
+                  ],
+                };
+              });
+          }}
+          user={optionsteacher}
+        />
       )}
     </>
   );

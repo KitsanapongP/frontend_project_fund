@@ -27,7 +27,13 @@ import {
 
 export default function HomeActionplan({ params }) {
   const searchParams = useSearchParams();
-  const [strategic, setStrategic] = useState({ id: "", name: "", budget: "" });
+  const [strategic, setStrategic] = useState({
+    id: "",
+    name: "",
+    budget: "",
+    year_id: "",
+    year: "",
+  });
   const [isOpenModalAdd, setIsOpenModalAdd] = useState(false);
   const [isOpenModalAddNew, setIsOpenModalAddNew] = useState(false);
   const { id_strategic } = use(params);
@@ -52,16 +58,33 @@ export default function HomeActionplan({ params }) {
       try {
         const token = Cookies.get("token");
         // console.log("token : ", token);
-        const res = await GetDatayear(token);
+        // const res = await GetDatayear(token);
+        let parsed;
+        const data_strategic = sessionStorage.getItem("strategic_data");
+        if (!data_strategic) {
+          window.location.href = `/admin/strategic`;
+        }
+        if (data_strategic) {
+          parsed = JSON.parse(data_strategic);
+          console.log("set strategic:", parsed);
+          setStrategic(parsed);
+          setdata((prev) => ({
+            ...prev,
+            id_year: parsed.year_id,
+          }));
+          // console.log("set strategic:", data);
+        }
         // console.log("year : ", res.data);
-        setyearOptions(res.data);
-        if (res.data.length > 0) {
+        console.log("year : ", parsed.year_id);
+        // setyearOptions(res.data);
+        if (parsed?.year_id) {
           const res_strategic = await GetDatastrategicForAdd(
             token,
-            res.data[0].year_id
+            // res.data[0].year_id
+            parsed.year_id
           );
           setstrategicOptions(res_strategic.data);
-          console.log(res.data[0].year);
+          // console.log(res.data[0].year);
           console.log(res_strategic);
         }
       } catch (err) {
@@ -72,26 +95,10 @@ export default function HomeActionplan({ params }) {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (yearOptions.length > 0 && !Year.year_id) {
-      setYear({
-        ...Year,
-        year_id: yearOptions[0].year_id,
-      });
-    }
-  }, [yearOptions]);
+  // useEffect(() => {
+  //   console.log("✅ data updated:", data);
+  // }, [data]);
 
-  useEffect(() => {
-    const data = sessionStorage.getItem("strategic_data");
-    if (!data) {
-      window.location.href = `/admin/strategic`;
-    }
-    if (data) {
-      const parsed = JSON.parse(data);
-      setStrategic(parsed);
-      console.log("set strategic:", parsed);
-    }
-  }, []);
 
   useEffect(() => {
     Aos.init({
@@ -141,12 +148,11 @@ export default function HomeActionplan({ params }) {
         name: "",
         number: "A" + (totalRows + 1),
         budget: null,
-        id_year: Year.year_id,
         id_strategic: strategic.id,
       }));
     }
   };
-  const toggleModalEdit = (id,name,number,budget,id_year,id_strategic) => {
+  const toggleModalEdit = (id, name, number, budget, id_year, id_strategic) => {
     settype(2);
     setdata((prev) => ({
       ...prev,
@@ -271,15 +277,16 @@ export default function HomeActionplan({ params }) {
         onSelect={handleModalSelect}
       />
 
-      <ModalAddActionplanNew
-        isOpen={isOpenModalAddNew}
-        onClose={() => setIsOpenModalAddNew(false)}
-        type={type}
-        data={data}
-        yearall={yearOptions}
-        strategic={strategicOptions}
-        maxBudget={parseFloat(strategic.Balance)}
-      />
+      {strategic.year_id && (
+        <ModalAddActionplanNew
+          isOpen={isOpenModalAddNew}
+          onClose={() => setIsOpenModalAddNew(false)}
+          type={type}
+          data={data}
+          strategic={strategicOptions}
+          maxBudget={parseFloat(strategic.Balance)}
+        />
+      )}
     </>
   );
 }

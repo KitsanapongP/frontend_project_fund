@@ -4,7 +4,7 @@ import DataTable from "react-data-table-component";
 import {
   GetDataprincipleall,
   UpdatestatusPrinciple,
-  DeleteActivity,
+  DeletePrinciple,
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
@@ -37,7 +37,7 @@ export default function DatatablePrinciple({ onEdit }) {
     if (result.isConfirmed) {
       try {
         const token = Cookies.get("token");
-        const response = await DeleteActivity(token, row.principle_id);
+        const response = await DeletePrinciple(token, row.principle_id);
         // if(response)
         console.log(response);
         if (response) {

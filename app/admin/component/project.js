@@ -12,7 +12,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import Swal from "sweetalert2";
-export default function DatatableProject({ id_action, val,onTotalChange }) {
+export default function DatatableProject({ id_action, val, onTotalChange }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [SecrchData, setSecrchData] = useState([]);
@@ -28,7 +28,12 @@ export default function DatatableProject({ id_action, val,onTotalChange }) {
     try {
       setLoading(true);
       const token = Cookies.get("token");
-      const res = await GetDataprojectByidaction(token, id_action);
+      const res = await GetDataprojectByidaction(
+        token,
+        id_action,
+        page,
+        perPage
+      );
       // console.log(res.data);
       setData(res.data);
       setSecrchData(res.data);
@@ -92,37 +97,95 @@ export default function DatatableProject({ id_action, val,onTotalChange }) {
     },
     {
       name: "กิจกรรม",
-      selector: (row) => row.status,
+      selector: (row) => row.count_activity,
       sortable: true,
+      center: "true",
+    },
+    {
+      name: "รายงานเรียบร้อย",
+      selector: (row) => row.count_activity_report,
+      sortable: true,
+      width: "160px",
+      center: "true",
+    },
+    {
+      name: "ยังไม่ได้รายงาน",
+      selector: (row) => row.count_activity - row.count_activity_report,
+      sortable: true,
+      center: "true",
+      width: "160px",
     },
     {
       name: "งบประมาณ (บาท)",
       // selector: (row) => row.budget,
       sortable: true,
       wrap: true,
+      right: "true",
+      selector: (row) => row.budget,
+      width: "160px",
       cell: (row) =>
         `${Number(row.budget).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "ใช้ไป (บาท)",
       sortable: true,
+      right: "true",
+      selector: (row) => row.spend_money,
+      width: "160px",
       cell: (row) =>
         `${Number(row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "คงเหลือ (บาท)",
       sortable: true,
+      right: "true",
+      selector: (row) => row.budget - row.spend_money,
+      width: "160px",
       cell: (row) =>
         `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
+    },
+    {
+      name: "สถานะรายงาน",
+      width: "200px",
+      sortable: true,
+      center: "true",
+      cell: (row) => {
+        let text = "";
+        let bg = "";
+
+        switch (row.status_report) {
+          case 0:
+            text = "ยังไม่มีการรายงาน";
+            bg = "bg-yellow-200 text-yellow-800";
+            break;
+          case 1:
+            text = "มีการรายงานเรียบร้อย";
+            bg = "bg-green-200 text-green-800";
+            break;
+          case 2:
+            text = "หมดเวลารายงานโดยไม่มีการรายงาน";
+            bg = "bg-red-200 text-red-800";
+            break;
+          default:
+            text = "-";
+            bg = "bg-gray-200 text-gray-800";
+        }
+
+        return (
+          <span className={`px-2 py-1 rounded text-sm font-medium ${bg}`}>
+            {text}
+          </span>
+        );
+      },
     },
     {
       name: "สถานะ",

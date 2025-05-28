@@ -19,11 +19,16 @@ export default function HomeActivity({ params }) {
   const searchParams = useSearchParams();
   const [Activity, setActivity] = useState({ id: "", name: "", budget: "" });
   const [open, setOpen] = useState(false);
+  const [total, setTotal] = useState(false);
+  
   const { id_strategic, id_actionplan, id_project, id_activity } = use(params);
   useEffect(() => {
     const data = sessionStorage.getItem("activitydetail_data");
+    const project_data = sessionStorage.getItem("project_data");
+    const strategic_data = sessionStorage.getItem("strategic_data");
+    const actionplan_data = sessionStorage.getItem("actionplan_data");
     // console.log(data)
-    if (!data) {
+    if (!data || !project_data ||!strategic_data ||!actionplan_data ) {
       window.location.href = `/admin/strategic`;
     }
     console.log(data);
@@ -31,31 +36,6 @@ export default function HomeActivity({ params }) {
       setActivity(JSON.parse(data));
     }
   }, []);
-
-  const chanceOptions = [
-    { value: 1, label: "2568" },
-    { value: 2, label: "2567" },
-    { value: 3, label: "2566" },
-  ];
-  const [Year, setYear] = useState({
-    year_id: "2568",
-  });
-  const columns = [
-    {
-      name: "ชื่อ",
-      selector: (row) => row.name,
-      sortable: true,
-    },
-    {
-      name: "ตำแหน่ง",
-      selector: (row) => row.role,
-    },
-  ];
-
-  const data = [
-    { id: 1, name: "สมชาย", role: "ผู้ดูแล" },
-    { id: 2, name: "วิรัตน์", role: "เจ้าหน้าที่" },
-  ];
 
   return (
     <>
@@ -198,14 +178,28 @@ export default function HomeActivity({ params }) {
                   {" "}
                   งบประมาณ{" "}
                   {Number(Activity.budget).toLocaleString("th-TH", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  บาท
+                </div>
+              </div>
+              <div className="flex justify-between ">
+                <div className="text-lg md:text-2xl   ">
+                  {" "}
+                  คงเหลือ{" "}
+                  {Number(Activity.Balance).toLocaleString("th-TH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   })}{" "}
                   บาท
                 </div>
                 <a
-                  className="w-20 me-2 md:me-8 text-center justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
-                  href={`./${id_activity}/add`}
+                  data-modal-target="popup-modal"
+                  data-modal-toggle="popup-modal"
+                  // onClick={toggleModalAdd}
+                  className="w-22 justify-end text-center md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
+                  href={`./${id_activity}/add?total=${total+1}&maxBudget=${Activity.Balance}`}
                 >
                   รายงานผล
                 </a>
@@ -215,7 +209,9 @@ export default function HomeActivity({ params }) {
               {Activity.id && (
                 <DatatableActivityDetail
                   id_activityref={Activity.id}
-                  val={{ id_strategic, id_actionplan, id_project, id_activity }}
+                  onEditTotal={setTotal}
+                  val={{ id_strategic, id_actionplan, id_project, id_activity ,total }}
+                  Balance={Activity.Balance}
                 />
               )}
             </div>

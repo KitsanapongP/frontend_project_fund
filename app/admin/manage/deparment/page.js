@@ -14,20 +14,20 @@ import {
   Settings,
   User,
 } from "lucide-react";
+import { Suspense } from "react";
+import Loading from "./loading";
 
 import { ModalAdddepartment } from "../modal/modal_department";
 import { GetDatayear } from "../../../fetch_api/fetch_api_admin";
 import DatatableDepartment from "../../componentTable/department";
 
 export default function Homeprinciples() {
-
   const [isOpenModalAdd, setIsOpenModalAdd] = useState(false);
   const [type, settype] = useState(null);
   const [department, setdepartment] = useState({
     id: null,
     name: null,
   });
-
 
   const toggleModalAdd = () => {
     settype(1);
@@ -70,33 +70,36 @@ export default function Homeprinciples() {
 
   return (
     <>
-      <div className="">
-        <Header />
-        <hr />
-        <div className="grid grid-cols-12  gap-0 w-full min-h-screen mt-20">
-          <div className="bg-gray-100  xl:col-span-2 hidden md:block md:col-span-3 pt-4 ps-3">
-            <Menu />
-          </div>
-          <div className="col-span-12 xl:col-span-10  md:col-span-9 mt-5 ms-4 md:mt-3 me-4 md:me-6">
-            <div className="flex flex-row items-center justify-between">
-              <div className="flex flex-row items-center">
-                <div className="text-lg md:text-2xl me-3 ">หน่วยงานทั้งหมด</div>
-              </div>
-              <a
-                onClick={toggleModalAdd}
-                className="w-30 me-2 md:me-8 md:w-30 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
-              >
-                เพิ่มข้อมูล
-              </a>
+      <Suspense fallback={<Loading />}>
+        <div className="">
+          <Header />
+          <hr />
+          <div className="grid grid-cols-12  gap-0 w-full min-h-screen mt-20">
+            <div className="bg-gray-100  xl:col-span-2 hidden md:block md:col-span-3 pt-4 ps-3">
+              <Menu />
             </div>
-            <div>
-              <DatatableDepartment onEdit={toggleModalEdit} />
-              {/* <DatatableProject /> */}
+            <div className="col-span-12 xl:col-span-10  md:col-span-9 mt-5 ms-4 md:mt-3 me-4 md:me-6">
+              <div className="flex flex-row items-center justify-between">
+                <div className="flex flex-row items-center">
+                  <div className="text-lg md:text-2xl me-3 ">
+                    หน่วยงานทั้งหมด
+                  </div>
+                </div>
+                <a
+                  onClick={toggleModalAdd}
+                  className="w-30 me-2 md:me-8 md:w-30 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                >
+                  เพิ่มข้อมูล
+                </a>
+              </div>
+              <div>
+                <DatatableDepartment onEdit={toggleModalEdit} />
+                {/* <DatatableProject /> */}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
+      </Suspense>
       <ModalAdddepartment
         isOpen={isOpenModalAdd}
         onClose={() => setIsOpenModalAdd(false)}

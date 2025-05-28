@@ -147,7 +147,7 @@ export async function GetDatayear(token) {
   // console.log(id_project);
   try {
     console.log("token : ", token);
-    const response = await axios.get(`${api}/api/v1/admin/year`, {
+    const response = await axios.post(`${api}/api/v1/admin/year`,{}, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",

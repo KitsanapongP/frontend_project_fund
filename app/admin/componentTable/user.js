@@ -98,7 +98,7 @@ export default function DatatableUser({}) {
     },
     {
       name: "ตำแหน่ง",
-      selector: (row) => row.position.position_name,
+      selector: (row) => row.position?.position_name,
       sortable: true,
       wrap: true,
       width: "250px",

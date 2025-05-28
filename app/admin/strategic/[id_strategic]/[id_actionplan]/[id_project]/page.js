@@ -25,7 +25,7 @@ export default function HomeActivity({ params }) {
   const [Activity, setActivity] = useState({ id: "", name: "", budget: "" });
   const [open, setOpen] = useState(false);
   const { id_strategic, id_actionplan, id_project } = use(params);
-
+  const [totalRows, setTotalRows] = useState(0);
   const toggleModalAdd = () => {
     setIsOpenModalAdd(!isOpenModalAdd); // เปลี่ยนสถานะของ modal
   };
@@ -68,30 +68,6 @@ export default function HomeActivity({ params }) {
     }
   }, []);
 
-  const chanceOptions = [
-    { value: 1, label: "2568" },
-    { value: 2, label: "2567" },
-    { value: 3, label: "2566" },
-  ];
-  const [Year, setYear] = useState({
-    year_id: "2568",
-  });
-  const columns = [
-    {
-      name: "ชื่อ",
-      selector: (row) => row.name,
-      sortable: true,
-    },
-    {
-      name: "ตำแหน่ง",
-      selector: (row) => row.role,
-    },
-  ];
-
-  const data = [
-    { id: 1, name: "สมชาย", role: "ผู้ดูแล" },
-    { id: 2, name: "วิรัตน์", role: "เจ้าหน้าที่" },
-  ];
 
   return (
     <>
@@ -209,8 +185,19 @@ export default function HomeActivity({ params }) {
                   {" "}
                   งบประมาณ{" "}
                   {Number(Activity.budget).toLocaleString("th-TH", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  บาท
+                </div>
+              </div>
+              <div className="flex justify-between ">
+                <div className="text-lg md:text-2xl   ">
+                  {" "}
+                  คงเหลือ{" "}
+                  {Number(Activity.Balance).toLocaleString("th-TH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   })}{" "}
                   บาท
                 </div>
@@ -226,6 +213,7 @@ export default function HomeActivity({ params }) {
               {Activity.id && (
                 <DatatableActivity
                   id_projectref={Activity.id}
+                  onTotalChange={setTotalRows}
                   val={{ id_strategic, id_actionplan, id_project }}
                 />
               )}
