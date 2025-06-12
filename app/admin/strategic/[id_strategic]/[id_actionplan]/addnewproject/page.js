@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, use, useEffect } from "react";
 import Link from "next/link";
 import Menu from "../../../../component/nav_admin";
 import Header from "../../../../component/header";
@@ -23,20 +23,24 @@ import {
   GetDataOkrUse,
   GetDatateacherUse,
   GetDataemployeeUse,
+  GetDataunitUse,
+  GetDatastyleUse,
 } from "../../../../../fetch_api/fetch_api_admin";
 import {
   ModalAddOkrNew,
   ModalAddObjectiveNew,
   ModalAddUserNew,
+  ModalAddindicatorNew,
 } from "../addnewproject/component/modal";
-import { type } from "jquery";
 
-export default function addProject({}) {
+export default function addProject({ params }) {
   const searchParams = useSearchParams();
   const total = searchParams.get("total");
   const [isOpenModalOKRAdd, setIsOpenModalOKRAdd] = useState(false);
   const [isOpenModalObjectiveAdd, setIsOpenModalObjectiveAdd] = useState(false);
   const [isOpenModalUserAdd, setIsOpenModalUserAdd] = useState(false);
+  const [isOpenModalindicatorAdd, setIsOpenModalindicatorAdd] = useState(false);
+  const { id_strategic, id_actionplan } = use(params);
   const [dataAddNewProject, setdataAddNewProject] = useState({
     id_project: "",
     name: "",
@@ -54,10 +58,34 @@ export default function addProject({}) {
     objective: [],
     employee: [],
     teacher: [],
+    indicator: [],
     reason: "",
     obstacle: "",
     result: "",
   });
+
+  const [isMounted, setIsMounted] = useState(false);
+
+  // สำหรับโค้ดที่ต้องรอให้โหลดในเบราว์เซอร์ก่อน
+
+  useEffect(() => {
+    const saved = Cookies.get("dataAddNewProject");
+
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        console.log(parsed);
+        setdataAddNewProject((prev) => ({
+          ...prev,
+          ...parsed, // รวมค่าเดิม + จาก cookie
+        }));
+      } catch (e) {
+        console.error("ไม่สามารถแปลงข้อมูลจาก Cookie ได้", e);
+      }
+    }
+    setIsMounted(true); // ตั้งค่าเป็น true เมื่อคอมโพเนนต์ถูก mount แล้วบน client
+  }, []);
+
 
   useEffect(() => {
     console.log(dataAddNewProject);
@@ -88,20 +116,41 @@ export default function addProject({}) {
     year: "",
   });
 
+  const [actionplan, setActionplan] = useState({
+    id: "",
+    name: "",
+    budget: "",
+    year_id: "",
+    year: "",
+  });
+
+  useEffect(() => {
+    if (strategic && strategic.year_id) {
+      setdataAddNewProject((prev) => ({
+        ...prev,
+        year: strategic.year_id,
+      }));
+    }
+  }, [strategic]);
   useEffect(() => {
     async function fetchStrategicData() {
       const data = sessionStorage.getItem("strategic_data");
-      if (!data) {
+      const data_actionplan = sessionStorage.getItem("actionplan_data");
+      if (!data || !data_actionplan) {
         window.location.href = `/admin/strategic`;
         return;
       }
 
       const parsed = JSON.parse(data);
-      setStrategic(parsed); // set state
-      // console.log("set strategic:", parsed);
+      setStrategic(JSON.parse(data)); // set state
+      const parsed_actionplan = JSON.parse(data_actionplan);
+      setActionplan(JSON.parse(data_actionplan));
+      // console.log(parsed);
+      // console.log(parsed_actionplan);
       setdataAddNewProject((prev) => ({
         ...prev,
-        year: parsed.year_id,
+        actionplan: parsed_actionplan.id,
+        strategic: parsed.id,
       }));
       try {
         const token = Cookies.get("token"); // อย่าลืมดึง token ด้วย
@@ -172,6 +221,22 @@ export default function addProject({}) {
           position: item.position?.position_name,
         }));
         setoptionsteacher(mappedteacherOptions);
+
+        const res_unit = await GetDataunitUse(token);
+        // console.log(res_teacher);
+        const mappedunitOptions = res_unit.map((item) => ({
+          value: item.unit_id,
+          label: `${item.unit_name}  `,
+        }));
+        setOptionsUnit(mappedunitOptions);
+
+        const res_style = await GetDatastyleUse(token);
+        // console.log(res_teacher);
+        const mappedstyleOptions = res_style.map((item) => ({
+          value: item.style_id,
+          label: `${item.style_name}  `,
+        }));
+        setoptionstype(mappedstyleOptions);
       } catch (err) {
         console.error("Error loading data:", err);
       }
@@ -182,6 +247,12 @@ export default function addProject({}) {
 
   // const [selecteddeparment, setSelecteddeparment] = useState(null);
   const [optionsDeparment, setOptionsDeparment] = useState([
+    // { value: "D1", label: "IT" },
+    // { value: "D2", label: "AI" },
+    // { value: "D3", label: "CS" },
+  ]);
+
+  const [optionsUnit, setOptionsUnit] = useState([
     // { value: "D1", label: "IT" },
     // { value: "D2", label: "AI" },
     // { value: "D3", label: "CS" },
@@ -238,14 +309,14 @@ export default function addProject({}) {
   ]);
 
   const [optionstype, setoptionstype] = useState([
-    {
-      value: "T1",
-      label: "งานประจำ",
-    },
-    {
-      value: "T2",
-      label: "งานเชิงยุทธศาสตร์",
-    },
+    // {
+    //   value: "T1",
+    //   label: "งานประจำ",
+    // },
+    // {
+    //   value: "T2",
+    //   label: "งานเชิงยุทธศาสตร์",
+    // },
   ]);
   const [typeUser, setTypeuser] = useState();
   const [optionsteacher, setoptionsteacher] = useState([]);
@@ -255,27 +326,6 @@ export default function addProject({}) {
   // };
 
   // การใช้ const [isMounted, setIsMounted] = useState(false) เป็นเทคนิคสำคัญในการแก้ไขปัญหา Hydration Error
-  const [isMounted, setIsMounted] = useState(false);
-
-  // สำหรับโค้ดที่ต้องรอให้โหลดในเบราว์เซอร์ก่อน
-
-  useEffect(() => {
-    const saved = Cookies.get("dataAddNewProject");
-
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        console.log(parsed);
-        setdataAddNewProject((prev) => ({
-          ...prev,
-          ...parsed, // รวมค่าเดิม + จาก cookie
-        }));
-      } catch (e) {
-        console.error("ไม่สามารถแปลงข้อมูลจาก Cookie ได้", e);
-      }
-    }
-    setIsMounted(true); // ตั้งค่าเป็น true เมื่อคอมโพเนนต์ถูก mount แล้วบน client
-  }, []);
 
   const customStyles = {
     control: (provided) => ({
@@ -315,13 +365,27 @@ export default function addProject({}) {
 
   const columns = [
     {
-      name: "ข้อ",
+      name: "ลำดับ",
       selector: (row) => row.id,
       sortable: true,
     },
     {
-      name: "ชื่อ",
-      selector: (row) => row.name,
+      name: "ตัวชี้วัด",
+      selector: (row) => row.indicator_name,
+      sortable: true,
+      wrap: true,
+    },
+
+    {
+      name: "ค่าเป้าหมาย",
+      selector: (row) => row.goal,
+      sortable: true,
+      wrap: true,
+      center: "true",
+    },
+    {
+      name: "หน่วยนับ",
+      selector: (row) => row.unit_name.label,
       sortable: true,
       wrap: true,
     },
@@ -330,30 +394,17 @@ export default function addProject({}) {
       cell: (row) => (
         <>
           <div style={{ padding: "5px" }}>
-            <button
-              className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
-              onClick={() => {
-                // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
-                sessionStorage.setItem(
-                  "strategic_data",
-                  JSON.stringify({
-                    name: row.strategic_name,
-                    budget: row.budget,
-                  })
-                );
-
-                // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${row.strategic_number}`;
-              }}
-            >
-              <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
-            </button>
-          </div>
-          <div style={{ padding: "5px" }}>
             {" "}
             <button
               className="rounded border-gray-200 p-2 hover:bg-gray-100  group"
-              onClick={() => handleDelete(row)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดปุ่ม
+              onClick={() =>
+                setdataAddNewProject((prev) => ({
+                  ...prev,
+                  indicator: prev.indicator.filter(
+                    (item) => item.id !== row.id
+                  ),
+                }))
+              }
             >
               <i className="bi bi-trash text-xl group-hover:text-red-500"></i>{" "}
             </button>
@@ -865,7 +916,17 @@ export default function addProject({}) {
                   <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                     ประเด็นยุทธศาสตร์
                   </span>
-                  <Select
+
+                  <input
+                    id="year"
+                    name="year"
+                    type="text"
+                    className="bg-gray-50  shadow-md border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                    placeholder="ปีงบประมาณ"
+                    value={`${id_strategic} : ${strategic.name}`}
+                    readOnly
+                  />
+                  {/* <Select
                     id="strategic"
                     value={optionsStrategic.find(
                       (option) => option.value === dataAddNewProject.strategic
@@ -881,13 +942,13 @@ export default function addProject({}) {
                     className="text-sm shadow-md"
                     placeholder="กรุณาเลือกปีงบประมาณ"
                     instanceId="strategic-select" // Add this line to fix duplicate IDs
-                  />
+                  /> */}
                 </div>
                 <div className="col-span-12 md:col-span-6">
                   <span className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                     กลยุทธ์
                   </span>
-                  <Select
+                  {/* <Select
                     id="actionplan"
                     value={optionsActionplan.find(
                       (option) => option.value === dataAddNewProject.actionplan
@@ -908,6 +969,15 @@ export default function addProject({}) {
                     placeholder="กรุณาเลือกกลยุทธ์"
                     isDisabled={dataAddNewProject.strategic === null}
                     instanceId="strategic-select" // Add this line to fix duplicate IDs
+                  /> */}
+                  <input
+                    id="year"
+                    name="year"
+                    type="text"
+                    className="bg-gray-50  shadow-md border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                    placeholder="ปีงบประมาณ"
+                    value={`${id_actionplan} : ${actionplan.name}`}
+                    readOnly
                   />
                 </div>
 
@@ -1011,6 +1081,7 @@ export default function addProject({}) {
                       <h2>ตัวชี้วัดและค่าเป้าหมายของโครงการ/กิจกรรม </h2>
                       <button
                         type="button"
+                        onClick={() => setIsOpenModalindicatorAdd(true)}
                         className=" top-9 right-2 bg-blue-500 text-white text-sm px-8 py-1.5 rounded-md hover:bg-blue-600"
                       >
                         เพิ่ม
@@ -1021,7 +1092,7 @@ export default function addProject({}) {
                       <div className="bg-white rounded-md border border-gray-200 shadow-md mt-3 ">
                         <DataTable
                           columns={columns}
-                          data={SecrchData}
+                          data={dataAddNewProject.indicator}
                           customStyles={customStylesTable}
                           fixedHeaderScrollHeight="100%"
                           noDataComponent={
@@ -1207,7 +1278,7 @@ export default function addProject({}) {
         />
       )}
 
-      {strategic && isOpenModalObjectiveAdd && (
+      {isOpenModalObjectiveAdd && (
         <ModalAddObjectiveNew
           onClose={() => setIsOpenModalObjectiveAdd(false)}
           isOpen={ModalAddOkrNew}
@@ -1240,7 +1311,7 @@ export default function addProject({}) {
         />
       )}
 
-      {strategic && isOpenModalUserAdd && typeUser == 1 && (
+      {isOpenModalUserAdd && typeUser == 1 && (
         <ModalAddUserNew
           onClose={() => setIsOpenModalUserAdd(false)}
           isOpen={ModalAddUserNew}
@@ -1248,31 +1319,31 @@ export default function addProject({}) {
           olduser={dataAddNewProject.employee}
           onSelectuser={(selectedOkrValue) => {
             // console.log(selectedOkrValue),
-              setdataAddNewProject((prev) => {
-                const exists = (prev.employee || []).some(
-                  (item) => item.id === selectedOkrValue.value
-                );
+            setdataAddNewProject((prev) => {
+              const exists = (prev.employee || []).some(
+                (item) => item.id === selectedOkrValue.value
+              );
 
-                if (exists) return prev;
+              if (exists) return prev;
 
-                return {
-                  ...prev,
-                  employee: [
-                    ...(prev.employee || []),
-                    {
-                      id: selectedOkrValue.value,
-                      name: selectedOkrValue.label,
-                      position: selectedOkrValue.position,
-                    },
-                  ],
-                };
-              });
+              return {
+                ...prev,
+                employee: [
+                  ...(prev.employee || []),
+                  {
+                    id: selectedOkrValue.value,
+                    name: selectedOkrValue.label,
+                    position: selectedOkrValue.position,
+                  },
+                ],
+              };
+            });
           }}
           user={optionsemployee}
         />
       )}
 
-      {strategic && isOpenModalUserAdd && typeUser == 2 && (
+      {isOpenModalUserAdd && typeUser == 2 && (
         <ModalAddUserNew
           onClose={() => setIsOpenModalUserAdd(false)}
           isOpen={ModalAddUserNew}
@@ -1280,25 +1351,64 @@ export default function addProject({}) {
           olduser={dataAddNewProject.teacher}
           onSelectuser={(selectedOkrValue) => {
             // console.log(selectedOkrValue),
-              setdataAddNewProject((prev) => {
-                const exists = (prev.teacher || []).some(
-                  (item) => item.id === selectedOkrValue.value
-                );
+            setdataAddNewProject((prev) => {
+              const exists = (prev.teacher || []).some(
+                (item) => item.id === selectedOkrValue.value
+              );
 
-                if (exists) return prev;
+              if (exists) return prev;
 
-                return {
-                  ...prev,
-                  teacher: [
-                    ...(prev.teacher || []),
-                    {
-                      id: selectedOkrValue.value,
-                      name: selectedOkrValue.label,
-                      position: selectedOkrValue.position,
-                    },
-                  ],
-                };
-              });
+              return {
+                ...prev,
+                teacher: [
+                  ...(prev.teacher || []),
+                  {
+                    id: selectedOkrValue.value,
+                    name: selectedOkrValue.label,
+                    position: selectedOkrValue.position,
+                  },
+                ],
+              };
+            });
+          }}
+          user={optionsteacher}
+        />
+      )}
+      {isOpenModalindicatorAdd && (
+        <ModalAddindicatorNew
+          onClose={() => setIsOpenModalindicatorAdd(false)}
+          isOpen={ModalAddindicatorNew}
+          type={1}
+          unit={optionsUnit}
+          olduser={dataAddNewProject.indicator}
+          onSelectindicator={(selectedOkrValue) => {
+            // console.log(selectedOkrValue),
+            setdataAddNewProject((prev) => {
+              const exists = (prev.indicator || []).some(
+                (item) =>
+                  item.indicator_name === selectedOkrValue.indicator_name
+              );
+
+              // const exists_unit = (prev.indicator || []).some(
+              //   (item) =>
+              //     item.unit_name.value === selectedOkrValue.unit_name.value
+              // );
+
+              if (exists) return prev;
+              const newId = (prev.indicator?.length || 0) + 1;
+              return {
+                ...prev,
+                indicator: [
+                  ...(prev.indicator || []),
+                  {
+                    id: newId,
+                    indicator_name: selectedOkrValue.indicator_name,
+                    unit_name: selectedOkrValue.unit_name,
+                    goal: selectedOkrValue.goal,
+                  },
+                ],
+              };
+            });
           }}
           user={optionsteacher}
         />

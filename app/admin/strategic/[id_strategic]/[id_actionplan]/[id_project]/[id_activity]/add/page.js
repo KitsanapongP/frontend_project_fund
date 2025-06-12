@@ -2,13 +2,13 @@
 import Image from "next/image";
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
-import Menu from "../../../../../../component/nav_admin";
-import Header from "../../../../../../component/header";
+import Menu from "../../../../../component/nav_admin";
+import Header from "../../../../../component/header";
 import Cookies from "js-cookie";
 import Swal from "sweetalert2";
 import _ from "lodash";
 import { useSearchParams } from "next/navigation";
-import { AddDataActivitydetail } from "../../../../../../../fetch_api/fetch_api_admin";
+import { AddDataActivitydetail } from "../../../../../../fetch_api/fetch_api_admin";
 export default function addActivtydetail({ params }) {
   const [loading, setLoading] = useState(true);
   const [id_employee, setIdemployee] = useState(null);

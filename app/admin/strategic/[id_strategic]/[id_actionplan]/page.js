@@ -72,7 +72,7 @@ export default function HomeProject({ params }) {
   const handleModalSelect = (type) => {
     if (type === "new") {
       toggleModalAdd();
-      router.push(`./${id_actionplan}/addnewproject?total=${totalRows+1}`);
+      router.push(`./${id_actionplan}/addnewproject?total=${totalRows + 1}`);
     }
   };
 
@@ -184,14 +184,17 @@ export default function HomeProject({ params }) {
                   })}{" "}
                   บาท
                 </div>
-                <button
-                  data-modal-target="popup-modal"
-                  data-modal-toggle="popup-modal"
-                  onClick={toggleModalAdd}
-                  className="w-22 justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
-                >
-                  เพิ่มข้อมูล
-                </button>
+                <div className="flex gap-4">
+                 
+                  <button
+                    data-modal-target="popup-modal"
+                    data-modal-toggle="popup-modal"
+                    onClick={toggleModalAdd}
+                    className="w-22 justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    เพิ่มข้อมูล
+                  </button>
+                </div>
               </div>
             </div>
             <div>

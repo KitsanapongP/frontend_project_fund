@@ -3,8 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 import DataTable from "react-data-table-component";
 import {
   GetDataactionplanByidstrategic,
-  UpdatestatusActionplan,
-  DeleteActionplan,
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
 import Cookies from "js-cookie";
@@ -19,69 +17,12 @@ export default function DatatableActionplan({
   onEdit,
 }) {
   const [data, setData] = useState([]);
-
-  const handleDelete = async (row) => {
-    // const newStatus = row.status === 1 ? 0 : 1;
-
-    const result = await Swal.fire({
-      title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการคุณต้องการลบ "${row.name_ap}" หรือไม่
-        `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "gray",
-      confirmButtonText: "ยืนยันการลบ",
-      cancelButtonText: "ยกเลิก",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = Cookies.get("token");
-        const response = await DeleteActionplan(token, row.action_plan_id);
-        // if(response)
-        console.log(response);
-        if (response) {
-          // setData((prevData) =>
-          //   prevData.filter((item) => item.strategic_id !== row.strategic_id)
-          // );
-          console.log("การลบสำเร็จ");
-          setData((prevData) =>
-            prevData.filter((item) => item.action_plan_id != row.action_plan_id)
-          );
-          // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
-          Swal.fire({
-            title: "ลบข้อมูลสำเร็จ",
-            text: "ข้อมูลถูกลบออกจากระบบแล้ว",
-            icon: "success",
-            confirmButtonText: "ตกลง",
-          });
-        } else {
-          Swal.fire({
-            title: "เกิดข้อผิดพลาด",
-            text: "ไม่สามารถลบได้ กรุณาลองใหม่อีกครั้ง",
-            icon: "error",
-            confirmButtonText: "ตกลง",
-          });
-        }
-      } catch (err) {
-        Swal.fire({
-          title: "เกิดข้อผิดพลาด",
-          text: "กรุณาลองใหม่อีกครั้ง",
-          icon: "error",
-          confirmButtonText: "ตกลง",
-        });
-        console.log(err);
-      }
-    }
-  };
-
   const columns = [
     {
       name: "รหัส",
       selector: (row) => row.action_plan_number,
       sortable: true,
-      width: "90px",
+      width: "150px",
     },
     {
       name: "ชื่อ",
@@ -93,10 +34,9 @@ export default function DatatableActionplan({
     {
       name: "โครงการ",
       selector: (row) => row.projects_count,
-      
       sortable: true,
       center: "true",
-      width: "140px",
+      width: "150px",
     },
     {
       name: "งบประมาณ (บาท)",
@@ -104,7 +44,7 @@ export default function DatatableActionplan({
       sortable: true,
       wrap: true,
       right: "true",
-      width: "160px",
+      width: "200px",
       selector: (row) => row.budget,
       cell: (row) =>
         `${Number(row.budget).toLocaleString("th-TH", {
@@ -116,7 +56,7 @@ export default function DatatableActionplan({
       name: "ใช้ไป (บาท)",
       sortable: true,
       right: "true",
-      width: "160px",
+      width: "200px",
       selector: (row) => row.spend_money,
       cell: (row) =>
         `${Number(row.spend_money).toLocaleString("th-TH", {
@@ -129,7 +69,7 @@ export default function DatatableActionplan({
       sortable: true,
       right: "true",
       selector: (row) => (row.budget - row.spend_money),
-      width: "160px",
+      width: "200px",
       cell: (row) =>
         `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
           minimumFractionDigits: 2,
@@ -137,50 +77,8 @@ export default function DatatableActionplan({
         })} `,
     },
     {
-      name: "สถานะ",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <Switch
-            onChange={() => handlechageStatus(row)}
-            checked={row.status === 1}
-            onColor="#4caf50"
-            offColor="#d9534f"
-            checkedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                เปิด
-              </div>
-            }
-            uncheckedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                ปิด
-              </div>
-            }
-          />
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
-    {
       name: "จัดการ",
-      width: "200px",
+      // width: "200px",
       cell: (row) => (
         <>
           <div style={{ padding: "5px" }}>
@@ -206,7 +104,7 @@ export default function DatatableActionplan({
               <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
             </button>
           </div>
-          <div style={{ padding: "5px" }}>
+          {/* <div style={{ padding: "5px" }}>
             <button
               className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
               onClick={() => {
@@ -232,7 +130,7 @@ export default function DatatableActionplan({
             >
               <i className="bi bi-trash text-xl "></i>
             </button>
-          </div>
+          </div> */}
         </>
       ),
       ignoreRowClick: true,
@@ -304,67 +202,7 @@ export default function DatatableActionplan({
     setSecrchData(filtered);
   }, [SearchTerm, data]);
 
-  const handlechageStatus = async (row) => {
-    const newStatus = row.status === 1 ? 0 : 1;
 
-    const result = await Swal.fire({
-      title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
-        สำหรับ  "${row.name_ap}" หรือไม่
-        `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: newStatus === 1 ? "#4caf50" : "#d33",
-      cancelButtonColor: "gray",
-      confirmButtonText: newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน",
-      cancelButtonText: "ยกเลิก",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = Cookies.get("token");
-        const response = await UpdatestatusActionplan(
-          token,
-          row.action_plan_id
-        );
-        // if(response)
-        console.log(response);
-        if (response) {
-          console.log("การอัปเดตสถานะสำเร็จ");
-          setData((prevData) =>
-            prevData.map((item) =>
-              item.action_plan_id === row.action_plan_id
-                ? { ...item, status: newStatus }
-                : item
-            )
-          );
-          // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
-          Swal.fire({
-            title: "อัปเดตข้อมูลสำเร็จ",
-            // text: ` ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"} ${row.name_ap}`,
-            text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
-            icon: "success",
-            confirmButtonText: "ตกลง",
-          });
-        } else {
-          Swal.fire({
-            title: "เกิดข้อผิดพลาด",
-            text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-            icon: "error",
-            confirmButtonText: "ตกลง",
-          });
-        }
-      } catch (err) {
-        Swal.fire({
-          title: "เกิดข้อผิดพลาด",
-          text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-          icon: "error",
-          confirmButtonText: "ตกลง",
-        });
-        console.log(err);
-      }
-    }
-  };
 
   const customStyles = {
     headCells: {

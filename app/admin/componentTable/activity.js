@@ -75,102 +75,108 @@ export default function DatatableActivity({ year_id }) {
     }
   };
 
-  const columns = [
+ const columns = [
     {
       name: "ลำดับ",
-      selector: (row, index) => (page - 1) * perPage + index + 1,
+      selector: (row) => row.id,
       sortable: true,
-      width: "90px",
+      width: "100px",
     },
-    // {
-    //   name: "กลยุทธ์",
-    //   selector: (row) => row.action_plan_number,
-    //   sortable: true,
-    //   width: "120px",
-    // },
-
     {
       name: "ชื่อ",
       selector: (row) => row.name_activity,
       sortable: true,
       wrap: true,
-      width: "250px",
+      width: "450px",
+      cell: (row) => (
+        <div style={{ padding: "10px 0px" }}>{row.name_activity}</div>
+      ),
     },
-
+    {
+      name: "รายงานผล",
+      selector: (row) => row.activity_detail_count,
+      sortable: true,
+      center: "true",
+      width: "160px",
+      cell: (row) => (
+        <div className="flex items-center h-full">
+          {row.activity_detail_count}
+        </div>
+      ),
+    },
     {
       name: "งบประมาณ (บาท)",
-      // selector: (row) => row.budget,
+      selector: (row) => row.budget,
       sortable: true,
       wrap: true,
+      right: "true",
+      width: "160px",
       cell: (row) =>
         `${Number(row.budget).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "ใช้ไป (บาท)",
       sortable: true,
+      selector: (row) => row.spend_money,
+      right: "true",
+      width: "160px",
       cell: (row) =>
         `${Number(row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "คงเหลือ (บาท)",
       sortable: true,
+      right: "true",
+      selector: (row) => row.budget - row.spend_money,
+      width: "160px",
       cell: (row) =>
         `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
-      name: "สถานะ",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <Switch
-            onChange={() => handlechageStatus(row)}
-            checked={row.status === 1}
-            onColor="#4caf50"
-            offColor="#d9534f"
-            checkedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                เปิด
-              </div>
-            }
-            uncheckedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                ปิด
-              </div>
-            }
-          />
-        </div>
-      ),
-      ignoreRowClick: true,
+      name: "สถานะรายงาน",
+      width: "200px",
+      sortable: true,
+      center: "true",
+      cell: (row) => {
+        let text = "";
+        let bg = "";
+
+        switch (row.status_report) {
+          case 0:
+            text = "ยังไม่มีการรายงาน";
+            bg = "bg-yellow-200 text-yellow-800";
+            break;
+          case 1:
+            text = "มีการรายงานเรียบร้อย";
+            bg = "bg-green-200 text-green-800";
+            break;
+          case 2:
+            text = "หมดเวลารายงานโดยไม่มีการรายงาน";
+            bg = "bg-red-200 text-red-800";
+            break;
+          default:
+            text = "-";
+            bg = "bg-gray-200 text-gray-800";
+        }
+
+        return (
+          <span className={`px-2 py-1 rounded text-sm font-medium ${bg}`}>
+            {text}
+          </span>
+        );
+      },
     },
     {
-      name: "จัดการ",
-      width: "200px",
+      name: "ดำเนินการ",
       cell: (row) => (
         <>
           <div style={{ padding: "5px" }}>
@@ -179,10 +185,9 @@ export default function DatatableActivity({ year_id }) {
               onClick={() => {
                 // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
                 sessionStorage.setItem(
-                  "actionplan_data",
+                  "activitydetail_data",
                   JSON.stringify({
                     id: row.activity_id,
-                    // id_actionplan: row.action_plan_number,
                     name: row.name_activity,
                     budget: row.budget,
                     Balance: row.budget - row.spend_money,
@@ -190,12 +195,13 @@ export default function DatatableActivity({ year_id }) {
                 );
 
                 // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${number_strategic}/${row.action_plan_number}`;
+                window.location.href = `/admin/strategic/${id_strategic}/${id_actionplan}/${id_project}/${row.id}`;
               }}
             >
               <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
             </button>
           </div>
+
           <div style={{ padding: "5px" }}>
             <button
               className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
@@ -204,14 +210,13 @@ export default function DatatableActivity({ year_id }) {
                 sessionStorage.setItem(
                   "strategic_data",
                   JSON.stringify({
-                    id: row.activity_id,
                     name: row.strategic_name,
                     budget: row.budget,
                   })
                 );
 
                 // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${row.project_number}`;
+                window.location.href = `/admin/strategic/${row.strategic_number}`;
               }}
             >
               <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
@@ -245,65 +250,6 @@ export default function DatatableActivity({ year_id }) {
 
     setSecrchData(filtered);
   }, [SearchTerm, data]);
-
-  const handlechageStatus = async (row) => {
-    const newStatus = row.status === 1 ? 0 : 1;
-
-    const result = await Swal.fire({
-      title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
-        สำหรับ  "${row.name_activity}" หรือไม่
-        `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: newStatus === 1 ? "#4caf50" : "#d33",
-      cancelButtonColor: "gray",
-      confirmButtonText: newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน",
-      cancelButtonText: "ยกเลิก",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = Cookies.get("token");
-        const response = await UpdatestatusActivity(token, row.activity_id);
-        // if(response)
-        console.log(response);
-        if (response) {
-          console.log("การอัปเดตสถานะสำเร็จ");
-          setData((prevData) =>
-            prevData.map((item) =>
-              item.activity_id === row.activity_id
-                ? { ...item, status: newStatus }
-                : item
-            )
-          );
-          // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
-          Swal.fire({
-            title: "อัปเดตข้อมูลสำเร็จ",
-            // text: ` ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"} ${row.name_activity}`,
-            text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
-            icon: "success",
-            confirmButtonText: "ตกลง",
-          });
-        } else {
-          Swal.fire({
-            title: "เกิดข้อผิดพลาด",
-            text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-            icon: "error",
-            confirmButtonText: "ตกลง",
-          });
-        }
-      } catch (err) {
-        Swal.fire({
-          title: "เกิดข้อผิดพลาด",
-          text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-          icon: "error",
-          confirmButtonText: "ตกลง",
-        });
-        console.log(err);
-      }
-    }
-  };
 
   const customStyles = {
     headCells: {

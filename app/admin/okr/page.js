@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import DatatableOkr from "../componentTable/okr";
 import { GetDatayear } from "../../fetch_api/fetch_api_admin";
-
+import { ModalAddActionplan } from "./modal";
 export default function HomeOkr() {
   const [yearOptions, setyearOptions] = useState([
     // { value: 1, label: "2568" },
@@ -48,9 +48,23 @@ export default function HomeOkr() {
       setYear({
         ...Year,
         year_id: yearOptions[0].year_id,
+        year: yearOptions[0].year,
       });
     }
   }, [yearOptions]);
+  const [isOpenModalAdd, setIsOpenModalAdd] = useState(false);
+
+  const handleModalSelect = (type) => {
+    if (type === "new") {
+      // settype(1);
+      toggleModalAdd();
+      window.location = "/admin/okr/add";
+    }
+  };
+
+  const toggleModalAdd = () => {
+    setIsOpenModalAdd(!isOpenModalAdd); // เปลี่ยนสถานะของ modal
+  };
 
   return (
     <>
@@ -72,7 +86,7 @@ export default function HomeOkr() {
                   onChange={(e) => {
                     const value = e.target.value;
                     const label = e.target.options[e.target.selectedIndex].text;
-                    setYear({ ...Year, year_id: value , year_label : label });
+                    setYear({ ...Year, year_id: value, year_label: label });
                   }}
                   className="block rounded-md px-4 py-2 bg-gray-100 border border-gray-300 shadow-sm hover:border-blue-500 focus:outline-none focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200"
                   style={{
@@ -91,19 +105,28 @@ export default function HomeOkr() {
                 </select>
               </div>
               <a
-                href="/user/project/add_project"
+                // href="/admin/okr/add"
+                onClick={toggleModalAdd}
                 className="w-30 me-2 md:me-8 md:w-30 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
               >
                 เพิ่มข้อมูล
               </a>
             </div>
             <div>
-              {Year.year_id !== null && (<DatatableOkr year_id={Year.year_id} year={Year.year_label}/>)}
+              {Year.year_id !== null && (
+                <DatatableOkr year_id={Year.year_id} year={Year.year} />
+              )}
               {/* <DatatableProject /> */}
             </div>
           </div>
         </div>
       </div>
+
+      <ModalAddActionplan
+        isOpen={isOpenModalAdd}
+        onClose={() => setIsOpenModalAdd(false)}
+        onSelect={handleModalSelect}
+      />
     </>
   );
 }

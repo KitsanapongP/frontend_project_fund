@@ -89,97 +89,67 @@ export default function DatatableActionplan({ year_id }) {
     //   width: "120px",
     // },
     {
-      name: "ยุทธศาสตร์",
-      selector: (row) => row.strategic.strategic_number,
-      sortable: true,
-      width: "120px",
-    },
-    {
       name: "ชื่อ",
       selector: (row) => row.name_ap,
       sortable: true,
       wrap: true,
-      width: "250px",
+      width: "350px",
+    },
+    {
+      name: "ยุทธศาสตร์",
+      selector: (row) => row.strategic.strategic_number,
+      sortable: true,
+      center: "true",
+      width: "150px",
     },
     {
       name: "โครงการ",
-      selector: (row) => row.status,
+      selector: (row) => row.projects_count,
       sortable: true,
+      center: "true",
+      width: "150px",
     },
     {
       name: "งบประมาณ (บาท)",
       // selector: (row) => row.budget,
       sortable: true,
       wrap: true,
+      right: "true",
+      width: "200px",
+      selector: (row) => row.budget,
       cell: (row) =>
         `${Number(row.budget).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "ใช้ไป (บาท)",
       sortable: true,
+      right: "true",
+      width: "200px",
+      selector: (row) => row.spend_money,
       cell: (row) =>
         `${Number(row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "คงเหลือ (บาท)",
       sortable: true,
+      right: "true",
+      selector: (row) => row.budget - row.spend_money,
+      width: "200px",
       cell: (row) =>
         `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
-      name: "สถานะ",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <Switch
-            onChange={() => handlechageStatus(row)}
-            checked={row.status === 1}
-            onColor="#4caf50"
-            offColor="#d9534f"
-            checkedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                เปิด
-              </div>
-            }
-            uncheckedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                ปิด
-              </div>
-            }
-          />
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
-    {
       name: "จัดการ",
-      width: "200px",
+      // width: "200px",
       cell: (row) => (
         <>
           <div style={{ padding: "5px" }}>
@@ -205,7 +175,7 @@ export default function DatatableActionplan({ year_id }) {
               <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
             </button>
           </div>
-          <div style={{ padding: "5px" }}>
+          {/* <div style={{ padding: "5px" }}>
             <button
               className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
               onClick={() => {
@@ -234,7 +204,7 @@ export default function DatatableActionplan({ year_id }) {
             >
               <i className="bi bi-trash text-xl "></i>
             </button>
-          </div>
+          </div> */}
         </>
       ),
       ignoreRowClick: true,

@@ -3,8 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 import DataTable from "react-data-table-component";
 import {
   GetDatastrategicYear,
-  UpdatestatusStrategic,
-  DeleteStrategic,
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import "bootstrap-icons/font/bootstrap-icons.css";
 import Link from "next/link";
@@ -28,19 +26,21 @@ export default function DatatableStrig({
       name: "รหัส",
       selector: (row) => row.strategic_number,
       sortable: true,
+      width:"100px"
     },
     {
       name: "ชื่อ",
       selector: (row) => row.strategic_name,
       sortable: true,
       wrap: true,
-      width: "200px",
+      width: "350px",
     },
     {
       name: "กลยุทธ์",
       selector: (row) => row.action_plan_count,
       sortable: true,
       center: "true",
+      
     },
     {
       name: "โครงการ",
@@ -88,50 +88,8 @@ export default function DatatableStrig({
         })} `,
     },
     {
-      name: "สถานะ",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <Switch
-            onChange={() => handlechageStatus(row)}
-            checked={row.status === 1}
-            onColor="#4caf50"
-            offColor="#d9534f"
-            checkedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                เปิด
-              </div>
-            }
-            uncheckedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                ปิด
-              </div>
-            }
-          />
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
-    {
       name: "จัดการ",
-      width: "200px",
+      // width: "200px",
       cell: (row) => (
         <>
           <div style={{ padding: "5px" }}>
@@ -158,7 +116,7 @@ export default function DatatableStrig({
               <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
             </button>
           </div>
-          <div style={{ padding: "5px" }}>
+          {/* <div style={{ padding: "5px" }}>
             <button
               className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
               onClick={() => {
@@ -174,8 +132,8 @@ export default function DatatableStrig({
             >
               <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
             </button>
-          </div>
-          <div style={{ padding: "5px" }}>
+          </div> */}
+          {/* <div style={{ padding: "5px" }}>
             {" "}
             <button
               className="rounded border-gray-200 p-2 hover:bg-gray-100 hover:text-red-500 "
@@ -183,7 +141,7 @@ export default function DatatableStrig({
             >
               <i className="bi bi-trash text-xl "></i>
             </button>
-          </div>
+          </div> */}
         </>
       ),
       ignoreRowClick: true,
@@ -237,120 +195,6 @@ export default function DatatableStrig({
     setPage(newPage);
   };
 
-  const handlechageStatus = async (row) => {
-    console.log(row.strategic_id);
-    const newStatus = row.status === 1 ? 0 : 1;
-
-    const result = await Swal.fire({
-      title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
-      สำหรับ  "${row.strategic_name}" หรือไม่
-      `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: newStatus === 1 ? "#4caf50" : "#d33",
-      cancelButtonColor: "gray",
-      confirmButtonText: newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน",
-      cancelButtonText: "ยกเลิก",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = Cookies.get("token");
-        const response = await UpdatestatusStrategic(token, row.strategic_id);
-        // if(response)
-        console.log(response);
-        if (response) {
-          console.log("การอัปเดตสถานะสำเร็จ");
-          setData((prevData) =>
-            prevData.map((item) =>
-              item.strategic_id === row.strategic_id
-                ? { ...item, status: newStatus }
-                : item
-            )
-          );
-          // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
-          Swal.fire({
-            title: "อัปเดตข้อมูลสำเร็จ",
-            text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
-            icon: "success",
-            confirmButtonText: "ตกลง",
-          });
-        } else {
-          Swal.fire({
-            title: "เกิดข้อผิดพลาด",
-            text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-            icon: "error",
-            confirmButtonText: "ตกลง",
-          });
-        }
-      } catch (err) {
-        Swal.fire({
-          title: "เกิดข้อผิดพลาด",
-          text: "กรุณาลองใหม่อีกครั้ง",
-          icon: "error",
-          confirmButtonText: "ตกลง",
-        });
-        console.log(err);
-      }
-    }
-  };
-
-  const handleDelete = async (row) => {
-    // const newStatus = row.status === 1 ? 0 : 1;
-
-    const result = await Swal.fire({
-      title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการคุณต้องการลบ "${row.strategic_name}" หรือไม่
-      `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "gray",
-      confirmButtonText: "ยืนยันการลบ",
-      cancelButtonText: "ยกเลิก",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = Cookies.get("token");
-        const response = await DeleteStrategic(token, row.strategic_id);
-        // if(response)
-        console.log(response);
-        if (response) {
-          // setData((prevData) =>
-          //   prevData.filter((item) => item.strategic_id !== row.strategic_id)
-          // );
-          console.log("การลบสำเร็จ");
-          setData((prevData) =>
-            prevData.filter((item) => item.strategic_id != row.strategic_id)
-          );
-          // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
-          Swal.fire({
-            title: "ลบข้อมูลสำเร็จ",
-            text: "ข้อมูลถูกลบออกจากระบบแล้ว",
-            icon: "success",
-            confirmButtonText: "ตกลง",
-          });
-        } else {
-          Swal.fire({
-            title: "เกิดข้อผิดพลาด",
-            text: "ไม่สามารถลบได้ กรุณาลองใหม่อีกครั้ง",
-            icon: "error",
-            confirmButtonText: "ตกลง",
-          });
-        }
-      } catch (err) {
-        Swal.fire({
-          title: "เกิดข้อผิดพลาด",
-          text: "กรุณาลองใหม่อีกครั้ง",
-          icon: "error",
-          confirmButtonText: "ตกลง",
-        });
-        console.log(err);
-      }
-    }
-  };
   const customStyles = {
     headCells: {
       style: {

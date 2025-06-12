@@ -13,49 +13,25 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import DatatableActivityDetail from "../../component/activity_detail";
+import DatatableActivity from "../../component/activity_detail";
 
 export default function HomeActivity({ params }) {
   const searchParams = useSearchParams();
-  const [Activity, setActivity] = useState({ id: "", name: "", budget: "" });
+  const [strategic, setStrategic] = useState({ id: "", name: "", budget: "" });
   const [open, setOpen] = useState(false);
-  const { id_strategic, id_actionplan, id_project, id_activity } = use(params);
+  const [total, setTotal] = useState(false);
+  const { id_activity } = use(params);
   useEffect(() => {
     const data = sessionStorage.getItem("activitydetail_data");
-    // console.log(data)
+    // console.log(id_strategic);
     if (!data) {
-      window.location.href = `/admin/strategic`;
+      window.location.href = `/user/activity`;
     }
     console.log(data);
     if (data) {
-      setActivity(JSON.parse(data));
+      setStrategic(JSON.parse(data));
     }
   }, []);
-
-  const chanceOptions = [
-    { value: 1, label: "2568" },
-    { value: 2, label: "2567" },
-    { value: 3, label: "2566" },
-  ];
-  const [Year, setYear] = useState({
-    year_id: "2568",
-  });
-  const columns = [
-    {
-      name: "ชื่อ",
-      selector: (row) => row.name,
-      sortable: true,
-    },
-    {
-      name: "ตำแหน่ง",
-      selector: (row) => row.role,
-    },
-  ];
-
-  const data = [
-    { id: 1, name: "สมชาย", role: "ผู้ดูแล" },
-    { id: 2, name: "วิรัตน์", role: "เจ้าหน้าที่" },
-  ];
 
   return (
     <>
@@ -68,11 +44,11 @@ export default function HomeActivity({ params }) {
           </div>
           <div className="col-span-12 xl:col-span-10  md:col-span-9 mt-5 ms-4 md:mt-3 me-4 md:me-6">
             <div className="flex flex-col">
-              <nav className="flex mb-2" aria-label="Breadcrumb">
+              <nav classme="flex mb-2" aria-label="Breadcrumb">
                 <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                   <li className="inline-flex items-center">
                     <a
-                      href="/admin/strategic"
+                      href="/user/activity"
                       className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white"
                     >
                       <svg
@@ -87,6 +63,7 @@ export default function HomeActivity({ params }) {
                       หน้าแรก
                     </a>
                   </li>
+
                   <li aria-current="page">
                     <div className="flex items-center">
                       <svg
@@ -105,42 +82,59 @@ export default function HomeActivity({ params }) {
                         />
                       </svg>
                       <span className="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">
-                        {id_activity} : {Activity.name}
+                        {id_activity} : {strategic.name}
                       </span>
                     </div>
                   </li>
                 </ol>
               </nav>
-              <div className="text-lg md:text-2xl me-3  font-bold">
-                จัดการรายละเอียดกิจกรรม
+              <div className="text-lg md:text-xl me-3  font-bold">
+                จัดการรายการกิจกรรม
               </div>
               <div className="text-lg md:text-xl me-3  ">
                 {" "}
-                {id_activity} ​: {Activity.name}
+                {id_activity} {strategic.name}
               </div>
               <div className="flex justify-between ">
                 <div className="text-lg md:text-xl   ">
                   {" "}
                   งบประมาณ{" "}
-                  {Number(Activity.budget).toLocaleString("th-TH", {
+                  {Number(strategic.budget).toLocaleString("th-TH", {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0,
                   })}{" "}
                   บาท
                 </div>
-                <a
-                  className="w-20 me-2 md:me-8 text-center justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
-                  href={`./${id_activity}/add`}
-                >
-                  รายงานผล
-                </a>
+              </div>
+              <div className="flex justify-between ">
+                <div className="text-lg md:text-xl   ">
+                  {" "}
+                  คงเหลือ{" "}
+                  {Number(strategic.Balance).toLocaleString("th-TH", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}{" "}
+                  บาท
+                </div>
+                <div className="flex flex-row">
+                  <a
+                    href={`/user/activity/${id_activity}/add_report?total=${
+                      total + 1
+                    }&maxBudget=${strategic.Balance}`}
+                    className="w-22 justify-end text-center md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    รายงานผล
+                  </a>
+                </div>
               </div>
             </div>
             <div>
-              {Activity.id && (
-                <DatatableActivityDetail
-                  id_activityref={Activity.id}
-                  val={{ id_strategic, id_actionplan, id_project, id_activity }}
+              {strategic.id && (
+                <DatatableActivity
+                  onEditTotal={setTotal}
+                  val={{ id_activity }}
+                  id_activityref={strategic.id}
+                  Balance={strategic.Balance}
                 />
               )}
             </div>

@@ -132,18 +132,18 @@ export default function DatatableUser({}) {
               onClick={() => {
                 // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
                 sessionStorage.setItem(
-                  "actionplan_data",
+                  "user_data",
                   JSON.stringify({
                     id: row.id,
                     // id_actionplan: row.action_plan_number,
-                    name: row.name,
-                    budget: row.budget,
-                    Balance: row.budget - row.spend_money,
+                    position: row.position?.position_name,
+                    // budget: row.budget,
+                    // Balance: row.budget - row.spend_money,
                   })
                 );
 
                 // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${number_strategic}/${row.action_plan_number}`;
+                window.location.href = `/admin/person/detail`;
               }}
             >
               <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>

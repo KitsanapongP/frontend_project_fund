@@ -224,66 +224,6 @@ export default function DatatableActivityDetail({
     },
   ];
 
-  const handlechageStatus = async (row) => {
-    const newStatus = row.status === 1 ? 0 : 1;
-
-    const result = await Swal.fire({
-      title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
-            สำหรับ  "${row.name_activity}" หรือไม่
-            `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: newStatus === 1 ? "#4caf50" : "#d33",
-      cancelButtonColor: "gray",
-      confirmButtonText: newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน",
-      cancelButtonText: "ยกเลิก",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = Cookies.get("token");
-        const response = await UpdatestatusActivityDetail(
-          token,
-          row.activity_detail_id
-        );
-        // if(response)
-        console.log(response);
-        if (response) {
-          console.log("การอัปเดตสถานะสำเร็จ");
-          setData((prevData) =>
-            prevData.map((item) =>
-              item.activity_detail_id === row.activity_detail_id
-                ? { ...item, status: newStatus }
-                : item
-            )
-          );
-          Swal.fire({
-            title: "อัปเดตข้อมูลสำเร็จ",
-            text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
-            icon: "success",
-            confirmButtonText: "ตกลง",
-          });
-        } else {
-          Swal.fire({
-            title: "เกิดข้อผิดพลาด",
-            text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-            icon: "error",
-            confirmButtonText: "ตกลง",
-          });
-        }
-      } catch (err) {
-        Swal.fire({
-          title: "เกิดข้อผิดพลาด",
-          text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-          icon: "error",
-          confirmButtonText: "ตกลง",
-        });
-        console.log(err);
-      }
-    }
-  };
-
   const handleDelete = async (row) => {
     // const newStatus = row.status === 1 ? 0 : 1;
 

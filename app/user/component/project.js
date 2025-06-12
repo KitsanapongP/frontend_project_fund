@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import DataTable from "react-data-table-component";
 import { GetDataprojectUserByYear } from "../../fetch_api/fetch_api_user"; // ปรับ path ตามจริง
 import Link from "next/link";
@@ -22,13 +22,55 @@ import {
 } from "react-icons/fa";
 // ยังไม่รายงาน,รายงานแล้ว,เกินกำหนด,ส่งรายงาน
 
-export default function DatatableProject({ year_id }) {
+export default function DatatableProject({ year_id, val, onTotalChange }) {
   const [data, setData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [SecrchData, setSecrchData] = useState([]);
   const [SearchTerm, setSearchTerm] = useState("");
 
+  const [loading, setLoading] = useState(true);
+  const [totalRows, setTotalRows] = useState(0);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10); // default เป็น 10
+  const [hasMounted, setHasMounted] = useState(false);
+
+  const fetchData = useCallback(
+    async (page = 1, perPage = 10) => {
+      try {
+        setLoading(true);
+        console.log(year_id);
+        const token = Cookies.get("token");
+        const res = await GetDataprojectUserByYear(
+          token,
+          year_id,
+          page,
+          perPage
+        );
+        console.log(res.data);
+        setData(res.data);
+        setSecrchData(res.data);
+        setTotalRows(res.total);
+        if (onTotalChange) {
+          onTotalChange(res.total);
+        }
+
+        // console.log(res);
+      } catch (err) {
+        console.error("Error loading data:", err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [year_id]
+  );
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+  const handlePerRowsChange = (newPerPage, newPage) => {
+    setPerPage(newPerPage);
+    setPage(newPage);
+  };
   const handleDownloadClick = (row) => {
     setSelectedRow(row);
     setShowModal(true);
@@ -74,22 +116,31 @@ export default function DatatableProject({ year_id }) {
     });
   });
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const token = Cookies.get("token");
-        // console.log("token : ", id_project);
-        // console.log(year_id);
-        const res = await GetDataprojectUserByYear(token, year_id);
+    setHasMounted(true);
+  }, []);
 
-        setData(res.data);
-        setSecrchData(res.data);
-      } catch (err) {
-        console.error("Error loading data:", err);
-      }
+  useEffect(() => {
+    if (hasMounted) {
+      fetchData(page, perPage);
     }
+  }, [fetchData, hasMounted, page, perPage, year_id]);
+  // useEffect(() => {
+  //   async function fetchData() {
+  //     try {
+  //       const token = Cookies.get("token");
+  //       // console.log("token : ", id_project);
+  //       // console.log(year_id);
+  //       const res = await GetDataprojectUserByYear(token, year_id);
 
-    fetchData();
-  }, [year_id]);
+  //       setData(res.data);
+  //       setSecrchData(res.data);
+  //     } catch (err) {
+  //       console.error("Error loading data:", err);
+  //     }
+  //   }
+
+  //   fetchData();
+  // }, [year_id]);
 
   useEffect(() => {
     const filtered = data.filter((data) => {
@@ -107,62 +158,116 @@ export default function DatatableProject({ year_id }) {
 
   const columns = [
     {
-      name: "ลำดับ",
-      selector: (row, index) => index + 1,
+      name: "รหัส",
+      selector: (row) => row.project.project_number,
       sortable: true,
+      width: "80px",
     },
     {
       name: "ชื่อ",
       selector: (row) => row.project.project_name,
       sortable: true,
       wrap: true,
-      width: "450px",
+      width: "250px",
+      cell: (row) => (
+        <div className="py-[10px]">{row.project.project_name} </div>
+      ),
     },
     {
       name: "กิจกรรม",
-      selector: (row) => row.project.status,
+      selector: (row) => row.project.count_activity,
       sortable: true,
+      center: "true",
+    },
+    {
+      name: "รายงานเรียบร้อย",
+      selector: (row) => row.project.count_activity_report,
+      sortable: true,
+      width: "160px",
+      center: "true",
+    },
+    {
+      name: "ยังไม่ได้รายงาน",
+      selector: (row) =>
+        row.project.count_activity - row.project.count_activity_report,
+      sortable: true,
+      center: "true",
+      width: "160px",
     },
     {
       name: "งบประมาณ (บาท)",
       // selector: (row) => row.project.budget,
       sortable: true,
       wrap: true,
+      right: "true",
+      selector: (row) => row.project.budget,
+      width: "160px",
       cell: (row) =>
         `${Number(row.project.budget).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "ใช้ไป (บาท)",
       sortable: true,
+      right: "true",
+      selector: (row) => row.project.spend_money,
+      width: "160px",
       cell: (row) =>
         `${Number(row.project.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "คงเหลือ (บาท)",
       sortable: true,
+      right: "true",
+      selector: (row) => row.project.budget - row.project.spend_money,
+      width: "160px",
       cell: (row) =>
         `${Number(row.project.budget - row.project.spend_money).toLocaleString(
           "th-TH",
           {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
           }
         )} `,
     },
     {
-      name: "สถานะ",
+      name: "สถานะรายงาน",
+      width: "200px",
       sortable: true,
-      cell: (row) => (
-        <div>
-          <FaClock className="text-yellow-500 text-2xl ms-2" />
-        </div>
-      ),
+      center: "true",
+      cell: (row) => {
+        let text = "";
+        let bg = "";
+
+        switch (row.project.status_report) {
+          case 0:
+            text = "ยังไม่มีการรายงาน";
+            bg = "bg-yellow-200 text-yellow-800";
+            break;
+          case 1:
+            text = "มีการรายงานเรียบร้อย";
+            bg = "bg-green-200 text-green-800";
+            break;
+          case 2:
+            text = "หมดเวลารายงานโดยไม่มีการรายงาน";
+            bg = "bg-red-200 text-red-800";
+            break;
+          default:
+            text = "-";
+            bg = "bg-gray-200 text-gray-800";
+        }
+
+        return (
+          <span className={`px-2 py-1 rounded text-sm font-medium ${bg}`}>
+            {text}
+          </span>
+        );
+      },
     },
     {
       name: "ดาวน์โหลด",
@@ -179,7 +284,6 @@ export default function DatatableProject({ year_id }) {
     },
     {
       name: "จัดการ",
-      width: "180px",
       cell: (row) => (
         <>
           <div style={{ padding: "5px" }}>
@@ -193,31 +297,44 @@ export default function DatatableProject({ year_id }) {
                     id: row.project.project_id,
                     name: row.project.project_name,
                     budget: row.project.budget,
-                    balance: row.project.budget - row.project.spend_money,
+                    Balance: row.project.budget - row.project.spend_money,
                   })
                 );
 
                 // เปลี่ยนหน้า
-                
-                if (row.project.status_child == 0) {
-                  // project_detail
-                  window.location.href = `/user/project/${row.project.project_number}`;
-                } else {
-                  // activity
-                  window.location.href = `/user/project/${row.project.project_number}`;
-                }
+                window.location.href = `/user/project/${row.project.project_number}`;
               }}
             >
               <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
             </button>
           </div>
-
           <div style={{ padding: "5px" }}>
             <button
               className="rounded border-gray-200 p-2 hover:bg-gray-100 group"
-              onClick={() => {}}
+              onClick={() => {
+                // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
+                sessionStorage.setItem(
+                  "strategic_data",
+                  JSON.stringify({
+                    name: row.project.strategic_name,
+                    budget: row.project.budget,
+                  })
+                );
+
+                // เปลี่ยนหน้า
+                window.location.href = `/admin/strategic/${row.project.strategic_number}`;
+              }}
             >
               <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
+            </button>
+          </div>
+          <div style={{ padding: "5px" }}>
+            {" "}
+            <button
+              className="rounded border-gray-200 p-2 hover:bg-gray-100 hover:text-red-500 "
+              onClick={() => handleDelete(row)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดปุ่ม
+            >
+              <i className="bi bi-trash text-xl "></i>
             </button>
           </div>
         </>
@@ -238,10 +355,14 @@ export default function DatatableProject({ year_id }) {
 
   return (
     <div className="w-full">
-      {data.length === 0 ? (
+      {loading ? (
         <div className="flex justify-center items-center h-40">
           <div className="animate-spin rounded-full h-20 w-20 border-t-2 border-b-2 border-gray-300"></div>
           <span className="ml-3 text-gray-300">กำลังโหลดข้อมูล...</span>
+        </div>
+      ) : data.length === 0 ? (
+        <div className="flex justify-center items-center h-40 text-gray-400">
+          ยังไม่มีข้อมูล
         </div>
       ) : (
         <>
@@ -256,17 +377,24 @@ export default function DatatableProject({ year_id }) {
               />
             </div>
             <div
-              className="bg-white  rounded-md border border-gray-200 shadow-xl  "
+              className="bg-white rounded-md border border-gray-200
+ mt-3 flex flex-col"
               style={{
                 height: "90vh",
-                display: "flex",
-                flexDirection: "column",
               }}
             >
               <DataTable
                 columns={columns}
                 data={SecrchData}
                 customStyles={customStyles}
+                pagination
+                paginationServer // ← สำคัญ: ใช้ pagination แบบ server
+                paginationPerPage={perPage}
+                paginationDefaultPage={page}
+                paginationTotalRows={totalRows} // ← ส่งจำนวน row ทั้งหมดมาจาก Laravel
+                onChangePage={handlePageChange} // ← เรียกเมื่อเปลี่ยนหน้า
+                onChangeRowsPerPage={handlePerRowsChange}
+                fixedHeaderScrollHeight="100%"
               />
             </div>
           </div>

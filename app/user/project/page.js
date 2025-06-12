@@ -7,33 +7,17 @@ import Menu from "../component/nav";
 import Header from "../component/header";
 import { GetDatayear } from "../../fetch_api/fetch_api_user";
 import DatatableProject from "../component/project";
-
+import { useRouter } from "next/navigation";
+import { ModalAddProject } from "./component/modal_project";
 export default function HomeStrategic() {
-  const [yearOptions, setyearOptions] = useState([
-    // { value: 1, label: "2568" },
-    // { value: 2, label: "2567" },
-    // { value: 3, label: "2566" },
-  ]);
+  const router = useRouter();
+  const [yearOptions, setyearOptions] = useState([]);
+  const [totalRows, setTotalRows] = useState(0);
+  const [isOpenModalAdd, setIsOpenModalAdd] = useState(false);
+  const [isOpenModalAddNew, setIsOpenModalAddNew] = useState(false);
   const [Year, setYear] = useState({
     // year_id: "2568",
   });
-  const columns = [
-    {
-      name: "ชื่อ",
-      selector: (row) => row.name,
-      sortable: true,
-    },
-    {
-      name: "ตำแหน่ง",
-      selector: (row) => row.role,
-    },
-  ];
-
-  const data = [
-    { id: 1, name: "สมชาย", role: "ผู้ดูแล" },
-    { id: 2, name: "วิรัตน์", role: "เจ้าหน้าที่" },
-  ];
-
   useEffect(() => {
     async function fetchData() {
       try {
@@ -55,6 +39,56 @@ export default function HomeStrategic() {
       });
     }
   }, [yearOptions]);
+  const toggleModalAdd = () => {
+    setIsOpenModalAdd(!isOpenModalAdd); // เปลี่ยนสถานะของ modal
+  };
+
+  const toggleModalEdit = (newname, id, number, budget, id_year) => {
+    // settype(2);
+    console.log(newname);
+    setdata((prev) => ({
+      ...prev,
+      strategic_id: id,
+      name: newname,
+      number: number,
+      budget: budget,
+      id_year: id_year,
+    }));
+    toggleModalAddNew();
+  };
+
+  const toggleModalAddNew = () => {
+    setIsOpenModalAddNew(!isOpenModalAddNew); // เปลี่ยนสถานะของ modal
+  };
+  useEffect(() => {
+    // กด esc แล้วปืด
+    console.log(isOpenModalAddNew);
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        if (isOpenModalAdd) {
+          toggleModalAdd(); // ปิด Modal ถ้าเปิดอยู่
+        }
+        if (isOpenModalAddNew) {
+          toggleModalAddNew(); // ปิด Modal ถ้าเปิดอยู่
+        }
+      }
+    };
+    // handleKeyDown คือฟังก์ชันที่ฟัง event การกดปุ่มบนคีย์บอร์ด (เช่น Escape)
+    document.addEventListener("keydown", handleKeyDown);
+
+    // ใช้ลบ event listener เพื่อป้องกันปัญหา memory leak หรือ event ถูกเรียกซ้ำซ้อน
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpenModalAdd, isOpenModalAddNew]);
+
+  const handleModalSelect = (type) => {
+    if (type === "new") {
+      toggleModalAdd();
+      router.push(`./${id_actionplan}/addnewproject?total=${totalRows + 1}`);
+    }
+  };
+
   return (
     <>
       <div className="">
@@ -96,22 +130,34 @@ export default function HomeStrategic() {
                   ))}
                 </select>
               </div>
-              <a
-                href="/user/project/add_project"
-                className="w-30 me-2 md:me-8 md:w-30 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
+              <button
+                data-modal-target="popup-modal"
+                data-modal-toggle="popup-modal"
+                onClick={toggleModalAdd}
+                className="w-22 justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
               >
-                เพิ่มโครงการ
-              </a>
+                เพิ่มข้อมูล
+              </button>
             </div>
             <div>
               {Year.year_id !== null && (
-                <DatatableProject year_id={Year.year_id} />
+                <DatatableProject
+                  year_id={Year.year_id}
+                  year={Year.year_label}
+                  onTotalChange={setTotalRows}
+                  onEdit={toggleModalEdit}
+                />
               )}
               {/* <DatatableProject /> */}
             </div>
           </div>
         </div>
       </div>
+      <ModalAddProject
+        isOpen={isOpenModalAdd}
+        onClose={() => setIsOpenModalAdd(false)}
+        onSelect={handleModalSelect}
+      />
     </>
   );
 }

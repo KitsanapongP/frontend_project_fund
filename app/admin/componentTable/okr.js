@@ -12,7 +12,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import Swal from "sweetalert2";
-export default function DatatableOkr({ year_id ,year}) {
+export default function DatatableOkr({ year_id, year }) {
   const [data, setData] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -210,13 +210,15 @@ export default function DatatableOkr({ year_id ,year}) {
                     id: row.okr_id,
                     name: row.okr_name,
                     year: year,
-                    user_teacher :  row.okr_name,
-                    user_employee :  row.okr_name,
-                    start_date :  row.start_date,
-                    end_date :  row.end_date,
-                    goal :  row.goal,
-                    result :  row.result,
-                    report_data :  row.report_data,
+                    id_year: year_id,
+                    user_teacher: row.okr_name,
+                    user_employee: row.okr_name,
+                    start_date: row.start_date,
+                    end_date: row.end_date,
+                    goal: row.goal,
+                    result: row.result,
+                    report_data: row.report_data,
+                    id_unit: row.id_unit,
                   })
                 );
 
@@ -233,16 +235,25 @@ export default function DatatableOkr({ year_id ,year}) {
               onClick={() => {
                 // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
                 sessionStorage.setItem(
-                  "strategic_data",
+                  "okr_detail",
                   JSON.stringify({
                     id: row.okr_id,
-                    name: row.strategic_name,
-                    budget: row.budget,
+                    name: row.okr_name,
+                    year: year,
+                    id_year: year_id,
+                    user_teacher: row.okr_name,
+                    user_employee: row.okr_name,
+                    start_date: row.start_date,
+                    end_date: row.end_date,
+                    goal: row.goal,
+                    result: row.result,
+                    report_data: row.report_data,
+                    id_unit: row.id_unit,
                   })
                 );
 
                 // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${row.project_number}`;
+                window.location.href = `/admin/okr/edit`;
               }}
             >
               <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
@@ -346,12 +357,12 @@ export default function DatatableOkr({ year_id ,year}) {
   const [perPage, setPerPage] = useState(10); // default เป็น 10
   const [hasMounted, setHasMounted] = useState(false);
 
-  const fetchData = useCallback(async (page = 1, perPage = 10,year_id) => {
+  const fetchData = useCallback(async (page = 1, perPage = 10, year_id) => {
     try {
       setLoading(true);
-      console.log(year_id)
+      console.log(year_id);
       const token = Cookies.get("token");
-      const res = await GetDataokrall(token, page, perPage,year_id);
+      const res = await GetDataokrall(token, page, perPage, year_id);
       setData(res.data);
       setSecrchData(res.data);
       setTotalRows(res.total);
@@ -372,9 +383,9 @@ export default function DatatableOkr({ year_id ,year}) {
     // console.log(year_id)
     // console.log(year)
     if (hasMounted) {
-      fetchData(page, perPage,year_id);
+      fetchData(page, perPage, year_id);
     }
-  }, [fetchData, hasMounted, page, perPage,year_id]);
+  }, [fetchData, hasMounted, page, perPage, year_id]);
 
   // Fixed handlePageChange function
   const handlePageChange = (newPage) => {

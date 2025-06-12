@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 import DataTable from "react-data-table-component";
 import {
   GetDataprojectByidaction,
-  UpdatestatusProject,
   DeleteProject,
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
@@ -12,6 +11,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import Swal from "sweetalert2";
+import { MdEmail } from "react-icons/md";
 export default function DatatableProject({ id_action, val, onTotalChange }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +92,7 @@ export default function DatatableProject({ id_action, val, onTotalChange }) {
       selector: (row) => row.project_name,
       sortable: true,
       wrap: true,
-      width: "250px",
+      width: "350px",
       cell: (row) => <div className="py-[10px]">{row.project_name} </div>,
     },
     {
@@ -188,48 +188,6 @@ export default function DatatableProject({ id_action, val, onTotalChange }) {
       },
     },
     {
-      name: "สถานะ",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <Switch
-            onChange={() => handlechageStatus(row)}
-            checked={row.status === 1}
-            onColor="#4caf50"
-            offColor="#d9534f"
-            checkedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                เปิด
-              </div>
-            }
-            uncheckedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                ปิด
-              </div>
-            }
-          />
-        </div>
-      ),
-      ignoreRowClick: true,
-    },
-    {
       name: "จัดการ",
       cell: (row) => (
         <>
@@ -289,63 +247,6 @@ export default function DatatableProject({ id_action, val, onTotalChange }) {
       ignoreRowClick: true,
     },
   ];
-
-  const handlechageStatus = async (row) => {
-    const newStatus = row.status === 1 ? 0 : 1;
-
-    const result = await Swal.fire({
-      title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
-          สำหรับ  "${row.project_name}" หรือไม่
-          `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: newStatus === 1 ? "#4caf50" : "#d33",
-      cancelButtonColor: "gray",
-      confirmButtonText: newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน",
-      cancelButtonText: "ยกเลิก",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = Cookies.get("token");
-        const response = await UpdatestatusProject(token, row.project_id);
-        // if(response)
-        console.log(response);
-        if (response) {
-          console.log("การอัปเดตสถานะสำเร็จ");
-          setData((prevData) =>
-            prevData.map((item) =>
-              item.project_id === row.project_id
-                ? { ...item, status: newStatus }
-                : item
-            )
-          );
-          Swal.fire({
-            title: "อัปเดตข้อมูลสำเร็จ",
-            text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
-            icon: "success",
-            confirmButtonText: "ตกลง",
-          });
-        } else {
-          Swal.fire({
-            title: "เกิดข้อผิดพลาด",
-            text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-            icon: "error",
-            confirmButtonText: "ตกลง",
-          });
-        }
-      } catch (err) {
-        Swal.fire({
-          title: "เกิดข้อผิดพลาด",
-          text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-          icon: "error",
-          confirmButtonText: "ตกลง",
-        });
-        console.log(err);
-      }
-    }
-  };
 
   const handleDelete = async (row) => {
     // const newStatus = row.status === 1 ? 0 : 1;

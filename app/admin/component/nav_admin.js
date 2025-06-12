@@ -21,7 +21,7 @@ import {
   FaUserTag,
   FaUserCircle,
   FaChartLine,
-  FaRegCalendarAlt
+  FaRegCalendarAlt,
 } from "react-icons/fa";
 
 import Link from "next/link";
@@ -35,11 +35,16 @@ export default function Menu() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [opendata, setOpendata] = useState(false);
+  const [openresponsible, setOpenresponsible] = useState(false);
+  const [role, setRole] = useState(false);
   useEffect(() => {
     Aos.init({
       duration: 300,
       once: false,
     });
+    const role = Cookies.get("role");
+    console.log(role);
+    setRole(role);
   }, []);
   const handleLogout = () => {
     Swal.fire({
@@ -65,7 +70,7 @@ export default function Menu() {
   const activePaths = [
     "/admin/strategic",
     "/admin/actionplan",
-    "/admin/project",
+    // "/admin/project",
     "/admin/activity",
   ];
 
@@ -74,6 +79,13 @@ export default function Menu() {
     "/admin/manage/type",
     "/admin/manage/principle",
     "/admin/manage/position",
+  ];
+
+   const projectresponsiblePaths = [
+    "/admin/project/deparment",
+    "/admin/project/type",
+    "/admin/project/principle",
+    "/admin/project/position",
   ];
   return (
     <>
@@ -105,7 +117,7 @@ export default function Menu() {
             </div>
             <ChevronDown
               size={16}
-              className={`transition-transform duration-500 ms-16 md:ms-8 2xl:ms-14 ${
+              className={`transition-transform duration-500 ms-16 md:ms-8 2xl:ms-12 ${
                 open ? "rotate-180" : ""
               }`}
             />
@@ -179,27 +191,87 @@ export default function Menu() {
         <div>
           <div
             className={`flex items-center gap-2 mb-2.5 ${
-              activemanagePaths.some((path) => pathname.startsWith(path))
+              activePaths.some((path) => pathname.startsWith("/admin/projectresponsible"))
                 ? "text-blue-500 font-semibold"
                 : "text-gray-700"
             }`}
-            onClick={() => setOpendata(!opendata)}
+            onClick={() => setOpenresponsible(!openresponsible)}
           >
-            <div className="flex items-center gap-2">
-              <FaDatabase size={20} />
-              <span className="text-md">จัดการข้อมูล</span>
+            <div className="flex items-center  gap-2">
+              <BookOpen size={20} />
+              <span>งานที่รับผิดชอบ</span>
             </div>
             <ChevronDown
               size={16}
-              className={`transition-transform duration-500 ms-16 md:ms-15 2xl:ms-19 ${
-                opendata ? "rotate-180" : ""
+              className={`transition-transform duration-500 ms-16 md:ms-8 xl:ms-12 ${
+                openresponsible ? "rotate-180" : ""
               }`}
             />
           </div>
 
-          {opendata && (
+          {openresponsible && (
             <div className="ml-6 mt-2 space-y-1">
               {/* <Link
+                  href="/overview"
+                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600"
+                >
+                  <Grid size={16} />
+                  <span>ภาพรวมระบบ</span>
+                </Link> */}
+              <Link
+                href="/admin/projectresponsible/project"
+                className={`flex items-center gap-2   mb-2.5 
+                  ${
+                    pathname.startsWith("/admin/projectresponsible/project")
+                      ? "text-blue-500 font-semibold"
+                      : "text-gray-700"
+                  }
+                  `}
+              >
+                <Settings size={16} />
+                <span className="text-sm">โครงการ</span>
+              </Link>
+              <Link
+                href="/admin/projectresponsible/activity"
+                className={`flex items-center gap-2   mb-2.5 
+                  ${
+                    pathname.startsWith("/admin/projectresponsible/activity")
+                      ? "text-blue-500 font-semibold"
+                      : "text-gray-700"
+                  }
+                  `}
+              >
+                <Settings size={16} />
+                <span className="text-sm">กิจกรรม</span>
+              </Link>
+            </div>
+          )}
+        </div>
+        {role && role === "2" && (
+          <div>
+            <div
+              className={`flex items-center gap-2 mb-2.5 ${
+                activemanagePaths.some((path) => pathname.startsWith(path))
+                  ? "text-blue-500 font-semibold"
+                  : "text-gray-700"
+              }`}
+              onClick={() => setOpendata(!opendata)}
+            >
+              <div className="flex items-center gap-2">
+                <FaDatabase size={20} />
+                <span className="text-md">จัดการข้อมูล</span>
+              </div>
+              <ChevronDown
+                size={16}
+                className={`transition-transform duration-500 ms-16 md:ms-15 2xl:ms-17 ${
+                  opendata ? "rotate-180" : ""
+                }`}
+              />
+            </div>
+
+            {opendata && (
+              <div className="ml-6 mt-2 space-y-1">
+                {/* <Link
                 href="/overview"
                 className="flex items-center gap-2 text-gray-600 hover:text-blue-500"
               >
@@ -207,97 +279,101 @@ export default function Menu() {
                 <span>ภาพรวมระบบ</span>
                 
               </Link> */}
-              <Link
-                href="/admin/manage/year"
-                className={`flex items-center gap-2   mb-2.5 
+                <Link
+                  href="/admin/manage/year"
+                  className={`flex items-center gap-2   mb-2.5 
                   ${
                     pathname.startsWith("/admin/manage/year")
                       ? "text-blue-500 font-semibold"
                       : "text-gray-700"
                   }
                   `}
-              >
-                <FaRegCalendarAlt size={16} />
-                <span className="text-sm">ปีงบประมาณ</span>
-              </Link>
-              <Link
-                href="/admin/manage/deparment"
-                className={`flex items-center gap-2   mb-2.5 
+                >
+                  <FaRegCalendarAlt size={16} />
+                  <span className="text-sm">ปีงบประมาณ</span>
+                </Link>
+                <Link
+                  href="/admin/manage/deparment"
+                  className={`flex items-center gap-2   mb-2.5 
                   ${
                     pathname.startsWith("/admin/manage/deparment")
                       ? "text-blue-500 font-semibold"
                       : "text-gray-700"
                   }
                   `}
-              >
-                <FaBuilding size={16} />
-                <span className="text-sm">หน่วยงาน</span>
-              </Link>
-              <Link
-                href="/admin/manage/type"
-                className={`flex items-center gap-2   mb-2.5 
+                >
+                  <FaBuilding size={16} />
+                  <span className="text-sm">หน่วยงาน</span>
+                </Link>
+                <Link
+                  href="/admin/manage/type"
+                  className={`flex items-center gap-2   mb-2.5 
                   ${
                     pathname.startsWith("/admin/manage/type")
                       ? "text-blue-500 font-semibold"
                       : "text-gray-700"
                   }
                   `}
-              >
-                <FaShapes size={16} />
-                <span className="text-sm">ลักษณะโครงการ </span>
-              </Link>
-              <Link
-                href="/admin/manage/principles"
-                className={`flex items-center gap-2   mb-2.5 
+                >
+                  <FaShapes size={16} />
+                  <span className="text-sm">ลักษณะโครงการ </span>
+                </Link>
+                <Link
+                  href="/admin/manage/principles"
+                  className={`flex items-center gap-2   mb-2.5 
                   ${
                     pathname === "/admin/manage/principles"
                       ? "text-blue-500 font-semibold"
                       : "text-gray-700"
                   }
                   `}
-              >
-                <FaBalanceScale size={16} />
-                <span className="text-sm">หลักธรรมาภิบาล</span>
-              </Link>
-              <Link
-                href="/admin/manage/position"
-                className={`flex items-center gap-2   mb-2.5 
+                >
+                  <FaBalanceScale size={16} />
+                  <span className="text-sm">หลักธรรมาภิบาล</span>
+                </Link>
+                <Link
+                  href="/admin/manage/position"
+                  className={`flex items-center gap-2   mb-2.5 
                   ${
                     pathname === "/admin/manage/position"
                       ? "text-blue-500 font-semibold"
                       : "text-gray-700"
                   }
                   `}
-              >
-                <FaUserTag size={16} />
-                <span className="text-sm">ตำแหน่ง</span>
-              </Link>
-            </div>
-          )}
-        </div>
-        <Link
-          href="/admin/okr"
-          className={`flex items-center gap-2 mb-2.5 hover:text-blue-500 ${
-            pathname === "/admin/okr"
-              ? "text-blue-500 font-semibold"
-              : "text-gray-700"
-          }`}
-        >
-          <FaChartLine size={20} />
-          <span className="text-md">OKR</span>
-        </Link>
-
-        <Link
-          href="/admin/person"
-          className={`flex items-center gap-2 mb-2.5 hover:text-blue-500 ${
-            pathname === "/admin/person"
-              ? "text-blue-500 font-semibold"
-              : "text-gray-700"
-          }`}
-        >
-          <User size={20} />
-          <span className="text-md">บุคลากร</span>
-        </Link>
+                >
+                  <FaUserTag size={16} />
+                  <span className="text-sm">ตำแหน่ง</span>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+        {role && role === "2" && (
+          <Link
+            href="/admin/okr"
+            className={`flex items-center gap-2 mb-2.5 hover:text-blue-500 ${
+              pathname.startsWith("/admin/okr")
+                ? "text-blue-500 font-semibold"
+                : "text-gray-700"
+            }`}
+          >
+            <FaChartLine size={20} />
+            <span className="text-md">OKR</span>
+          </Link>
+        )}
+        {role && role === "2" && (
+          <Link
+            href="/admin/person"
+            className={`flex items-center gap-2 mb-2.5 hover:text-blue-500 ${
+              pathname.startsWith("/admin/person")
+                ? "text-blue-500 font-semibold"
+                : "text-gray-700"
+            }`}
+          >
+            <User size={20} />
+            <span className="text-md">บุคลากร</span>
+          </Link>
+        )}
         <button
           // href="/personnel"
           onClick={handleLogout}

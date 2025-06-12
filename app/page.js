@@ -9,7 +9,6 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Cookies from "js-cookie";
 import Swal from "sweetalert2";
 
-
 export default function Home() {
   const [email, setemail] = useState("");
   const [password, setpassword] = useState("");
@@ -34,7 +33,8 @@ export default function Home() {
         Cookies.set("token", res.token, { expires: 1 });
         Cookies.set("fullname", res.fullname, { expires: 1 });
         Cookies.set("id", res.id, { expires: 1 });
-
+        Cookies.set("role", res.role, { expires: 1 });
+        Cookies.set("urlImg", res.img, { expires: 1 });
         // Cookies.set("role", "admin", { expires: 1 });
         Swal.fire({
           title: "เข้าสู่ระบบสำเร็จ",
@@ -44,6 +44,8 @@ export default function Home() {
         }).then(() => {
           if (res.role == 0) {
             window.location.href = "/admin";
+          }else if (res.role == 2) {
+            window.location.href = "/superadmin";
           } else {
             window.location.href = "/user";
           }

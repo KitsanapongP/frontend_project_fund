@@ -5,6 +5,7 @@ import Link from "next/link";
 import Menu from "../../component/nav";
 import Header from "../../component/header";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   BookOpen,
@@ -14,65 +15,74 @@ import {
   User,
 } from "lucide-react";
 import DatatableActivity from "../../component/activity";
+import { ModalAddActivity } from "../component/modal_activity";
 
 export default function HomeActivity({ params }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const [strategic, setStrategic] = useState({ id: "", name: "", budget: "" });
+  const [isOpenModalAdd, setIsOpenModalAdd] = useState(false);
+  const [Activity, setActivity] = useState({ id: "", name: "", budget: "" });
   const [open, setOpen] = useState(false);
-  const { id_strategic, id_actionplan, id_project } = use(params);
+  const {  id_project } = use(params);
+  const [totalRows, setTotalRows] = useState(0);
+  const toggleModalAdd = () => {
+    setIsOpenModalAdd(!isOpenModalAdd); // เปลี่ยนสถานะของ modal
+  };
+
+  const handleModalSelect = (type) => {
+    if (type === "new") {
+      toggleModalAdd();
+      router.push(`./${id_project}/addnewactivity`);
+    }
+  };
+
+  useEffect(() => {
+    // กด esc แล้วปืด
+    // console.log(isOpenModalAddNew);
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        if (isOpenModalAdd) {
+          toggleModalAdd(); // ปิด Modal ถ้าเปิดอยู่
+        }
+      }
+    };
+    // handleKeyDown คือฟังก์ชันที่ฟัง event การกดปุ่มบนคีย์บอร์ด (เช่น Escape)
+    document.addEventListener("keydown", handleKeyDown);
+
+    // ใช้ลบ event listener เพื่อป้องกันปัญหา memory leak หรือ event ถูกเรียกซ้ำซ้อน
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpenModalAdd]);
+
   useEffect(() => {
     const data = sessionStorage.getItem("project_data");
-    console.log(id_strategic);
+    // console.log(data)
     if (!data) {
-      window.location.href = `/admin/strategic`;
+      window.location.href = `/user/project`;
     }
     console.log(data);
     if (data) {
-      setStrategic(JSON.parse(data));
+      setActivity(JSON.parse(data));
     }
   }, []);
-
-  const chanceOptions = [
-    { value: 1, label: "2568" },
-    { value: 2, label: "2567" },
-    { value: 3, label: "2566" },
-  ];
-  const [Year, setYear] = useState({
-    year_id: "2568",
-  });
-  const columns = [
-    {
-      name: "ชื่อ",
-      selector: (row) => row.name,
-      sortable: true,
-    },
-    {
-      name: "ตำแหน่ง",
-      selector: (row) => row.role,
-    },
-  ];
-
-  const data = [
-    { id: 1, name: "สมชาย", role: "ผู้ดูแล" },
-    { id: 2, name: "วิรัตน์", role: "เจ้าหน้าที่" },
-  ];
 
   return (
     <>
       <div className="">
         <Header />
         <hr />
-        <div className="grid grid-cols-12  gap-0 w-full min-h-screen mt-20">
+        <div className="grid grid-cols-12 gap-0 w-full min-h-screen mt-20">
           <div className="bg-gray-100  xl:col-span-2 hidden md:block md:col-span-3 pt-4 ps-3">
             <Menu />
           </div>
           <div className="col-span-12 xl:col-span-10  md:col-span-9 mt-5 ms-4 md:mt-3 me-4 md:me-6">
             <div className="flex flex-col">
-              <nav classme="flex mb-2" aria-label="Breadcrumb">
+              <nav className="flex mb-2" aria-label="Breadcrumb">
                 <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                   <li className="inline-flex items-center">
                     <a
-                      href="/admin/strategic"
+                      href="/user/project"
                       className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white"
                     >
                       <svg
@@ -105,60 +115,71 @@ export default function HomeActivity({ params }) {
                         />
                       </svg>
                       <span className="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">
-                        {id_project} : {strategic.name}
+                        {id_project} : {Activity.name}
                       </span>
                     </div>
                   </li>
                 </ol>
               </nav>
-
               <div className="text-lg md:text-2xl me-3  font-bold">
                 จัดการกิจกรรม
               </div>
-              <div className="text-lg md:text-xl me-3  ">
+              <div className="text-lg md:text-2xl me-3  ">
                 {" "}
-                {id_project} {strategic.name}
+                {id_project} {Activity.name}
               </div>
               <div className="flex justify-between ">
-                <div className="text-lg md:text-xl   ">
+                <div className="text-lg md:text-2xl   ">
                   {" "}
                   งบประมาณ{" "}
-                  {Number(strategic.budget).toLocaleString("th-TH", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
+                  {Number(Activity.budget).toLocaleString("th-TH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   })}{" "}
                   บาท
                 </div>
               </div>
               <div className="flex justify-between ">
-                <div className="text-lg md:text-xl ">
+                <div className="text-lg md:text-2xl   ">
                   {" "}
                   คงเหลือ{" "}
-                  {Number(strategic.balance).toLocaleString("th-TH", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
+                  {Number(Activity.Balance).toLocaleString("th-TH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   })}{" "}
                   บาท
                 </div>
-                <a
-                  href={`/user/project/${id_project}/add_activity`}
-                  className="w-20 me-2 md:me-8 flex justify-center md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
-                >
-                  เพิ่มข้อมูล
-                </a>
+                <div className="flex gap-4">
+              
+                  <button
+                    data-modal-target="popup-modal"
+                    data-modal-toggle="popup-modal"
+                    onClick={toggleModalAdd}
+                    className="w-22 justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    เพิ่มข้อมูล
+                  </button>
+                </div>
               </div>
             </div>
             <div>
-              {strategic.id && (
+              {Activity.id && (
                 <DatatableActivity
-                  val={{ id_strategic, id_actionplan, id_project }}
-                  project_id={strategic.id}
+                  id_projectref={Activity.id}
+                  onTotalChange={setTotalRows}
+                  val={{ id_project }}
                 />
               )}
             </div>
           </div>
         </div>
       </div>
+      <ModalAddActivity
+        isOpen={isOpenModalAdd}
+        onClose={() => setIsOpenModalAdd(false)}
+        onSelect={handleModalSelect}
+      />
     </>
   );
 }
+

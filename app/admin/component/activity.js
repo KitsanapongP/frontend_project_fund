@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState,useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import DataTable from "react-data-table-component";
 import {
   GetDataactionplanByidproject,
@@ -12,7 +12,12 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import { FiEdit2 } from "react-icons/fi";
 import Switch from "react-switch";
 import Swal from "sweetalert2";
-export default function DatatableActivity({ id_projectref, val,onTotalChange}) {
+import { MdEmail } from "react-icons/md";
+export default function DatatableActivity({
+  id_projectref,
+  val,
+  onTotalChange,
+}) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [SecrchData, setSecrchData] = useState([]);
@@ -95,7 +100,7 @@ export default function DatatableActivity({ id_projectref, val,onTotalChange}) {
       selector: (row) => row.name_activity,
       sortable: true,
       wrap: true,
-      width: "300px",
+      width: "450px",
       cell: (row) => (
         <div style={{ padding: "10px 0px" }}>{row.name_activity}</div>
       ),
@@ -107,7 +112,9 @@ export default function DatatableActivity({ id_projectref, val,onTotalChange}) {
       center: "true",
       width: "160px",
       cell: (row) => (
-        <div className="flex items-center h-full">{row.activity_detail_count}</div>
+        <div className="flex items-center h-full">
+          {row.activity_detail_count}
+        </div>
       ),
     },
     {
@@ -139,7 +146,7 @@ export default function DatatableActivity({ id_projectref, val,onTotalChange}) {
       name: "คงเหลือ (บาท)",
       sortable: true,
       right: "true",
-      selector: (row) => (row.budget - row.spend_money),
+      selector: (row) => row.budget - row.spend_money,
       width: "160px",
       cell: (row) =>
         `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
@@ -151,11 +158,11 @@ export default function DatatableActivity({ id_projectref, val,onTotalChange}) {
       name: "สถานะรายงาน",
       width: "200px",
       sortable: true,
-      center : "true",
+      center: "true",
       cell: (row) => {
         let text = "";
         let bg = "";
-    
+
         switch (row.status_report) {
           case 0:
             text = "ยังไม่มีการรายงาน";
@@ -173,55 +180,13 @@ export default function DatatableActivity({ id_projectref, val,onTotalChange}) {
             text = "-";
             bg = "bg-gray-200 text-gray-800";
         }
-    
+
         return (
           <span className={`px-2 py-1 rounded text-sm font-medium ${bg}`}>
             {text}
           </span>
         );
       },
-    },
-    {
-      name: "สถานะ",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <Switch
-            onChange={() => handlechageStatus(row)}
-            checked={row.status === 1}
-            onColor="#4caf50"
-            offColor="#d9534f"
-            checkedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                เปิด
-              </div>
-            }
-            uncheckedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                ปิด
-              </div>
-            }
-          />
-        </div>
-      ),
-      ignoreRowClick: true,
     },
     {
       name: "ดำเนินการ",
@@ -293,64 +258,6 @@ export default function DatatableActivity({ id_projectref, val,onTotalChange}) {
         fontSize: "14px",
       },
     },
-  };
-
-
-  const handlechageStatus = async (row) => {
-    const newStatus = row.status === 1 ? 0 : 1;
-
-    const result = await Swal.fire({
-      title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
-            สำหรับ  "${row.name_activity}" หรือไม่
-            `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: newStatus === 1 ? "#4caf50" : "#d33",
-      cancelButtonColor: "gray",
-      confirmButtonText: newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน",
-      cancelButtonText: "ยกเลิก",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = Cookies.get("token");
-        const response = await UpdatestatusActivity(token, row.activity_id);
-        // if(response)
-        console.log(response);
-        if (response) {
-          console.log("การอัปเดตสถานะสำเร็จ");
-          setData((prevData) =>
-            prevData.map((item) =>
-              item.activity_id === row.activity_id
-                ? { ...item, status: newStatus }
-                : item
-            )
-          );
-          Swal.fire({
-            title: "อัปเดตข้อมูลสำเร็จ",
-            text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
-            icon: "success",
-            confirmButtonText: "ตกลง",
-          });
-        } else {
-          Swal.fire({
-            title: "เกิดข้อผิดพลาด",
-            text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-            icon: "error",
-            confirmButtonText: "ตกลง",
-          });
-        }
-      } catch (err) {
-        Swal.fire({
-          title: "เกิดข้อผิดพลาด",
-          text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-          icon: "error",
-          confirmButtonText: "ตกลง",
-        });
-        console.log(err);
-      }
-    }
   };
 
   const handleDelete = async (row) => {

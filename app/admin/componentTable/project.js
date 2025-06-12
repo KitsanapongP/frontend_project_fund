@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 import DataTable from "react-data-table-component";
 import {
   GetDataprojectByYear,
-  UpdatestatusProject,
   DeleteProject,
 } from "../../fetch_api/fetch_api_admin"; // ปรับ path ตามจริง
 import Link from "next/link";
@@ -82,104 +81,122 @@ export default function DatatableActionplan({ year_id }) {
       sortable: true,
       width: "90px",
     },
-    // {
-    //   name: "กลยุทธ์",
-    //   selector: (row) => row.action_plan_number,
-    //   sortable: true,
-    //   width: "120px",
-    // },
-    {
-      name: "ยุทธศาสตร์",
-      selector: (row) => row.project_number,
-      sortable: true,
-      width: "120px",
-    },
     {
       name: "ชื่อ",
       selector: (row) => row.project_name,
       sortable: true,
       wrap: true,
-      width: "250px",
+      width: "350px",
+      cell: (row) => <div className="py-[10px]">{row.project_name} </div>,
+    },
+
+    {
+      name: "กิจกรรม",
+      selector: (row) => row.count_activity,
+      sortable: true,
+      center: "true",
     },
     {
-      name: "โครงการ",
-      selector: (row) => row.status,
+      name: "รายงานเรียบร้อย",
+      selector: (row) => row.count_activity_report,
       sortable: true,
+      width: "160px",
+      center: "true",
+    },
+    {
+      name: "ยังไม่ได้รายงาน",
+      selector: (row) => row.count_activity - row.count_activity_report,
+      sortable: true,
+      center: "true",
+      width: "160px",
     },
     {
       name: "งบประมาณ (บาท)",
       // selector: (row) => row.budget,
       sortable: true,
       wrap: true,
+      right: "true",
+      selector: (row) => row.budget,
+      width: "160px",
       cell: (row) =>
         `${Number(row.budget).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "ใช้ไป (บาท)",
       sortable: true,
+      right: "true",
+      selector: (row) => row.spend_money,
+      width: "160px",
       cell: (row) =>
         `${Number(row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
       name: "คงเหลือ (บาท)",
       sortable: true,
+      right: "true",
+      selector: (row) => row.budget - row.spend_money,
+      width: "160px",
       cell: (row) =>
         `${Number(row.budget - row.spend_money).toLocaleString("th-TH", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
         })} `,
     },
     {
-      name: "สถานะ",
-      cell: (row) => (
-        <div style={{ padding: "5px" }}>
-          <Switch
-            onChange={() => handlechageStatus(row)}
-            checked={row.status === 1}
-            onColor="#4caf50"
-            offColor="#d9534f"
-            checkedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                เปิด
-              </div>
-            }
-            uncheckedIcon={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%", // ให้ข้อความใช้พื้นที่ของ Switch ทั้งหมด
-                  color: "white",
-                  fontSize: "12px",
-                }}
-              >
-                ปิด
-              </div>
-            }
-          />
-        </div>
-      ),
-      ignoreRowClick: true,
+      name: "สถานะรายงาน",
+      width: "200px",
+      sortable: true,
+      center: "true",
+      cell: (row) => {
+        let text = "";
+        let bg = "";
+
+        switch (row.status_report) {
+          case 0:
+            text = "ยังไม่มีการรายงาน";
+            bg = "bg-yellow-200 text-yellow-800";
+            break;
+          case 1:
+            text = "มีการรายงานเรียบร้อย";
+            bg = "bg-green-200 text-green-800";
+            break;
+          case 2:
+            text = "หมดเวลารายงานโดยไม่มีการรายงาน";
+            bg = "bg-red-200 text-red-800";
+            break;
+          default:
+            text = "-";
+            bg = "bg-gray-200 text-gray-800";
+        }
+
+        return (
+          <span className={`px-2 py-1 rounded text-sm font-medium ${bg}`}>
+            {text}
+          </span>
+        );
+      },
     },
     {
+          name: "ดาวน์โหลด",
+          ignoreRowClick: true,
+          cell: (row) => (
+            <button
+              className="flex items-center gap-2 btn btn-sm btn-outline-primary hover:text-blue-500 rounded hover:bg-gray-100 p-2"
+              onClick={() => handleDownloadClick(row)}
+            >
+              <FiDownload className="text-lg " />
+              PDF
+            </button>
+          ),
+        },
+    {
       name: "จัดการ",
-      width: "200px",
       cell: (row) => (
         <>
           <div style={{ padding: "5px" }}>
@@ -188,10 +205,9 @@ export default function DatatableActionplan({ year_id }) {
               onClick={() => {
                 // เก็บข้อมูลที่ต้องส่งไว้ใน sessionStorage
                 sessionStorage.setItem(
-                  "actionplan_data",
+                  "project_data",
                   JSON.stringify({
                     id: row.project_id,
-                    // id_actionplan: row.action_plan_number,
                     name: row.project_name,
                     budget: row.budget,
                     Balance: row.budget - row.spend_money,
@@ -199,7 +215,7 @@ export default function DatatableActionplan({ year_id }) {
                 );
 
                 // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${number_strategic}/${row.action_plan_number}`;
+                window.location.href = `/admin/strategic/${id_strategic}/${id_actionplan}/${row.project_number}`;
               }}
             >
               <i className="bi bi-eye text-gray-500 text-xl group-hover:text-blue-500"></i>
@@ -213,14 +229,13 @@ export default function DatatableActionplan({ year_id }) {
                 sessionStorage.setItem(
                   "strategic_data",
                   JSON.stringify({
-                    id: row.project_id,
                     name: row.strategic_name,
                     budget: row.budget,
                   })
                 );
 
                 // เปลี่ยนหน้า
-                window.location.href = `/admin/strategic/${row.project_number}`;
+                window.location.href = `/admin/strategic/${row.strategic_number}`;
               }}
             >
               <FiEdit2 className="text-xl text-gray-500 group-hover:text-black" />
@@ -255,65 +270,6 @@ export default function DatatableActionplan({ year_id }) {
     setSecrchData(filtered);
   }, [SearchTerm, data]);
 
-  const handlechageStatus = async (row) => {
-    const newStatus = row.status === 1 ? 0 : 1;
-
-    const result = await Swal.fire({
-      title: "คุณแน่ใจหรือไม่ ?",
-      text: `คุณต้องการ  ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"}
-        สำหรับ  "${row.project_name}" หรือไม่
-        `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: newStatus === 1 ? "#4caf50" : "#d33",
-      cancelButtonColor: "gray",
-      confirmButtonText: newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน",
-      cancelButtonText: "ยกเลิก",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = Cookies.get("token");
-        const response = await UpdatestatusProject(token, row.project_id);
-        // if(response)
-        console.log(response);
-        if (response) {
-          console.log("การอัปเดตสถานะสำเร็จ");
-          setData((prevData) =>
-            prevData.map((item) =>
-              item.project_id === row.project_id
-                ? { ...item, status: newStatus }
-                : item
-            )
-          );
-          // ทำการดำเนินการเพิ่มเติมที่ต้องการเมื่อการอัปเดตสำเร็จ
-          Swal.fire({
-            title: "อัปเดตข้อมูลสำเร็จ",
-            // text: ` ${newStatus === 1 ? "เปิดการใช้งาน" : "ปิดการใช้งาน"} ${row.project_name}`,
-            text: "ข้อมูลถูกอัปเดตในระบบแล้ว",
-            icon: "success",
-            confirmButtonText: "ตกลง",
-          });
-        } else {
-          Swal.fire({
-            title: "เกิดข้อผิดพลาด",
-            text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-            icon: "error",
-            confirmButtonText: "ตกลง",
-          });
-        }
-      } catch (err) {
-        Swal.fire({
-          title: "เกิดข้อผิดพลาด",
-          text: "ไม่สามารถเปลี่ยนสถานะได้ กรุณาลองใหม่อีกครั้ง",
-          icon: "error",
-          confirmButtonText: "ตกลง",
-        });
-        console.log(err);
-      }
-    }
-  };
-
   const customStyles = {
     headCells: {
       style: {
@@ -339,7 +295,7 @@ export default function DatatableActionplan({ year_id }) {
         setData(res.data);
         setSecrchData(res.data);
         setTotalRows(res.total);
-        
+
         console.log(res);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -370,7 +326,7 @@ export default function DatatableActionplan({ year_id }) {
     setPerPage(newPerPage);
     setPage(newPage);
   };
-  
+
   return (
     <div className="w-full">
       {loading ? (
@@ -413,6 +369,76 @@ export default function DatatableActionplan({ year_id }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+
+function DownloadModal({ isOpen, onClose, onSelect, row }) {
+  useEffect(() => {
+    // กด esc แล้วปืด
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    // handleKeyDown คือฟังก์ชันที่ฟัง event การกดปุ่มบนคีย์บอร์ด (เช่น Escape)
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    // ใช้ลบ event listener เพื่อป้องกันปัญหา memory leak หรือ event ถูกเรียกซ้ำซ้อน
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-500/75 bg-opacity-50">
+      <div
+        data-aos="fade-down"
+        className="relative bg-white rounded-lg shadow-lg p-6 w-full max-w-md"
+      >
+        {/* ปุ่มกากบาท */}
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-4 cursor-pointer text-gray-400 hover:text-gray-600"
+        >
+          <span className="text-3xl">&times;</span>
+        </button>
+
+        <div className="flex justify-center items-center flex-col">
+          <div className="flex items-center justify-center bg-yellow-300 text-white rounded-full w-16 h-16 text-3xl font-bold shadow-lg mb-4">
+            ?
+          </div>
+
+          <h2 className="text-lg font-semibold text-center mb-4">
+            เลือกประเภทไฟล์ที่ต้องการดาวน์โหลด
+          </h2>
+        </div>
+
+        <div className="flex justify-center gap-2">
+          <button
+            onClick={() => onSelect("pdf", row)}
+            className="bg-red-600 text-white px-4  py-2 cursor-pointer rounded hover:bg-red-400"
+          >
+            PDF
+          </button>
+          <button
+            onClick={() => onSelect("word", row)}
+            className="bg-blue-600 text-white px-4 py-2 cursor-pointer rounded hover:bg-blue-400"
+          >
+            Word
+          </button>
+          <button
+            onClick={onClose}
+            className="bg-gray-300 text-black px-4 py-2 cursor-pointer rounded hover:bg-gray-400"
+          >
+            ยกเลิก
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -7,32 +7,17 @@ import Menu from "../component/nav";
 import Header from "../component/header";
 import { GetDatayear } from "../../fetch_api/fetch_api_user";
 import DatatableProject from "../component/activity_user";
+import { ModalAddActivity } from "../component/modal_activity";
+import { useRouter } from "next/navigation";
 
 export default function HomeActivity() {
-  const [yearOptions, setyearOptions] = useState([
-    // { value: 1, label: "2568" },
-    // { value: 2, label: "2567" },
-    // { value: 3, label: "2566" },
-  ]);
+    const router = useRouter();
+  const [yearOptions, setyearOptions] = useState([]);
+  const [isOpenModalAdd, setIsOpenModalAdd] = useState(false);
+  const [totalRows, setTotalRows] = useState(0);
   const [Year, setYear] = useState({
     // year_id: "2568",
   });
-  const columns = [
-    {
-      name: "ชื่อ",
-      selector: (row) => row.name,
-      sortable: true,
-    },
-    {
-      name: "ตำแหน่ง",
-      selector: (row) => row.role,
-    },
-  ];
-
-  const data = [
-    { id: 1, name: "สมชาย", role: "ผู้ดูแล" },
-    { id: 2, name: "วิรัตน์", role: "เจ้าหน้าที่" },
-  ];
 
   useEffect(() => {
     async function fetchData() {
@@ -55,6 +40,35 @@ export default function HomeActivity() {
       });
     }
   }, [yearOptions]);
+
+  const toggleModalAdd = () => {
+    setIsOpenModalAdd(!isOpenModalAdd); // เปลี่ยนสถานะของ modal
+  };
+  const handleModalSelect = (type) => {
+    if (type === "new") {
+      toggleModalAdd();
+      router.push(`./activity/add_activity`);
+    }
+  };
+
+  useEffect(() => {
+    // กด esc แล้วปืด
+    // console.log(isOpenModalAddNew);
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        if (isOpenModalAdd) {
+          toggleModalAdd(); // ปิด Modal ถ้าเปิดอยู่
+        }
+      }
+    };
+    // handleKeyDown คือฟังก์ชันที่ฟัง event การกดปุ่มบนคีย์บอร์ด (เช่น Escape)
+    document.addEventListener("keydown", handleKeyDown);
+
+    // ใช้ลบ event listener เพื่อป้องกันปัญหา memory leak หรือ event ถูกเรียกซ้ำซ้อน
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpenModalAdd]);
   return (
     <>
       <div className="">
@@ -96,22 +110,35 @@ export default function HomeActivity() {
                   ))}
                 </select>
               </div>
-              <a
-                href="/user/project/add_project"
-                className="w-30 me-2 md:me-8 md:w-30 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
-              >
-                เพิ่มโครงการ
-              </a>
+              <div className="flex gap-4">
+                <button
+                  data-modal-target="popup-modal"
+                  data-modal-toggle="popup-modal"
+                  onClick={toggleModalAdd}
+                  className="w-22 justify-end md:w-25 py-1.5 bg-blue-400 text-white rounded-lg hover:bg-blue-700"
+                >
+                  เพิ่มข้อมูล
+                </button>
+              </div>
             </div>
             <div>
               {Year.year_id !== null && (
-                <DatatableProject year_id={Year.year_id} />
+                <DatatableProject
+                  year_id={Year.year_id}
+                  onTotalChange={setTotalRows}
+                />
               )}
               {/* <DatatableProject /> */}
             </div>
           </div>
         </div>
       </div>
+
+      <ModalAddActivity
+        isOpen={isOpenModalAdd}
+        onClose={() => setIsOpenModalAdd(false)}
+        onSelect={handleModalSelect}
+      />
     </>
   );
 }
