@@ -1,7 +1,5 @@
-export default function Homestrategic() {
+export default function Content () {
   return (
-    <>
-      <div></div>
-    </>
-  );
+    <div>Hello World!</div>
+  )
 }
