@@ -13,6 +13,7 @@
     "@ckeditor/ckeditor5-list": "^45.0.0",
     "@ckeditor/ckeditor5-react": "^9.5.0",
     "aos": "^2.3.4",
+    "autoprefixer": "^10.4.21",
     "axios": "^1.8.4",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
@@ -28,6 +29,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.484.0",
     "next": "^15.3.2",
+    "postcss": "^8.5.6",
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",
     "react-data-table-component": "^7.7.0",
@@ -41,6 +43,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4.1.10"
   }
 }
