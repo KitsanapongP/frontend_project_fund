@@ -14,10 +14,18 @@ export default function TeacherPage() {
   const [submenuOpen, setSubmenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
 
+  const handleNavigate = (page) => {
+    setCurrentPage(page);
+    // ถ้าเป็น submenu ให้เปิด submenu ด้วย
+    if (['application-form', 'draft'].includes(page)) {
+      setSubmenuOpen(true);
+    }
+  };
+
   const renderPageContent = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <DashboardContent />;
+        return <DashboardContent onNavigate={handleNavigate} />;
       case 'research-fund':
         return <ResearchFundContent />;
       case 'applications':
@@ -80,12 +88,6 @@ export default function TeacherPage() {
 
         {/* Main Content */}
         <div className="md:ml-64 flex-1">
-          {/* Page Header */}
-          <div className="bg-white shadow-sm px-8 py-4 mb-6">
-            <h1 className="text-xl font-semibold text-gray-800">
-              {getPageTitle()}
-            </h1>
-          </div>
           
           {/* Page Content */}
           <div className="px-8 pb-8">

@@ -10,8 +10,9 @@ import StatCard from "./StatCard";
 import RecentApplications from "./RecentApplications";
 import MonthlyChart from "./MonthlyChart";
 import BudgetSummary from "./BudgetSummary";
+import SimpleCard from "../common/SimpleCard";
 
-export default function DashboardContent() {
+export default function DashboardContent({ onNavigate }) {
   const [stats, setStats] = useState(mockDashboardStats);
   const [recentApplications, setRecentApplications] = useState([]);
   const [user, setUser] = useState(mockUser);
@@ -46,42 +47,8 @@ export default function DashboardContent() {
         icon={LayoutDashboard}
       />
 
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg mb-8 shadow-lg">
-        <h2 className="text-2xl font-bold mb-2">
-          สวัสดี, {user.position}{user.user_fname} {user.user_lname}
-        </h2>
-        <p className="opacity-90">ยินดีต้อนรับเข้าสู่ระบบบริหารจัดการทุนวิจัย</p>
-      </div>
-      
-      {/* Statistics Cards */}
-      <StatCard stats={stats} />
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Card title="สถิติการยื่นคำร้องรายเดือน" icon={TrendingUp}>
-          <MonthlyChart data={stats.monthlyStats} />
-        </Card>
-
-        <Card title="สรุปงบประมาณ">
-          <BudgetSummary budget={stats.budgetUsed} />
-        </Card>
-      </div>
-
-      {/* Recent Applications */}
-      <Card 
-        title="คำร้องล่าสุดของฉัน"
-        action={
-          <a href="#" className="text-sm text-blue-600 hover:text-blue-700">
-            ดูทั้งหมด →
-          </a>
-        }
-      >
-        <RecentApplications applications={recentApplications} />
-      </Card>
-
       {/* Announcements */}
-      <Card title="ประกาศล่าสุด" defaultCollapsed={true} className="mt-6">
+      <SimpleCard title="ประกาศล่าสุด" defaultCollapsed={true} className="mt-6 mb-6">
         <div className="space-y-4">
           <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
             <p className="font-semibold text-blue-900">ประกาศ</p>
@@ -96,7 +63,46 @@ export default function DashboardContent() {
             </p>
           </div>
         </div>
+      </SimpleCard>
+
+      {/* Welcome Banner */}
+      <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg mb-8 shadow-lg">
+        <h2 className="text-2xl font-bold mb-2">
+          สวัสดี, {user.position}{user.user_fname} {user.user_lname}
+        </h2>
+        <p className="opacity-90">ยินดีต้อนรับเข้าสู่ระบบบริหารจัดการทุนวิจัย</p>
+      </div>
+      
+      {/* Statistics Cards */}
+      <StatCard stats={stats} />
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <SimpleCard title="สถิติการยื่นคำร้องรายเดือน" icon={TrendingUp}>
+          <MonthlyChart data={stats.monthlyStats} />
+        </SimpleCard>
+
+        <SimpleCard title="สรุปงบประมาณ">
+          <BudgetSummary budget={stats.budgetUsed} />
+        </SimpleCard>
+      </div>
+
+      {/* Recent Applications */}
+      <Card 
+        title="คำร้องล่าสุดของฉัน"
+        action={
+          <button 
+            onClick={() => onNavigate('applications')}
+            className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            ดูทั้งหมด →
+          </button>
+        }
+      >
+        <RecentApplications applications={recentApplications} />
       </Card>
+
+
     </div>
   );
 }

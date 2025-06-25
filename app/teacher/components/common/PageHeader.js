@@ -9,7 +9,7 @@ export default function PageHeader({
   breadcrumbs 
 }) {
   return (
-    <div className="mb-6">
+    <div className="mt-6 mb-6">
       {/* Breadcrumbs */}
       {breadcrumbs && (
         <nav className="text-sm mb-2">

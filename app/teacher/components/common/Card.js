@@ -1,4 +1,4 @@
-// Card.js - Reusable Card Component
+// Card.js - Reusable Card Component with Animation
 "use client";
 
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -24,9 +24,9 @@ export default function Card({
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-md ${className}`}>
+    <div className={`bg-white rounded-lg shadow-md overflow-hidden ${className}`}>
       <div 
-        className={`p-5 border-b border-gray-200 flex justify-between items-center ${
+        className={`p-5 border-b border-gray-200 flex justify-between items-center transition-colors duration-200 ${
           collapsible ? 'cursor-pointer hover:bg-gray-50' : ''
         } ${headerClassName}`}
         onClick={handleToggle}
@@ -43,23 +43,31 @@ export default function Card({
           )}
           {collapsible && (
             <button 
-              className="text-gray-500 hover:text-gray-700 p-1"
+              className="text-gray-500 hover:text-gray-700 p-1 transition-transform duration-300"
               aria-label={collapsed ? "Expand" : "Collapse"}
             >
               {collapsed ? (
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-5 h-5 transform transition-transform duration-300" />
               ) : (
-                <ChevronDown className="w-5 h-5" />
+                <ChevronDown className="w-5 h-5 transform transition-transform duration-300" />
               )}
             </button>
           )}
         </div>
       </div>
-      {!collapsed && (
-        <div className={`p-6 ${bodyClassName}`}>
+      
+      {/* Animated Content */}
+      <div 
+        className={`transition-all duration-300 ease-in-out ${
+          collapsed ? 'max-h-0' : 'max-h-[2000px]'
+        }`}
+      >
+        <div className={`p-6 ${bodyClassName} ${
+          collapsed ? 'opacity-0' : 'opacity-100 transition-opacity duration-300 delay-100'
+        }`}>
           {children}
         </div>
-      )}
+      </div>
     </div>
   );
 }
