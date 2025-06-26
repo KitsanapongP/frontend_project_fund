@@ -8,7 +8,6 @@ import DataTable from "../common/DataTable";
 import PageLayout from "../common/PageLayout";
 import Card from "../common/Card";
 import EmptyState from "../common/EmptyState";
-import PageHeader from "../common/PageHeader";
 
 export default function ApplicationList() {
   const [applications, setApplications] = useState([]);

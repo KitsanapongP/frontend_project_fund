@@ -118,6 +118,26 @@ export const mockFundCategories = [
         max_grants: 2,
         max_amount_per_grant: 150000,
         remaining_grant: 1
+      },
+      {
+        subcategorie_id: 5,
+        subcategorie_name: "ทุนวิจัยเพื่อพัฒนาท้องถิ่น",
+        allocated_amount: 150000,
+        used_amount: 150000,
+        remaining_budget: 0,
+        max_grants: 3,
+        max_amount_per_grant: 50000,
+        remaining_grant: 0
+      },
+      {
+        subcategorie_id: 6,
+        subcategorie_name: "ทุนวิจัยนวัตกรรมการศึกษา",
+        allocated_amount: 250000,
+        used_amount: 100000,
+        remaining_budget: 150000,
+        max_grants: 5,
+        max_amount_per_grant: 50000,
+        remaining_grant: 3
       }
     ]
   },
@@ -145,6 +165,81 @@ export const mockFundCategories = [
         max_grants: 3,
         max_amount_per_grant: 200000,
         remaining_grant: 2
+      },
+      {
+        subcategorie_id: 7,
+        subcategorie_name: "ทุนฝึกอบรมต่างประเทศ",
+        allocated_amount: 100000,
+        used_amount: 100000,
+        remaining_budget: 0,
+        max_grants: 2,
+        max_amount_per_grant: 50000,
+        remaining_grant: 0
+      },
+      {
+        subcategorie_id: 8,
+        subcategorie_name: "ทุนพัฒนาทักษะภาษาอังกฤษ",
+        allocated_amount: 80000,
+        used_amount: 60000,
+        remaining_budget: 20000,
+        max_grants: 4,
+        max_amount_per_grant: 20000,
+        remaining_grant: 1
+      }
+    ]
+  },
+  {
+    category_id: 3,
+    category_name: "ทุนสนับสนุนการตีพิมพ์",
+    year: "2568",
+    subcategories: [
+      {
+        subcategorie_id: 9,
+        subcategorie_name: "ทุนตีพิมพ์วารสารระดับชาติ",
+        allocated_amount: 50000,
+        used_amount: 30000,
+        remaining_budget: 20000,
+        max_grants: 10,
+        max_amount_per_grant: 5000,
+        remaining_grant: 4
+      },
+      {
+        subcategorie_id: 10,
+        subcategorie_name: "ทุนตีพิมพ์วารสารระดับนานาชาติ",
+        allocated_amount: 120000,
+        used_amount: 80000,
+        remaining_budget: 40000,
+        max_grants: 6,
+        max_amount_per_grant: 20000,
+        remaining_grant: 2
+      }
+    ]
+  },
+  // ข้อมูลปี 2567
+  {
+    category_id: 1,
+    category_name: "ทุนส่งเสริมการวิจัย",
+    year: "2567",
+    subcategories: [
+      {
+        subcategorie_id: 11,
+        subcategorie_name: "ทุนวิจัยพื้นฐาน",
+        allocated_amount: 180000,
+        used_amount: 180000,
+        remaining_budget: 0,
+        max_grants: 3,
+        max_amount_per_grant: 60000,
+        remaining_grant: 0
+      },
+      {
+        subcategorie_id: 12,
+        subcategorie_name: "ทุนวิจัยประยุกต์",
+        allocated_amount: 200000,
+        used_amount: 150000,
+        remaining_budget: 50000,
+        max_grants: 4,
+        max_amount_per_grant: 50000,
+        remaining_grant: 1
       }
     ]
   }

@@ -14,11 +14,17 @@ export default function TeacherPage() {
   const [submenuOpen, setSubmenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
 
-  const handleNavigate = (page) => {
+  const handleNavigate = (page, data) => {
     setCurrentPage(page);
     // ถ้าเป็น submenu ให้เปิด submenu ด้วย
     if (['application-form', 'draft'].includes(page)) {
       setSubmenuOpen(true);
+    }
+    
+    // ถ้ามี data (เช่นข้อมูล fund) ส่งต่อไปด้วย
+    if (data) {
+      console.log("Navigate with data:", data);
+      // ในอนาคตสามารถส่งต่อ data ไปยัง ApplicationForm
     }
   };
 
@@ -27,9 +33,9 @@ export default function TeacherPage() {
       case 'dashboard':
         return <DashboardContent onNavigate={handleNavigate} />;
       case 'research-fund':
-        return <ResearchFundContent />;
+        return <ResearchFundContent onNavigate={handleNavigate} />;
       case 'applications':
-        return <ApplicationList />;
+        return <ApplicationList onNavigate={handleNavigate} />;
       case 'application-form':
         return <ApplicationForm />;
       case 'profile':
