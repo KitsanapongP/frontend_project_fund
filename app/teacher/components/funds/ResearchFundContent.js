@@ -71,9 +71,12 @@ export default function ResearchFundContent({ onNavigate }) {
     setFilteredFunds(filtered);
   };
 
-  const handleApply = (fund) => {
+  const handleApply = (fund, category) => {
     if (onNavigate) {
-      onNavigate('application-form', { fund });
+      onNavigate('application-form', { 
+        fund: fund,
+        category: category 
+      });
     } else {
       console.log("Apply for fund:", fund);
     }
@@ -181,7 +184,7 @@ export default function ResearchFundContent({ onNavigate }) {
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 "
             >
-              <Filter size={18} />
+              <Filter size={16} />
               ตัวกรอง
               <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </button>

@@ -42,7 +42,7 @@ export default function DashboardContent({ onNavigate }) {
   return (
     <div>
       <PageHeader 
-        title="Dashboard"
+        title="แดชบอร์ด"
         subtitle="ภาพรวมระบบและสถิติการใช้งาน"
         icon={LayoutDashboard}
       />

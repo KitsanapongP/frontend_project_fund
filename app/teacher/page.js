@@ -13,6 +13,7 @@ export default function TeacherPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [submenuOpen, setSubmenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [selectedFundData, setSelectedFundData] = useState(null);
 
   const handleNavigate = (page, data) => {
     setCurrentPage(page);
@@ -24,7 +25,7 @@ export default function TeacherPage() {
     // ถ้ามี data (เช่นข้อมูล fund) ส่งต่อไปด้วย
     if (data) {
       console.log("Navigate with data:", data);
-      // ในอนาคตสามารถส่งต่อ data ไปยัง ApplicationForm
+      setSelectedFundData(data);
     }
   };
 
@@ -37,13 +38,13 @@ export default function TeacherPage() {
       case 'applications':
         return <ApplicationList onNavigate={handleNavigate} />;
       case 'application-form':
-        return <ApplicationForm />;
+        return <ApplicationForm selectedFund={selectedFundData} />;
       case 'profile':
-        return <UnderDevelopmentContent currentPage="ข้อมูลส่วนตัว" />;
+        return <div className= "text-gray-800 mt-6">Hello World</div>;
       case 'draft':
-        return <UnderDevelopmentContent currentPage="ร่างที่บันทึกไว้" />;
+        return <div className= "text-gray-800 mt-6">Hello World</div>;
       default:
-        return <UnderDevelopmentContent currentPage={currentPage} />;
+        return <div className= "text-gray-800 mt-6">Hello World</div>;
     }
   };
 

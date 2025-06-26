@@ -250,10 +250,7 @@ export const mockYears = ["2569", "2568", "2567", "2566"];
 export const mockDocumentTypes = [
   { id: 1, name: "ใบสมัคร", required: true },
   { id: 2, name: "โครงการวิจัย", required: true },
-  { id: 3, name: "งบประมาณ", required: true },
-  { id: 4, name: "ประวัติผู้วิจัย", required: true },
-  { id: 5, name: "หนังสือรับรอง", required: false },
-  { id: 6, name: "เอกสารอื่นๆ", required: false }
+  { id: 3, name: "เอกสารอื่นๆ", required: false }
 ];
 
 export const mockDashboardStats = {

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Upload, X, AlertCircle, Save, Send, FileText } from "lucide-react";
 import { mockFundCategories, mockDocumentTypes } from "../data/mockData";
-import PageLayout from "../common/PageLayout";
 import Card from "../common/Card";
+import PageHeader from "../common/PageHeader";
 
-export default function ApplicationForm() {
+export default function ApplicationForm({ selectedFund }) {
   const [formData, setFormData] = useState({
     project_title: "",
     project_description: "",
@@ -22,6 +22,27 @@ export default function ApplicationForm() {
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [errors, setErrors] = useState({});
   const [selectedCategory, setSelectedCategory] = useState(null);
+
+  // Set initial values when selectedFund is provided
+  useEffect(() => {
+    if (selectedFund && selectedFund.fund) {
+      // Find the category from mockFundCategories
+      const category = mockFundCategories.find(cat => 
+        cat.subcategories.some(sub => sub.subcategorie_id === selectedFund.fund.subcategorie_id)
+      );
+      
+      if (category) {
+        setSelectedCategory(category);
+        setFormData(prev => ({
+          ...prev,
+          year: category.year,
+          category_id: category.category_id.toString(),
+          subcategory_id: selectedFund.fund.subcategorie_id.toString(),
+          requested_amount: selectedFund.fund.max_amount_per_grant.toString()
+        }));
+      }
+    }
+  }, [selectedFund]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -97,23 +118,30 @@ export default function ApplicationForm() {
   };
 
   return (
-    <PageLayout
+    <div>
+    <PageHeader
       title="แบบฟอร์มยื่นขอทุน"
       subtitle="กรอกข้อมูลเพื่อยื่นขอทุนวิจัย"
       icon={FileText}
-      breadcrumbs={[
-        { label: "หน้าแรก", href: "/teacher" },
-        { label: "ยื่นคำร้อง", href: "/teacher" },
-        { label: "แบบฟอร์มใหม่" }
-      ]}
-    >
+    />
       <form className="space-y-6">
+        {/* Show info if fund was pre-selected */}
+        {selectedFund && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+            <p className="text-blue-900 font-medium">ทุนที่เลือก:</p>
+            <p className="text-blue-700">{selectedFund.fund.subcategorie_name}</p>
+            <p className="text-sm text-blue-600 mt-1">
+              ข้อมูลได้ถูกกรอกอัตโนมัติแล้ว คุณสามารถแก้ไขได้ตามต้องการ
+            </p>
+          </div>
+        )}
+
         {/* Basic Information */}
         <Card title="ข้อมูลโครงการ" collapsible={false}>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 ชื่อโครงการ <span className="text-red-500">*</span>
               </label>
               <input
@@ -121,7 +149,7 @@ export default function ApplicationForm() {
                 name="project_title"
                 value={formData.project_title}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                className={`w-full px-4 py-2 text-gray-600 border rounded-lg focus:outline-none focus:border-blue-500 ${
                   errors.project_title ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="กรอกชื่อโครงการ"
@@ -132,14 +160,14 @@ export default function ApplicationForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm text-gray-700 font-medium mb-2">
                 ปีงบประมาณ <span className="text-red-500">*</span>
               </label>
               <select
                 name="year"
                 value={formData.year}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-2 border text-gray-600 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
               >
                 <option value="2568">2568</option>
                 <option value="2567">2567</option>
@@ -147,20 +175,20 @@ export default function ApplicationForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm text-gray-700 font-medium mb-2">
                 ประเภททุน <span className="text-red-500">*</span>
               </label>
               <select
                 name="category_id"
                 value={formData.category_id}
                 onChange={handleCategoryChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                className={`w-full px-4 py-2 text-gray-600 border rounded-lg focus:outline-none focus:border-blue-500 ${
                   errors.category_id ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
                 <option value="">-- เลือกประเภททุน --</option>
                 {mockFundCategories.map(category => (
-                  <option key={category.category_id} value={category.category_id}>
+                  <option key={`category-${category.category_id}-${category.year}`} value={category.category_id}>
                     {category.category_name}
                   </option>
                 ))}
@@ -171,7 +199,7 @@ export default function ApplicationForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm text-gray-700 font-medium mb-2">
                 ประเภททุนย่อย <span className="text-red-500">*</span>
               </label>
               <select
@@ -179,7 +207,7 @@ export default function ApplicationForm() {
                 value={formData.subcategory_id}
                 onChange={handleInputChange}
                 disabled={!selectedCategory}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                className={`w-full px-4 py-2 border text-gray-600 rounded-lg focus:outline-none focus:border-blue-500 ${
                   errors.subcategory_id ? 'border-red-500' : 'border-gray-300'
                 } ${!selectedCategory ? 'bg-gray-100' : ''}`}
               >
@@ -196,7 +224,7 @@ export default function ApplicationForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm text-gray-700 font-medium mb-2">
                 จำนวนเงินที่ขอ (บาท) <span className="text-red-500">*</span>
               </label>
               <input
@@ -215,7 +243,7 @@ export default function ApplicationForm() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm text-gray-700 font-medium mb-2">
                 รายละเอียดโครงการ <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -242,14 +270,14 @@ export default function ApplicationForm() {
             {mockDocumentTypes.map(docType => (
               <div key={docType.id} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="font-medium">
+                  <label className="font-medium text-gray-700 flex">
                     {docType.name} {docType.required && <span className="text-red-500">*</span>}
                   </label>
                   {uploadedFiles[docType.id] && (
                     <button
                       type="button"
                       onClick={() => removeFile(docType.id)}
-                      className="text-red-500 hover:text-red-700"
+                      className="text-red-500 hover:text-red-700 "
                     >
                       <X size={20} />
                     </button>
@@ -272,7 +300,7 @@ export default function ApplicationForm() {
                     />
                     <label
                       htmlFor={`file-${docType.id}`}
-                      className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
                     >
                       <Upload size={16} />
                       <span>เลือกไฟล์</span>
@@ -315,6 +343,6 @@ export default function ApplicationForm() {
           </button>
         </div>
       </form>
-    </PageLayout>
+    </div>
   );
 }
