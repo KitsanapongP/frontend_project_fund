@@ -16,6 +16,11 @@ export default function TeacherPage() {
   const [selectedFundData, setSelectedFundData] = useState(null);
 
   const handleNavigate = (page, data) => {
+    // ถ้าออกจากหน้า application-form ให้ล้างข้อมูลทุนที่เลือก
+    if (currentPage === 'application-form' && page !== 'application-form') {
+      setSelectedFundData(null);
+    }
+    
     setCurrentPage(page);
     // ถ้าเป็น submenu ให้เปิด submenu ด้วย
     if (['application-form', 'draft'].includes(page)) {
@@ -40,11 +45,11 @@ export default function TeacherPage() {
       case 'application-form':
         return <ApplicationForm selectedFund={selectedFundData} />;
       case 'profile':
-        return <div className= "text-gray-800 mt-6">Hello World</div>;
+        return <div className="text-gray-700 mt-6">Hello World</div>;
       case 'draft':
-        return <div className= "text-gray-800 mt-6">Hello World</div>;
+        return <div className="text-gray-700 mt-6">Hello World</div>;
       default:
-        return <div className= "text-gray-800 mt-6">Hello World</div>;
+        return <UnderDevelopmentContent currentPage={currentPage} />;
     }
   };
 
@@ -69,6 +74,7 @@ export default function TeacherPage() {
           <Navigation
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
+            handleNavigate={handleNavigate}
             submenuOpen={submenuOpen}
             setSubmenuOpen={setSubmenuOpen}
           />
@@ -87,6 +93,7 @@ export default function TeacherPage() {
             <Navigation
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}
+              handleNavigate={handleNavigate}
               submenuOpen={submenuOpen}
               setSubmenuOpen={setSubmenuOpen}
             />

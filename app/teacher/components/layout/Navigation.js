@@ -14,7 +14,8 @@ import {
 
 export default function Navigation({ 
   currentPage, 
-  setCurrentPage, 
+  setCurrentPage,
+  handleNavigate, 
   submenuOpen, 
   setSubmenuOpen 
 }) {
@@ -67,7 +68,12 @@ export default function Navigation({
     if (item.hasSubmenu) {
       setSubmenuOpen(!submenuOpen);
     } else {
-      setCurrentPage(item.id);
+      // ใช้ handleNavigate ถ้ามี ไม่งั้นใช้ setCurrentPage
+      if (handleNavigate) {
+        handleNavigate(item.id);
+      } else {
+        setCurrentPage(item.id);
+      }
       // Close mobile menu if open
       const mobileMenuButton = document.querySelector('[aria-label="close-mobile-menu"]');
       if (mobileMenuButton) mobileMenuButton.click();
@@ -75,7 +81,12 @@ export default function Navigation({
   };
 
   const handleSubmenuClick = (parentId, submenuItem) => {
-    setCurrentPage(submenuItem.id);
+    // ใช้ handleNavigate ถ้ามี ไม่งั้นใช้ setCurrentPage
+    if (handleNavigate) {
+      handleNavigate(submenuItem.id);
+    } else {
+      setCurrentPage(submenuItem.id);
+    }
     // Close mobile menu if open
     const mobileMenuButton = document.querySelector('[aria-label="close-mobile-menu"]');
     if (mobileMenuButton) mobileMenuButton.click();

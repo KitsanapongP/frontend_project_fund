@@ -25,7 +25,7 @@ export default function DashboardContent({ onNavigate }) {
       setRecentApplications(mockApplications.slice(0, 3));
       setUser(mockUser);
       setLoading(false);
-    }, 1000);
+    }, 200);
   }, []);
 
   if (loading) {

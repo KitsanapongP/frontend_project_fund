@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Upload, X, AlertCircle, Save, Send, FileText } from "lucide-react";
+import { AnimatePresence, motion } from 'framer-motion';
 import { mockFundCategories, mockDocumentTypes } from "../data/mockData";
-import Card from "../common/Card";
 import PageHeader from "../common/PageHeader";
+import Card from "../common/Card";
 
 export default function ApplicationForm({ selectedFund }) {
   const [formData, setFormData] = useState({
@@ -22,6 +23,8 @@ export default function ApplicationForm({ selectedFund }) {
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [errors, setErrors] = useState({});
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [showFundInfo, setShowFundInfo] = useState(false);
+  const [originalFundSelection, setOriginalFundSelection] = useState(null);
 
   // Set initial values when selectedFund is provided
   useEffect(() => {
@@ -40,6 +43,22 @@ export default function ApplicationForm({ selectedFund }) {
           subcategory_id: selectedFund.fund.subcategorie_id.toString(),
           requested_amount: selectedFund.fund.max_amount_per_grant.toString()
         }));
+        
+        // Store original selection for comparison
+        setOriginalFundSelection({
+          category_id: category.category_id.toString(),
+          subcategory_id: selectedFund.fund.subcategorie_id.toString()
+        });
+        
+        // Show fund info
+        setShowFundInfo(true);
+        
+        // Timer 
+        // const timer = setTimeout(() => {
+        //   setShowFundInfo(false);
+        // }, 5000);
+        
+        // return () => clearTimeout(timer);
       }
     }
   }, [selectedFund]);
@@ -63,6 +82,26 @@ export default function ApplicationForm({ selectedFund }) {
       category_id: categoryId,
       subcategory_id: "" 
     }));
+    	
+    // Hide fund info if user changes from original selection
+    if (originalFundSelection && categoryId !== originalFundSelection.category_id) {
+      setShowFundInfo(false);
+    }
+  };
+
+  const handleSubcategoryChange = (e) => {
+    const subcategoryId = e.target.value;
+    setFormData(prev => ({ ...prev, subcategory_id: subcategoryId }));
+    
+    // Clear error when user starts typing
+    if (errors.subcategory_id) {
+      setErrors(prev => ({ ...prev, subcategory_id: "" }));
+    }
+    
+    // Hide fund info if user changes from original selection
+    if (originalFundSelection && subcategoryId !== originalFundSelection.subcategory_id) {
+      setShowFundInfo(false);
+    }
   };
 
   const handleFileUpload = (documentTypeId, files) => {
@@ -125,16 +164,32 @@ export default function ApplicationForm({ selectedFund }) {
       icon={FileText}
     />
       <form className="space-y-6">
-        {/* Show info if fund was pre-selected */}
-        {selectedFund && (
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+      {/* Show info if fund was pre-selected */}
+      <AnimatePresence>
+        {showFundInfo && selectedFund && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded relative"
+          >
+            <button
+              type="button"
+              onClick={() => setShowFundInfo(false)}
+              className="absolute top-2 right-2 text-blue-600 hover:text-blue-800 transition-colors"
+              aria-label="ปิดข้อความ"
+            >
+              <X size={18} />
+            </button>
             <p className="text-blue-900 font-medium">ทุนที่เลือก:</p>
             <p className="text-blue-700">{selectedFund.fund.subcategorie_name}</p>
             <p className="text-sm text-blue-600 mt-1">
               ข้อมูลได้ถูกกรอกอัตโนมัติแล้ว คุณสามารถแก้ไขได้ตามต้องการ
             </p>
-          </div>
+          </motion.div>
         )}
+      </AnimatePresence>
 
         {/* Basic Information */}
         <Card title="ข้อมูลโครงการ" collapsible={false}>
@@ -205,18 +260,30 @@ export default function ApplicationForm({ selectedFund }) {
               <select
                 name="subcategory_id"
                 value={formData.subcategory_id}
-                onChange={handleInputChange}
+                onChange={handleSubcategoryChange}
                 disabled={!selectedCategory}
-                className={`w-full px-4 py-2 border text-gray-600 rounded-lg focus:outline-none focus:border-blue-500 ${
+                className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500 ${
                   errors.subcategory_id ? 'border-red-500' : 'border-gray-300'
                 } ${!selectedCategory ? 'bg-gray-100' : ''}`}
               >
                 <option value="">-- เลือกประเภททุนย่อย --</option>
-                {selectedCategory?.subcategories.map(sub => (
-                  <option key={sub.subcategorie_id} value={sub.subcategorie_id}>
-                    {sub.subcategorie_name} (เหลือ {sub.remaining_grant} ทุน)
-                  </option>
-                ))}
+                {selectedCategory?.subcategories.map(sub => {
+                  const isAvailable = sub.remaining_grant > 0 && sub.remaining_budget > 0;
+                  return (
+                    <option 
+                      key={sub.subcategorie_id} 
+                      value={sub.subcategorie_id}
+                      disabled={!isAvailable}  // เพิ่มบรรทัดนี้
+                      className={!isAvailable ? 'text-gray-400' : ''}  // เพิ่มบรรทัดนี้
+                    >
+                      {sub.subcategorie_name} 
+                      {isAvailable 
+                        ? ` (เหลือ ${sub.remaining_grant} ทุน)`
+                        : ' (เต็มแล้ว)'  // เปลี่ยนข้อความแสดง
+                      }
+                    </option>
+                  );
+                })}
               </select>
               {errors.subcategory_id && (
                 <p className="text-red-500 text-sm mt-1">{errors.subcategory_id}</p>
@@ -232,7 +299,7 @@ export default function ApplicationForm({ selectedFund }) {
                 name="requested_amount"
                 value={formData.requested_amount}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500 ${
                   errors.requested_amount ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="0"

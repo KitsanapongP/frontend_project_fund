@@ -36,7 +36,7 @@ export default function ResearchFundContent({ onNavigate }) {
       setFundCategories(filteredData);
       setFilteredFunds(filteredData);
       setLoading(false);
-    }, 500);
+    }, 200);
   };
 
   const applyFilters = () => {
@@ -184,7 +184,7 @@ export default function ResearchFundContent({ onNavigate }) {
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 "
             >
-              <Filter size={16} />
+              <Filter size={18} />
               ตัวกรอง
               <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </button>
@@ -210,21 +210,6 @@ export default function ResearchFundContent({ onNavigate }) {
                   className="w-full px-4 py-2 text-gray-700 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="all">ทั้งหมด</option>
-                  <option value="available">เปิดรับสมัคร</option>
-                  <option value="full">ปิดรับแล้ว</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ประเภททุน
-                </label>
-                <select
-                  className="w-full px-4 py-2 text-gray-700 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
                 >
                   <option value="all">ทุกประเภท</option>
                   {fundCategories.map(cat => (
@@ -297,6 +282,7 @@ export default function ResearchFundContent({ onNavigate }) {
                   <FundItem 
                     key={fund.subcategorie_id}
                     fund={fund}
+                    category={category}
                     onApply={handleApply}
                   />
                 ))}
@@ -308,7 +294,7 @@ export default function ResearchFundContent({ onNavigate }) {
 
       {/* Information Box */}
       <SimpleCard 
-        title="ข้อมูลสำคัญ" 
+        title="หมายเหตุ" 
         icon={Info} 
         className="mt-6"
         headerClassName="bg-blue-50"
@@ -346,7 +332,7 @@ function StatsCard({ label, value, bgColor, textColor, icon: Icon, percentage })
 }
 
 // FundItem Component
-function FundItem({ fund, onApply }) {
+function FundItem({ fund, category, onApply }) {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('th-TH').format(amount);
   };
@@ -385,7 +371,7 @@ function FundItem({ fund, onApply }) {
           </div>
         </div>
         <button
-          onClick={() => onApply(fund)}
+          onClick={() => onApply(fund, category)}
           disabled={!isAvailable}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
             isAvailable 
