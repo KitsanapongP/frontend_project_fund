@@ -39,22 +39,10 @@ export default function Navigation({
       hasSubmenu: false
     },
     {
-      id: 'submit-request',
+      id: 'application-form',
       label: 'ยื่นคำร้อง',
       icon: FileText,
-      hasSubmenu: true,
-      submenu: [
-        {
-          id: 'application-form',
-          label: 'แบบฟอร์มใหม่',
-          icon: PlusCircle
-        },
-        {
-          id: 'draft',
-          label: 'ร่างที่บันทึกไว้',
-          icon: FileText
-        }
-      ]
+      hasSubmenu: false,
     },
     {
       id: 'profile',

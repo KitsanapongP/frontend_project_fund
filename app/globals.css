@@ -152,3 +152,28 @@ option:disabled {
   color: #9CA3AF;
   background-color: #F3F4F6;
 }
+
+/* CKEditor Custom Styles */
+.ck-editor__editable {
+  min-height: 200px;
+}
+
+.ck-editor__editable:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+.ck.ck-toolbar {
+  border-bottom: 1px solid #e5e7eb !important;
+  background-color: #f9fafb !important;
+}
+
+.ck.ck-editor__main>.ck-editor__editable {
+  background-color: white;
+  border: none !important;
+  padding: 1rem;
+}
+
+.ck.ck-editor__editable.ck-focused {
+  border: none !important;
+}

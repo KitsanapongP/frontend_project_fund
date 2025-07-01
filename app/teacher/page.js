@@ -22,12 +22,11 @@ export default function TeacherPage() {
     }
     
     setCurrentPage(page);
-    // ถ้าเป็น submenu ให้เปิด submenu ด้วย
-    if (['application-form', 'draft'].includes(page)) {
-      setSubmenuOpen(true);
-    }
+    // ลบส่วนนี้ออกเพราะไม่มี submenu แล้ว
+    // if (['application-form', 'draft'].includes(page)) {
+    //   setSubmenuOpen(true);
+    // }
     
-    // ถ้ามี data (เช่นข้อมูล fund) ส่งต่อไปด้วย
     if (data) {
       console.log("Navigate with data:", data);
       setSelectedFundData(data);

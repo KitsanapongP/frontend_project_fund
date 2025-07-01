@@ -11,6 +11,7 @@ import RecentApplications from "./RecentApplications";
 import MonthlyChart from "./MonthlyChart";
 import BudgetSummary from "./BudgetSummary";
 import SimpleCard from "../common/SimpleCard";
+import PageLayout from "../common/PageLayout";
 
 export default function DashboardContent({ onNavigate }) {
   const [stats, setStats] = useState(mockDashboardStats);
@@ -41,10 +42,13 @@ export default function DashboardContent({ onNavigate }) {
 
   return (
     <div>
-      <PageHeader 
+      <PageLayout
         title="แดชบอร์ด"
         subtitle="ภาพรวมระบบและสถิติการใช้งาน"
         icon={LayoutDashboard}
+        breadcrumbs={[
+          { label: "หน้าแรก"}
+        ]}
       />
 
       {/* Announcements */}
