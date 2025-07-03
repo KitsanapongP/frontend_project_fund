@@ -322,7 +322,6 @@ export default function ResearchFundContent({ onNavigate }) {
             <Card 
               key={category.category_id} 
               title={`${category.category_name} (${category.subcategories.length} ทุน)`}
-              icon={DollarSign}
               collapsible={true}
               defaultCollapsed={false}
             >
@@ -504,11 +503,11 @@ function FundDetailModal({ fund, category, isOpen, onClose, onApply }) {
                 <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600">งบประมาณที่จัดสรร:</span>
-                    <span className="font-medium">฿{fund.allocated_amount.toLocaleString()}</span>
+                    <span className="font-medium text-gray-600">฿{fund.allocated_amount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">ใช้ไปแล้ว:</span>
-                    <span className="font-medium">฿{fund.used_amount.toLocaleString()}</span>
+                    <span className="font-medium text-gray-600">฿{fund.used_amount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">คงเหลือ:</span>
@@ -587,7 +586,6 @@ function FundItem({ fund, category, onApply }) {
             </div>
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
               <span className="flex items-center gap-1">
-                <DollarSign size={14} />
                 วงเงิน: {fund.max_amount_per_grant 
                   ? `${formatCurrency(fund.max_amount_per_grant)} บาท/ทุน`
                   : 'ตามเงื่อนไข'

@@ -46,9 +46,7 @@ export default function DashboardContent({ onNavigate }) {
         title="แดชบอร์ด"
         subtitle="ภาพรวมระบบและสถิติการใช้งาน"
         icon={LayoutDashboard}
-        breadcrumbs={[
-          { label: "หน้าแรก"}
-        ]}
+        loading={loading}
       />
 
       {/* Announcements */}
@@ -105,8 +103,6 @@ export default function DashboardContent({ onNavigate }) {
       >
         <RecentApplications applications={recentApplications} />
       </Card>
-
-
     </div>
   );
 }

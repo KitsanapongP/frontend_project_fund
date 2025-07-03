@@ -13,6 +13,7 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// api/funds/route.js
 // GET /api/funds
 export async function GET(request) {
   try {
@@ -68,7 +69,7 @@ export async function GET(request) {
             sb.fund_description,
             sb.comment
           FROM fund_subcategorie fs
-          LEFT JOIN subcategorie_budgets sb ON fs.subcategorie_id = sb.subcatagorie_id
+          LEFT JOIN subcategorie_budgets sb ON fs.subcategorie_id = sb.subcategorie_id
           WHERE fs.category_id = ? 
             AND fs.year_id = ?
             AND fs.delete_at IS NULL 

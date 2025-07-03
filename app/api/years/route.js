@@ -13,6 +13,8 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// api/years/route.js
+// GET /api/years
 export async function GET() {
   try {
     const [years] = await pool.execute(`
