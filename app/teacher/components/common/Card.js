@@ -59,7 +59,7 @@ export default function Card({
       {/* Animated Content */}
       <div 
         className={`transition-all duration-300 ease-in-out ${
-          collapsed ? 'max-h-0' : 'max-h-[3000px]'
+          collapsed ? 'max-h-0' : 'max-h-[4000px]'
         }`}
       >
         <div className={`p-6 ${bodyClassName} ${

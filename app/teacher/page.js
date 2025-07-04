@@ -1,8 +1,9 @@
-// teacher/page.js
+// teacher/page.js - Protected Teacher Dashboard
 
 "use client";
 
 import { useState } from "react";
+import AuthGuard from "../components/AuthGuard";
 import Header from "./components/layout/Header";
 import Navigation from "./components/layout/Navigation";
 import DashboardContent from "./components/dashboard/DashboardContent";
@@ -11,7 +12,7 @@ import ApplicationList from "./components/applications/ApplicationList";
 import ApplicationForm from "./components/applications/ApplicationForm";
 import UnderDevelopmentContent from "./components/common/UnderDevelopmentContent";
 
-export default function TeacherPage() {
+function TeacherPageContent() {
   const [isOpen, setIsOpen] = useState(false);
   const [submenuOpen, setSubmenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -24,10 +25,6 @@ export default function TeacherPage() {
     }
     
     setCurrentPage(page);
-    // ลบส่วนนี้ออกเพราะไม่มี submenu แล้ว
-    // if (['application-form', 'draft'].includes(page)) {
-    //   setSubmenuOpen(true);
-    // }
     
     if (data) {
       console.log("Navigate with data:", data);
@@ -46,9 +43,9 @@ export default function TeacherPage() {
       case 'application-form':
         return <ApplicationForm selectedFund={selectedFundData} />;
       case 'profile':
-        return <div className="text-gray-700 mt-6">Hello World</div>;
+        return <div className="text-gray-700 mt-6">Profile Page - Coming Soon</div>;
       case 'draft':
-        return <div className="text-gray-700 mt-6">Hello World</div>;
+        return <div className="text-gray-700 mt-6">Draft Page - Coming Soon</div>;
       default:
         return <UnderDevelopmentContent currentPage={currentPage} />;
     }
@@ -103,7 +100,6 @@ export default function TeacherPage() {
 
         {/* Main Content */}
         <div className="md:ml-64 flex-1">
-          
           {/* Page Content */}
           <div className="px-8 pb-8">
             {renderPageContent()}
@@ -111,5 +107,16 @@ export default function TeacherPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TeacherPage() {
+  return (
+    <AuthGuard 
+      allowedRoles={[1, 'teacher']} // อนุญาตเฉพาะ teacher (role_id = 1)
+      requireAuth={true}
+    >
+      <TeacherPageContent />
+    </AuthGuard>
   );
 }

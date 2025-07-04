@@ -3,22 +3,32 @@
 import { HiMenu } from "react-icons/hi";
 import { RxCross2 } from "react-icons/rx";
 import { User, LogOut } from "lucide-react";
-import { useState, useEffect } from "react";
-import { mockUser } from "../data/mockData";
+import { useState } from "react";
+import { useAuth } from "../../../contexts/AuthContext";
+import { useRouter } from "next/navigation";
 import NotificationBell from "../notifications/NotificationBell";
 
 export default function Header({ isOpen, setIsOpen, Navigation }) {
-  const [user, setUser] = useState(null);
+  const { user, logout, getUserDisplayName, getUserRoleDisplay } = useAuth();
+  const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  useEffect(() => {
-    // Load user data
-    setUser(mockUser);
-  }, []);
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.replace('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout API fails, still redirect to login
+      router.replace('/login');
+    }
+  };
 
-  const handleLogout = () => {
-    console.log("Logout");
-    // In real app, would clear session and redirect to login
+  const getInitials = () => {
+    if (!user) return 'U';
+    const firstName = user.user_fname || '';
+    const lastName = user.user_lname || '';
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`;
   };
 
   return (
@@ -42,56 +52,51 @@ export default function Header({ isOpen, setIsOpen, Navigation }) {
                 className="hidden md:flex items-center gap-3 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-                  {user ? user.user_fname.charAt(0) : 'U'}
+                  {getInitials()}
                 </div>
                 <div className="text-left">
                   <div className="font-medium text-gray-800">
-                    {user ? `${user.user_fname} ${user.user_lname}` : 'Loading...'}
+                    {getUserDisplayName() || 'Loading...'}
                   </div>
                   <div className="text-xs text-gray-600">
-                    {user ? user.position : ''}
+                    {getUserRoleDisplay()}
                   </div>
                 </div>
               </button>
 
-              {/* User Dropdown Menu */}
+              {/* Dropdown Menu */}
               {showUserMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowUserMenu(false)}
-                  />
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-                    <div className="p-4 border-b">
-                      <div className="font-medium text-gray-800">
-                        {user?.user_fname} {user?.user_lname}
-                      </div>
-                      <div className="text-sm text-gray-600">{user?.email}</div>
-                    </div>
-                    <div className="p-2">
-                      <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-md text-gray-700">
-                        <User size={18} />
-                        <span>ข้อมูลส่วนตัว</span>
-                      </button>
-                      <button 
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2 hover:bg-red-50 rounded-md text-red-600"
-                      >
-                        <LogOut size={18} />
-                        <span>ออกจากระบบ</span>
-                      </button>
-                    </div>
-                  </div>
-                </>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      // Navigate to profile page
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100"
+                  >
+                    <User size={16} />
+                    <span>ข้อมูลส่วนตัว</span>
+                  </button>
+                  <hr className="my-1" />
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      handleLogout();
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-left text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut size={16} />
+                    <span>ออกจากระบบ</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            type="button"
             className={`${
-              !isOpen ? "block" : "hidden"
+              isOpen ? "block" : "hidden"
             } inline-flex items-center justify-center me-4 ms-3 p-2 w-10 h-10 text-sm text-gray-500 rounded-lg
         md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200`}
             onClick={() => setIsOpen(!isOpen)}
@@ -111,7 +116,10 @@ export default function Header({ isOpen, setIsOpen, Navigation }) {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-end mb-3">
-                <button onClick={() => setIsOpen(false)}>
+                <button 
+                  onClick={() => setIsOpen(false)}
+                  aria-label="close-mobile-menu"
+                >
                   <RxCross2 className="w-7 h-7 text-gray-600 hover:text-red-500" />
                 </button>
               </div>
@@ -120,30 +128,39 @@ export default function Header({ isOpen, setIsOpen, Navigation }) {
               <div className="mb-6 p-4 bg-gray-50 rounded-lg md:hidden">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-                    {user ? user.user_fname.charAt(0) : 'U'}
+                    {getInitials()}
                   </div>
                   <div>
                     <div className="font-medium text-gray-800">
-                      {user ? `${user.user_fname} ${user.user_lname}` : 'Loading...'}
+                      {getUserDisplayName() || 'Loading...'}
                     </div>
                     <div className="text-xs text-gray-600">
-                      {user ? user.position : ''}
+                      {getUserRoleDisplay()}
                     </div>
                   </div>
                 </div>
                 <button 
                   onClick={handleLogout}
-                  className="w-full text-left text-sm text-red-600 hover:text-red-700"
+                  className="w-full text-left text-sm text-red-600 hover:text-red-700 flex items-center gap-2"
                 >
+                  <LogOut size={14} />
                   ออกจากระบบ
                 </button>
               </div>
               
-              <Navigation />
+              {Navigation}
             </div>
           </div>
         )}
       </div>
+      
+      {/* Click outside to close dropdown */}
+      {showUserMenu && (
+        <div
+          className="fixed inset-0 z-5"
+          onClick={() => setShowUserMenu(false)}
+        />
+      )}
     </header>
   );
 }

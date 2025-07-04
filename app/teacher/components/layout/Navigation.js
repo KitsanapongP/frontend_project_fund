@@ -11,6 +11,8 @@ import {
   PlusCircle,
   User
 } from "lucide-react";
+import { useAuth } from "../../../contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function Navigation({ 
   currentPage, 
@@ -19,6 +21,9 @@ export default function Navigation({
   submenuOpen, 
   setSubmenuOpen 
 }) {
+  const { logout } = useAuth();
+  const router = useRouter();
+
   const menuItems = [
     {
       id: 'dashboard',
@@ -80,9 +85,16 @@ export default function Navigation({
     if (mobileMenuButton) mobileMenuButton.click();
   };
 
-  const handleLogout = () => {
-    console.log("Logout from navigation");
-    // In real app, would clear session and redirect
+  const handleLogout = async () => {
+    try {
+      console.log("Logout from navigation");
+      await logout();
+      router.replace('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout API fails, still redirect to login
+      router.replace('/login');
+    }
   };
 
   const isActive = (itemId) => {
@@ -132,6 +144,7 @@ export default function Navigation({
         </div>
       ))}
 
+      {/* Logout Button */}
       <div className="border-t border-gray-200 mt-6 pt-4">
         <button
           onClick={handleLogout}

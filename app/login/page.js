@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, LogIn, AlertCircle, Lock, Mail, CheckCircle, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { healthAPI, AuthError, NetworkError } from '../lib/api';
 
 export default function LoginPage() {
-  const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
+  const { login, isLoading, error, clearError, isAuthenticated, user } = useAuth();
+  const router = useRouter();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -16,19 +18,21 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [serverStatus, setServerStatus] = useState(null);
   const [checkingServer, setCheckingServer] = useState(true);
+  const [redirecting, setRedirecting] = useState(false);
 
   // Check server health on component mount
   useEffect(() => {
     checkServerHealth();
   }, []);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - แก้ไขให้ใช้ Next.js router
   useEffect(() => {
-    if (isAuthenticated) {
-      // Get user from auth context and redirect based on role
+    if (isAuthenticated && user && !redirecting) {
+      console.log('User authenticated, redirecting...', user);
+      setRedirecting(true);
       redirectBasedOnRole();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user, redirecting]);
 
   // Check server health
   const checkServerHealth = async () => {
@@ -46,20 +50,33 @@ export default function LoginPage() {
     }
   };
 
-  // Redirect based on user role
+  // แก้ไขการ redirect ให้ใช้ Next.js router และตรวจสอบ role ให้แม่นยำ
   const redirectBasedOnRole = () => {
-    const user = JSON.parse(localStorage.getItem('user_data') || '{}');
-    const userRole = user.role || user.role_id;
-    
-    if (userRole === 'teacher' || userRole === 1) {
-      window.location.href = '/teacher';
-    } else if (userRole === 'admin' || userRole === 3) {
-      window.location.href = '/admin';
-    } else if (userRole === 'staff' || userRole === 2) {
-      window.location.href = '/staff';
-    } else {
-      window.location.href = '/dashboard';
+    if (!user) {
+      console.log('No user data found');
+      return;
     }
+
+    // ตรวจสอบ role จาก user object
+    const userRole = user.role_id || user.role;
+    console.log('User role detected:', userRole, 'User data:', user);
+    
+    // หน่วงเวลาเล็กน้อยเพื่อให้ state update เสร็จ
+    setTimeout(() => {
+      if (userRole === 1 || userRole === 'teacher') {
+        console.log('Redirecting to teacher dashboard');
+        router.replace('/teacher');
+      } else if (userRole === 3 || userRole === 'admin') {
+        console.log('Redirecting to admin dashboard');
+        router.replace('/admin');
+      } else if (userRole === 2 || userRole === 'staff') {
+        console.log('Redirecting to staff dashboard');
+        router.replace('/staff');
+      } else {
+        console.log('Redirecting to default dashboard');
+        router.replace('/dashboard');
+      }
+    }, 100);
   };
 
   const handleInputChange = (e) => {
@@ -75,122 +92,54 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Clear any existing errors
-    clearError();
-    
-    // Basic validation
     if (!formData.email || !formData.password) {
       return;
     }
 
     try {
+      console.log('Attempting login...');
       const response = await login(formData.email, formData.password);
+      console.log('Login response:', response);
       
-      // Handle remember me
-      if (rememberMe) {
-        localStorage.setItem('remember_login', 'true');
-      } else {
-        localStorage.removeItem('remember_login');
-      }
-
-      // Redirect will be handled by useEffect when isAuthenticated changes
-      console.log('Login successful:', response.message);
+      // อย่าทำการ redirect ที่นี่ ให้ useEffect จัดการ
+      // เพราะ login function จะ update isAuthenticated และ user state
       
     } catch (error) {
       console.error('Login error:', error);
-      // Error is already handled by the auth context
+      // Error จะถูก handle ใน AuthContext แล้ว
     }
   };
 
-  const quickLogin = async (email, password) => {
-    setFormData({ email, password });
-    clearError();
-    
-    try {
-      await login(email, password);
-    } catch (error) {
-      console.error('Quick login error:', error);
-    }
-  };
-
-  // Sample accounts with updated credentials
-  const sampleAccounts = [
-    {
-      label: 'ผู้ดูแลระบบ (Admin)',
-      email: 'admin@cpkku.ac.th',
-      password: 'Admin123!',
-      color: 'purple',
-    },
-    {
-      label: 'อาจารย์ (Teacher)', 
-      email: 'teacher@cpkku.ac.th',
-      password: 'Teacher123!',
-      color: 'blue',
-    },
-    {
-      label: 'อาจารย์ 2 (Teacher)', 
-      email: 'teacher2@cpkku.ac.th',
-      password: 'Teacher123!',
-      color: 'blue',
-    },
-    {
-      label: 'เจ้าหน้าที่ (Staff)',
-      email: 'staff@cpkku.ac.th', 
-      password: 'Staff123!',
-      color: 'green',
-    },
-  ];
-
-  const getColorClasses = (color) => {
-    const colors = {
-      purple: 'bg-purple-600 hover:bg-purple-700',
-      blue: 'bg-blue-600 hover:bg-blue-700',
-      green: 'bg-green-600 hover:bg-green-700',
-    };
-    return colors[color] || colors.blue;
-  };
+  // แสดง loading screen ขณะ redirecting
+  if (redirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-4 shadow-lg">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+              <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                F
+              </div>
+            </div>
+          </div>
+          
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            เข้าสู่ระบบสำเร็จ
+          </h1>
+          
+          <div className="flex items-center justify-center gap-2 text-gray-600">
+            <div className="w-6 h-6 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <span>กำลังเปลี่ยนหน้า...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      {/* Background Pattern */}
-      <div className="absolute inset-0" style={{
-        backgroundImage: `
-          linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px)
-        `,
-        backgroundSize: '20px 20px'
-      }}></div>
-      
-      <div className="w-full max-w-md relative z-10">
-        {/* Server Status Indicator */}
-        {!checkingServer && (
-          <div className={`mb-4 p-3 rounded-lg flex items-center gap-3 ${
-            serverStatus?.status === 'online' 
-              ? 'bg-green-50 border border-green-200' 
-              : 'bg-red-50 border border-red-200'
-          }`}>
-            {serverStatus?.status === 'online' ? (
-              <Wifi className="text-green-600" size={16} />
-            ) : (
-              <WifiOff className="text-red-600" size={16} />
-            )}
-            <span className={`text-sm font-medium ${
-              serverStatus?.status === 'online' ? 'text-green-800' : 'text-red-800'
-            }`}>
-              {serverStatus?.status === 'online' ? 'เชื่อมต่อเซิร์ฟเวอร์สำเร็จ' : serverStatus?.message}
-            </span>
-            {serverStatus?.status === 'offline' && (
-              <button
-                onClick={checkServerHealth}
-                className="ml-auto text-red-600 hover:text-red-700 text-sm underline"
-              >
-                ลองใหม่
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Logo & Header */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md mx-auto">
+        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-4 shadow-lg">
             <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
@@ -199,182 +148,159 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
+          
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            ระบบบริหารจัดการทุนวิจัย
+            เข้าสู่ระบบ
           </h1>
+          
           <p className="text-gray-600">
-            วิทยาลัยการคอมพิวเตอร์ มหาวิทยาลัยขอนแก่น
+            ระบบบริหารจัดการทุนวิจัย
           </p>
         </div>
 
-        {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          {/* Form Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6">
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-              <LogIn size={24} />
-              เข้าสู่ระบบ
-            </h2>
+        {/* Server Status */}
+        <div className="mb-6">
+          <div className={`flex items-center gap-2 p-3 rounded-lg border ${
+            checkingServer 
+              ? 'bg-gray-50 border-gray-200' 
+              : serverStatus?.status === 'online'
+                ? 'bg-green-50 border-green-200 text-green-800'
+                : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            {checkingServer ? (
+              <>
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                <span className="text-sm text-gray-600">ตรวจสอบสถานะเซิร์ฟเวอร์...</span>
+              </>
+            ) : serverStatus?.status === 'online' ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm">เชื่อมต่อเซิร์ฟเวอร์สำเร็จ</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-4 h-4" />
+                <span className="text-sm">{serverStatus?.message}</span>
+              </>
+            )}
           </div>
+        </div>
 
-          {/* Form Body */}
-          <div className="p-8">
+        {/* Login Form */}
+        <div className="bg-white shadow-xl rounded-2xl p-8 border border-gray-100">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                อีเมล
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="block w-full pl-10 pr-3 py-3 text-gray-600 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="กรุณากรอกอีเมล"
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                รหัสผ่าน
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="block w-full pl-10 pr-12 py-3 text-gray-600 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="กรุณากรอกรหัสผ่าน"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Remember Me */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  จดจำการเข้าสู่ระบบ
+                </label>
+              </div>
+            </div>
+
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-                <AlertCircle className="text-red-500 flex-shrink-0" size={20} />
-                <div className="flex-1">
-                  <span className="text-red-700 text-sm">{error}</span>
-                  <button
-                    onClick={clearError}
-                    className="ml-2 text-red-500 hover:text-red-700 text-sm underline"
-                  >
-                    ปิด
-                  </button>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex">
+                  <AlertCircle className="h-5 w-5 text-red-400" />
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
                 </div>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Email Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  อีเมล
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-50 disabled:text-gray-500"
-                    placeholder="กรอกอีเมลของคุณ"
-                    required
-                    disabled={isLoading || serverStatus?.status === 'offline'}
-                    autoComplete="email"
-                  />
-                </div>
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  รหัสผ่าน
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-50 disabled:text-gray-500"
-                    placeholder="กรอกรหัสผ่านของคุณ"
-                    required
-                    disabled={isLoading || serverStatus?.status === 'offline'}
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    disabled={isLoading}
-                  />
-                  <span className="ml-2 text-sm text-gray-600">จดจำการเข้าสู่ระบบ</span>
-                </label>
-                <button 
-                  type="button"
-                  className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
-                  disabled={isLoading}
-                >
-                  ลืมรหัสผ่าน?
-                </button>
-              </div>
-
-              {/* Login Button */}
-              <button
-                type="submit"
-                disabled={isLoading || !formData.email || !formData.password || serverStatus?.status === 'offline'}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    กำลังเข้าสู่ระบบ...
-                  </>
-                ) : (
-                  <>
-                    <LogIn size={20} />
-                    เข้าสู่ระบบ
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* Demo Accounts */}
-        <div className="mt-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">บัญชีสำหรับทดสอบ:</h3>
-          <div className="space-y-2 text-sm">
-            {sampleAccounts.map((account, index) => (
-              <div key={index} className="flex justify-between items-center p-3 bg-white rounded border hover:bg-gray-50 transition-colors">
-                <div className="flex-1">
-                  <div className="font-medium text-gray-800">{account.label}</div>
-                  <div className="text-xs text-gray-500 font-mono">{account.email}</div>
-                </div>
-                <button
-                  onClick={() => quickLogin(account.email, account.password)}
-                  className={`px-3 py-1 text-white text-xs rounded transition-colors ${getColorClasses(account.color)}`}
-                  disabled={isLoading || serverStatus?.status === 'offline'}
-                >
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading || serverStatus?.status !== 'online'}
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  กำลังเข้าสู่ระบบ...
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-5 h-5 mr-2" />
                   เข้าสู่ระบบ
-                </button>
-              </div>
-            ))}
-          </div>
-          
-          {/* API Endpoint Info */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="text-xs text-gray-500">
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${
-                  serverStatus?.status === 'online' ? 'bg-green-500' : 'bg-red-500'
-                }`}></div>
-                API Endpoint: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'}
-              </div>
-            </div>
-          </div>
+                </>
+              )}
+            </button>
+          </form>
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8 text-sm text-gray-500">
-          <p>© 2025 วิทยาลัยการคอมพิวเตอร์ มหาวิทยาลัยขอนแก่น</p>
-          <p className="mt-1">Fund Management System v{process.env.NEXT_PUBLIC_APP_VERSION || '1.0'}</p>
+        <div className="text-center mt-8">
+          <p className="text-sm text-gray-500">
+            © 2024 ระบบบริหารจัดการทุนวิจัย. สงวนลิขสิทธิ์.
+          </p>
         </div>
       </div>
     </div>

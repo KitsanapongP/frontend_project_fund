@@ -2,21 +2,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DollarSign, Info, Users, TrendingUp, Search, Filter, ChevronDown, Funnel, X } from "lucide-react";
-import { mockFundCategories, mockYears } from "../data/mockData";
+import { DollarSign, Info, Users, TrendingUp, Search, Filter, ChevronDown, Funnel, X, Shield } from "lucide-react";
 import PageLayout from "../common/PageLayout";
 import Card from "../common/Card";
 import SimpleCard from "../common/SimpleCard";
 import EmptyState from "../common/EmptyState";
-import { useFunds } from '../../hooks/useFunds';
-import { useYears } from '../../hooks/useYears';
+import { teacherAPI, targetRolesUtils } from '../../../lib/teacher_api';
 
 export default function ResearchFundContent({ onNavigate }) {
-  const [selectedYear, setSelectedYear] = useState("2566");
-  const { funds: fundCategories, loading, error, refetch } = useFunds(selectedYear);
-  const { years, loading: yearsLoading } = useYears();
+  const [selectedYear, setSelectedYear] = useState("2566"); //Default Years
+  const [fundCategories, setFundCategories] = useState([]);
   const [filteredFunds, setFilteredFunds] = useState([]);
-
+  const [years, setYears] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [yearsLoading, setYearsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -25,17 +26,72 @@ export default function ResearchFundContent({ onNavigate }) {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (selectedYear) {
+      loadFundData(selectedYear);
+    }
+  }, [selectedYear]);
+
+  useEffect(() => {
     applyFilters();
   }, [searchTerm, statusFilter, categoryFilter, fundCategories]);
 
-  const loadFundData = (year) => {
-    setLoading(true);
-    setTimeout(() => {
-      const filteredData = mockFundCategories.filter(cat => cat.year === year);
-      setFundCategories(filteredData);
-      setFilteredFunds(filteredData);
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load user role และ available years
+      const [roleInfo, yearsData] = await Promise.all([
+        teacherAPI.getCurrentUserRole(),
+        loadAvailableYears()
+      ]);
+
+      setUserRole(roleInfo);
+      setYears(yearsData);
+
+      // Load funds for default year
+      await loadFundData(selectedYear);
+    } catch (err) {
+      console.error('Error loading initial data:', err);
+      setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+    } finally {
       setLoading(false);
-    }, 200);
+    }
+  };
+
+  const loadAvailableYears = async () => {
+    try {
+      setYearsLoading(true);
+      // สามารถเรียก API ที่เก่าได้ เพราะ years ไม่เกี่ยวกับ role
+      const response = await fetch('/api/years');
+      const data = await response.json();
+      return data.success ? data.data : ['2568', '2567', '2566'];
+    } catch (error) {
+      console.error('Error loading years:', error);
+      return ['2568', '2567', '2566']; // fallback
+    } finally {
+      setYearsLoading(false);
+    }
+  };
+
+  const loadFundData = async (year) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const fundsData = await teacherAPI.getVisibleFundsStructure(year);
+      setFundCategories(fundsData.categories || []);
+      setFilteredFunds(fundsData.categories || []);
+    } catch (err) {
+      console.error('Error loading fund data:', err);
+      setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูลทุน');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const applyFilters = () => {
@@ -84,6 +140,10 @@ export default function ResearchFundContent({ onNavigate }) {
     }
   };
 
+  const refetch = () => {
+    loadFundData(selectedYear);
+  };
+
   const calculateTotalStats = (categories = fundCategories) => {
     let totalBudget = 0;
     let totalUsed = 0;
@@ -94,10 +154,10 @@ export default function ResearchFundContent({ onNavigate }) {
 
     categories.forEach(category => {
       category.subcategories.forEach(sub => {
-        totalBudget += sub.allocated_amount;
-        totalUsed += sub.used_amount;
-        totalGrants += sub.max_grants || 0;  // รองรับ NULL
-        remainingGrants += sub.remaining_grant || 0;  // รองรับ NULL
+        totalBudget += sub.allocated_amount || 0;
+        totalUsed += sub.used_amount || 0;
+        totalGrants += sub.max_grants || 0;
+        remainingGrants += sub.remaining_grant || 0;
         
         // เช็คว่าทุนยังเปิดรับอยู่หรือไม่
         const isAvailable = sub.is_unlimited_grants 
@@ -155,6 +215,23 @@ export default function ResearchFundContent({ onNavigate }) {
         { label: "กองทุนวิจัย" }
       ]}
     >
+
+      {/* User Role Info */}
+      {userRole && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2 text-sm">
+            <Shield size={16} className="text-blue-600" />
+            <span className="text-blue-800">
+              <strong>บทบาท:</strong> {userRole.is_teacher ? 'อาจารย์' : 
+                                     userRole.is_staff ? 'เจ้าหน้าที่' : 
+                                     userRole.is_admin ? 'ผู้ดูแลระบบ' : 'ไม่ระบุ'}
+            </span>
+            <span className="text-blue-600 ml-4">
+              • แสดงเฉพาะทุนที่คุณสามารถยื่นขอได้
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -214,9 +291,9 @@ export default function ResearchFundContent({ onNavigate }) {
               ตัวกรอง
               <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </button>
-            {/* แก้ไขส่วนนี้ - ใช้ years จาก database */}
+            {/* Year Selector */}
             <select 
-              className="w-44 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-46 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
               disabled={yearsLoading}
@@ -233,7 +310,7 @@ export default function ResearchFundContent({ onNavigate }) {
             </select>
           </div>
 
-          {/* แก้ไขในส่วน Advanced Filters*/}
+          {/* Advanced Filters */}
           {showFilters && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
               <div>
@@ -284,9 +361,14 @@ export default function ResearchFundContent({ onNavigate }) {
             </div>
           )}
 
-          {/* Filter Summary - แสดงเสมอ */}
+          {/* Filter Summary */}
           <div className="text-sm text-gray-600">
             แสดง {filteredStats.availableFunds + filteredStats.fullFunds} ทุน จากทั้งหมด {stats.availableFunds + stats.fullFunds} ทุน
+            {userRole && !userRole.is_admin && (
+              <span className="text-blue-600 ml-2">
+                (แสดงเฉพาะทุนที่ {userRole.is_teacher ? 'อาจารย์' : 'เจ้าหน้าที่'} สามารถยื่นขอได้)
+              </span>
+            )}
           </div>
         </div>
       </SimpleCard>
@@ -295,10 +377,15 @@ export default function ResearchFundContent({ onNavigate }) {
       {filteredFunds.length === 0 ? (
         <EmptyState
           icon={Info}
-          title="ไม่พบทุนที่ค้นหา"
+          title={userRole && !userRole.is_admin ? 
+            `ไม่พบทุนสำหรับ${userRole.is_teacher ? 'อาจารย์' : 'เจ้าหน้าที่'}` : 
+            "ไม่พบทุนที่ค้นหา"
+          }
           message={searchTerm || statusFilter !== "all" || categoryFilter !== "all"
             ? "ไม่พบทุนที่ตรงกับเงื่อนไขการค้นหา ลองปรับเงื่อนไขใหม่"
-            : `ไม่พบข้อมูลทุนสำหรับปี ${selectedYear}`
+            : userRole && !userRole.is_admin 
+              ? `ไม่พบทุนที่เปิดให้บทบาท${userRole.is_teacher ? 'อาจารย์' : 'เจ้าหน้าที่'}สามารถยื่นขอได้สำหรับปี ${selectedYear}`
+              : `ไม่พบข้อมูลทุนสำหรับปี ${selectedYear}`
           }
           variant="bordered"
           action={
@@ -332,6 +419,7 @@ export default function ResearchFundContent({ onNavigate }) {
                     fund={fund}
                     category={category}
                     onApply={handleApply}
+                    userRole={userRole}
                   />
                 ))}
               </div>
@@ -350,6 +438,7 @@ export default function ResearchFundContent({ onNavigate }) {
         <ul className="list-disc list-inside space-y-2 text-gray-700">
           <li>ผู้สมัครต้องยื่นเอกสารครบถ้วนภายในระยะเวลาที่กำหนด</li>
           <li>การพิจารณาอนุมัติขึ้นอยู่กับคณะกรรมการพิจารณาทุน</li>
+          <li>ระบบจะแสดงเฉพาะทุนที่บทบาทของคุณสามารถยื่นขอได้</li>
           <li>ติดต่อสอบถามเพิ่มเติม: กองบริหารงานวิจัย โทร. 1234</li>
         </ul>
       </SimpleCard>
@@ -357,7 +446,7 @@ export default function ResearchFundContent({ onNavigate }) {
   );
 }
 
-// StatsCard Component
+// StatsCard Component (ไม่เปลี่ยนแปลง)
 function StatsCard({ label, value, bgColor, textColor, icon: Icon, percentage }) {
   return (
     <div className={`${bgColor} p-4 rounded-lg transition-all hover:shadow-md`}>
@@ -379,9 +468,8 @@ function StatsCard({ label, value, bgColor, textColor, icon: Icon, percentage })
   );
 }
 
-// Modal Component
-function FundDetailModal({ fund, category, isOpen, onClose, onApply }) {
-  // Lock body scroll when modal is open
+// Modal Component - เพิ่มการแสดง target_roles
+function FundDetailModal({ fund, category, isOpen, onClose, onApply, userRole }) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -389,7 +477,6 @@ function FundDetailModal({ fund, category, isOpen, onClose, onApply }) {
       document.body.style.overflow = 'unset';
     }
     
-    // Cleanup function
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -397,21 +484,22 @@ function FundDetailModal({ fund, category, isOpen, onClose, onApply }) {
 
   if (!isOpen || !fund) return null;
 
-  // เช็คสถานะรองรับทุนที่ไม่จำกัดจำนวน
   const isAvailable = fund.is_unlimited_grants 
     ? fund.remaining_budget > 0
     : fund.remaining_grant > 0 && fund.remaining_budget > 0;
 
+  // Parse target roles for display
+  const targetRoles = targetRolesUtils.parseTargetRoles(fund.target_roles);
+  const roleDisplay = targetRolesUtils.formatTargetRolesForDisplay(targetRoles);
+
   return (
     <>
-      {/* Backdrop - ปรับให้โปร่งใสขึ้นและครอบคลุมเต็มหน้าจอ */}
       <div 
         className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity"
         style={{ margin: 0, padding: 0 }}
         onClick={onClose}
       />
       
-      {/* Modal Container */}
       <div 
         className="fixed inset-0 z-50 overflow-y-auto"
         onClick={onClose}
@@ -430,6 +518,13 @@ function FundDetailModal({ fund, category, isOpen, onClose, onApply }) {
                 <p className="text-sm text-gray-600 mt-1">
                   {category.category_name} - ปีงบประมาณ {category.year}
                 </p>
+                {/* แสดง target roles */}
+                <div className="mt-2">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <Shield size={12} className="mr-1" />
+                    เปิดให้: {roleDisplay}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={onClose}
@@ -465,7 +560,7 @@ function FundDetailModal({ fund, category, isOpen, onClose, onApply }) {
                 </div>
               </div>
 
-              {/* Fund Condition */}
+              {/* เนื้อหาเดิม... */}
               {fund.fund_condition && (
                 <div className="mb-6">
                   <h3 className="font-semibold text-gray-900 mb-2">เงื่อนไขการรับทุน</h3>
@@ -473,7 +568,6 @@ function FundDetailModal({ fund, category, isOpen, onClose, onApply }) {
                 </div>
               )}
 
-              {/* Fund Description */}
               {fund.fund_description && (
                 <div className="mb-6">
                   <h3 className="font-semibold text-gray-900 mb-2">รายละเอียดทุน</h3>
@@ -481,7 +575,6 @@ function FundDetailModal({ fund, category, isOpen, onClose, onApply }) {
                 </div>
               )}
 
-              {/* Level */}
               {fund.level && (
                 <div className="mb-6">
                   <h3 className="font-semibold text-gray-900 mb-2">ระดับทุน</h3>
@@ -489,7 +582,6 @@ function FundDetailModal({ fund, category, isOpen, onClose, onApply }) {
                 </div>
               )}
 
-              {/* Comment */}
               {fund.comment && (
                 <div className="mb-6">
                   <h3 className="font-semibold text-gray-900 mb-2">หมายเหตุ</h3>
@@ -547,8 +639,8 @@ function FundDetailModal({ fund, category, isOpen, onClose, onApply }) {
   );
 }
 
-// FundItem Component
-function FundItem({ fund, category, onApply }) {
+// FundItem Component - เพิ่มการแสดง target_roles
+function FundItem({ fund, category, onApply, userRole }) {
   const [showDetail, setShowDetail] = useState(false);
   
   const formatCurrency = (amount) => {
@@ -559,10 +651,13 @@ function FundItem({ fund, category, onApply }) {
     ? (fund.used_amount / fund.allocated_amount) * 100 
     : 0;
 
-  // เช็คสถานะรองรับทุนที่ไม่จำกัดจำนวน
   const isAvailable = fund.is_unlimited_grants 
     ? fund.remaining_budget > 0
     : fund.remaining_grant > 0 && fund.remaining_budget > 0;
+
+  // Parse target roles for display
+  const targetRoles = targetRolesUtils.parseTargetRoles(fund.target_roles);
+  const roleDisplay = targetRolesUtils.formatTargetRolesForDisplay(targetRoles);
 
   return (
     <>
@@ -584,7 +679,9 @@ function FundItem({ fund, category, onApply }) {
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+            
+            {/* Fund Details */}
+            <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-2">
               <span className="flex items-center gap-1">
                 วงเงิน: {fund.max_amount_per_grant 
                   ? `${formatCurrency(fund.max_amount_per_grant)} บาท/ทุน`
@@ -598,6 +695,14 @@ function FundItem({ fund, category, onApply }) {
                 ) : (
                   <span>จำนวน: {fund.remaining_grant}/{fund.max_grants} ทุน</span>
                 )}
+              </span>
+            </div>
+
+            {/* Target Roles Display */}
+            <div className="mb-2">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <Shield size={10} className="mr-1" />
+                เปิดให้: {roleDisplay}
               </span>
             </div>
           </div>
@@ -641,6 +746,7 @@ function FundItem({ fund, category, onApply }) {
         isOpen={showDetail}
         onClose={() => setShowDetail(false)}
         onApply={onApply}
+        userRole={userRole}
       />
     </>
   );

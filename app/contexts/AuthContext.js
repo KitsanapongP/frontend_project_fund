@@ -1,4 +1,4 @@
-// contexts/AuthContext.js - Authentication Context for global state management
+// contexts/AuthContext.js - Fixed Authentication Context
 'use client';
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
@@ -14,6 +14,7 @@ const AUTH_ACTIONS = {
   CLEAR_ERROR: 'CLEAR_ERROR',
   SET_LOADING: 'SET_LOADING',
   TOKEN_REFRESH: 'TOKEN_REFRESH',
+  INIT_AUTH: 'INIT_AUTH',
 };
 
 // Initial state
@@ -21,7 +22,7 @@ const initialState = {
   user: null,
   token: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // เริ่มต้นเป็น true เพื่อรอการตรวจสอบ token
   error: null,
   loginAttempts: 0,
   lastLoginAttempt: null,
@@ -30,6 +31,15 @@ const initialState = {
 // Auth reducer
 function authReducer(state, action) {
   switch (action.type) {
+    case AUTH_ACTIONS.INIT_AUTH:
+      return {
+        ...state,
+        user: action.payload.user,
+        token: action.payload.token,
+        isAuthenticated: action.payload.isAuthenticated,
+        isLoading: false,
+      };
+
     case AUTH_ACTIONS.LOGIN_START:
       return {
         ...state,
@@ -64,7 +74,8 @@ function authReducer(state, action) {
     case AUTH_ACTIONS.LOGOUT:
       return {
         ...initialState,
-        loginAttempts: state.loginAttempts, // Keep login attempts
+        isLoading: false, // ไม่ต้อง loading หลัง logout
+        loginAttempts: state.loginAttempts,
       };
 
     case AUTH_ACTIONS.SET_USER:
@@ -107,104 +118,163 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Check for existing authentication on mount
-  useEffect(() => {
+    // ตรวจสอบ authentication ตอนเริ่มต้น
+    useEffect(() => {
     const initAuth = async () => {
-      try {
-        if (authAPI.isAuthenticated()) {
-          const user = authAPI.getCurrentUser();
-          const token = authAPI.getToken();
-          
-          if (user && token) {
-            dispatch({
-              type: AUTH_ACTIONS.SET_USER,
-              payload: { user, token },
-            });
-
-            // Optionally verify token with server
+        try {
+        // ตรวจสอบ token ใน localStorage
+        const token = localStorage.getItem('auth_token');
+        const userData = localStorage.getItem('user_data');
+        
+        if (token && userData) {
             try {
-              const profile = await authAPI.getProfile();
-              if (profile.user) {
+            // ตรวจสอบ JWT token
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const currentTime = Date.now() / 1000;
+            
+            if (payload.exp > currentTime) {
+                // Token ยังไม่หมดอายุ
+                const user = JSON.parse(userData);
+                
+                // Set authentication state (ลบการเรียก authAPI.setAuth)
+                // authAPI.setAuth(token, user); // ลบบรรทัดนี้
+                
                 dispatch({
-                  type: AUTH_ACTIONS.SET_USER,
-                  payload: { user: profile.user, token },
+                type: AUTH_ACTIONS.INIT_AUTH,
+                payload: {
+                    user,
+                    token,
+                    isAuthenticated: true,
+                },
                 });
-              }
-            } catch (error) {
-              // If profile fetch fails, clear auth
-              console.warn('Token validation failed:', error);
-              handleLogout();
+                
+                console.log('Authentication restored from localStorage:', user);
+                return;
+            } else {
+                console.log('Token expired');
             }
-          }
+            } catch (error) {
+            console.error('Invalid token format:', error);
+            }
         }
-      } catch (error) {
+        
+        // ไม่มี token หรือ token หมดอายุ
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        // authAPI.clearAuth(); // ลบบรรทัดนี้
+        
+        dispatch({
+            type: AUTH_ACTIONS.INIT_AUTH,
+            payload: {
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            },
+        });
+        
+        } catch (error) {
         console.error('Auth initialization error:', error);
-        handleLogout();
-      }
+        
+        // กรณีเกิดข้อผิดพลาด ให้ clear auth
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        // authAPI.clearAuth(); // ลบบรรทัดนี้
+        
+        dispatch({
+            type: AUTH_ACTIONS.INIT_AUTH,
+            payload: {
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            },
+        });
+        }
     };
 
     initAuth();
-  }, []);
+    }, []);
 
-  // Login function
-  const login = async (email, password) => {
-    // Check for rate limiting
+    // Login function
+    const login = async (email, password) => {
+    // Rate limiting
     if (state.loginAttempts >= 5) {
-      const timeSinceLastAttempt = new Date() - new Date(state.lastLoginAttempt);
-      if (timeSinceLastAttempt < 15 * 60 * 1000) { // 15 minutes
-        throw new Error('Too many login attempts. Please try again in 15 minutes.');
-      }
+        const timeSinceLastAttempt = new Date() - state.lastLoginAttempt;
+        if (timeSinceLastAttempt < 15 * 60 * 1000) { // 15 minutes
+        throw new Error('มีการพยายามเข้าสู่ระบบมากเกินไป กรุณารอ 15 นาที');
+        }
     }
 
     dispatch({ type: AUTH_ACTIONS.LOGIN_START });
 
     try {
-      const response = await authAPI.login(email, password);
-      
-      dispatch({
+        const response = await authAPI.login(email, password);
+        
+        console.log('Login API response:', response);
+        
+        // ตรวจสอบ response structure
+        if (!response.token || !response.user) {
+        throw new Error('Invalid response from server');
+        }
+        
+        // บันทึกลง localStorage
+        localStorage.setItem('auth_token', response.token);
+        localStorage.setItem('user_data', JSON.stringify(response.user));
+        
+        // ลบการเรียก authAPI.setAuth
+        // authAPI.setAuth(response.token, response.user); // ลบบรรทัดนี้
+        
+        dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
         payload: {
-          user: response.user,
-          token: response.token,
+            user: response.user,
+            token: response.token,
         },
-      });
+        });
 
-      return response;
+        console.log('Login successful, user data:', response.user);
+        return response;
+        
     } catch (error) {
-      let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
+        console.error('Login error:', error);
+        
+        let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
 
-      if (error instanceof AuthError) {
+        if (error instanceof AuthError) {
         errorMessage = error.message;
-      } else if (error instanceof NetworkError) {
+        } else if (error instanceof NetworkError) {
         errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
-      } else if (error.message) {
+        } else if (error.message) {
         errorMessage = error.message;
-      }
+        }
 
-      dispatch({
+        dispatch({
         type: AUTH_ACTIONS.LOGIN_FAILURE,
         payload: { error: errorMessage },
-      });
+        });
 
-      throw error;
+        throw error;
     }
-  };
+    };
 
-  // Logout function
-  const handleLogout = async () => {
+    // Logout function
+    const handleLogout = async () => {
     try {
-      await authAPI.logout();
+        await authAPI.logout();
     } catch (error) {
-      console.warn('Logout API error:', error);
+        console.warn('Logout API error:', error);
     }
 
+    // Clear localStorage
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
+    
+    // ลบการเรียก authAPI.clearAuth
+    // authAPI.clearAuth(); // ลบบรรทัดนี้
+    
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
     
-    // Redirect to login page
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
-    }
-  };
+    console.log('User logged out');
+    };
 
   // Clear error
   const clearError = () => {
@@ -230,6 +300,9 @@ export function AuthProvider({ children }) {
     try {
       const response = await authAPI.refreshToken();
       
+      // อัพเดท localStorage
+      localStorage.setItem('auth_token', response.token);
+      
       dispatch({
         type: AUTH_ACTIONS.TOKEN_REFRESH,
         payload: { token: response.token },
@@ -246,6 +319,10 @@ export function AuthProvider({ children }) {
   // Update user profile
   const updateUser = (updatedUser) => {
     const currentToken = authAPI.getToken();
+    
+    // อัพเดท localStorage
+    localStorage.setItem('user_data', JSON.stringify(updatedUser));
+    
     authAPI.setAuth(currentToken, updatedUser);
     
     dispatch({
@@ -258,12 +335,14 @@ export function AuthProvider({ children }) {
   const hasRole = (role) => {
     if (!state.user) return false;
     
+    const userRole = state.user.role_id || state.user.role;
+    
     if (typeof role === 'string') {
       return state.user.role === role;
     }
     
     if (typeof role === 'number') {
-      return state.user.role_id === role;
+      return userRole === role;
     }
 
     return false;
@@ -277,7 +356,7 @@ export function AuthProvider({ children }) {
   // Get user display name
   const getUserDisplayName = () => {
     if (!state.user) return '';
-    return `${state.user.user_fname} ${state.user.user_lname}`;
+    return `${state.user.user_fname || ''} ${state.user.user_lname || ''}`.trim();
   };
 
   // Get user role display name
@@ -293,7 +372,8 @@ export function AuthProvider({ children }) {
       admin: 'ผู้ดูแลระบบ',
     };
 
-    return roleMap[state.user.role_id] || roleMap[state.user.role] || state.user.position_name || 'ผู้ใช้';
+    const userRole = state.user.role_id || state.user.role;
+    return roleMap[userRole] || state.user.position_name || 'ผู้ใช้';
   };
 
   const value = {
@@ -338,7 +418,7 @@ export function withAuth(Component, options = {}) {
   const { roles = [], redirectTo = '/login' } = options;
 
   return function AuthenticatedComponent(props) {
-    const { isAuthenticated, isLoading, hasAnyRole, user } = useAuth();
+    const { isAuthenticated, isLoading, hasAnyRole } = useAuth();
 
     useEffect(() => {
       if (!isLoading && !isAuthenticated) {
