@@ -1,14 +1,15 @@
-// app/lib/teacher_api.js - แก้ให้เรียก Go Backend
+// app/lib/teacher_api.js - Teacher specific API methods
 
-import apiClient from './api';
+import apiClient from '../lib/api';
+import { targetRolesUtils } from '../lib/target_roles_utils';
 
 // Teacher API methods for role-based fund access
 export const teacherAPI = {
   
-  // Get all categories and subcategories - เรียก Go Backend
+  // Get all categories and subcategories visible to teacher
   async getVisibleFundsStructure(year = '2568') {
     try {
-      console.log('Getting funds structure for year:', year);
+      console.log('Getting teacher funds structure for year:', year);
 
       // Step 1: Get years to convert year to year_id
       const yearsResponse = await apiClient.get('/years');
@@ -29,26 +30,26 @@ export const teacherAPI = {
         return { categories: [] };
       }
 
-      // Step 3: Get subcategories for each category - เรียก Go Backend
+      // Step 3: Get subcategories for each category - Teacher specific endpoint
       const categoriesWithSubs = await Promise.all(
         categoriesResponse.categories.map(async (category) => {
           try {
-            console.log(`Getting subcategories for category ${category.category_id}`);
+            console.log(`Getting teacher subcategories for category ${category.category_id}`);
             
-            // เรียก Go Backend /api/v1/teacher/subcategories
+            // เรียก Teacher specific endpoint
             const subResponse = await apiClient.get('/teacher/subcategories', {
               category_id: category.category_id,
               year_id: targetYear.year_id
             });
             
-            console.log(`Subcategories for category ${category.category_id}:`, subResponse);
+            console.log(`Teacher subcategories for category ${category.category_id}:`, subResponse);
             
             return {
               ...category,
               subcategories: subResponse.subcategories || []
             };
           } catch (error) {
-            console.error(`Error fetching subcategories for category ${category.category_id}:`, error);
+            console.error(`Error fetching teacher subcategories for category ${category.category_id}:`, error);
             return {
               ...category,
               subcategories: []
@@ -62,7 +63,7 @@ export const teacherAPI = {
         cat => cat.subcategories && cat.subcategories.length > 0
       );
 
-      console.log('Final result:', filteredCategories);
+      console.log('Final teacher result:', filteredCategories);
 
       return {
         categories: filteredCategories,
@@ -75,7 +76,7 @@ export const teacherAPI = {
     }
   },
 
-  // Get subcategories visible to teacher role - เรียก Go Backend
+  // Get subcategories visible to teacher role
   async getVisibleSubcategories(categoryId = null, yearId = null) {
     try {
       const params = {};
@@ -84,7 +85,7 @@ export const teacherAPI = {
       
       console.log('Getting teacher subcategories with params:', params);
       
-      // เรียก Go Backend /api/v1/teacher/subcategories
+      // เรียก Teacher specific endpoint
       const response = await apiClient.get('/teacher/subcategories', params);
       console.log('Teacher subcategories response:', response);
       
@@ -95,7 +96,7 @@ export const teacherAPI = {
     }
   },
 
-  // Check if a specific fund is visible to current user
+  // Check if a specific fund is visible to teacher
   async checkFundVisibility(subcategoryId) {
     try {
       const response = await apiClient.get('/teacher/subcategories', {
@@ -104,213 +105,54 @@ export const teacherAPI = {
       
       return response.subcategories && response.subcategories.length > 0;
     } catch (error) {
-      console.error('Error checking fund visibility:', error);
+      console.error('Error checking teacher fund visibility:', error);
       return false;
     }
   },
 
-  // Get current user's role and permissions
-  async getCurrentUserRole() {
+  // Get teacher dashboard stats
+  async getDashboardStats() {
     try {
-      const user = apiClient.getUser();
-      if (!user) {
-        throw new Error('User not logged in');
-      }
-
-      return {
-        role_id: user.role_id,
-        role_name: user.role?.role || 'unknown',
-        can_see_all_funds: user.role_id === 3, // Admin
-        is_teacher: user.role_id === 1,
-        is_staff: user.role_id === 2,
-        is_admin: user.role_id === 3
-      };
+      const response = await apiClient.get('/teacher/dashboard/stats');
+      return response;
     } catch (error) {
-      console.error('Error getting user role:', error);
+      console.error('Error fetching teacher dashboard stats:', error);
+      throw error;
+    }
+  },
+
+  // Get teacher's applications
+  async getMyApplications(params = {}) {
+    try {
+      const response = await apiClient.get('/teacher/applications', params);
+      return response;
+    } catch (error) {
+      console.error('Error fetching teacher applications:', error);
+      throw error;
+    }
+  },
+
+  // Submit new application
+  async submitApplication(applicationData) {
+    try {
+      const response = await apiClient.post('/applications', applicationData);
+      return response;
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      throw error;
+    }
+  },
+
+  // Get current teacher profile
+  async getProfile() {
+    try {
+      const response = await apiClient.get('/profile');
+      return response;
+    } catch (error) {
+      console.error('Error fetching teacher profile:', error);
       throw error;
     }
   }
 };
 
-// Admin API methods for managing target_roles
-export const adminFundAPI = {
-  
-  // Create new subcategory with target_roles (admin only)
-  async createSubcategoryWithRoles(subcategoryData) {
-    try {
-      const response = await apiClient.post('/admin/subcategories', subcategoryData);
-      return response;
-    } catch (error) {
-      console.error('Error creating subcategory with roles:', error);
-      throw error;
-    }
-  },
-
-  // Update target_roles for existing subcategory (admin only)
-  async updateSubcategoryRoles(subcategoryId, targetRoles) {
-    try {
-      const response = await apiClient.put(`/admin/subcategories/${subcategoryId}/roles`, {
-        target_roles: targetRoles
-      });
-      return response;
-    } catch (error) {
-      console.error('Error updating subcategory roles:', error);
-      throw error;
-    }
-  },
-
-  // Get all subcategories (admin view - no filtering)
-  async getAllSubcategories(categoryId = null) {
-    try {
-      const params = categoryId ? { category_id: categoryId } : {};
-      const response = await apiClient.get('/admin/subcategories', params);
-      return response;
-    } catch (error) {
-      console.error('Error fetching all subcategories:', error);
-      throw error;
-    }
-  },
-
-  // Get available roles for target_roles selection
-  async getAvailableRoles() {
-    try {
-      const response = await apiClient.get('/admin/roles');
-      return response;
-    } catch (error) {
-      console.error('Error fetching available roles:', error);
-      // Fallback to static data
-      return {
-        roles: [
-          { role_id: 1, role_name: 'teacher', display_name: 'อาจารย์' },
-          { role_id: 2, role_name: 'staff', display_name: 'เจ้าหน้าที่' },
-          { role_id: 3, role_name: 'admin', display_name: 'ผู้ดูแลระบบ' }
-        ]
-      };
-    }
-  },
-
-  // Bulk update target_roles for multiple subcategories
-  async bulkUpdateSubcategoryRoles(updates) {
-    try {
-      const promises = updates.map(update => 
-        this.updateSubcategoryRoles(update.subcategory_id, update.target_roles)
-      );
-      
-      const results = await Promise.allSettled(promises);
-      
-      const successful = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-      
-      return {
-        success: true,
-        successful_updates: successful,
-        failed_updates: failed,
-        total_updates: updates.length
-      };
-    } catch (error) {
-      console.error('Error bulk updating subcategory roles:', error);
-      throw error;
-    }
-  }
-};
-
-// Staff API methods (similar to teacher but for staff role)
-export const staffAPI = {
-  
-  // Get subcategories visible to staff role
-  async getVisibleSubcategories(categoryId = null, yearId = null) {
-    try {
-      const params = {};
-      if (categoryId) params.category_id = categoryId;
-      if (yearId) params.year_id = yearId;
-      
-      const response = await apiClient.get('/staff/subcategories', params);
-      return response;
-    } catch (error) {
-      console.error('Error fetching staff subcategories:', error);
-      throw error;
-    }
-  },
-
-  // Get all categories and subcategories with staff role filtering
-  async getVisibleFundsStructure(year = '2568') {
-    // ใช้ logic เดียวกับ teacherAPI
-    return teacherAPI.getVisibleFundsStructure(year);
-  }
-};
-
-// Utility functions for working with target_roles
-export const targetRolesUtils = {
-  
-  // Parse target_roles JSON string
-  parseTargetRoles(targetRolesString) {
-    if (!targetRolesString) {
-      return [];
-    }
-    
-    try {
-      return JSON.parse(targetRolesString);
-    } catch (error) {
-      console.error('Error parsing target_roles:', error);
-      return [];
-    }
-  },
-
-  // Check if current user can see a fund based on target_roles
-  canUserSeeFund(targetRoles, userRoleId) {
-    // Admin sees everything
-    if (userRoleId === 3) {
-      return true;
-    }
-    
-    // If no target_roles specified, everyone can see it
-    if (!targetRoles || targetRoles.length === 0) {
-      return true;
-    }
-    
-    // Check if user's role is in target_roles
-    return targetRoles.includes(userRoleId.toString());
-  },
-
-  // Format target_roles for display
-  formatTargetRolesForDisplay(targetRoles) {
-    if (!targetRoles || targetRoles.length === 0) {
-      return 'ทุกบทบาท';
-    }
-    
-    const roleNames = {
-      '1': 'อาจารย์',
-      '2': 'เจ้าหน้าที่', 
-      '3': 'ผู้ดูแลระบบ'
-    };
-    
-    return targetRoles.map(roleId => roleNames[roleId] || `Role ${roleId}`).join(', ');
-  },
-
-  // Validate target_roles array
-  validateTargetRoles(targetRoles) {
-    if (!Array.isArray(targetRoles)) {
-      return { valid: false, error: 'target_roles must be an array' };
-    }
-    
-    const validRoles = ['1', '2', '3'];
-    const invalidRoles = targetRoles.filter(role => !validRoles.includes(role.toString()));
-    
-    if (invalidRoles.length > 0) {
-      return { 
-        valid: false, 
-        error: `Invalid role IDs: ${invalidRoles.join(', ')}` 
-      };
-    }
-    
-    return { valid: true };
-  }
-};
-
-// Export everything
-export default {
-  teacherAPI,
-  adminFundAPI,
-  staffAPI,
-  targetRolesUtils
-};
+export default teacherAPI;

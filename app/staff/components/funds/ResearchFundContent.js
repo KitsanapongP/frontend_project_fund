@@ -7,8 +7,8 @@ import PageLayout from "../common/PageLayout";
 import Card from "../common/Card";
 import SimpleCard from "../common/SimpleCard";
 import EmptyState from "../common/EmptyState";
-import { teacherAPI } from '../../../lib/teacher_api';
 import { targetRolesUtils } from '../../../lib/target_roles_utils';
+import { staffAPI } from './../../../lib/staff_api';
 
 export default function ResearchFundContent({ onNavigate }) {
   const [selectedYear, setSelectedYear] = useState("2566"); //Default Years
@@ -84,7 +84,7 @@ export default function ResearchFundContent({ onNavigate }) {
       setLoading(true);
       setError(null);
 
-      const fundsData = await teacherAPI.getVisibleFundsStructure(year);
+      const fundsData = await staffAPI.getVisibleFundsStructure(year);
       setFundCategories(fundsData.categories || []);
       setFilteredFunds(fundsData.categories || []);
     } catch (err) {
@@ -212,7 +212,7 @@ export default function ResearchFundContent({ onNavigate }) {
       subtitle="รายการทุนวิจัยที่เปิดรับสมัคร"
       icon={DollarSign}
       breadcrumbs={[
-        { label: "หน้าแรก", href: "/teacher" },
+        { label: "หน้าแรก", href: "/staff" },
         { label: "กองทุนวิจัย" }
       ]}
     >

@@ -1,4 +1,4 @@
-// teacher/page.js - Protected Teacher Dashboard
+// app/teacher/page.js - Protected Teacher Dashboard
 
 "use client";
 
@@ -113,7 +113,7 @@ function TeacherPageContent() {
 export default function TeacherPage() {
   return (
     <AuthGuard 
-      allowedRoles={[1, 'teacher']} // อนุญาตเฉพาะ teacher (role_id = 1)
+      allowedRoles={[1, 'teacher']}
       requireAuth={true}
     >
       <TeacherPageContent />
