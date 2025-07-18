@@ -378,6 +378,41 @@ class APIClient {
       body: formData,
     });
   }
+
+  // POST request with FormData (for file uploads)
+  async postFormData(endpoint, formData) {
+    try {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`,
+          // Don't set Content-Type for FormData - browser will set it with boundary
+        },
+        body: formData,
+      });
+
+      // Handle token refresh
+      if (response.status === 401) {
+        const refreshed = await this.refreshAccessToken();
+        if (refreshed) {
+          // Retry the request with new token
+          return this.postFormData(endpoint, formData);
+        } else {
+          this.clearAuth();
+          throw new AuthError('Session expired. Please login again.');
+        }
+      }
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
 }
 
 // Custom Error Classes (unchanged)

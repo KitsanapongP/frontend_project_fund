@@ -9,7 +9,9 @@ import {
   HandHelping,
   ClipboardList,
   PlusCircle,
-  User
+  User,
+  Gift,
+  TrendingUp
 } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useRouter } from "next/navigation";
@@ -32,8 +34,20 @@ export default function Navigation({
       hasSubmenu: false
     },
     {
+      id: 'profile',
+      label: 'ข้อมูลส่วนตัว',
+      icon: User,
+      hasSubmenu: false
+    },
+    {
       id: 'research-fund',
-      label: 'กองทุนวิจัย',
+      label: 'ทุนส่งเสริมการวิจัย',
+      icon: TrendingUp,
+      hasSubmenu: false
+    },
+    {
+      id: 'promotion-fund',
+      label: 'ทุนอุดหนุนกิจกรรม',
       icon: DollarSign,
       hasSubmenu: false
     },
@@ -44,15 +58,9 @@ export default function Navigation({
       hasSubmenu: false
     },
     {
-      id: 'application-form',
-      label: 'ยื่นคำร้อง',
-      icon: FileText,
-      hasSubmenu: false,
-    },
-    {
-      id: 'profile',
-      label: 'ข้อมูลส่วนตัว',
-      icon: User,
+      id: 'received-funds',
+      label: 'ทุนที่เคยได้รับ',
+      icon: Gift,
       hasSubmenu: false
     }
   ];

@@ -15,7 +15,14 @@ export const teacherAPI = {
       const yearsResponse = await apiClient.get('/years');
       console.log('Years response:', yearsResponse);
       
-      const targetYear = yearsResponse.years?.find(y => y.year === year);
+      // Handle different response formats
+      const yearsData = yearsResponse.years || yearsResponse.data || [];
+      
+      if (!Array.isArray(yearsData) || yearsData.length === 0) {
+        throw new Error('No years data available');
+      }
+
+      const targetYear = yearsData.find(y => y.year === year);
       if (!targetYear) {
         throw new Error(`Year ${year} not found`);
       }

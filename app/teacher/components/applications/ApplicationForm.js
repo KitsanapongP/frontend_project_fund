@@ -373,7 +373,8 @@ export default function ApplicationForm({ selectedFund }) {
       icon={FileText}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/teacher" },
-        { label: "ยื่นคำร้อง" },
+        { label: "เลือกคำร้อง" },
+        { label: "ขอทุนวิจัย" },
       ]}
     >
       <form className="space-y-6">

@@ -1,14 +1,14 @@
-// app/teacher/components/funds/ResearchFundContent.js - ทุนส่งเสริมงานวิจัยและนวัตกรรม (Enhanced UI)
+// app/teacher/components/funds/PromotionFundContent.js - ทุนอุดหนุนกิจกรรม (Enhanced UI)
 "use client";
 
-import { useState, useEffect } from "react";
-import { DollarSign, ExternalLink, FileText, Search, Filter, ChevronDown, Eye, Download, X, Info } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { TrendingUp, ExternalLink, FileText, Search, Filter, ChevronDown, Eye, Download, X, Info } from "lucide-react";
 import PageLayout from "../common/PageLayout";
 import Card from "../common/Card";
 import { teacherAPI } from '../../../lib/teacher_api';
 import { targetRolesUtils } from '../../../lib/target_roles_utils';
 
-export default function ResearchFundContent({ onNavigate }) {
+export default function PromotionFundContent({ onNavigate }) {
   const [selectedYear, setSelectedYear] = useState("2566");
   const [fundCategories, setFundCategories] = useState([]);
   const [filteredFunds, setFilteredFunds] = useState([]);
@@ -26,6 +26,13 @@ export default function ResearchFundContent({ onNavigate }) {
   // Modal state for fund condition
   const [showConditionModal, setShowConditionModal] = useState(false);
   const [selectedCondition, setSelectedCondition] = useState({ title: '', content: '' });
+  const modalRef = useRef(null); // Create a ref for the modal container
+
+  useEffect(() => {
+    if (showConditionModal && modalRef.current) {
+      modalRef.current.focus(); // Focus the modal when it opens
+    }
+  }, [showConditionModal]); // Run when showConditionModal changes
 
   useEffect(() => {
     loadInitialData();
@@ -99,17 +106,20 @@ export default function ResearchFundContent({ onNavigate }) {
         return;
       }
       
-      // กรองเฉพาะทุนส่งเสริมการวิจัย (จากตาราง fund_categories)
-      const researchFunds = response.categories.filter(category => {
+      // กรองเฉพาะทุนอุดหนุนกิจกรรม (จากตาราง fund_categories)
+      const promotionFunds = response.categories.filter(category => {
         const categoryName = category.category_name?.toLowerCase() || '';
-        // ตามข้อมูลในฐานข้อมูล category_id = 1 คือ 'ทุนส่งเสริมการวิจัย'
-        return categoryName.includes('วิจัย') || 
-               categoryName.includes('research') ||
-               category.category_id === 1;
+        // ตามข้อมูลในฐานข้อมูล category_id = 2 คือ 'ทุนอุดหนุนกิจกรรม'
+        return categoryName.includes('อุดหนุน') || 
+               categoryName.includes('กิจกรรม') ||
+               categoryName.includes('ส่งเสริม') ||
+               categoryName.includes('promotion') ||
+               categoryName.includes('activity') ||
+               category.category_id === 2;
       });
       
-      console.log('Research funds found:', researchFunds);
-      setFundCategories(researchFunds);
+      console.log('Promotion funds found:', promotionFunds);
+      setFundCategories(promotionFunds);
       
     } catch (err) {
       console.error('Error loading fund data:', err);
@@ -172,7 +182,7 @@ export default function ResearchFundContent({ onNavigate }) {
       }
     } else {
       // แสดงลิงก์ดาวน์โหลดไฟล์ DOC
-      const docUrl = subcategory.form_document_url || '/documents/research-fund-form.docx';
+      const docUrl = subcategory.form_document_url || '/documents/promotion-fund-form.docx';
       window.open(docUrl, '_blank');
     }
   };
@@ -224,7 +234,7 @@ export default function ResearchFundContent({ onNavigate }) {
     
     return (
       <tr key={fundId} className={!isAvailable ? 'bg-gray-50' : ''}>
-        <td className="px-6 py-4 whitespace-nowrap">
+        <td className="px-6 py-4 line-clamp-5">
           <div className="text-sm font-medium text-gray-900">
             {fundName}
           </div>
@@ -253,7 +263,7 @@ export default function ResearchFundContent({ onNavigate }) {
               คงเหลือ: {formatAmount(fund.remaining_budget)}
             </div>
             <div className="text-xs text-gray-600">
-              จำนวน: {(fund.remaining_grant === null || fund.remaining_grant === undefined) ? 'ขอทุนกี่ครั้งก็ได้' : `${fund.remaining_grant || 0}/${(fund.max_grants === null || fund.max_grants === undefined) ? 'ไม่จำกัด' : fund.max_grants} ทุน`}
+              จำนวน: {fund.remaining_grant === null ? 'ไม่จำกัด' : `${fund.remaining_grant || 0}/${fund.max_grants === null ? 'ไม่จำกัด' : fund.max_grants} ทุน`}
             </div>
             {maxAmountPerGrant && (
               <div className="text-xs text-green-600 font-medium">
@@ -296,12 +306,12 @@ export default function ResearchFundContent({ onNavigate }) {
 
   return (
     <PageLayout
-      title="ทุนส่งเสริมงานวิจัยและนวัตกรรม"
-      subtitle="รายการทุนส่งเสริมงานวิจัยที่เปิดรับสมัคร"
-      icon={DollarSign}
+      title="ทุนอุดหนุนกิจกรรม"
+      subtitle="รายการทุนอุดหนุนกิจกรรมที่เปิดรับสมัคร"
+      icon={TrendingUp}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/teacher" },
-        { label: "ทุนส่งเสริมงานวิจัย" }
+        { label: "ทุนอุดหนุนกิจกรรม" }
       ]}
     >
       {/* Control Bar */}
@@ -377,11 +387,11 @@ export default function ResearchFundContent({ onNavigate }) {
       {filteredFunds.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
           <div className="text-gray-500">
-            <DollarSign size={48} className="mx-auto mb-4 text-gray-300" />
-            <p className="text-lg font-medium mb-2">ไม่พบทุนส่งเสริมงานวิจัย</p>
+            <TrendingUp size={48} className="mx-auto mb-4 text-gray-300" />
+            <p className="text-lg font-medium mb-2">ไม่พบทุนอุดหนุนกิจกรรม</p>
             <p className="text-sm">
               {fundCategories.length === 0 
-                ? "ไม่มีทุนส่งเสริมงานวิจัยในปีงบประมาณนี้" 
+                ? "ไม่มีทุนอุดหนุนกิจกรรมในปีงบประมาณนี้" 
                 : "ลองปรับตัวกรองใหม่"}
             </p>
           </div>
@@ -434,44 +444,53 @@ export default function ResearchFundContent({ onNavigate }) {
 
       {/* Condition Modal */}
       {showConditionModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            {/* Backdrop */}
-            <div 
-              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-              onClick={() => setShowConditionModal(false)}
-            ></div>
+        <div 
+          className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center min-h-screen px-4"
+          ref={modalRef} // Add ref to the outer div
+          tabIndex={-1} // Make the div focusable
+          onKeyDown={(e) => e.key === 'Escape' && setShowConditionModal(false)}
+        >
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-gray-500 opacity-75 transition-opacity duration-300 ease-in-out"
+            onClick={() => setShowConditionModal(false)}
+            aria-hidden="true"
+          ></div>
 
-            {/* Modal panel */}
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    เงื่อนไขทุน: {selectedCondition.title}
-                  </h3>
-                  <button
-                    type="button"
-                    className="text-gray-400 hover:text-gray-500"
-                    onClick={() => setShowConditionModal(false)}
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {selectedCondition.content}
-                  </p>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          {/* Modal panel */}
+          <div 
+            className="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all duration-300 ease-in-out max-w-lg w-full sm:my-8"
+            role="dialog"
+            aria-labelledby="modal-title"
+            aria-describedby="modal-description"
+          >
+            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                  เงื่อนไขทุน: {selectedCondition.title}
+                </h3>
                 <button
                   type="button"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="text-gray-400 hover:text-gray-500"
                   onClick={() => setShowConditionModal(false)}
                 >
-                  ปิด
+                  <X size={20} />
                 </button>
               </div>
+              <div className="mt-2">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap" id="modal-description">
+                  {selectedCondition.content}
+                </p>
+              </div>
+            </div>
+            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <button
+                type="button"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                onClick={() => setShowConditionModal(false)}
+              >
+                ปิด
+              </button>
             </div>
           </div>
         </div>

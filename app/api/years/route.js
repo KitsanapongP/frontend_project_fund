@@ -13,7 +13,6 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// api/years/route.js
 // GET /api/years
 export async function GET() {
   try {
@@ -29,21 +28,20 @@ export async function GET() {
       ORDER BY year DESC
     `);
 
-    // Transform data to match frontend expectations
-    const yearsData = years.map(y => ({
-      year_id: y.year_id,
-      year: y.year,
+    // Validate and clean the data
+    const validYears = years.filter(y => y.year_id && y.year).map(y => ({
+      year_id: parseInt(y.year_id),
+      year: y.year.toString(),
       budget: parseFloat(y.budget) || 0,
-      status: y.status
+      status: y.status || 'active'
     }));
 
-    // Return array of years for compatibility with frontend
-    const yearsList = yearsData.map(y => y.year);
-
+    // Return structure that matches frontend expectations
     return NextResponse.json({
       success: true,
-      data: yearsList,
-      fullData: yearsData // ส่งข้อมูลเต็มด้วยเผื่อต้องการใช้
+      data: validYears,
+      years: validYears, // For compatibility with existing code
+      message: `Found ${validYears.length} active years`
     });
 
   } catch (error) {

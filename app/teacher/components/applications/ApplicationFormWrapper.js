@@ -31,7 +31,7 @@ export default function ApplicationFormWrapper({ selectedFund }) {
 
   // แสดงฟอร์มตามประเภทที่เลือก
   return (
-    <div>
+    <div className="mt-6">
       {/* ปุ่มย้อนกลับ */}
       <button
         onClick={handleBack}
