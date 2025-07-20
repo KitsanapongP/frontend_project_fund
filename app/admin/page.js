@@ -9,6 +9,7 @@ import Navigation from "./components/layout/Navigation";
 import DashboardContent from "./components/dashboard/DashboardContent";
 import ResearchFundContent from "./components/funds/ResearchFundContent";
 import PromotionFundContent from "./components/funds/PromotionFundContent";
+import FundSettingsContent from "./components/settings/FundSettingsContent";
 import UnderDevelopmentContent from "./components/common/UnderDevelopmentContent";
 
 function AdminPageContent() {
@@ -35,7 +36,7 @@ function AdminPageContent() {
       case 'applications-list':
         return <UnderDevelopmentContent currentPage={currentPage} />;
       case 'fund-settings':
-        return <UnderDevelopmentContent currentPage={currentPage} />;
+        return <FundSettingsContent currentPage={handleNavigate} />;
       case 'approval-records':
         return <UnderDevelopmentContent currentPage={currentPage} />;
       default:
