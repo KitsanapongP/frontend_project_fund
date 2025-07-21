@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { X, Info } from "lucide-react";
 
 export default function SubcategoryModal({ isOpen, onClose, onSave, subcategory, category }) {
+  console.log('SubcategoryModal rendered - isOpen:', isOpen);
+  
   const [formData, setFormData] = useState({
     subcategory_name: "",
     fund_condition: "",
@@ -21,11 +23,25 @@ export default function SubcategoryModal({ isOpen, onClose, onSave, subcategory,
   ];
 
   useEffect(() => {
+    console.log('SubcategoryModal - subcategory changed:', subcategory);
     if (subcategory) {
+      // Parse target_roles if it's a string
+      let targetRoles = [];
+      if (subcategory.target_roles) {
+        try {
+          targetRoles = typeof subcategory.target_roles === 'string' 
+            ? JSON.parse(subcategory.target_roles) 
+            : subcategory.target_roles;
+        } catch (error) {
+          console.error('Error parsing target_roles:', error);
+          targetRoles = [];
+        }
+      }
+
       setFormData({
         subcategory_name: subcategory.subcategory_name || "",
         fund_condition: subcategory.fund_condition || "",
-        target_roles: JSON.parse(subcategory.target_roles || "[]"),
+        target_roles: Array.isArray(targetRoles) ? targetRoles : [],
         comment: subcategory.comment || "",
         status: subcategory.status || "active"
       });
@@ -38,7 +54,8 @@ export default function SubcategoryModal({ isOpen, onClose, onSave, subcategory,
         status: "active"
       });
     }
-  }, [subcategory]);
+    setErrors({});
+  }, [subcategory, isOpen]);
 
   const handleRoleToggle = (roleId) => {
     const newRoles = formData.target_roles.includes(roleId)
@@ -72,10 +89,15 @@ export default function SubcategoryModal({ isOpen, onClose, onSave, subcategory,
     onSave(formData);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    console.log('SubcategoryModal not rendering - isOpen is false');
+    return null;
+  }
+
+  console.log('SubcategoryModal rendering modal content');
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" style={{ zIndex: 9999 }}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
@@ -137,7 +159,7 @@ export default function SubcategoryModal({ isOpen, onClose, onSave, subcategory,
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                   errors.fund_condition ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="ระบุเงื่อนไขและคุณสมบัติของผู้ขอรับทุน"
+                placeholder="ระบุเงื่อนไขและข้อกำหนดในการขอรับทุน"
               />
               {errors.fund_condition && (
                 <p className="text-sm text-red-500 mt-1">{errors.fund_condition}</p>
@@ -146,27 +168,23 @@ export default function SubcategoryModal({ isOpen, onClose, onSave, subcategory,
 
             {/* Target Roles */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 กลุ่มเป้าหมาย <span className="text-red-500">*</span>
               </label>
-              <div className="flex gap-3 mt-2">
+              <div className="space-y-2">
                 {availableRoles.map(role => (
                   <label
                     key={role.id}
-                    className={`flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer transition-colors ${
-                      formData.target_roles.includes(role.id)
-                        ? 'bg-blue-50 border-blue-500 text-blue-700'
-                        : 'bg-white border-gray-300 hover:bg-gray-50'
-                    }`}
+                    className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                   >
                     <input
                       type="checkbox"
                       checked={formData.target_roles.includes(role.id)}
                       onChange={() => handleRoleToggle(role.id)}
-                      className="sr-only"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <span className="text-lg">{role.icon}</span>
-                    <span className="font-medium">{role.name}</span>
+                    <span className="ml-3 text-lg">{role.icon}</span>
+                    <span className="ml-2 text-sm font-medium text-gray-900">{role.name}</span>
                   </label>
                 ))}
               </div>
@@ -174,9 +192,9 @@ export default function SubcategoryModal({ isOpen, onClose, onSave, subcategory,
                 <p className="text-sm text-red-500 mt-1">{errors.target_roles}</p>
               )}
               <div className="flex items-start gap-2 mt-2 p-3 bg-blue-50 rounded-lg">
-                <Info size={16} className="text-blue-600 mt-0.5" />
+                <Info size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-blue-800">
-                  ผู้ดูแลระบบจะเห็นทุนทุกประเภทเสมอ ไม่ว่าจะกำหนดกลุ่มเป้าหมายอย่างไร
+                  เลือกกลุ่มเป้าหมายที่สามารถเข้าถึงและยื่นขอทุนนี้ได้
                 </p>
               </div>
             </div>

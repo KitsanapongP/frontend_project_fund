@@ -27,7 +27,8 @@ export default function CategoryModal({ isOpen, onClose, onSave, category }) {
         status: "active"
       });
     }
-  }, [category]);
+    setErrors({});
+  }, [category, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

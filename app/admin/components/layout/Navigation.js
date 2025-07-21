@@ -35,22 +35,19 @@ export default function Navigation({
       id: 'research-fund',
       label: 'ทุนส่งเสริมงานวิจัย',
       icon: HandHelping,
-      hasSubmenu: false,
-      description: '(ดูได้อย่างเดียว)'
+      hasSubmenu: false
     },
     {
       id: 'promotion-fund',
       label: 'ทุนอุดหนุนกิจกรรม',
       icon: DollarSign,
-      hasSubmenu: false,
-      description: '(ดูได้อย่างเดียว)'
+      hasSubmenu: false
     },
     {
       id: 'applications-list',
       label: 'รายการการขอทุน',
       icon: FileText,
-      hasSubmenu: false,
-      description: '(ดูคำร้องของอาจารย์)'
+      hasSubmenu: false    
     },
     {
       id: 'fund-settings',
