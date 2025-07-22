@@ -1,145 +1,95 @@
-// app/admin/components/settings/CategoryModal.js
-"use client";
+// modals/CategoryModal.js
+import React, { useState, useEffect } from "react";
 
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
-
-export default function CategoryModal({ isOpen, onClose, onSave, category }) {
-  const [formData, setFormData] = useState({
-    category_name: "",
-    comment: "",
-    status: "active"
+const CategoryModal = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  editingCategory 
+}) => {
+  const [categoryForm, setCategoryForm] = useState({ 
+    category_name: "", 
+    status: "active" 
   });
 
-  const [errors, setErrors] = useState({});
-
   useEffect(() => {
-    if (category) {
-      setFormData({
-        category_name: category.category_name || "",
-        comment: category.comment || "",
-        status: category.status || "active"
+    if (editingCategory) {
+      setCategoryForm({
+        category_name: editingCategory.category_name || "",
+        status: editingCategory.status || "active"
       });
     } else {
-      setFormData({
-        category_name: "",
-        comment: "",
-        status: "active"
-      });
+      setCategoryForm({ category_name: "", status: "active" });
     }
-    setErrors({});
-  }, [category, isOpen]);
+  }, [editingCategory]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Validation
-    const newErrors = {};
-    if (!formData.category_name.trim()) {
-      newErrors.category_name = "กรุณากรอกชื่อหมวดหมู่";
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    onSave(formData);
+    onSave(categoryForm);
+    setCategoryForm({ category_name: "", status: "active" });
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h3 className="text-xl font-semibold">
-            {category ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่ใหม่'}
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Form */}
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl transform transition-all duration-300 scale-100">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900">
+          {editingCategory ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่ใหม่'}
+        </h3>
+        
         <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-4">
-            {/* Category Name */}
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                ชื่อหมวดหมู่ <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">ชื่อหมวดหมู่</label>
               <input
                 type="text"
-                value={formData.category_name}
-                onChange={(e) => {
-                  setFormData({ ...formData, category_name: e.target.value });
-                  setErrors({ ...errors, category_name: "" });
-                }}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.category_name ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="เช่น ทุนส่งเสริมการวิจัย"
+                required
+                value={categoryForm.category_name}
+                onChange={(e) => setCategoryForm({ 
+                  ...categoryForm, 
+                  category_name: e.target.value 
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="ระบุชื่อหมวดหมู่"
               />
-              {errors.category_name && (
-                <p className="text-sm text-red-500 mt-1">{errors.category_name}</p>
-              )}
             </div>
-
-            {/* Status (only for edit) */}
-            {category && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  สถานะ
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="active">เปิดใช้งาน</option>
-                  <option value="disable">ปิดใช้งาน</option>
-                </select>
-              </div>
-            )}
-
-            {/* Comment */}
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                หมายเหตุ
-              </label>
-              <textarea
-                value={formData.comment}
-                onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)"
-              />
+              <label className="block text-sm font-medium mb-2 text-gray-700">สถานะ</label>
+              <select
+                value={categoryForm.status}
+                onChange={(e) => setCategoryForm({ 
+                  ...categoryForm, 
+                  status: e.target.value 
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                <option value="active">ใช้งาน</option>
+                <option value="disable">ปิดใช้งาน</option>
+              </select>
             </div>
           </div>
-
-          {/* Footer */}
-          <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+          
+          <div className="flex justify-end gap-3 mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
-              {category ? 'บันทึกการแก้ไข' : 'เพิ่มหมวดหมู่'}
+              บันทึก
             </button>
           </div>
         </form>
       </div>
     </div>
   );
-}
+};
+
+export default CategoryModal;

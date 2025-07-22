@@ -1,4 +1,4 @@
-// lib/api.js - Updated API Client Service for Backend Communication
+// app/lib/api.js - Updated API Client Service for Backend Communication
 class APIClient {
   constructor() {
     this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
@@ -15,6 +15,8 @@ class APIClient {
     this.failedQueue = [];
   }
 
+  // ==================== TOKEN MANAGEMENT ====================
+  
   // Get stored access token (try new key first, fallback to old)
   getToken() {
     if (typeof window === 'undefined') return null;
@@ -40,122 +42,101 @@ class APIClient {
     return localStorage.getItem(this.sessionKey);
   }
 
-  // Store authentication data (updated for new system)
-  setAuth(response) {
+  // Set authentication data
+  setAuth({ access_token, token, refresh_token, user, session_id, expires_in }) {
     if (typeof window === 'undefined') return;
-    
-    // Support both old and new response formats
-    const accessToken = response.access_token || response.token;
-    const refreshToken = response.refresh_token;
-    const user = response.user;
-    const sessionId = response.session_id;
 
+    // Store access token (support both formats)
+    const accessToken = access_token || token;
     if (accessToken) {
       localStorage.setItem(this.accessTokenKey, accessToken);
-      localStorage.setItem(this.tokenKey, accessToken); // Backward compatibility
+      // Keep old key for backward compatibility
+      localStorage.setItem(this.tokenKey, accessToken);
     }
-    
-    if (refreshToken) {
-      localStorage.setItem(this.refreshTokenKey, refreshToken);
+
+    // Store refresh token
+    if (refresh_token) {
+      localStorage.setItem(this.refreshTokenKey, refresh_token);
     }
-    
+
+    // Store user data
     if (user) {
       localStorage.setItem(this.userKey, JSON.stringify(user));
     }
-    
-    if (sessionId) {
-      localStorage.setItem(this.sessionKey, sessionId.toString());
+
+    // Store session ID
+    if (session_id) {
+      localStorage.setItem(this.sessionKey, session_id);
     }
 
-    // Schedule token refresh if we have refresh token
-    if (refreshToken && accessToken) {
-      this.scheduleTokenRefresh(accessToken);
+    // Schedule token refresh if expires_in is provided
+    if (expires_in && accessToken) {
+      this.scheduleTokenRefresh(accessToken, false, expires_in);
     }
   }
 
-  // Legacy method for backward compatibility
-  setAuthLegacy(token, user) {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(this.tokenKey, token);
-    localStorage.setItem(this.accessTokenKey, token);
-    localStorage.setItem(this.userKey, JSON.stringify(user));
-  }
-
-  // Clear stored auth data
+  // Clear authentication data
   clearAuth() {
     if (typeof window === 'undefined') return;
+
     localStorage.removeItem(this.accessTokenKey);
     localStorage.removeItem(this.refreshTokenKey);
     localStorage.removeItem(this.userKey);
     localStorage.removeItem(this.sessionKey);
-    localStorage.removeItem(this.tokenKey); // Backward compatibility
-    
+    localStorage.removeItem(this.tokenKey); // Remove old key too
+
+    // Clear refresh timeout
     if (this.refreshTimeout) {
       clearTimeout(this.refreshTimeout);
       this.refreshTimeout = null;
     }
+
+    this.isRefreshing = false;
+    this.failedQueue = [];
   }
 
-  // Check if user is authenticated
+  // Check if authenticated
   isAuthenticated() {
-    const token = this.getToken();
-    if (!token) return false;
-
-    try {
-      // Basic JWT token validation (check if not expired)
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const currentTime = Date.now() / 1000;
-      
-      // Check if token expires within 5 minutes - should refresh
-      if (payload.exp - currentTime < 300 && this.getRefreshToken()) {
-        this.scheduleTokenRefresh(token, true); // immediate refresh
-      }
-      
-      return payload.exp > currentTime;
-    } catch (error) {
-      console.error('Invalid token format:', error);
-      this.clearAuth();
-      return false;
-    }
+    return !!this.getToken();
   }
 
-  // Schedule automatic token refresh
-  scheduleTokenRefresh(token, immediate = false) {
+  // ==================== TOKEN REFRESH LOGIC ====================
+  
+  // Schedule token refresh
+  scheduleTokenRefresh(token, soon = false, expiresIn = null) {
     if (this.refreshTimeout) {
       clearTimeout(this.refreshTimeout);
     }
 
-    if (!token || !this.getRefreshToken()) return;
-
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const currentTime = Date.now() / 1000;
-      const timeUntilExpiry = payload.exp - currentTime;
-      
-      // Refresh 2 minutes before expiry, or immediately if requested
-      const refreshIn = immediate ? 100 : Math.max(0, (timeUntilExpiry - 120) * 1000);
-
-      this.refreshTimeout = setTimeout(async () => {
-        try {
-          await this.refreshAccessToken();
-        } catch (error) {
-          console.error('Auto refresh failed:', error);
-          this.clearAuth();
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
-        }
-      }, refreshIn);
-    } catch (error) {
-      console.error('Error scheduling token refresh:', error);
+    // Calculate refresh time (refresh 5 minutes before expiry, or 30 seconds if soon)
+    let refreshIn;
+    if (soon) {
+      refreshIn = 30 * 1000; // 30 seconds
+    } else if (expiresIn) {
+      refreshIn = (expiresIn - 300) * 1000; // 5 minutes before expiry
+    } else {
+      refreshIn = 50 * 60 * 1000; // Default 50 minutes
     }
+
+    this.refreshTimeout = setTimeout(() => {
+      this.refreshAccessToken().catch(error => {
+        console.error('Scheduled token refresh failed:', error);
+      });
+    }, Math.max(refreshIn, 1000)); // At least 1 second
   }
 
-  // Refresh access token using refresh token
+  // Refresh access token
   async refreshAccessToken() {
     const refreshToken = this.getRefreshToken();
-    if (!refreshToken || this.isRefreshing) {
-      throw new AuthError('No refresh token available or refresh in progress');
+    if (!refreshToken) {
+      throw new AuthError('No refresh token available');
+    }
+
+    if (this.isRefreshing) {
+      // If already refreshing, wait for it to complete
+      return new Promise((resolve, reject) => {
+        this.failedQueue.push({ resolve, reject });
+      });
     }
 
     this.isRefreshing = true;
@@ -163,12 +144,8 @@ class APIClient {
     try {
       const response = await fetch(`${this.baseURL}/refresh`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          refresh_token: refreshToken
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
       });
 
       const data = await response.json();
@@ -177,24 +154,28 @@ class APIClient {
         throw new AuthError(data.error || 'Token refresh failed');
       }
 
-      // Update stored access token
-      localStorage.setItem(this.accessTokenKey, data.access_token);
-      localStorage.setItem(this.tokenKey, data.access_token); // Backward compatibility
-      
-      // Update refresh token if provided (token rotation)
-      if (data.refresh_token) {
-        localStorage.setItem(this.refreshTokenKey, data.refresh_token);
+      // Update stored token
+      if (data.access_token) {
+        this.setAuth(data);
+        
+        // Resolve any queued requests
+        this.failedQueue.forEach(({ resolve }) => {
+          resolve(data.access_token);
+        });
+        this.failedQueue = [];
+
+        return data.access_token;
       }
 
-      // Schedule next refresh
-      this.scheduleTokenRefresh(data.access_token);
-
-      // Process failed requests queue
-      this.processQueue(null, data.access_token);
-
-      return data;
+      throw new AuthError('Invalid refresh response');
     } catch (error) {
-      this.processQueue(error, null);
+      // Reject any queued requests
+      this.failedQueue.forEach(({ reject }) => {
+        reject(error);
+      });
+      this.failedQueue = [];
+
+      // Clear auth data on refresh failure
       this.clearAuth();
       throw error;
     } finally {
@@ -202,27 +183,9 @@ class APIClient {
     }
   }
 
-  // Process failed requests queue
-  processQueue(error, token = null) {
-    this.failedQueue.forEach(({ resolve, reject }) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(token);
-      }
-    });
-    
-    this.failedQueue = [];
-  }
-
-  // Make HTTP request with automatic auth headers and token refresh
-  async request(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`;
-    
-    return this.makeRequestWithRetry(url, options);
-  }
-
-  // Make request with automatic retry on token expiry
+  // ==================== HTTP REQUEST METHODS ====================
+  
+  // Make request with retry logic for token refresh
   async makeRequestWithRetry(url, options, retryCount = 0) {
     let token = this.getToken();
 
@@ -327,103 +290,187 @@ class APIClient {
     }
   }
 
+  // ==================== BASIC HTTP METHODS ====================
+  
   // GET request
   async get(endpoint, params = {}) {
     const query = new URLSearchParams(params).toString();
-    const url = query ? `${endpoint}?${query}` : endpoint;
-    return this.request(url, { method: 'GET' });
+    const url = query ? `${this.baseURL}${endpoint}?${query}` : `${this.baseURL}${endpoint}`;
+    
+    return this.makeRequestWithRetry(url, { method: 'GET' });
   }
 
   // POST request
-  async post(endpoint, data = {}) {
-    return this.request(endpoint, {
+  async post(endpoint, data = null) {
+    const url = `${this.baseURL}${endpoint}`;
+    const options = {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
+      body: data ? JSON.stringify(data) : null,
+    };
+
+    return this.makeRequestWithRetry(url, options);
   }
 
   // PUT request
-  async put(endpoint, data = {}) {
-    return this.request(endpoint, {
+  async put(endpoint, data) {
+    const url = `${this.baseURL}${endpoint}`;
+    const options = {
       method: 'PUT',
       body: JSON.stringify(data),
-    });
+    };
+
+    return this.makeRequestWithRetry(url, options);
   }
 
   // PATCH request
   async patch(endpoint, data = {}) {
-    return this.request(endpoint, {
+    const url = `${this.baseURL}${endpoint}`;
+    const options = {
       method: 'PATCH',
       body: JSON.stringify(data),
-    });
-  }
-  
-  // DELETE request
-  async delete(endpoint) {
-    return this.request(endpoint, { method: 'DELETE' });
+    };
+
+    return this.makeRequestWithRetry(url, options);
   }
 
-  // File upload
+  // DELETE request
+  async delete(endpoint, params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const url = query ? `${this.baseURL}${endpoint}?${query}` : `${this.baseURL}${endpoint}`;
+    
+    return this.makeRequestWithRetry(url, { method: 'DELETE' });
+  }
+
+  // ==================== FILE UPLOAD METHODS ====================
+  
+  // Upload file with FormData
   async uploadFile(endpoint, file, additionalData = {}) {
     const formData = new FormData();
     formData.append('file', file);
     
-    // Add additional form data
+    // Add additional form fields
     Object.keys(additionalData).forEach(key => {
       formData.append(key, additionalData[key]);
     });
 
     const token = this.getToken();
     const headers = {};
-    
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
+    // Don't set Content-Type for FormData, browser will set it with boundary
 
-    return this.request(endpoint, {
+    const url = `${this.baseURL}${endpoint}`;
+    return this.makeRequestWithRetry(url, {
       method: 'POST',
       headers,
       body: formData,
     });
   }
 
-  // POST request with FormData (for file uploads)
+  // POST with FormData (for complex form submissions)
   async postFormData(endpoint, formData) {
+    const token = this.getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const url = `${this.baseURL}${endpoint}`;
+    return this.makeRequestWithRetry(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+  }
+
+  // ==================== DOWNLOAD METHODS ====================
+  
+  // Download file
+  async downloadFile(endpoint, filename = 'download') {
+    const token = this.getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const url = `${this.baseURL}${endpoint}`;
+    
     try {
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.getToken()}`,
-          // Don't set Content-Type for FormData - browser will set it with boundary
-        },
-        body: formData,
+      const response = await fetch(url, {
+        method: 'GET',
+        headers,
       });
 
-      // Handle token refresh
-      if (response.status === 401) {
-        const refreshed = await this.refreshAccessToken();
-        if (refreshed) {
-          // Retry the request with new token
-          return this.postFormData(endpoint, formData);
-        } else {
-          this.clearAuth();
-          throw new AuthError('Session expired. Please login again.');
-        }
-      }
-
       if (!response.ok) {
-        await this.handleErrorResponse(response);
+        const errorData = await response.json().catch(() => ({}));
+        throw new APIError(errorData.error || `Download failed: ${response.statusText}`, response.status);
       }
 
-      const data = await response.json();
-      return data;
+      const blob = await response.blob();
+      
+      // Create download link
+      if (typeof window !== 'undefined') {
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+      }
+      
+      return blob;
     } catch (error) {
-      throw this.handleError(error);
+      if (error instanceof APIError) {
+        throw error;
+      }
+      throw new NetworkError('Download failed: ' + error.message);
     }
+  }
+
+  // ==================== UTILITY METHODS ====================
+  
+  // Check user role
+  hasRole(roleId) {
+    const user = this.getUser();
+    return user && user.role_id === roleId;
+  }
+
+  // Check if user is admin
+  isAdmin() {
+    return this.hasRole(3);
+  }
+
+  // Check if user is teacher
+  isTeacher() {
+    return this.hasRole(1);
+  }
+
+  // Check if user is staff
+  isStaff() {
+    return this.hasRole(2);
+  }
+
+  // Get user role name
+  getUserRoleName() {
+    const user = this.getUser();
+    if (!user || !user.role_id) return 'Unknown';
+    
+    const roleNames = {
+      1: 'Teacher',
+      2: 'Staff', 
+      3: 'Admin'
+    };
+    
+    return roleNames[user.role_id] || 'Unknown';
   }
 }
 
-// Custom Error Classes (unchanged)
+// ==================== ERROR CLASSES ====================
+
+// Custom Error Classes
 class APIError extends Error {
   constructor(message, status, code) {
     super(message);
@@ -456,6 +503,8 @@ class NetworkError extends APIError {
 
 // Create singleton instance
 const apiClient = new APIClient();
+
+// ==================== AUTH API METHODS ====================
 
 // Updated Auth API methods
 export const authAPI = {
@@ -504,7 +553,7 @@ export const authAPI = {
     return apiClient.refreshAccessToken();
   },
 
-  // NEW: Session management methods
+  // Session management methods
   async getSessions() {
     return apiClient.get('/sessions');
   },
@@ -544,7 +593,9 @@ export const authAPI = {
   },
 };
 
-// Applications API methods (unchanged)
+// ==================== APPLICATIONS API METHODS ====================
+
+// Applications API methods
 export const applicationsAPI = {
   async getAll(filters = {}) {
     return apiClient.get('/applications', filters);
@@ -578,7 +629,9 @@ export const applicationsAPI = {
   },
 };
 
-// Dashboard API methods (unchanged)
+// ==================== DASHBOARD API METHODS ====================
+
+// Dashboard API methods
 export const dashboardAPI = {
   async getStats() {
     return apiClient.get('/dashboard/stats');
@@ -594,7 +647,9 @@ export const dashboardAPI = {
   },
 };
 
-// System data API methods (unchanged)
+// ==================== SYSTEM DATA API METHODS ====================
+
+// System data API methods
 export const systemAPI = {
   async getYears() {
     return apiClient.get('/years');
@@ -615,7 +670,9 @@ export const systemAPI = {
   },
 };
 
-// Documents API methods (unchanged)
+// ==================== DOCUMENTS API METHODS ====================
+
+// Documents API methods
 export const documentsAPI = {
   async upload(applicationId, file, documentTypeId) {
     return apiClient.uploadFile(`/documents/upload/${applicationId}`, file, {
@@ -658,7 +715,9 @@ export const documentsAPI = {
   },
 };
 
-// Health check (unchanged)
+// ==================== HEALTH CHECK API METHODS ====================
+
+// Health check
 export const healthAPI = {
   async check() {
     return apiClient.get('/health');
@@ -668,6 +727,8 @@ export const healthAPI = {
     return apiClient.get('/info');
   },
 };
+
+// ==================== EXPORTS ====================
 
 // Export error classes for error handling in components
 export { APIError, AuthError, PermissionError, NetworkError };

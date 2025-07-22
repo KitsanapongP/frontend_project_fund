@@ -1,52 +1,108 @@
-"use client";
-
+// FundSettingsContent.js - Updated Main Component with SweetAlert2
 import React, { useState, useEffect } from "react";
-import { adminAPI } from "../../../lib/admin_api";
-import apiClient from "../../../lib/api";
-import { 
-  Search, Plus, Filter, AlertCircle, Settings, Edit, Trash2, Save, X, 
-  DollarSign, Eye, EyeOff 
-} from "lucide-react";
-import LoadingSpinner from "../../components/common/LoadingSpinner";
-import PageLayout from "../common/PageLayout";
-import Card from "../../components/common/Card";
+import { Settings, Calendar, DollarSign } from "lucide-react";
+import Swal from 'sweetalert2';
 
-// Modal Components
+// Import separated components
+import PageLayout from "../common/PageLayout";
+import StatusBadge from "./StatusBadge";
+import YearManagementTab from "./YearManagementTab";
+import FundManagementTab from "./FundManagementTab";
+
+// Import modals
 import CategoryModal from "./CategoryModal";
 import SubcategoryModal from "./SubcategoryModal";
 import BudgetModal from "./BudgetModal";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
-console.log('SubcategoryModal imported:', SubcategoryModal);
+// Import real API
+import { adminAPI } from "../../../lib/admin_api";
+
+// SweetAlert2 configuration
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.onmouseenter = Swal.stopTimer;
+    toast.onmouseleave = Swal.resumeTimer;
+  }
+});
 
 export default function FundSettingsContent({ onNavigate }) {
   // State Management
-  const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState([]);
+  const [activeTab, setActiveTab] = useState("funds");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Years Management
   const [years, setYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
   
-  // Edit States
-  const [editingCategory, setEditingCategory] = useState(null);
-  const [editingSubcategory, setEditingSubcategory] = useState(null);
-  const [selectedCategoryForSub, setSelectedCategoryForSub] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [editingBudget, setEditingBudget] = useState(null);
-  const [budgetForm, setBudgetForm] = useState({ 
-    max_amount_per_grant: '', 
-    status: 'active' 
-  });
-
+  // Categories Management
+  const [categories, setCategories] = useState([]);
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [expandedSubcategories, setExpandedSubcategories] = useState({});
+  
+  // Search and Filter
+  const [searchTerm, setSearchTerm] = useState("");
+  
   // Modal States
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [subcategoryModalOpen, setSubcategoryModalOpen] = useState(false);
   const [budgetModalOpen, setBudgetModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  
+  // Edit States
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editingSubcategory, setEditingSubcategory] = useState(null);
+  const [editingBudget, setEditingBudget] = useState(null);
+  const [selectedCategoryForSub, setSelectedCategoryForSub] = useState(null);
+  const [selectedSubcategoryForBudget, setSelectedSubcategoryForBudget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  // SweetAlert2 helper functions
+  const showSuccess = (message) => {
+    Toast.fire({
+      icon: 'success',
+      title: message
+    });
+  };
+
+  const showError = (message) => {
+    Toast.fire({
+      icon: 'error',
+      title: message
+    });
+  };
+
+  const showWarning = (message) => {
+    Toast.fire({
+      icon: 'warning',
+      title: message
+    });
+  };
+
+  const showConfirm = async (title, text, confirmButtonText = 'ยืนยัน') => {
+    const result = await Swal.fire({
+      title: title,
+      text: text,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: confirmButtonText,
+      cancelButtonText: 'ยกเลิก',
+      reverseButtons: true
+    });
+    return result.isConfirmed;
+  };
 
   // Load initial data
   useEffect(() => {
-    loadInitialData();
+    loadYears();
   }, []);
 
   useEffect(() => {
@@ -55,63 +111,126 @@ export default function FundSettingsContent({ onNavigate }) {
     }
   }, [selectedYear]);
 
-  const loadInitialData = async () => {
+  // ==================== DATA LOADING FUNCTIONS ====================
+  
+  const loadYears = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const yearsResponse = await apiClient.get('/years');
-      const yearsData = yearsResponse.years || [];
-      setYears(yearsData);
-      const currentYear = yearsData.find(y => y.is_current) || yearsData[0];
-      if (currentYear) {
-        setSelectedYear(currentYear);
+      const data = await adminAPI.getYears();
+      setYears(data);
+      if (data.length > 0 && !selectedYear) {
+        setSelectedYear(data[0]);
       }
     } catch (error) {
-      console.error("Error loading initial data:", error);
-      alert("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+      console.error("Error loading years:", error);
+      setError("ไม่สามารถโหลดข้อมูลปีงบประมาณได้");
+      showError("ไม่สามารถโหลดข้อมูลปีงบประมาณได้");
     } finally {
       setLoading(false);
     }
   };
 
   const loadCategories = async () => {
+    if (!selectedYear) return;
+    
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const response = await adminAPI.getAllFundsWithStats(selectedYear.year_id);
-      const updatedCategories = response.categories.map((cat, catIndex) => ({
-        ...cat,
-        subcategories: cat.subcategories.map((sub, subIndex) => ({
-          ...sub,
-          code: `${catIndex + 1}.${subIndex + 1}`
-        }))
-      }));
-      setCategories(updatedCategories);
+      const data = await adminAPI.getCategoriesWithDetails(selectedYear.year_id);
+      setCategories(data);
     } catch (error) {
       console.error("Error loading categories:", error);
-      alert("เกิดข้อผิดพลาดในการโหลดข้อมูลทุน");
+      setError("ไม่สามารถโหลดข้อมูลหมวดหมู่ได้");
+      showError("ไม่สามารถโหลดข้อมูลหมวดหมู่ได้");
     } finally {
       setLoading(false);
     }
   };
 
-  const getFilteredCategories = () => {
-    let filtered = categories;
-    if (filterStatus !== "all") {
-      filtered = filtered.filter(cat => cat.status === filterStatus);
-    }
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(cat =>
-        cat.category_name.toLowerCase().includes(search) ||
-        cat.subcategories?.some(sub =>
-          sub.subcategory_name.toLowerCase().includes(search)
-        )
-      );
-    }
-    return filtered;
+  // ==================== UI HELPER FUNCTIONS ====================
+
+  // Toggle functions
+  const toggleCategory = (categoryId) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
   };
 
-  // Category CRUD
-  const handleCreateCategory = () => {
+  const toggleSubcategory = (subcategoryId) => {
+    setExpandedSubcategories(prev => ({
+      ...prev,
+      [subcategoryId]: !prev[subcategoryId]
+    }));
+  };
+
+  // ==================== YEAR MANAGEMENT HANDLERS ====================
+  
+  const handleSaveYear = async (yearData, editingYear) => {
+    setLoading(true);
+    try {
+      // Validate data
+      adminAPI.validateYearData(yearData);
+      
+      if (editingYear) {
+        // Update existing year
+        await adminAPI.updateYear(editingYear.year_id, yearData);
+        setYears(prev => prev.map(y => 
+          y.year_id === editingYear.year_id 
+            ? { ...y, ...yearData, update_at: new Date().toISOString() }
+            : y
+        ));
+      } else {
+        // Create new year
+        const response = await adminAPI.createYear(yearData);
+        if (response.year) {
+          setYears(prev => [...prev, response.year]);
+        }
+      }
+      
+      showSuccess(editingYear ? "อัปเดตปีงบประมาณเรียบร้อยแล้ว" : "สร้างปีงบประมาณใหม่เรียบร้อยแล้ว");
+    } catch (error) {
+      console.error("Error saving year:", error);
+      showError(`เกิดข้อผิดพลาด: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteYear = async (year) => {
+    const confirmed = await showConfirm(
+      'ยืนยันการลบ',
+      `คุณต้องการลบปีงบประมาณ ${year.year} ใช่หรือไม่?\n\nการลบปีงบประมาณจะลบข้อมูลทุนทั้งหมดในปีนั้น`,
+      'ลบ'
+    );
+    
+    if (!confirmed) return;
+
+    setLoading(true);
+    try {
+      await adminAPI.deleteYear(year.year_id);
+      setYears(prev => prev.filter(y => y.year_id !== year.year_id));
+      if (selectedYear?.year_id === year.year_id) {
+        setSelectedYear(null);
+        setCategories([]);
+      }
+      showSuccess("ลบปีงบประมาณเรียบร้อยแล้ว");
+    } catch (error) {
+      console.error("Error deleting year:", error);
+      showError(`เกิดข้อผิดพลาดในการลบ: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==================== CATEGORY MANAGEMENT HANDLERS ====================
+  
+  const handleAddCategory = () => {
+    if (!selectedYear) {
+      showWarning("กรุณาเลือกปีงบประมาณก่อน");
+      return;
+    }
     setEditingCategory(null);
     setCategoryModalOpen(true);
   };
@@ -121,537 +240,448 @@ export default function FundSettingsContent({ onNavigate }) {
     setCategoryModalOpen(true);
   };
 
-  const handleDeleteCategory = (category) => {
-    setDeleteTarget({
-      type: 'category',
-      id: category.category_id,
-      name: category.category_name
-    });
-    setDeleteDialogOpen(true);
+  const handleDeleteCategory = async (category) => {
+    const confirmed = await showConfirm(
+      'ยืนยันการลบ',
+      `คุณต้องการลบหมวดหมู่ "${category.category_name}" ใช่หรือไม่?\n\nการลบหมวดหมู่จะลบทุนย่อยและงบประมาณที่เกี่ยวข้องทั้งหมด`,
+      'ลบ'
+    );
+    
+    if (!confirmed) return;
+
+    setLoading(true);
+    try {
+      await adminAPI.deleteCategory(category.category_id);
+      setCategories(prev => prev.filter(c => c.category_id !== category.category_id));
+      showSuccess("ลบหมวดหมู่เรียบร้อยแล้ว");
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      showError(`เกิดข้อผิดพลาดในการลบ: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Subcategory CRUD
-  const handleCreateSubcategory = (category) => {
+  const handleCategorySave = async (categoryData) => {
+    setLoading(true);
+    try {
+      // Validate data
+      const dataWithYear = { ...categoryData, year_id: selectedYear.year_id };
+      adminAPI.validateCategoryData(dataWithYear);
+      
+      if (editingCategory) {
+        // Update existing category
+        await adminAPI.updateCategory(editingCategory.category_id, dataWithYear);
+        setCategories(prev => prev.map(cat => 
+          cat.category_id === editingCategory.category_id 
+            ? { ...cat, ...categoryData, update_at: new Date().toISOString() }
+            : cat
+        ));
+      } else {
+        // Add new category
+        const response = await adminAPI.createCategory(dataWithYear);
+        if (response.category) {
+          setCategories(prev => [...prev, { 
+            ...response.category, 
+            subcategories: [] 
+          }]);
+        }
+      }
+      
+      setCategoryModalOpen(false);
+      setEditingCategory(null);
+      showSuccess(editingCategory ? "อัปเดตหมวดหมู่เรียบร้อยแล้ว" : "สร้างหมวดหมู่ใหม่เรียบร้อยแล้ว");
+    } catch (error) {
+      console.error("Error saving category:", error);
+      showError(`เกิดข้อผิดพลาด: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==================== SUBCATEGORY MANAGEMENT HANDLERS ====================
+  
+  const handleAddSubcategory = (category) => {
     setEditingSubcategory(null);
     setSelectedCategoryForSub(category);
     setSubcategoryModalOpen(true);
   };
 
   const handleEditSubcategory = (subcategory, category) => {
-    console.log('Edit subcategory clicked:', subcategory);
-    console.log('Category:', category);
-    console.log('Current subcategoryModalOpen:', subcategoryModalOpen);
-    
     setEditingSubcategory(subcategory);
     setSelectedCategoryForSub(category);
     setSubcategoryModalOpen(true);
+  };
+
+  const handleDeleteSubcategory = async (subcategory) => {
+    const confirmed = await showConfirm(
+      'ยืนยันการลบ',
+      `คุณต้องการลบทุนย่อย "${subcategory.subcategory_name}" ใช่หรือไม่?\n\nการลบทุนย่อยจะลบงบประมาณที่เกี่ยวข้องทั้งหมด`,
+      'ลบ'
+    );
     
-    console.log('After setting subcategoryModalOpen to true');
-  };
+    if (!confirmed) return;
 
-  const handleDeleteSubcategory = (subcategory) => {
-    setDeleteTarget({
-      type: 'subcategory',
-      id: subcategory.subcategory_id,
-      name: subcategory.subcategory_name
-    });
-    setDeleteDialogOpen(true);
-  };
-
-  // Budget CRUD
-  const handleCreateBudget = (subcategory) => {
-    setEditingBudget(null);
-    setSelectedCategoryForSub(subcategory);
-    setBudgetModalOpen(true);
-  };
-  const handleEditBudget = (budget) => {
-    setEditingBudget(budget);
-    setBudgetForm({
-      max_amount_per_grant: budget.max_amount_per_grant || '',
-      status: budget.status || 'active'
-    });
-  };
-
-  const handleSaveBudget = async (budgetId) => {
+    setLoading(true);
     try {
-      // แปลงข้อมูลให้เป็น number ก่อนส่ง
-      const updateData = {
-        max_amount_per_grant: budgetForm.max_amount_per_grant ? parseFloat(budgetForm.max_amount_per_grant) : null,
-        status: budgetForm.status
-      };
-      
-      await adminAPI.updateSubcategoryBudget(budgetId, updateData);
-      setEditingBudget(null);
-      setBudgetForm({ max_amount_per_grant: '', status: 'active' });
-      await loadCategories();
-      alert("บันทึกข้อมูลเรียบร้อยแล้ว");
+      await adminAPI.deleteSubcategory(subcategory.subcategory_id);
+      setCategories(prev => prev.map(cat => ({
+        ...cat,
+        subcategories: cat.subcategories.filter(sub => sub.subcategory_id !== subcategory.subcategory_id)
+      })));
+      showSuccess("ลบทุนย่อยเรียบร้อยแล้ว");
     } catch (error) {
-      console.error("Error saving budget:", error);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
-    }
-  };
-
-  const handleDeleteBudget = (budget) => {
-    setDeleteTarget({
-      type: 'budget',
-      id: budget.subcategory_budget_id,
-      name: `งบประมาณ (จัดสรร: ${budget.allocated_amount})`
-    });
-    setDeleteDialogOpen(true);
-  };
-
-  const handleToggleBudgetStatus = async (budgetId, currentStatus) => {
-    try {
-      const updateData = {
-        status: currentStatus === 'active' ? 'disable' : 'active'
-      };
-      await adminAPI.updateSubcategoryBudget(budgetId, updateData);
-      await loadCategories();
-    } catch (error) {
-      console.error("Error toggling budget status:", error);
-      alert("เกิดข้อผิดพลาดในการเปลี่ยนสถานะ");
-    }
-  };
-
-  // Modal CRUD Handlers
-  const handleCategorySave = async (categoryData) => {
-    try {
-      if (editingCategory) {
-        await adminAPI.updateCategory(editingCategory.category_id, categoryData);
-      } else {
-        await adminAPI.createCategory({
-          ...categoryData,
-          year_id: selectedYear.year_id
-        });
-      }
-      setCategoryModalOpen(false);
-      setEditingCategory(null);
-      await loadCategories();
-      alert("บันทึกหมวดหมู่เรียบร้อยแล้ว");
-    } catch (error) {
-      console.error("Error saving category:", error);
-      alert("เกิดข้อผิดพลาดในการบันทึกหมวดหมู่");
+      console.error("Error deleting subcategory:", error);
+      showError(`เกิดข้อผิดพลาดในการลบ: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSubcategorySave = async (subcategoryData) => {
+    setLoading(true);
     try {
-      console.log('Saving subcategory:', subcategoryData);
-      console.log('Editing subcategory:', editingSubcategory);
+      // Validate data
+      const dataWithCategory = { 
+        ...subcategoryData, 
+        category_id: selectedCategoryForSub.category_id 
+      };
+      adminAPI.validateSubcategoryData(dataWithCategory);
       
       if (editingSubcategory) {
-        // แก้ไขทุนย่อย
-        const updateData = {
-          ...subcategoryData,
-          target_roles: JSON.stringify(subcategoryData.target_roles)
-        };
-        await adminAPI.updateSubcategory(editingSubcategory.subcategory_id, updateData);
+        // Update existing subcategory
+        await adminAPI.updateSubcategory(editingSubcategory.subcategory_id, dataWithCategory);
+        setCategories(prev => prev.map(cat => {
+          if (cat.category_id === selectedCategoryForSub.category_id) {
+            return {
+              ...cat,
+              subcategories: cat.subcategories.map(sub => 
+                sub.subcategory_id === editingSubcategory.subcategory_id
+                  ? { ...sub, ...subcategoryData, update_at: new Date().toISOString() }
+                  : sub
+              )
+            };
+          }
+          return cat;
+        }));
       } else {
-        // สร้างทุนย่อยใหม่
-        await adminAPI.createSubcategoryWithRoles({
-          ...subcategoryData,
-          category_id: selectedCategoryForSub.category_id,
-          year_id: selectedYear.year_id,
-          target_roles: JSON.stringify(subcategoryData.target_roles)
-        });
+        // Add new subcategory
+        const response = await adminAPI.createSubcategory(dataWithCategory);
+        if (response.subcategory) {
+          const newSubcategory = {
+            ...response.subcategory,
+            target_roles: subcategoryData.target_roles || [],
+            budgets: []
+          };
+          setCategories(prev => prev.map(cat => 
+            cat.category_id === selectedCategoryForSub.category_id
+              ? { ...cat, subcategories: [...(cat.subcategories || []), newSubcategory] }
+              : cat
+          ));
+        }
       }
+      
       setSubcategoryModalOpen(false);
       setEditingSubcategory(null);
       setSelectedCategoryForSub(null);
-      await loadCategories();
-      alert("บันทึกทุนย่อยเรียบร้อยแล้ว");
+      showSuccess(editingSubcategory ? "อัปเดตทุนย่อยเรียบร้อยแล้ว" : "สร้างทุนย่อยใหม่เรียบร้อยแล้ว");
     } catch (error) {
       console.error("Error saving subcategory:", error);
-      alert("เกิดข้อผิดพลาดในการบันทึกทุนย่อย");
+      showError(`เกิดข้อผิดพลาด: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleBudgetUpdate = async () => {
-    await loadCategories();
+  // ==================== BUDGET MANAGEMENT HANDLERS ====================
+  
+  const handleAddBudget = (subcategory, category) => {
+    setEditingBudget(null);
+    setSelectedSubcategoryForBudget(subcategory);
+    setSelectedCategoryForSub(category);
+    setBudgetModalOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    try {
-      if (deleteTarget.type === 'category') {
-        await adminAPI.deleteCategory(deleteTarget.id);
-        alert("ลบหมวดหมู่เรียบร้อยแล้ว");
-      } else if (deleteTarget.type === 'subcategory') {
-        await adminAPI.deleteSubcategory(deleteTarget.id);
-        alert("ลบทุนย่อยเรียบร้อยแล้ว");
-      } else if (deleteTarget.type === 'budget') {
-        await adminAPI.deleteSubcategoryBudget(deleteTarget.id);
-        alert("ลบงบประมาณเรียบร้อยแล้ว");
-      }
-      setDeleteDialogOpen(false);
-      setDeleteTarget(null);
-      await loadCategories();
-    } catch (error) {
-      console.error("Error deleting:", error);
-      alert("เกิดข้อผิดพลาดในการลบข้อมูล");
-    }
+  const handleEditBudget = (budget, subcategory) => {
+    setEditingBudget(budget);
+    setSelectedSubcategoryForBudget(subcategory);
+    setBudgetModalOpen(true);
   };
-  const getBudgetDisplayName = (subcategory, budget) => {
-    let baseName = subcategory.subcategory_name;
-    let suffix = '';
-    
-    // ถ้ามี fund_description ให้ใช้แทน
-    if (budget.fund_description && budget.fund_description.trim()) {
-      suffix = budget.fund_description;
-    } 
-    // ถ้าไม่มี fund_description แต่มี level ให้ใช้ level
-    else if (budget.level && budget.level.trim()) {
-      suffix = `ระดับ${budget.level}`;
-    }
-    
-    // สร้างชื่อเต็ม
-    let fullName = suffix ? `${baseName} - ${suffix}` : baseName;
-    
-    // ตัดให้สั้นลงถ้ายาวเกิน 60 ตัวอักษร
-    if (fullName.length > 60) {
-      fullName = fullName.substring(0, 57) + '...';
-    }
-    
-    return fullName;
-  };
-  const StatusBadge = ({ status }) => (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-      status === 'active' 
-        ? 'bg-green-100 text-green-800 border border-green-200' 
-        : 'bg-red-100 text-red-800 border border-red-200'
-    }`}>
-      {status === 'active' ? (
-        <>
-          <div className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1"></div>
-          ใช้งาน
-        </>
-      ) : (
-        <>
-          <div className="w-1.5 h-1.5 bg-red-400 rounded-full mr-1"></div>
-          ปิดใช้งาน
-        </>
-      )}
-    </span>
-  );
 
-  // Action Button Component
-  const ActionButton = ({ onClick, variant, size = "sm", children, title }) => {
-    const baseClasses = "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
-    
-    const variants = {
-      edit: "text-blue-700 hover:text-blue-900 hover:bg-blue-50",
-      delete: "text-red-700 hover:text-red-900 hover:bg-red-50",
-      save: "text-green-700 hover:text-green-900 hover:bg-green-50",
-      cancel: "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-    };
-    
-    const sizes = {
-      sm: "h-8 w-8 text-sm",
-      md: "h-10 w-10 text-base"
-    };
-    
-    return (
-      <button
-        onClick={onClick}
-        title={title}
-        className={`${baseClasses} ${variants[variant]} ${sizes[size]}`}
-      >
-        {children}
-      </button>
+  const handleDeleteBudget = async (budget) => {
+    const confirmed = await showConfirm(
+      'ยืนยันการลบ',
+      `คุณต้องการลบงบประมาณ "${budget.fund_description || 'งบประมาณ ' + budget.allocated_amount?.toLocaleString() + ' บาท'}" ใช่หรือไม่?`,
+      'ลบ'
     );
+    
+    if (!confirmed) return;
+
+    setLoading(true);
+    try {
+      await adminAPI.deleteBudget(budget.subcategory_budget_id);
+      setCategories(prev => prev.map(cat => ({
+        ...cat,
+        subcategories: cat.subcategories.map(sub => ({
+          ...sub,
+          budgets: sub.budgets.filter(b => b.subcategory_budget_id !== budget.subcategory_budget_id)
+        }))
+      })));
+      showSuccess("ลบงบประมาณเรียบร้อยแล้ว");
+    } catch (error) {
+      console.error("Error deleting budget:", error);
+      showError(`เกิดข้อผิดพลาดในการลบ: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const handleBudgetSave = async (budgetData) => {
+    setLoading(true);
+    try {
+      // Validate data
+      const dataWithSubcategory = { 
+        ...budgetData, 
+        subcategory_id: selectedSubcategoryForBudget.subcategory_id 
+      };
+      adminAPI.validateBudgetData(dataWithSubcategory);
+      
+      if (editingBudget) {
+        // Update existing budget
+        await adminAPI.updateBudget(editingBudget.subcategory_budget_id, budgetData);
+        setCategories(prev => prev.map(cat => ({
+          ...cat,
+          subcategories: cat.subcategories.map(sub => {
+            if (sub.subcategory_id === selectedSubcategoryForBudget.subcategory_id) {
+              return {
+                ...sub,
+                budgets: sub.budgets.map(budget => 
+                  budget.subcategory_budget_id === editingBudget.subcategory_budget_id
+                    ? { 
+                        ...budget, 
+                        ...budgetData,
+                        remaining_budget: budgetData.allocated_amount - (budget.used_amount || 0),
+                        remaining_grant: budgetData.max_grants - (budget.max_grants - (budget.remaining_grant || 0)),
+                        update_at: new Date().toISOString()
+                      }
+                    : budget
+                )
+              };
+            }
+            return sub;
+          })
+        })));
+      } else {
+        // Add new budget
+        const response = await adminAPI.createBudget(dataWithSubcategory);
+        if (response.subcategory_budget_id) {
+          const newBudget = {
+            subcategory_budget_id: response.subcategory_budget_id,
+            ...budgetData,
+            remaining_budget: budgetData.allocated_amount,
+            used_amount: 0,
+            remaining_grant: budgetData.max_grants,
+            create_at: new Date().toISOString(),
+            update_at: new Date().toISOString()
+          };
+          setCategories(prev => prev.map(cat => ({
+            ...cat,
+            subcategories: cat.subcategories.map(sub => 
+              sub.subcategory_id === selectedSubcategoryForBudget.subcategory_id
+                ? { ...sub, budgets: [...(sub.budgets || []), newBudget] }
+                : sub
+            )
+          })));
+        }
+      }
+      
+      setBudgetModalOpen(false);
+      setEditingBudget(null);
+      setSelectedSubcategoryForBudget(null);
+      setSelectedCategoryForSub(null);
+      showSuccess(editingBudget ? "อัปเดตงบประมาณเรียบร้อยแล้ว" : "สร้างงบประมาณใหม่เรียบร้อยแล้ว");
+    } catch (error) {
+      console.error("Error saving budget:", error);
+      showError(`เกิดข้อผิดพลาด: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==================== OTHER HANDLERS ====================
+  
+  const handleYearChange = (yearId) => {
+    const year = years.find(y => y.year_id === parseInt(yearId));
+    setSelectedYear(year);
+    // Reset expanded states when changing year
+    setExpandedCategories({});
+    setExpandedSubcategories({});
+  };
+
+  const handleSearchChange = (term) => {
+    setSearchTerm(term);
+  };
+
+  // Filter categories based on search term
+  const filteredCategories = categories.filter(category => {
+    const categoryMatch = category.category_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const subcategoryMatch = category.subcategories?.some(sub => 
+      sub.subcategory_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.fund_condition?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    return categoryMatch || subcategoryMatch;
+  });
+
+  // ==================== ERROR BOUNDARY ====================
+  
+  if (error) {
+    return (
+      <PageLayout
+        title="การจัดการทุน"
+        subtitle="จัดการหมวดหมู่ ประเภทย่อย และงบประมาณของทุน"
+        icon={Settings}
+        breadcrumbs={[
+          { label: "หน้าแรก", href: "/admin" },
+          { label: "การจัดการทุน" }
+        ]}
+      >
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="text-center py-12">
+            <div className="mb-4">
+              <div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+                <Settings size={40} className="text-red-500" />
+              </div>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">เกิดข้อผิดพลาด</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => {
+                setError(null);
+                loadYears();
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              ลองใหม่
+            </button>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // ==================== MAIN RENDER ====================
+  
   return (
     <PageLayout
       title="การจัดการทุน"
-      subtitle="จัดการหมวดหมู่และประเภทย่อยของทุน"
+      subtitle="จัดการหมวดหมู่ ประเภทย่อย และงบประมาณของทุน"
       icon={Settings}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/admin" },
         { label: "การจัดการทุน" }
       ]}
+      loading={loading}
     >
-      <div className="space-y-6">
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <LoadingSpinner />
-          </div>
-        ) : (
-          <>
-            {/* Header Controls Card */}
-            <Card 
-              title="ตัวกรองข้อมูล" 
-              icon={Filter}
-              collapsible={false}
-              action={
-                <button
-                  onClick={handleCreateCategory}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
-                >
-                  <Plus size={16} />
-                  เพิ่มหมวดหมู่
-                </button>
-              }
-            >
-              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                {/* Search and Filters */}
-                <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-                  <div className="relative w-full sm:w-80">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                    <input
-                      type="text"
-                      placeholder="ค้นหาหมวดหมู่หรือประเภทย่อย..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <select
-                      value={selectedYear?.year_id || ""}
-                      onChange={(e) => {
-                        const year = years.find(y => y.year_id === parseInt(e.target.value));
-                        setSelectedYear(year);
-                      }}
-                      className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">เลือกปีงบประมาณ</option>
-                      {years.map(year => (
-                        <option key={year.year_id} value={year.year_id}>
-                          {year.year}
-                        </option>
-                      ))}
-                    </select>
-                    
-                    <select
-                      value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value)}
-                      className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="all">ทุกสถานะ</option>
-                      <option value="active">ใช้งาน</option>
-                      <option value="disable">ปิดใช้งาน</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Categories List */}
-            {getFilteredCategories().length === 0 ? (
-              <Card title="ไม่พบข้อมูล" icon={AlertCircle} collapsible={false}>
-                <div className="text-center py-8">
-                  <div className="max-w-sm mx-auto">
-                    <AlertCircle className="mx-auto mb-4 text-gray-400" size={56} />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">ไม่พบข้อมูลหมวดหมู่</h3>
-                    <p className="text-gray-500">ลองปรับเปลี่ยนการค้นหาหรือตัวกรองของคุณ</p>
-                  </div>
-                </div>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {getFilteredCategories().map((category, categoryIndex) => (
-                  <Card
-                    key={category.category_id}
-                    title={`${categoryIndex + 1}. ${category.category_name}`}
-                    icon={Settings}
-                    action={
-                      <div className="flex items-center gap-2">
-                        <StatusBadge status={category.status} />
-                        <div className="flex items-center gap-1 ml-2">
-                          <ActionButton
-                            onClick={() => handleCreateSubcategory(category)}
-                            variant="edit"
-                            title="เพิ่มประเภทย่อย"
-                          >
-                            <Plus size={14} />
-                          </ActionButton>
-                          <ActionButton
-                            onClick={() => handleEditCategory(category)}
-                            variant="edit"
-                            title="แก้ไขหมวดหมู่"
-                          >
-                            <Edit size={14} />
-                          </ActionButton>
-                          <ActionButton
-                            onClick={() => handleDeleteCategory(category)}
-                            variant="delete"
-                            title="ลบหมวดหมู่"
-                          >
-                            <Trash2 size={14} />
-                          </ActionButton>
-                        </div>
-                      </div>
-                    }
-                  >
-                    {/* Subcategories Table */}
-                    {category.subcategories?.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-gray-200 bg-gray-50/50">
-                              <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">ชื่อประเภทย่อย</th>
-                              <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">สถานะ</th>
-                              <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">งบประมาณรวม</th>
-                              <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">การดำเนินการ</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100">
-                            {category.subcategories.map((subcategory, subIndex) => (
-                              <React.Fragment key={subcategory.subcategory_id}>
-                                {/* Subcategory Row */}
-                                <tr className="hover:bg-gray-50/50 transition-colors">
-                                  <td className="py-4 px-4">
-                                    <div className="font-medium text-gray-900">
-                                      {subcategory.subcategory_name}
-                                    </div>
-                                  </td>
-                                  <td className="py-4 px-4">
-                                    <StatusBadge status={subcategory.status} />
-                                  </td>
-                                  <td className="py-4 px-4">
-                                    <div className="text-sm">
-                                      <div className="text-gray-900 font-medium">
-                                        ฿{subcategory.budgets?.[0]?.allocated_amount?.toLocaleString() || '0'}
-                                      </div>
-                                      <div className="text-gray-500">
-                                        {subcategory.budgets?.length || 0} รายการ
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="py-4 px-4">
-                                    <div className="flex items-center gap-1">
-                                      <ActionButton
-                                        onClick={() => handleCreateBudget(subcategory)}
-                                        variant="edit"
-                                        title="เพิ่มงบประมาณ"
-                                      >
-                                        <Plus size={14} />
-                                      </ActionButton>
-                                      <ActionButton
-                                        onClick={() => handleEditSubcategory(subcategory, category)}
-                                        variant="edit"
-                                        title="แก้ไข"
-                                      >
-                                        <Edit size={14} />
-                                      </ActionButton>
-                                      <ActionButton
-                                        onClick={() => handleDeleteSubcategory(subcategory)}
-                                        variant="delete"
-                                        title="ลบ"
-                                      >
-                                        <Trash2 size={14} />
-                                      </ActionButton>
-                                    </div>
-                                  </td>
-                                </tr>
-
-                                {/* Budget Rows */}
-                                {subcategory.budgets?.map(budget => (
-                                  <tr key={budget.subcategory_budget_id} className="bg-blue-50/30 hover:bg-blue-50/50 transition-colors">
-                                    <td className="py-3 px-4">
-                                      <div className="flex items-center gap-2 ml-4">
-                                        <DollarSign className="text-green-600" size={16} />
-                                        <span className="text-sm text-gray-700" title={getBudgetDisplayName(subcategory, budget)}>
-                                          {getBudgetDisplayName(subcategory, budget)}
-                                        </span>
-                                      </div>
-                                    </td>
-                                    <td className="py-3 px-4">
-                                      <button
-                                        onClick={() => handleToggleBudgetStatus(budget.subcategory_budget_id, budget.status)}
-                                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                                          budget.status === 'active' ? 'bg-green-500' : 'bg-gray-300'
-                                        }`}
-                                      >
-                                        <span
-                                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                            budget.status === 'active' ? 'translate-x-5' : 'translate-x-1'
-                                          }`}
-                                        />
-                                      </button>
-                                    </td>
-                                    <td className="py-3 px-4">
-                                      {editingBudget?.subcategory_budget_id === budget.subcategory_budget_id ? (
-                                        <div className="flex items-center gap-2">
-                                          <input
-                                            type="number"
-                                            placeholder="ขอได้สูงสุด"
-                                            value={budgetForm.max_amount_per_grant}
-                                            onChange={(e) => setBudgetForm({ ...budgetForm, max_amount_per_grant: e.target.value })}
-                                            className="w-28 p-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500"
-                                          />
-                                        </div>
-                                      ) : (
-                                        <div className="text-sm">
-                                          <div className="text-gray-900 font-medium">
-                                            ฿{budget.max_amount_per_grant?.toLocaleString() || '0'}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </td>
-                                    <td className="py-3 px-4">
-                                      {editingBudget?.subcategory_budget_id === budget.subcategory_budget_id ? (
-                                        <div className="flex items-center gap-1">
-                                          <ActionButton
-                                            onClick={() => handleSaveBudget(budget.subcategory_budget_id)}
-                                            variant="save"
-                                            title="บันทึก"
-                                          >
-                                            <Save size={14} />
-                                          </ActionButton>
-                                          <ActionButton
-                                            onClick={() => setEditingBudget(null)}
-                                            variant="cancel"
-                                            title="ยกเลิก"
-                                          >
-                                            <X size={14} />
-                                          </ActionButton>
-                                        </div>
-                                      ) : (
-                                        <div className="flex items-center gap-1">
-                                          <ActionButton
-                                            onClick={() => handleEditBudget(budget)}
-                                            variant="edit"
-                                            title="แก้ไข"
-                                          >
-                                            <Edit size={14} />
-                                          </ActionButton>
-                                          <ActionButton
-                                            onClick={() => handleDeleteBudget(budget)}
-                                            variant="delete"
-                                            title="ลบ"
-                                          >
-                                            <Trash2 size={14} />
-                                          </ActionButton>
-                                        </div>
-                                      )}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </React.Fragment>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <div className="mb-2">ไม่มีประเภทย่อย</div>
-                        <button
-                          onClick={() => handleCreateSubcategory(category)}
-                          className="text-blue-600 hover:text-blue-800 text-sm underline"
-                        >
-                          เพิ่มประเภทย่อยแรก
-                        </button>
-                      </div>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            )}
-          </>
-        )}
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg shadow-sm mb-6">
+        <div className="flex border-b">
+          <button
+            onClick={() => setActiveTab("funds")}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === "funds"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <DollarSign size={20} />
+              จัดการทุน
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab("years")}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === "years"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Calendar size={20} />
+              จัดการปีงบประมาณ
+            </div>
+          </button>
+        </div>
       </div>
+
+      {/* Content */}
+      {activeTab === "funds" && (
+        <FundManagementTab
+          selectedYear={selectedYear}
+          years={years}
+          categories={filteredCategories}
+          searchTerm={searchTerm}
+          expandedCategories={expandedCategories}
+          expandedSubcategories={expandedSubcategories}
+          onYearChange={handleYearChange}
+          onSearchChange={handleSearchChange}
+          onToggleCategory={toggleCategory}
+          onToggleSubcategory={toggleSubcategory}
+          onAddCategory={handleAddCategory}
+          onEditCategory={handleEditCategory}
+          onDeleteCategory={handleDeleteCategory}
+          onAddSubcategory={handleAddSubcategory}
+          onEditSubcategory={handleEditSubcategory}
+          onDeleteSubcategory={handleDeleteSubcategory}
+          onAddBudget={handleAddBudget}
+          onEditBudget={handleEditBudget}
+          onDeleteBudget={handleDeleteBudget}
+        />
+      )}
+      
+      {activeTab === "years" && (
+        <YearManagementTab
+          years={years}
+          onSaveYear={handleSaveYear}
+          onDeleteYear={handleDeleteYear}
+        />
+      )}
+
+      {/* Modals */}
+      <CategoryModal
+        isOpen={categoryModalOpen}
+        onClose={() => {
+          setCategoryModalOpen(false);
+          setEditingCategory(null);
+        }}
+        onSave={handleCategorySave}
+        editingCategory={editingCategory}
+      />
+
+      <SubcategoryModal
+        isOpen={subcategoryModalOpen}
+        onClose={() => {
+          setSubcategoryModalOpen(false);
+          setEditingSubcategory(null);
+          setSelectedCategoryForSub(null);
+        }}
+        onSave={handleSubcategorySave}
+        editingSubcategory={editingSubcategory}
+        selectedCategory={selectedCategoryForSub}
+      />
+
+      <BudgetModal
+        isOpen={budgetModalOpen}
+        onClose={() => {
+          setBudgetModalOpen(false);
+          setEditingBudget(null);
+          setSelectedSubcategoryForBudget(null);
+          setSelectedCategoryForSub(null);
+        }}
+        onSave={handleBudgetSave}
+        editingBudget={editingBudget}
+        selectedSubcategory={selectedSubcategoryForBudget}
+      />
     </PageLayout>
   );
 }

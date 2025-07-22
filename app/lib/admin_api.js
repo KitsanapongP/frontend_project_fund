@@ -1,4 +1,4 @@
-// app/lib/admin_api.js - Admin specific API methods
+// app/lib/admin_api.js - Admin specific API methods (Updated)
 
 import apiClient from './api';
 import { targetRolesUtils } from './target_roles_utils';
@@ -6,7 +6,400 @@ import { targetRolesUtils } from './target_roles_utils';
 // Admin API methods for managing funds and roles
 export const adminAPI = {
   
-  // Get all categories and subcategories (no filtering for admin)
+  // ==================== YEARS MANAGEMENT ====================
+  
+  // Get all years (Admin endpoint)
+  async getYears() {
+    try {
+      const response = await apiClient.get('/admin/years');
+      return response.years || [];
+    } catch (error) {
+      console.error('Error fetching admin years:', error);
+      throw error;
+    }
+  },
+
+  // Create new year
+  async createYear(yearData) {
+    try {
+      const response = await apiClient.post('/admin/years', yearData);
+      return response;
+    } catch (error) {
+      console.error('Error creating year:', error);
+      throw error;
+    }
+  },
+
+  // Update year
+  async updateYear(yearId, yearData) {
+    try {
+      const response = await apiClient.put(`/admin/years/${yearId}`, yearData);
+      return response;
+    } catch (error) {
+      console.error('Error updating year:', error);
+      throw error;
+    }
+  },
+
+  // Delete year
+  async deleteYear(yearId) {
+    try {
+      const response = await apiClient.delete(`/admin/years/${yearId}`);
+      return response;
+    } catch (error) {
+      console.error('Error deleting year:', error);
+      throw error;
+    }
+  },
+
+  // Toggle year status
+  async toggleYearStatus(yearId) {
+    try {
+      const response = await apiClient.patch(`/admin/years/${yearId}/toggle`);
+      return response;
+    } catch (error) {
+      console.error('Error toggling year status:', error);
+      throw error;
+    }
+  },
+
+  // Get year statistics
+  async getYearStats(yearId) {
+    try {
+      const response = await apiClient.get(`/admin/years/${yearId}/stats`);
+      return response.stats || {};
+    } catch (error) {
+      console.error('Error fetching year stats:', error);
+      throw error;
+    }
+  },
+
+  // ==================== CATEGORIES MANAGEMENT ====================
+  
+  // Get all categories (Admin endpoint)
+  async getCategories(yearId = null) {
+    try {
+      const params = yearId ? { year_id: yearId } : {};
+      const response = await apiClient.get('/admin/categories', params);
+      return response.categories || [];
+    } catch (error) {
+      console.error('Error fetching admin categories:', error);
+      throw error;
+    }
+  },
+
+  // Create new category
+  async createCategory(categoryData) {
+    try {
+      const response = await apiClient.post('/admin/categories', categoryData);
+      return response;
+    } catch (error) {
+      console.error('Error creating category:', error);
+      throw error;
+    }
+  },
+
+  // Update category
+  async updateCategory(categoryId, categoryData) {
+    try {
+      const response = await apiClient.put(`/admin/categories/${categoryId}`, categoryData);
+      return response;
+    } catch (error) {
+      console.error('Error updating category:', error);
+      throw error;
+    }
+  },
+
+  // Delete category
+  async deleteCategory(categoryId) {
+    try {
+      const response = await apiClient.delete(`/admin/categories/${categoryId}`);
+      return response;
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      throw error;
+    }
+  },
+
+  // Toggle category status
+  async toggleCategoryStatus(categoryId) {
+    try {
+      const response = await apiClient.patch(`/admin/categories/${categoryId}/toggle`);
+      return response;
+    } catch (error) {
+      console.error('Error toggling category status:', error);
+      throw error;
+    }
+  },
+
+  // ==================== SUBCATEGORIES MANAGEMENT ====================
+  
+  // Get all subcategories (admin view - no filtering)
+  async getAllSubcategories(categoryId = null, yearId = null) {
+    try {
+      const params = {};
+      if (categoryId) params.category_id = categoryId;
+      if (yearId) params.year_id = yearId;
+      
+      console.log('Getting all subcategories for admin with params:', params);
+      
+      const response = await apiClient.get('/admin/subcategories', params);
+      console.log('Admin subcategories response:', response);
+      
+      return response;
+    } catch (error) {
+      console.error('Error fetching all subcategories:', error);
+      throw error;
+    }
+  },
+
+  // Get subcategories for admin (alias for getAllSubcategories)
+  async getSubcategories(categoryId = null) {
+    try {
+      const params = categoryId ? { category_id: categoryId } : {};
+      const response = await apiClient.get('/admin/subcategories', params);
+      return response.subcategories || [];
+    } catch (error) {
+      console.error('Error fetching subcategories:', error);
+      throw error;
+    }
+  },
+
+  // Create new subcategory with target_roles
+  async createSubcategoryWithRoles(subcategoryData) {
+    try {
+      const response = await apiClient.post('/admin/subcategories', subcategoryData);
+      return response;
+    } catch (error) {
+      console.error('Error creating subcategory with roles:', error);
+      throw error;
+    }
+  },
+
+  // Create subcategory (alias)
+  async createSubcategory(subcategoryData) {
+    try {
+      // Ensure target_roles is JSON string if it's an array
+      const data = {
+        ...subcategoryData,
+        target_roles: Array.isArray(subcategoryData.target_roles) 
+          ? JSON.stringify(subcategoryData.target_roles)
+          : subcategoryData.target_roles
+      };
+      
+      const response = await apiClient.post('/admin/subcategories', data);
+      return response;
+    } catch (error) {
+      console.error('Error creating subcategory:', error);
+      throw error;
+    }
+  },
+
+  // Update subcategory
+  async updateSubcategory(subcategoryId, subcategoryData) {
+    try {
+      // Ensure target_roles is JSON string if it's an array
+      const data = {
+        ...subcategoryData,
+        target_roles: Array.isArray(subcategoryData.target_roles) 
+          ? JSON.stringify(subcategoryData.target_roles)
+          : subcategoryData.target_roles
+      };
+      
+      const response = await apiClient.put(`/admin/subcategories/${subcategoryId}`, data);
+      return response;
+    } catch (error) {
+      console.error('Error updating subcategory:', error);
+      throw error;
+    }
+  },
+
+  // Delete subcategory
+  async deleteSubcategory(subcategoryId) {
+    try {
+      const response = await apiClient.delete(`/admin/subcategories/${subcategoryId}`);
+      return response;
+    } catch (error) {
+      console.error('Error deleting subcategory:', error);
+      throw error;
+    }
+  },
+
+  // Toggle subcategory status
+  async toggleSubcategoryStatus(subcategoryId) {
+    try {
+      const response = await apiClient.patch(`/admin/subcategories/${subcategoryId}/toggle`);
+      return response;
+    } catch (error) {
+      console.error('Error toggling subcategory status:', error);
+      throw error;
+    }
+  },
+
+  // Update target roles for subcategory
+  async updateTargetRoles(subcategoryId, targetRoles) {
+    try {
+      const response = await apiClient.put(`/admin/subcategories/${subcategoryId}/roles`, {
+        target_roles: targetRoles
+      });
+      return response;
+    } catch (error) {
+      console.error('Error updating target roles:', error);
+      throw error;
+    }
+  },
+
+  // Bulk update target roles
+  async bulkUpdateTargetRoles(updates) {
+    try {
+      const response = await apiClient.post('/admin/subcategories/bulk-roles', {
+        updates: updates
+      });
+      return response;
+    } catch (error) {
+      console.error('Error bulk updating target roles:', error);
+      throw error;
+    }
+  },
+
+  // ==================== BUDGETS MANAGEMENT ====================
+  
+  // Get all subcategory budgets
+  async getSubcategoryBudgets(params = {}) {
+    try {
+      const response = await apiClient.get('/admin/budgets', params);
+      return response;
+    } catch (error) {
+      console.error('Error fetching subcategory budgets:', error);
+      throw error;
+    }
+  },
+
+  // Get budgets (alias)
+  async getBudgets(subcategoryId = null) {
+    try {
+      const params = subcategoryId ? { subcategory_id: subcategoryId } : {};
+      const response = await apiClient.get('/admin/budgets', params);
+      return response.budgets || [];
+    } catch (error) {
+      console.error('Error fetching budgets:', error);
+      throw error;
+    }
+  },
+
+  // Get subcategory budget by ID
+  async getSubcategoryBudget(budgetId) {
+    try {
+      const response = await apiClient.get(`/admin/budgets/${budgetId}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching subcategory budget:', error);
+      throw error;
+    }
+  },
+
+  // Get budget by ID (alias)
+  async getBudget(budgetId) {
+    try {
+      const response = await apiClient.get(`/admin/budgets/${budgetId}`);
+      return response.budget || {};
+    } catch (error) {
+      console.error('Error fetching budget:', error);
+      throw error;
+    }
+  },
+
+  // Create new subcategory budget
+  async createSubcategoryBudget(budgetData) {
+    try {
+      const response = await apiClient.post('/admin/budgets', budgetData);
+      return response;
+    } catch (error) {
+      console.error('Error creating subcategory budget:', error);
+      throw error;
+    }
+  },
+
+  // Create budget (alias)
+  async createBudget(budgetData) {
+    try {
+      const response = await apiClient.post('/admin/budgets', budgetData);
+      return response;
+    } catch (error) {
+      console.error('Error creating budget:', error);
+      throw error;
+    }
+  },
+
+  // Update subcategory budget
+  async updateSubcategoryBudget(budgetId, budgetData) {
+    try {
+      const response = await apiClient.put(`/admin/budgets/${budgetId}`, budgetData);
+      return response;
+    } catch (error) {
+      console.error('Error updating subcategory budget:', error);
+      throw error;
+    }
+  },
+
+  // Update budget (alias)
+  async updateBudget(budgetId, budgetData) {
+    try {
+      const response = await apiClient.put(`/admin/budgets/${budgetId}`, budgetData);
+      return response;
+    } catch (error) {
+      console.error('Error updating budget:', error);
+      throw error;
+    }
+  },
+
+  // Delete subcategory budget
+  async deleteSubcategoryBudget(budgetId) {
+    try {
+      const response = await apiClient.delete(`/admin/budgets/${budgetId}`);
+      return response;
+    } catch (error) {
+      console.error('Error deleting subcategory budget:', error);
+      throw error;
+    }
+  },
+
+  // Delete budget (alias)
+  async deleteBudget(budgetId) {
+    try {
+      const response = await apiClient.delete(`/admin/budgets/${budgetId}`);
+      return response;
+    } catch (error) {
+      console.error('Error deleting budget:', error);
+      throw error;
+    }
+  },
+
+  // Toggle subcategory budget status
+  async toggleSubcategoryBudgetStatus(budgetId) {
+    try {
+      const response = await apiClient.patch(`/admin/budgets/${budgetId}/toggle`);
+      return response;
+    } catch (error) {
+      console.error('Error toggling subcategory budget status:', error);
+      throw error;
+    }
+  },
+
+  // Toggle budget status (alias)
+  async toggleBudgetStatus(budgetId) {
+    try {
+      const response = await apiClient.patch(`/admin/budgets/${budgetId}/toggle`);
+      return response;
+    } catch (error) {
+      console.error('Error toggling budget status:', error);
+      throw error;
+    }
+  },
+
+  // ==================== COMBINED DATA FETCHING ====================
+  
+  // Get all categories and subcategories (no filtering for admin) - Legacy method
   async getAllFundsStructure(year = '2568') {
     try {
       console.log('Getting all funds structure for admin, year:', year);
@@ -71,146 +464,128 @@ export const adminAPI = {
     }
   },
 
-  // Get all subcategories (admin view - no filtering)
-  async getAllSubcategories(categoryId = null, yearId = null) {
+  // Get categories with subcategories and budgets for a specific year
+  async getCategoriesWithDetails(yearId) {
     try {
-      const params = {};
-      if (categoryId) params.category_id = categoryId;
-      if (yearId) params.year_id = yearId;
+      // Get categories for the year
+      const categories = await this.getCategories(yearId);
       
-      console.log('Getting all subcategories for admin with params:', params);
-      
-      const response = await apiClient.get('/admin/subcategories', params);
-      console.log('Admin subcategories response:', response);
-      
-      return response;
-    } catch (error) {
-      console.error('Error fetching all subcategories:', error);
-      throw error;
-    }
-  },
-
-  // Create new category
-  async createCategory(categoryData) {
-    try {
-      const response = await apiClient.post('/admin/categories', categoryData);
-      return response;
-    } catch (error) {
-      console.error('Error creating category:', error);
-      throw error;
-    }
-  },
-
-  // Update category
-  async updateCategory(categoryId, categoryData) {
-    try {
-      const response = await apiClient.put(`/admin/categories/${categoryId}`, categoryData);
-      return response;
-    } catch (error) {
-      console.error('Error updating category:', error);
-      throw error;
-    }
-  },
-
-  // Delete category
-  async deleteCategory(categoryId) {
-    try {
-      const response = await apiClient.delete(`/admin/categories/${categoryId}`);
-      return response;
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      throw error;
-    }
-  },
-
-  // Create new subcategory with target_roles
-  async createSubcategoryWithRoles(subcategoryData) {
-    try {
-      const response = await apiClient.post('/admin/subcategories', subcategoryData);
-      return response;
-    } catch (error) {
-      console.error('Error creating subcategory with roles:', error);
-      throw error;
-    }
-  },
-
-  // Update subcategory
-  async updateSubcategory(subcategoryId, subcategoryData) {
-    try {
-      const response = await apiClient.put(`/admin/subcategories/${subcategoryId}`, subcategoryData);
-      return response;
-    } catch (error) {
-      console.error('Error updating subcategory:', error);
-      throw error;
-    }
-  },
-
-  // Update target_roles for existing subcategory
-  async updateSubcategoryRoles(subcategoryId, targetRoles) {
-    try {
-      const response = await apiClient.put(`/admin/subcategories/${subcategoryId}/roles`, {
-        target_roles: targetRoles
-      });
-      return response;
-    } catch (error) {
-      console.error('Error updating subcategory roles:', error);
-      throw error;
-    }
-  },
-
-  // Delete subcategory
-  async deleteSubcategory(subcategoryId) {
-    try {
-      const response = await apiClient.delete(`/admin/subcategories/${subcategoryId}`);
-      return response;
-    } catch (error) {
-      console.error('Error deleting subcategory:', error);
-      throw error;
-    }
-  },
-
-  // Bulk update target_roles for multiple subcategories
-  async bulkUpdateSubcategoryRoles(updates) {
-    try {
-      const promises = updates.map(update => 
-        this.updateSubcategoryRoles(update.subcategory_id, update.target_roles)
+      // Get all subcategories and budgets for each category
+      const categoriesWithDetails = await Promise.all(
+        categories.map(async (category) => {
+          try {
+            // Get subcategories for this category
+            const subcategories = await this.getSubcategories(category.category_id);
+            
+            // Get budgets for each subcategory
+            const subcategoriesWithBudgets = await Promise.all(
+              subcategories.map(async (subcategory) => {
+                try {
+                  const budgets = await this.getBudgets(subcategory.subcategory_id);
+                  
+                  // Parse target_roles if it's a JSON string
+                  let targetRoles = [];
+                  if (subcategory.target_roles) {
+                    try {
+                      targetRoles = JSON.parse(subcategory.target_roles);
+                    } catch (e) {
+                      console.warn('Failed to parse target_roles:', subcategory.target_roles);
+                    }
+                  }
+                  
+                  return {
+                    ...subcategory,
+                    target_roles: targetRoles,
+                    budgets: budgets
+                  };
+                } catch (error) {
+                  console.error(`Error fetching budgets for subcategory ${subcategory.subcategory_id}:`, error);
+                  return {
+                    ...subcategory,
+                    budgets: []
+                  };
+                }
+              })
+            );
+            
+            return {
+              ...category,
+              subcategories: subcategoriesWithBudgets
+            };
+          } catch (error) {
+            console.error(`Error fetching subcategories for category ${category.category_id}:`, error);
+            return {
+              ...category,
+              subcategories: []
+            };
+          }
+        })
       );
       
-      const results = await Promise.allSettled(promises);
-      
-      const successful = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-      
-      return {
-        success: true,
-        successful_updates: successful,
-        failed_updates: failed,
-        total_updates: updates.length
-      };
+      return categoriesWithDetails;
     } catch (error) {
-      console.error('Error bulk updating subcategory roles:', error);
+      console.error('Error fetching categories with details:', error);
       throw error;
     }
   },
 
-  // Get available roles for target_roles selection
-  async getAvailableRoles() {
+  // ==================== STATISTICS & REPORTS ====================
+  
+  // Get category statistics
+  async getCategoryStats() {
     try {
-      const response = await apiClient.get('/admin/roles');
-      return response;
+      const response = await apiClient.get('/admin/reports/categories');
+      return response.stats || [];
     } catch (error) {
-      console.error('Error fetching available roles:', error);
-      // Fallback to static data
-      return {
-        roles: [
-          { role_id: 1, role_name: 'teacher', display_name: 'อาจารย์' },
-          { role_id: 2, role_name: 'staff', display_name: 'เจ้าหน้าที่' },
-          { role_id: 3, role_name: 'admin', display_name: 'ผู้ดูแลระบบ' }
-        ]
-      };
+      console.error('Error fetching category stats:', error);
+      throw error;
     }
   },
 
+  // Get system statistics
+  async getSystemStats() {
+    try {
+      const response = await apiClient.get('/admin/dashboard/stats');
+      return response;
+    } catch (error) {
+      console.error('Error fetching system stats:', error);
+      throw error;
+    }
+  },
+
+  // Get budget overview
+  async getBudgetOverview(yearId) {
+    try {
+      const response = await apiClient.get('/admin/budget-overview', { year_id: yearId });
+      return response;
+    } catch (error) {
+      console.error('Error fetching budget overview:', error);
+      throw error;
+    }
+  },
+
+  // ==================== SEARCH & UTILITY ====================
+
+  // Search funds
+  async searchFunds(searchTerm, params = {}) {
+    try {
+      const [categoriesResponse, subcategoriesResponse] = await Promise.all([
+        apiClient.get('/admin/categories', params),
+        apiClient.get('/admin/subcategories', params)
+      ]);
+      
+      return {
+        categories: categoriesResponse.categories || [],
+        subcategories: subcategoriesResponse.subcategories || []
+      };
+    } catch (error) {
+      console.error('Error searching funds:', error);
+      throw error;
+    }
+  },
+
+  // ==================== USER MANAGEMENT ====================
+  
   // Get all users
   async getAllUsers(params = {}) {
     try {
@@ -222,7 +597,7 @@ export const adminAPI = {
     }
   },
 
-  // Create new user
+  // Create user
   async createUser(userData) {
     try {
       const response = await apiClient.post('/admin/users', userData);
@@ -255,6 +630,8 @@ export const adminAPI = {
     }
   },
 
+  // ==================== APPLICATION MANAGEMENT ====================
+  
   // Get all applications (admin sees all)
   async getAllApplications(params = {}) {
     try {
@@ -288,252 +665,87 @@ export const adminAPI = {
     }
   },
 
-  // Get system statistics
-  async getSystemStats() {
+  // ==================== VALIDATION UTILITIES ====================
+  
+  // Parse target roles from JSON string
+  parseTargetRoles(targetRolesString) {
+    if (!targetRolesString) return [];
+    
     try {
-      const response = await apiClient.get('/admin/dashboard/stats');
-      return response;
+      return JSON.parse(targetRolesString);
     } catch (error) {
-      console.error('Error fetching system stats:', error);
-      throw error;
+      console.warn('Failed to parse target_roles:', targetRolesString);
+      return [];
     }
   },
 
-  // Get budget overview
-  async getBudgetOverview(yearId) {
-    try {
-      const response = await apiClient.get('/admin/budget-overview', { year_id: yearId });
-      return response;
-    } catch (error) {
-      console.error('Error fetching budget overview:', error);
-      throw error;
+  // Format target roles for display
+  formatTargetRoles(targetRoles) {
+    const roleNames = {
+      '1': 'อาจารย์',
+      '2': 'เจ้าหน้าที่',
+      '3': 'ผู้ดูแลระบบ'
+    };
+    
+    if (!targetRoles || targetRoles.length === 0) {
+      return 'ทุกบทบาท';
+    }
+    
+    return targetRoles.map(roleId => roleNames[roleId] || `Role ${roleId}`).join(', ');
+  },
+
+  // Validate required fields for different operations
+  validateYearData(yearData) {
+    const required = ['year', 'budget'];
+    const missing = required.filter(field => !yearData[field]);
+    
+    if (missing.length > 0) {
+      throw new Error(`Missing required fields: ${missing.join(', ')}`);
+    }
+    
+    if (isNaN(parseFloat(yearData.budget)) || parseFloat(yearData.budget) <= 0) {
+      throw new Error('Budget must be a positive number');
     }
   },
 
-  // Export system report
-  async exportSystemReport(params = {}) {
-    try {
-      const response = await apiClient.get('/admin/reports/export', params);
-      return response;
-    } catch (error) {
-      console.error('Error exporting system report:', error);
-      throw error;
+  validateCategoryData(categoryData) {
+    if (!categoryData.category_name || categoryData.category_name.trim() === '') {
+      throw new Error('Category name is required');
+    }
+    
+    if (!categoryData.year_id) {
+      throw new Error('Year ID is required');
     }
   },
 
-  // Toggle category status (active/disable)
-  async toggleCategoryStatus(categoryId) {
-    try {
-      const response = await apiClient.patch(`/admin/categories/${categoryId}/toggle`);
-      return response;
-    } catch (error) {
-      console.error('Error toggling category status:', error);
-      throw error;
+  validateSubcategoryData(subcategoryData) {
+    if (!subcategoryData.subcategory_name || subcategoryData.subcategory_name.trim() === '') {
+      throw new Error('Subcategory name is required');
+    }
+    
+    if (!subcategoryData.category_id) {
+      throw new Error('Category ID is required');
     }
   },
 
-  // Toggle subcategory status (active/disable)
-  async toggleSubcategoryStatus(subcategoryId) {
-    try {
-      const response = await apiClient.patch(`/admin/subcategories/${subcategoryId}/toggle`);
-      return response;
-    } catch (error) {
-      console.error('Error toggling subcategory status:', error);
-      throw error;
+  validateBudgetData(budgetData) {
+    const required = ['subcategory_id', 'allocated_amount'];
+    const missing = required.filter(field => !budgetData[field]);
+    
+    if (missing.length > 0) {
+      throw new Error(`Missing required fields: ${missing.join(', ')}`);
     }
-  },
-
-  // Get category statistics
-  async getCategoryStatistics() {
-    try {
-      const response = await apiClient.get('/admin/reports/categories');
-      return response;
-    } catch (error) {
-      console.error('Error fetching category statistics:', error);
-      throw error;
+    
+    if (isNaN(parseFloat(budgetData.allocated_amount)) || parseFloat(budgetData.allocated_amount) <= 0) {
+      throw new Error('Allocated amount must be a positive number');
     }
-  },
-
-  // Bulk update target roles
-  async bulkUpdateTargetRoles(updates) {
-    try {
-      const response = await apiClient.post('/admin/subcategories/bulk-roles', {
-        updates: updates
-      });
-      return response;
-    } catch (error) {
-      console.error('Error bulk updating target roles:', error);
-      throw error;
+    
+    if (budgetData.max_amount_per_grant && (isNaN(parseFloat(budgetData.max_amount_per_grant)) || parseFloat(budgetData.max_amount_per_grant) <= 0)) {
+      throw new Error('Max amount per grant must be a positive number');
     }
-  },
-
-  // Get all funds with full details (categories + subcategories + stats)
-  async getAllFundsWithStats(yearId) {
-    try {
-      console.log('Getting all funds with statistics for year_id:', yearId);
-      
-      // Get categories
-      const categoriesResponse = await apiClient.get('/admin/categories', { 
-        year_id: yearId 
-      });
-      
-      // Get statistics
-      const statsResponse = await this.getCategoryStatistics();
-      const statsMap = new Map(
-        statsResponse.stats?.map(stat => [stat.category_id, stat]) || []
-      );
-      
-      // Get subcategories and their budgets for each category
-      const categoriesWithDetails = await Promise.all(
-        (categoriesResponse.categories || []).map(async (category) => {
-          try {
-            // Get subcategories
-            const subResponse = await apiClient.get('/admin/subcategories', {
-              category_id: category.category_id
-            });
-            
-            // Get budgets for this category
-            const budgetsResponse = await apiClient.get('/admin/budgets', {
-              category_id: category.category_id
-            });
-            
-            // Map budgets to subcategories
-            const budgetsMap = new Map();
-            (budgetsResponse.budgets || []).forEach(budget => {
-              if (!budgetsMap.has(budget.subcategory_id)) {
-                budgetsMap.set(budget.subcategory_id, []);
-              }
-              budgetsMap.get(budget.subcategory_id).push(budget);
-            });
-            
-            // Add budgets to each subcategory
-            const subcategoriesWithBudgets = (subResponse.subcategories || []).map(sub => ({
-              ...sub,
-              budgets: budgetsMap.get(sub.subcategory_id) || []
-            }));
-            
-            const categoryStats = statsMap.get(category.category_id) || {
-              subcategory_count: 0,
-              application_count: 0,
-              total_requested: 0,
-              total_approved: 0
-            };
-            
-            return {
-              ...category,
-              ...categoryStats,
-              subcategories: subcategoriesWithBudgets
-            };
-          } catch (error) {
-            console.error(`Error fetching details for category ${category.category_id}:`, error);
-            return {
-              ...category,
-              subcategory_count: 0,
-              application_count: 0,
-              total_requested: 0,
-              total_approved: 0,
-              subcategories: []
-            };
-          }
-        })
-      );
-      
-      return {
-        success: true,
-        categories: categoriesWithDetails,
-        total: categoriesWithDetails.length
-      };
-    } catch (error) {
-      console.error('Error fetching all funds with stats:', error);
-      throw error;
-    }
-  },
-
-  // Search funds by name
-  async searchFunds(searchTerm, yearId = null) {
-    try {
-      const params = { search: searchTerm };
-      if (yearId) params.year_id = yearId;
-      
-      // Search in both categories and subcategories
-      const [categoriesResponse, subcategoriesResponse] = await Promise.all([
-        apiClient.get('/admin/categories', params),
-        apiClient.get('/admin/subcategories', params)
-      ]);
-      
-      return {
-        categories: categoriesResponse.categories || [],
-        subcategories: subcategoriesResponse.subcategories || []
-      };
-    } catch (error) {
-      console.error('Error searching funds:', error);
-      throw error;
-    }
-  },
-
-  // Get all subcategory budgets
-  async getSubcategoryBudgets(params = {}) {
-    try {
-      const response = await apiClient.get('/admin/budgets', params);
-      return response;
-    } catch (error) {
-      console.error('Error fetching subcategory budgets:', error);
-      throw error;
-    }
-  },
-
-  // Get subcategory budget by ID
-  async getSubcategoryBudget(budgetId) {
-    try {
-      const response = await apiClient.get(`/admin/budgets/${budgetId}`);
-      return response;
-    } catch (error) {
-      console.error('Error fetching subcategory budget:', error);
-      throw error;
-    }
-  },
-
-  // Create new subcategory budget
-  async createSubcategoryBudget(budgetData) {
-    try {
-      const response = await apiClient.post('/admin/budgets', budgetData);
-      return response;
-    } catch (error) {
-      console.error('Error creating subcategory budget:', error);
-      throw error;
-    }
-  },
-
-  // Update subcategory budget
-  async updateSubcategoryBudget(budgetId, budgetData) {
-    try {
-      const response = await apiClient.put(`/admin/budgets/${budgetId}`, budgetData);
-      return response;
-    } catch (error) {
-      console.error('Error updating subcategory budget:', error);
-      throw error;
-    }
-  },
-
-  // Delete subcategory budget
-  async deleteSubcategoryBudget(budgetId) {
-    try {
-      const response = await apiClient.delete(`/admin/budgets/${budgetId}`);
-      return response;
-    } catch (error) {
-      console.error('Error deleting subcategory budget:', error);
-      throw error;
-    }
-  },
-
-  // Toggle subcategory budget status
-  async toggleSubcategoryBudgetStatus(budgetId) {
-    try {
-      const response = await apiClient.patch(`/admin/budgets/${budgetId}/toggle`);
-      return response;
-    } catch (error) {
-      console.error('Error toggling subcategory budget status:', error);
-      throw error;
+    
+    if (budgetData.max_grants && (isNaN(parseInt(budgetData.max_grants)) || parseInt(budgetData.max_grants) <= 0)) {
+      throw new Error('Max grants must be a positive integer');
     }
   }
 };

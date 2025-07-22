@@ -1,88 +1,81 @@
-// app/admin/components/settings/DeleteConfirmDialog.js
-"use client";
+// modals/DeleteConfirmDialog.js
+import React from "react";
+import { AlertCircle } from "lucide-react";
 
-import { AlertTriangle, X } from "lucide-react";
+const DeleteConfirmDialog = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  deleteTarget 
+}) => {
+  if (!isOpen) return null;
 
-export default function DeleteConfirmDialog({ isOpen, onClose, onConfirm, target }) {
-  if (!isOpen || !target) return null;
-
-  const getWarningMessage = () => {
-    if (target.type === 'category') {
-      if (target.hasChildren) {
-        return `ไม่สามารถลบหมวดหมู่ "${target.name}" ได้ เนื่องจากยังมีทุนย่อยอยู่ ${target.hasChildren} รายการ`;
-      }
-      return `คุณต้องการลบหมวดหมู่ "${target.name}" ใช่หรือไม่?`;
-    } else {
-      if (target.hasApplications) {
-        return `ไม่สามารถลบทุน "${target.name}" ได้ เนื่องจากมีคำร้องขอทุนอยู่ ${target.hasApplications} รายการ`;
-      }
-      return `คุณต้องการลบทุน "${target.name}" ใช่หรือไม่?`;
-    }
+  const getDeleteMessage = () => {
+    if (!deleteTarget) return "คุณต้องการลบรายการนี้ใช่หรือไม่?";
+    
+    const typeNames = {
+      year: "ปีงบประมาณ",
+      category: "หมวดหมู่",
+      subcategory: "ทุนย่อย",
+      budget: "งบประมาณ"
+    };
+    
+    const typeName = typeNames[deleteTarget.type] || "รายการ";
+    return `คุณต้องการลบ${typeName}: "${deleteTarget.name}" ใช่หรือไม่?`;
   };
 
-  const canDelete = () => {
-    if (target.type === 'category') {
-      return !target.hasChildren;
-    } else {
-      return !target.hasApplications;
+  const getDeleteWarning = () => {
+    switch (deleteTarget?.type) {
+      case "category":
+        return "การลบหมวดหมู่จะลบทุนย่อยและงบประมาณที่เกี่ยวข้องทั้งหมด";
+      case "subcategory":
+        return "การลบทุนย่อยจะลบงบประมาณที่เกี่ยวข้องทั้งหมด";
+      case "year":
+        return "การลบปีงบประมาณจะลบข้อมูลทุนทั้งหมดในปีนั้น";
+      default:
+        return null;
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center gap-2">
-            <AlertTriangle 
-              className={canDelete() ? "text-orange-500" : "text-red-500"} 
-              size={24} 
-            />
-            <h3 className="text-xl font-semibold">
-              {canDelete() ? 'ยืนยันการลบ' : 'ไม่สามารถลบได้'}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
-          >
-            <X size={20} />
-          </button>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="flex items-center mb-4">
+          <AlertCircle className="text-red-500 mr-3" size={24} />
+          <h3 className="text-lg font-semibold">ยืนยันการลบ</h3>
         </div>
-
-        {/* Content */}
-        <div className="p-6">
-          <p className="text-gray-700">
-            {getWarningMessage()}
+        
+        <div className="mb-6">
+          <p className="text-gray-700 mb-2">
+            {getDeleteMessage()}
           </p>
           
-          {canDelete() && (
-            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-              <p className="text-sm text-orange-800">
-                <strong>คำเตือน:</strong> การลบนี้ไม่สามารถกู้คืนได้
+          {getDeleteWarning() && (
+            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm font-medium">
+                ⚠️ คำเตือน: {getDeleteWarning()}
               </p>
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+        
+        <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            {canDelete() ? 'ยกเลิก' : 'ปิด'}
+            ยกเลิก
           </button>
-          {canDelete() && (
-            <button
-              onClick={onConfirm}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              ลบ
-            </button>
-          )}
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            ลบ
+          </button>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default DeleteConfirmDialog;
