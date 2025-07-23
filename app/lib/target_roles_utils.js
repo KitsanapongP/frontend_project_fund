@@ -5,38 +5,68 @@ import apiClient from './api';
 // Utility functions for working with target_roles
 export const targetRolesUtils = {
   
-  // Parse target_roles JSON string
-  parseTargetRoles(targetRolesString) {
-    // ถ้าไม่มีข้อมูล ให้คืน empty array
-    if (!targetRolesString) {
+  // Parse target_roles - รองรับทุกรูปแบบข้อมูล
+  parseTargetRoles(targetRoles) {
+    // กรณี null หรือ undefined
+    if (targetRoles === null || targetRoles === undefined) {
       return [];
     }
     
-    // ถ้าเป็น array อยู่แล้ว ให้คืนค่าไปเลย
-    if (Array.isArray(targetRolesString)) {
-      return targetRolesString;
+    // กรณีเป็น array อยู่แล้ว
+    if (Array.isArray(targetRoles)) {
+      return targetRoles.map(role => String(role)); // แปลงเป็น string ทั้งหมด
     }
     
-    // ถ้าไม่ใช่ string ให้คืน empty array
-    if (typeof targetRolesString !== 'string') {
-      console.warn('target_roles is not a string or array:', typeof targetRolesString, targetRolesString);
-      return [];
+    // กรณีเป็น number (เช่น 3)
+    if (typeof targetRoles === 'number') {
+      return [String(targetRoles)]; // แปลงเป็น ["3"]
     }
     
-    try {
-      const parsed = JSON.parse(targetRolesString);
-      
-      // ตรวจสอบว่าผลลัพธ์เป็น array หรือไม่
-      if (Array.isArray(parsed)) {
-        return parsed;
-      } else {
-        console.warn('Parsed target_roles is not an array:', parsed);
+    // กรณีเป็น string
+    if (typeof targetRoles === 'string') {
+      // ถ้าเป็น string ว่าง
+      if (targetRoles.trim() === '') {
         return [];
       }
-    } catch (error) {
-      console.error('Error parsing target_roles:', error, targetRolesString);
-      return [];
+      
+      // ถ้าเป็น JSON string
+      try {
+        const parsed = JSON.parse(targetRoles);
+        
+        // หลังจาก parse แล้วเป็น array
+        if (Array.isArray(parsed)) {
+          return parsed.map(role => String(role)); // แปลงเป็น string ทั้งหมด
+        }
+        
+        // หลังจาก parse แล้วเป็น number
+        if (typeof parsed === 'number') {
+          return [String(parsed)];
+        }
+        
+        // หลังจาก parse แล้วเป็น string
+        if (typeof parsed === 'string') {
+          return [parsed];
+        }
+        
+        // กรณีอื่นๆ
+        console.warn('Parsed target_roles is unexpected type:', typeof parsed, parsed);
+        return [];
+        
+      } catch (error) {
+        // ถ้า parse ไม่ได้ อาจจะเป็น string ธรรมดา เช่น "1" หรือ "1,2,3"
+        if (targetRoles.includes(',')) {
+          // กรณี "1,2,3"
+          return targetRoles.split(',').map(role => role.trim());
+        } else {
+          // กรณี "1"
+          return [targetRoles.trim()];
+        }
+      }
     }
+    
+    // กรณีอื่นๆ ที่ไม่คาดคิด
+    console.warn('Unexpected target_roles type:', typeof targetRoles, targetRoles);
+    return [];
   },
 
   // Check if current user can see a fund based on target_roles

@@ -437,6 +437,14 @@ const SubcategoryRow = ({
             <div className="flex gap-2">
               {(() => {
                 const targetRolesArray = targetRolesUtils.parseTargetRoles(subcategory.target_roles);
+                
+                // กรณีที่มีแค่ role "3" (Admin) = เฉพาะ Admin เห็น = ไม่แสดง badge
+                if (!targetRolesArray || targetRolesArray.length === 0 || 
+                    (targetRolesArray.length === 1 && targetRolesArray.includes("3"))) {
+                  return null; // ไม่แสดง badge ใดๆ
+                }
+                
+                // แสดง badge สำหรับ role อื่นๆ (ไม่รวม Admin)
                 return (
                   <>
                     {targetRolesArray.includes("1") && (
@@ -444,6 +452,12 @@ const SubcategoryRow = ({
                     )}
                     {targetRolesArray.includes("2") && (
                       <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">เจ้าหน้าที่</span>
+                    )}
+                    
+                    {/* ถ้าไม่มี role 1 หรือ 2 เลย และมีแค่ role 3 จะ return null ด้านบนแล้ว */}
+                    {/* ถ้ามี role อื่นๆ นอกจาก 1,2,3 ให้แสดงเป็น "บทบาทอื่นๆ" */}
+                    {targetRolesArray.some(role => !["1", "2", "3"].includes(role)) && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">บทบาทอื่นๆ</span>
                     )}
                   </>
                 );
