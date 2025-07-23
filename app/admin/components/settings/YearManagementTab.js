@@ -48,7 +48,7 @@ const YearManagementTab = ({
   return (
     <div className="bg-white rounded-lg shadow-sm p-8">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">จัดการปีงบประมาณ</h3>
+        <h3 className="text-black text-lg font-semibold">จัดการปีงบประมาณ</h3>
         <button
           onClick={handleAddNew}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
@@ -82,7 +82,7 @@ const YearManagementTab = ({
               onChange={(e) => setYearForm({ ...yearForm, status: e.target.value })}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="active">ใช้งาน</option>
+              <option value="active">เปิดใช้งาน</option>
               <option value="inactive">ปิดใช้งาน</option>
             </select>
           </div>
@@ -131,7 +131,7 @@ const YearManagementTab = ({
                     onChange={(e) => setYearForm({ ...yearForm, status: e.target.value })}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="active">ใช้งาน</option>
+                    <option value="active">เปิดใช้งาน</option>
                     <option value="inactive">ปิดใช้งาน</option>
                   </select>
                 </div>

@@ -73,7 +73,7 @@ const CategoryModal = ({
                   ...categoryForm, 
                   category_name: e.target.value 
                 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full text-gray-600 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 placeholder="ระบุชื่อหมวดหมู่"
               />
             </div>
@@ -86,9 +86,9 @@ const CategoryModal = ({
                   ...categoryForm, 
                   status: e.target.value 
                 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full text-gray-600 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               >
-                <option value="active">ใช้งาน</option>
+                <option value="active">เปิดใช้งาน</option>
                 <option value="disable">ปิดใช้งาน</option>
               </select>
             </div>

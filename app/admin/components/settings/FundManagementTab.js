@@ -15,7 +15,7 @@ const StatusBadge = ({ status }) => (
     {status === 'active' ? (
       <>
         <div className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1"></div>
-        ใช้งาน
+        เปิดใช้งาน
       </>
     ) : (
       <>
@@ -165,11 +165,10 @@ const FundManagementTab = ({
             <select
               value={selectedYear?.year_id || ""}
               onChange={(e) => onYearChange(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="text-gray-600 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="">เลือกปีงบประมาณ</option>
               {years.map(year => (
-                <option key={year.year_id} value={year.year_id}>
+                <option className= "text-gray-600" key={year.year_id} value={year.year_id}>
                   ปีงบประมาณ {year.year}
                 </option>
               ))}
@@ -177,13 +176,13 @@ const FundManagementTab = ({
             
             {/* Search Input */}
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+              <Search className="absolute left-3 top-2.5 text-gray-600" size={20} />
               <input
                 type="text"
                 placeholder="ค้นหาทุน..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-64 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="text-gray-600 pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-64 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -562,7 +561,13 @@ const BudgetRow = ({
               <p>งบประมาณ: {budget.allocated_amount?.toLocaleString()} บาท</p>
               <p>เหลือ: {budget.remaining_budget?.toLocaleString()} บาท</p>
               <p>วงเงินต่อทุน: {budget.max_amount_per_grant?.toLocaleString()} บาท</p>
-              <p>จำนวนทุน: {budget.remaining_grant} / {budget.max_grants}</p>
+              <p>จำนวนทุน: {
+                budget.max_grants === null || budget.max_grants === 0 ? (
+                  <span className="text-green-600 font-medium">ไม่จำกัดทุน</span>
+                ) : (
+                  `${budget.remaining_grant || 0} / ${budget.max_grants}`
+                )
+              }</p>
             </div>
           </div>
         </div>

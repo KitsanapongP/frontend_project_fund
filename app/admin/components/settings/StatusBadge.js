@@ -10,7 +10,7 @@ const StatusBadge = ({ status }) => (
     {status === 'active' ? (
       <>
         <div className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1"></div>
-        ใช้งาน
+        เปิดใช้งาน
       </>
     ) : (
       <>

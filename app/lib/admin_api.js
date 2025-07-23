@@ -528,15 +528,8 @@ export const adminAPI = {
                 try {
                   const budgets = await this.getBudgets(subcategory.subcategory_id);
                   
-                  // Parse target_roles if it's a JSON string
-                  let targetRoles = [];
-                  if (subcategory.target_roles) {
-                    try {
-                      targetRoles = JSON.parse(subcategory.target_roles);
-                    } catch (e) {
-                      console.warn('Failed to parse target_roles:', subcategory.target_roles);
-                    }
-                  }
+                  // ใช้ targetRolesUtils แทนการ parse เอง
+                  const targetRoles = targetRolesUtils.parseTargetRoles(subcategory.target_roles);
                   
                   return {
                     ...subcategory,
@@ -547,6 +540,7 @@ export const adminAPI = {
                   console.error(`Error fetching budgets for subcategory ${subcategory.subcategory_id}:`, error);
                   return {
                     ...subcategory,
+                    target_roles: [],
                     budgets: []
                   };
                 }
@@ -714,14 +708,7 @@ export const adminAPI = {
   
   // Parse target roles from JSON string
   parseTargetRoles(targetRolesString) {
-    if (!targetRolesString) return [];
-    
-    try {
-      return JSON.parse(targetRolesString);
-    } catch (error) {
-      console.warn('Failed to parse target_roles:', targetRolesString);
-      return [];
-    }
+    return targetRolesUtils.parseTargetRoles(targetRolesString);
   },
 
   // Format target roles for display
