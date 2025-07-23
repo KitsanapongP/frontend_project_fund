@@ -3,6 +3,7 @@ import React from "react";
 import { 
   Search, Plus, ChevronDown, ChevronRight, Edit, Trash2, DollarSign 
 } from "lucide-react";
+import { targetRolesUtils } from '../../../lib/target_roles_utils';
 
 // StatusBadge Component
 const StatusBadge = ({ status }) => (
@@ -434,12 +435,19 @@ const SubcategoryRow = ({
             
             {/* Target Roles */}
             <div className="flex gap-2">
-              {subcategory.target_roles?.includes("1") && (
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">อาจารย์</span>
-              )}
-              {subcategory.target_roles?.includes("2") && (
-                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">เจ้าหน้าที่</span>
-              )}
+              {(() => {
+                const targetRolesArray = targetRolesUtils.parseTargetRoles(subcategory.target_roles);
+                return (
+                  <>
+                    {targetRolesArray.includes("1") && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">อาจารย์</span>
+                    )}
+                    {targetRolesArray.includes("2") && (
+                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">เจ้าหน้าที่</span>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

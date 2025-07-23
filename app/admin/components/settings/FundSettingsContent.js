@@ -63,6 +63,26 @@ export default function FundSettingsContent({ onNavigate }) {
   const [selectedSubcategoryForBudget, setSelectedSubcategoryForBudget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  const [connectionStatus, setConnectionStatus] = useState('checking');
+
+  // เพิ่ม useEffect สำหรับตรวจสอบการเชื่อมต่อ
+  useEffect(() => {
+    checkConnection();
+  }, []);
+
+  const checkConnection = async () => {
+    try {
+      const status = await adminAPI.checkServerConnection();
+      setConnectionStatus(status.status);
+      if (status.status === 'disconnected') {
+        showError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+      }
+    } catch (error) {
+      setConnectionStatus('disconnected');
+      showError('เกิดข้อผิดพลาดในการตรวจสอบการเชื่อมต่อ');
+    }
+  };
+
   // SweetAlert2 helper functions
   const showSuccess = (message) => {
     Toast.fire({
@@ -265,8 +285,21 @@ export default function FundSettingsContent({ onNavigate }) {
   const handleCategorySave = async (categoryData) => {
     setLoading(true);
     try {
+      // ตรวจสอบให้แน่ใจว่ามี selectedYear
+      if (!selectedYear) {
+        showError("กรุณาเลือกปีงบประมาณก่อน");
+        return;
+      }
+
+      // ตรวจสอบให้แน่ใจว่ามี year_id ในข้อมูล
+      const dataWithYear = { 
+        ...categoryData, 
+        year_id: selectedYear.year_id 
+      };
+      
+      console.log('Sending category data:', dataWithYear); // เพิ่ม log เพื่อตรวจสอบ
+      
       // Validate data
-      const dataWithYear = { ...categoryData, year_id: selectedYear.year_id };
       adminAPI.validateCategoryData(dataWithYear);
       
       if (editingCategory) {
@@ -280,6 +313,8 @@ export default function FundSettingsContent({ onNavigate }) {
       } else {
         // Add new category
         const response = await adminAPI.createCategory(dataWithYear);
+        console.log('Create category response:', response); // เพิ่ม log
+        
         if (response.category) {
           setCategories(prev => [...prev, { 
             ...response.category, 
@@ -656,6 +691,7 @@ export default function FundSettingsContent({ onNavigate }) {
         }}
         onSave={handleCategorySave}
         editingCategory={editingCategory}
+        selectedYear={selectedYear} // เพิ่ม prop นี้
       />
 
       <SubcategoryModal

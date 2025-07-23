@@ -1,11 +1,12 @@
-// modals/CategoryModal.js
+// app/admin/components/settings/CategoryModal.js
 import React, { useState, useEffect } from "react";
 
 const CategoryModal = ({ 
   isOpen, 
   onClose, 
   onSave, 
-  editingCategory 
+  editingCategory,
+  selectedYear // เพิ่ม selectedYear prop
 }) => {
   const [categoryForm, setCategoryForm] = useState({ 
     category_name: "", 
@@ -25,7 +26,20 @@ const CategoryModal = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(categoryForm);
+    
+    // ตรวจสอบว่ามี selectedYear หรือไม่
+    if (!selectedYear) {
+      alert('กรุณาเลือกปีงบประมาณก่อน');
+      return;
+    }
+    
+    // เพิ่ม year_id เข้าไปในข้อมูลที่จะส่ง
+    const categoryData = {
+      ...categoryForm,
+      year_id: selectedYear.year_id
+    };
+    
+    onSave(categoryData);
     setCategoryForm({ category_name: "", status: "active" });
   };
 
@@ -37,6 +51,15 @@ const CategoryModal = ({
         <h3 className="text-lg font-semibold mb-4 text-gray-900">
           {editingCategory ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่ใหม่'}
         </h3>
+        
+        {/* แสดงปีงบประมาณที่เลือก */}
+        {selectedYear && (
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800">
+              ปีงบประมาณ: <span className="font-semibold">{selectedYear.year}</span>
+            </p>
+          </div>
+        )}
         
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">

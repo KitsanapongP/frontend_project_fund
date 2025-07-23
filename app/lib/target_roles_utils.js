@@ -7,14 +7,34 @@ export const targetRolesUtils = {
   
   // Parse target_roles JSON string
   parseTargetRoles(targetRolesString) {
+    // ถ้าไม่มีข้อมูล ให้คืน empty array
     if (!targetRolesString) {
       return [];
     }
     
+    // ถ้าเป็น array อยู่แล้ว ให้คืนค่าไปเลย
+    if (Array.isArray(targetRolesString)) {
+      return targetRolesString;
+    }
+    
+    // ถ้าไม่ใช่ string ให้คืน empty array
+    if (typeof targetRolesString !== 'string') {
+      console.warn('target_roles is not a string or array:', typeof targetRolesString, targetRolesString);
+      return [];
+    }
+    
     try {
-      return JSON.parse(targetRolesString);
+      const parsed = JSON.parse(targetRolesString);
+      
+      // ตรวจสอบว่าผลลัพธ์เป็น array หรือไม่
+      if (Array.isArray(parsed)) {
+        return parsed;
+      } else {
+        console.warn('Parsed target_roles is not an array:', parsed);
+        return [];
+      }
     } catch (error) {
-      console.error('Error parsing target_roles:', error);
+      console.error('Error parsing target_roles:', error, targetRolesString);
       return [];
     }
   },

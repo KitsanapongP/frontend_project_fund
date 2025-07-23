@@ -91,11 +91,51 @@ export const adminAPI = {
   // Create new category
   async createCategory(categoryData) {
     try {
+      console.log('Creating category with data:', categoryData);
+      
+      // ตรวจสอบข้อมูลก่อนส่ง
+      if (!categoryData.category_name || categoryData.category_name.trim() === '') {
+        throw new Error('ชื่อหมวดหมู่ห้ามว่าง');
+      }
+      
+      if (!categoryData.year_id) {
+        throw new Error('year_id is required');
+      }
+      
       const response = await apiClient.post('/admin/categories', categoryData);
+      console.log('Create category response:', response);
       return response;
     } catch (error) {
       console.error('Error creating category:', error);
+      
+      // ตรวจสอบประเภทของ error
+      if (error.name === 'NetworkError') {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+      } else if (error.status === 401) {
+        throw new Error('การยืนยันตัวตนหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+      } else if (error.status === 403) {
+        throw new Error('ไม่มีสิทธิ์ในการสร้างหมวดหมู่');
+      } else if (error.status === 409) {
+        throw new Error('ชื่อหมวดหมู่นี้มีอยู่แล้ว');
+      } else if (error.status === 400) {
+        throw new Error('ข้อมูลที่ส่งไม่ถูกต้อง: ' + (error.message || 'Bad Request'));
+      }
+      
       throw error;
+    }
+  },
+
+  // เพิ่ม function ตรวจสอบการเชื่อมต่อกับเซิร์ฟเวอร์
+  async checkServerConnection() {
+    try {
+      const response = await apiClient.get('/health');
+      return { status: 'connected', message: 'Server is accessible' };
+    } catch (error) {
+      return { 
+        status: 'disconnected', 
+        message: 'Cannot connect to server',
+        error: error.message 
+      };
     }
   },
 
@@ -179,13 +219,16 @@ export const adminAPI = {
   // Create subcategory (alias)
   async createSubcategory(subcategoryData) {
     try {
-      // Ensure target_roles is JSON string if it's an array
+      // ไม่ต้อง convert เป็น JSON string แล้ว - ส่งเป็น array ตรงๆ
       const data = {
         ...subcategoryData,
+        // เอา JSON.stringify ออก - ส่งเป็น array ตรงๆ
         target_roles: Array.isArray(subcategoryData.target_roles) 
-          ? JSON.stringify(subcategoryData.target_roles)
-          : subcategoryData.target_roles
+          ? subcategoryData.target_roles  // ส่งเป็น array ตรงๆ
+          : (subcategoryData.target_roles ? [subcategoryData.target_roles] : [])
       };
+      
+      console.log('Sending subcategory data:', data); // debug log
       
       const response = await apiClient.post('/admin/subcategories', data);
       return response;
@@ -198,13 +241,15 @@ export const adminAPI = {
   // Update subcategory
   async updateSubcategory(subcategoryId, subcategoryData) {
     try {
-      // Ensure target_roles is JSON string if it's an array
+      // เช่นเดียวกัน - ส่งเป็น array ตรงๆ
       const data = {
         ...subcategoryData,
         target_roles: Array.isArray(subcategoryData.target_roles) 
-          ? JSON.stringify(subcategoryData.target_roles)
-          : subcategoryData.target_roles
+          ? subcategoryData.target_roles  // ส่งเป็น array ตรงๆ
+          : (subcategoryData.target_roles ? [subcategoryData.target_roles] : [])
       };
+      
+      console.log('Updating subcategory data:', data); // debug log
       
       const response = await apiClient.put(`/admin/subcategories/${subcategoryId}`, data);
       return response;
