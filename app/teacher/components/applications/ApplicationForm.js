@@ -1,269 +1,218 @@
+// app/teacher/components/applications/ApplicationForm.js - Updated with Submission Management API
 "use client";
 
 import { useState, useEffect } from "react";
-import { Upload, X, AlertCircle, Save, Send, FileText, Bold, Italic, List, ListOrdered, Link2, Image as ImageIcon, Heading1, Quote } from "lucide-react";
-import { mockFundCategories, mockDocumentTypes } from "../data/mockData";
+import { FileText, Upload, Plus, X, Save, Send, AlertCircle } from "lucide-react";
 import PageLayout from "../common/PageLayout";
-import Card from "../common/Card";
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
-import Cookies from 'js-cookie';
+import SimpleCard from "../common/SimpleCard";
+import { fundApplicationAPI, submissionAPI, fileAPI } from '../../../lib/teacher_api';
 
-// Tiptap Menu Bar Component
-const MenuBar = ({ editor }) => {
-  if (!editor) {
-    return null;
-  }
+// File upload component with drag & drop
+const FileUpload = ({ onFileSelect, accept, multiple = false, error }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    handleFileSelection(files);
+  };
+
+  const handleFileSelection = (files) => {
+    const validFiles = files.slice(0, multiple ? 10 : 1);
+    setSelectedFiles(validFiles);
+    onFileSelect(validFiles);
+  };
+
+  const handleFileInput = (e) => {
+    const files = Array.from(e.target.files);
+    handleFileSelection(files);
+  };
+
+  const removeFile = (index) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index);
+    setSelectedFiles(newFiles);
+    onFileSelect(newFiles);
+  };
 
   return (
-    <div className="border-b border-gray-200 p-2 flex flex-wrap gap-1 bg-gray-50 rounded-t-lg">
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        className={`p-2 rounded hover:bg-gray-200 ${
-          editor.isActive('heading', { level: 2 }) ? 'bg-gray-200' : ''
+    <div className="space-y-2">
+      <div
+        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+          isDragging 
+            ? 'border-blue-400 bg-blue-50' 
+            : error 
+            ? 'border-red-300 bg-red-50' 
+            : 'border-gray-300 hover:border-gray-400'
         }`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => document.getElementById('file-input').click()}
       >
-        <Heading1 size={18} />
-      </button>
-      
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`p-2 rounded hover:bg-gray-200 ${
-          editor.isActive('bold') ? 'bg-gray-200' : ''
-        }`}
-      >
-        <Bold size={18} />
-      </button>
-      
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`p-2 rounded hover:bg-gray-200 ${
-          editor.isActive('italic') ? 'bg-gray-200' : ''
-        }`}
-      >
-        <Italic size={18} />
-      </button>
+        <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+        <p className="text-sm text-gray-600">
+          คลิกหรือลากไฟล์มาวางที่นี่
+        </p>
+        <p className="text-xs text-gray-400 mt-1">
+          รองรับไฟล์: PDF, DOC, DOCX, XLS, XLSX (สูงสุด 10MB)
+        </p>
+        <input
+          id="file-input"
+          type="file"
+          accept={accept}
+          multiple={multiple}
+          onChange={handleFileInput}
+          className="hidden"
+        />
+      </div>
 
-      <div className="w-px h-6 bg-gray-300 mx-1 self-center" />
-      
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={`p-2 rounded hover:bg-gray-200 ${
-          editor.isActive('bulletList') ? 'bg-gray-200' : ''
-        }`}
-      >
-        <List size={18} />
-      </button>
-      
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`p-2 rounded hover:bg-gray-200 ${
-          editor.isActive('orderedList') ? 'bg-gray-200' : ''
-        }`}
-      >
-        <ListOrdered size={18} />
-      </button>
+      {/* แสดงไฟล์ที่เลือก */}
+      {selectedFiles.length > 0 && (
+        <div className="space-y-2">
+          {selectedFiles.map((file, index) => (
+            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+              <div className="flex items-center space-x-2">
+                <FileText className="h-4 w-4 text-gray-500" />
+                <span className="text-sm text-gray-700">{file.name}</span>
+                <span className="text-xs text-gray-500">
+                  ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeFile(index)}
+                className="text-red-500 hover:text-red-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
-      <div className="w-px h-6 bg-gray-300 mx-1 self-center" />
-      
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={`p-2 rounded hover:bg-gray-200 ${
-          editor.isActive('blockquote') ? 'bg-gray-200' : ''
-        }`}
-      >
-        <Quote size={18} />
-      </button>
-      
-      <button
-        type="button"
-        onClick={() => {
-          const url = window.prompt('URL:');
-          if (url) {
-            editor.chain().focus().setLink({ href: url }).run();
-          }
-        }}
-        className={`p-2 rounded hover:bg-gray-200 ${
-          editor.isActive('link') ? 'bg-gray-200' : ''
-        }`}
-      >
-        <Link2 size={18} />
-      </button>
+      {error && (
+        <p className="text-red-500 text-sm flex items-center gap-1">
+          <AlertCircle className="h-4 w-4" />
+          {error}
+        </p>
+      )}
     </div>
   );
 };
 
 export default function ApplicationForm({ selectedFund }) {
-  const [formData, setFormData] = useState({
-    project_title: "",
-    project_description: "",
-    year: "2568",
-    category_id: "",
-    subcategory_id: "",
-    requested_amount: "",
-    project_duration: "",
-    expected_outcomes: "",
-    budget_details: ""
-  });
-
-  const [uploadedFiles, setUploadedFiles] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [showFundInfo, setShowFundInfo] = useState(false);
-  const [originalFundSelection, setOriginalFundSelection] = useState(null);
-  const [otherDocuments, setOtherDocuments] = useState([]);
+  const [years, setYears] = useState([]);
+  const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
 
-  // Tiptap Editor
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Link.configure({
-        openOnClick: false,
-      }),
-      Image,
-    ],
-    content: formData.project_description,
-    onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      setFormData(prev => ({ ...prev, project_description: html }));
-      
-      // Clear error when user starts typing
-      if (errors.project_description && html && html !== '<p></p>') {
-        setErrors(prev => ({ ...prev, project_description: "" }));
-      }
-    },
+  // Form data state
+  const [formData, setFormData] = useState({
+    // Submission basic info
+    year_id: null,
+    priority: 'normal',
+    
+    // Fund application details
+    project_title: '',
+    project_description: '',
+    requested_amount: '',
+    subcategory_id: selectedFund?.subcategory_id || null,
+    
+    // Additional fields based on database schema
+    project_objectives: '',
+    project_methodology: '',
+    expected_outcomes: '',
+    budget_breakdown: '',
+    timeline: '',
+    references: ''
   });
 
-  // Set initial values when selectedFund is provided
+  // File uploads state
+  const [uploadedFiles, setUploadedFiles] = useState({});
+  const [documentTypes, setDocumentTypes] = useState([]);
+
+  // Load initial data
   useEffect(() => {
-    if (selectedFund && selectedFund.fund) {
-      // Find the category from mockFundCategories
-      const category = mockFundCategories.find(cat => 
-        cat.subcategories.some(sub => sub.subcategorie_id === selectedFund.fund.subcategorie_id)
-      );
-      
-      if (category) {
-        setSelectedCategory(category);
-        setFormData(prev => ({
-          ...prev,
-          year: category.year,
-          category_id: category.category_id.toString(),
-          subcategory_id: selectedFund.fund.subcategorie_id.toString(),
-          requested_amount: selectedFund.fund.max_amount_per_grant.toString()
-        }));
-        
-        // Store original selection for comparison
-        setOriginalFundSelection({
-          category_id: category.category_id.toString(),
-          subcategory_id: selectedFund.fund.subcategorie_id.toString()
-        });
-        
-        // Show fund info
-        setShowFundInfo(true);
-      }
+    loadInitialData();
+  }, []);
+
+  // Set subcategory from selectedFund
+  useEffect(() => {
+    if (selectedFund) {
+      setFormData(prev => ({
+        ...prev,
+        subcategory_id: selectedFund.subcategory_id
+      }));
     }
   }, [selectedFund]);
 
-  // โหลดข้อมูลจาก cookies เมื่อ component mount
-  useEffect(() => {
-    const savedDraft = Cookies.get('applicationDraft');
-    if (savedDraft && !selectedFund) { // โหลดจาก cookie ถ้าไม่ได้มาจากการเลือกทุน
-      try {
-        const draftData = JSON.parse(savedDraft);
-        setFormData(draftData.formData || {});
-        // ไม่โหลดไฟล์จาก cookie เพราะ File object ไม่สามารถ serialize ได้
-        
-        // ถ้ามี category_id ให้โหลด category ด้วย
-        if (draftData.formData.category_id) {
-          const category = mockFundCategories.find(c => 
-            c.category_id === parseInt(draftData.formData.category_id)
-          );
-          setSelectedCategory(category);
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load years and document types
+      const [yearsResponse, docTypesResponse] = await Promise.all([
+        fetch('/api/years').then(res => res.json()),
+        fetch('/api/document-types?category=fund_application').then(res => res.json())
+      ]);
+
+      if (yearsResponse.success) {
+        setYears(yearsResponse.years || []);
+        // Set current year as default
+        const currentYear = yearsResponse.years?.find(y => y.year === '2568');
+        if (currentYear) {
+          setFormData(prev => ({ ...prev, year_id: currentYear.year_id }));
         }
-      } catch (error) {
-        console.error('Error loading draft:', error);
       }
+
+      if (docTypesResponse.success) {
+        setDocumentTypes(docTypesResponse.document_types || []);
+      }
+
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+      alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+    } finally {
+      setLoading(false);
     }
-  }, []);
-
-    // บันทึกร่างอัตโนมัติเมื่อข้อมูลเปลี่ยน
-  useEffect(() => {
-    // Debounce เพื่อไม่ให้บันทึกบ่อยเกินไป
-    const timeoutId = setTimeout(() => {
-      if (formData.project_title || formData.project_description) {
-        const draftData = {
-          formData,
-          savedAt: new Date().toISOString()
-        };
-        Cookies.set('applicationDraft', JSON.stringify(draftData), { expires: 7 }); // เก็บ 7 วัน
-      }
-    }, 1000); // รอ 1 วินาทีหลังจากหยุดพิมพ์
-
-    return () => clearTimeout(timeoutId);
-  }, [formData]);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  const handleCategoryChange = (e) => {
-    const categoryId = e.target.value;
-    const category = mockFundCategories.find(c => c.category_id === parseInt(categoryId));
-    setSelectedCategory(category);
-    setFormData(prev => ({ 
-      ...prev, 
-      category_id: categoryId,
-      subcategory_id: "" 
-    }));
-    
-    // Hide fund info if user changes from original selection
-    if (originalFundSelection && categoryId !== originalFundSelection.category_id) {
-      setShowFundInfo(false);
-    }
-  };
-
-  const handleSubcategoryChange = (e) => {
-    const subcategoryId = e.target.value;
-    setFormData(prev => ({ ...prev, subcategory_id: subcategoryId }));
-    
-    // Clear error when user starts typing
-    if (errors.subcategory_id) {
-      setErrors(prev => ({ ...prev, subcategory_id: "" }));
-    }
-    
-    // Hide fund info if user changes from original selection
-    if (originalFundSelection && subcategoryId !== originalFundSelection.subcategory_id) {
-      setShowFundInfo(false);
-    }
-  };
-
-  // แก้ไขฟังก์ชัน handleFileUpload
   const handleFileUpload = (documentTypeId, files) => {
     if (files && files.length > 0) {
-      // ถ้าเป็นเอกสารอื่นๆ (id = 3)
-      if (documentTypeId === 3) {
-        const newFiles = Array.from(files);
-        setOtherDocuments(prev => [...prev, ...newFiles]);
-      } else {
-        // เอกสารอื่นๆ ยังคงเป็นไฟล์เดียว
-        setUploadedFiles(prev => ({
-          ...prev,
-          [documentTypeId]: files[0]
-        }));
+      setUploadedFiles(prev => ({
+        ...prev,
+        [documentTypeId]: files[0] // Take first file only
+      }));
+
+      // Clear error
+      if (errors[`file_${documentTypeId}`]) {
+        setErrors(prev => ({ ...prev, [`file_${documentTypeId}`]: '' }));
       }
     }
   };
@@ -276,27 +225,35 @@ export default function ApplicationForm({ selectedFund }) {
     });
   };
 
-  // เพิ่มฟังก์ชันลบไฟล์เอกสารอื่นๆ
-  const removeOtherDocument = (index) => {
-    setOtherDocuments(prev => prev.filter((_, i) => i !== index));
-  };
-
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.project_title) newErrors.project_title = "กรุณากรอกชื่อโครงการ";
-    if (!formData.project_description || formData.project_description === '<p></p>') {
-      newErrors.project_description = "กรุณากรอกรายละเอียดโครงการ";
+
+    // Basic validation
+    if (!formData.project_title.trim()) {
+      newErrors.project_title = 'กรุณากรอกชื่อโครงการ';
     }
-    if (!formData.category_id) newErrors.category_id = "กรุณาเลือกประเภททุน";
-    if (!formData.subcategory_id) newErrors.subcategory_id = "กรุณาเลือกประเภททุนย่อย";
-    if (!formData.requested_amount) newErrors.requested_amount = "กรุณากรอกจำนวนเงินที่ขอ";
-    
+
+    if (!formData.project_description.trim()) {
+      newErrors.project_description = 'กรุณากรอกรายละเอียดโครงการ';
+    }
+
+    if (!formData.requested_amount || parseFloat(formData.requested_amount) <= 0) {
+      newErrors.requested_amount = 'กรุณากรอกจำนวนเงินที่ขอ';
+    }
+
+    if (!formData.year_id) {
+      newErrors.year_id = 'กรุณาเลือกปีงบประมาณ';
+    }
+
+    if (!formData.subcategory_id) {
+      newErrors.subcategory_id = 'กรุณาเลือกประเภททุน';
+    }
+
     // Check required documents
-    const requiredDocs = mockDocumentTypes.filter(doc => doc.required);
+    const requiredDocs = documentTypes.filter(doc => doc.required);
     requiredDocs.forEach(doc => {
-      if (!uploadedFiles[doc.id]) {
-        newErrors[`doc_${doc.id}`] = `กรุณาแนบ${doc.name}`;
+      if (!uploadedFiles[doc.document_type_id]) {
+        newErrors[`file_${doc.document_type_id}`] = `กรุณาแนบ${doc.document_type_name}`;
       }
     });
 
@@ -304,196 +261,180 @@ export default function ApplicationForm({ selectedFund }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  // แก้ไข handleSubmit
-  const handleSubmit = (isDraft = false) => {
-    if (!isDraft && !validateForm()) {
-      alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+  const saveDraft = async () => {
+    try {
+      setSaving(true);
+
+      const applicationData = {
+        ...formData,
+        uploadedFiles,
+        isDraft: true
+      };
+
+      if (currentSubmissionId) {
+        // Update existing submission
+        await submissionAPI.updateSubmission(currentSubmissionId, applicationData);
+        alert('บันทึกร่างเรียบร้อยแล้ว');
+      } else {
+        // Create new submission
+        const response = await fundApplicationAPI.createApplication(applicationData);
+        setCurrentSubmissionId(response.submission.submission_id);
+        alert('บันทึกร่างเรียบร้อยแล้ว');
+      }
+
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      alert('เกิดข้อผิดพลาดในการบันทึกร่าง: ' + (error.message || 'กรุณาลองใหม่อีกครั้ง'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitApplication = async () => {
+    if (!validateForm()) {
+      alert('กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
 
-    // รวมเอกสารอื่นๆ เข้ากับ uploadedFiles
-    const allFiles = {
-      ...uploadedFiles,
-      otherDocuments: otherDocuments
-    };
+    try {
+      setLoading(true);
 
-    console.log("Form Data:", formData);
-    console.log("Uploaded Files:", allFiles);
-    console.log("Is Draft:", isDraft);
-
-    if (isDraft) {
-      // บันทึกร่างใน cookies
-      const draftData = {
-        formData,
-        savedAt: new Date().toISOString()
+      const applicationData = {
+        ...formData,
+        uploadedFiles,
+        isDraft: false
       };
-      Cookies.set('applicationDraft', JSON.stringify(draftData), { expires: 7 });
-      alert("บันทึกร่างเรียบร้อยแล้ว");
-    } else {
-      // ถ้าส่งคำร้องสำเร็จ ให้ลบ draft
-      Cookies.remove('applicationDraft');
-      alert("ส่งคำร้องเรียบร้อยแล้ว");
-      
-      // Reset form
-      setFormData({
-        project_title: "",
-        project_description: "",
-        year: "2568",
-        category_id: "",
-        subcategory_id: "",
-        requested_amount: "",
-        project_duration: "",
-        expected_outcomes: "",
-        budget_details: ""
-      });
-      setUploadedFiles({});
-      setOtherDocuments([]);
-      setSelectedCategory(null);
-      
-      // Clear editor
-      if (editor) {
-        editor.commands.setContent('');
+
+      let submissionId = currentSubmissionId;
+
+      if (!submissionId) {
+        // Create new application
+        const response = await fundApplicationAPI.createApplication(applicationData);
+        submissionId = response.submission.submission_id;
       }
+
+      // Submit the application
+      await fundApplicationAPI.submitApplication(submissionId);
+      
+      alert('ส่งคำร้องเรียบร้อยแล้ว');
+      
+      // Reset form or redirect
+      resetForm();
+      
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      alert('เกิดข้อผิดพลาดในการส่งคำร้อง: ' + (error.message || 'กรุณาลองใหม่อีกครั้ง'));
+    } finally {
+      setLoading(false);
     }
   };
 
-  // เพิ่มฟังก์ชันลบร่าง
-  const clearDraft = () => {
-    if (confirm("ต้องการลบร่างที่บันทึกไว้หรือไม่?")) {
-      Cookies.remove('applicationDraft');
-      alert("ลบร่างเรียบร้อยแล้ว");
-      window.location.reload();
-    }
+  const resetForm = () => {
+    setFormData({
+      year_id: years.find(y => y.year === '2568')?.year_id || null,
+      priority: 'normal',
+      project_title: '',
+      project_description: '',
+      requested_amount: '',
+      subcategory_id: selectedFund?.subcategory_id || null,
+      project_objectives: '',
+      project_methodology: '',
+      expected_outcomes: '',
+      budget_breakdown: '',
+      timeline: '',
+      references: ''
+    });
+    setUploadedFiles({});
+    setErrors({});
+    setCurrentSubmissionId(null);
   };
+
+  if (loading && !years.length) {
+    return (
+      <PageLayout
+        title="สร้างคำร้องใหม่"
+        subtitle="กำลังโหลดข้อมูล..."
+        icon={FileText}
+      >
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout
-      title="แบบฟอร์มยื่นขอทุน"
-      subtitle="กรอกข้อมูลเพื่อยื่นขอทุนวิจัย"
+      title="แบบฟอร์มขอทุนวิจัย"
+      subtitle={selectedFund ? `${selectedFund.subcategory_name}` : "สร้างคำร้องขอทุนวิจัยใหม่"}
       icon={FileText}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/teacher" },
-        { label: "เลือกคำร้อง" },
-        { label: "ขอทุนวิจัย" },
+        { label: "ทุนวิจัย", href: "/teacher/research-fund" },
+        { label: "สร้างคำร้อง" }
       ]}
     >
       <form className="space-y-6">
-        {/* แสดงข้อความถ้ามีร่างที่บันทึกไว้ */}
-        {Cookies.get('applicationDraft') && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded mb-6 flex justify-between items-center">
-            <div>
-              <p className="text-yellow-900 font-medium">มีร่างที่บันทึกไว้</p>
-              <p className="text-sm text-yellow-700">ระบบได้โหลดข้อมูลร่างล่าสุดของคุณ</p>
-            </div>
-            <button
-              type="button"
-              onClick={clearDraft}
-              className="text-yellow-600 hover:text-yellow-800 text-sm underline"
-            >
-              ลบร่าง
-            </button>
-          </div>
-        )}
-
-        {/* Basic Information */}
-        <Card title="ข้อมูลโครงการ" collapsible={false}>
-          
+        {/* ข้อมูลพื้นฐาน */}
+        <SimpleCard title="ข้อมูลพื้นฐาน" icon={FileText}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ชื่อโครงการ <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="project_title"
-                value={formData.project_title}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.project_title ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="กรอกชื่อโครงการ"
-              />
-              {errors.project_title && (
-                <p className="text-red-500 text-sm mt-1">{errors.project_title}</p>
-              )}
-            </div>
-
+            {/* ปีงบประมาณ */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 ปีงบประมาณ <span className="text-red-500">*</span>
               </label>
               <select
-                name="year"
-                value={formData.year}
+                name="year_id"
+                value={formData.year_id || ''}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 text-gray-700 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-              >
-                <option value="2568">2568</option>
-                <option value="2567">2567</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ประเภททุน <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="category_id"
-                value={formData.category_id}
-                onChange={handleCategoryChange}
-                className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.category_id ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                  errors.year_id ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
-                <option value="">-- เลือกประเภททุน --</option>
-                {mockFundCategories.map(category => (
-                  <option key={`${category.category_id}-${category.year}`} value={category.category_id}>
-                    {category.category_name}
+                <option value="">เลือกปีงบประมาณ</option>
+                {years.map(year => (
+                  <option key={year.year_id} value={year.year_id}>
+                    {year.year}
                   </option>
                 ))}
               </select>
-              {errors.category_id && (
-                <p className="text-red-500 text-sm mt-1">{errors.category_id}</p>
+              {errors.year_id && (
+                <p className="text-red-500 text-sm mt-1">{errors.year_id}</p>
               )}
             </div>
 
+            {/* ประเภททุน */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ประเภททุนย่อย <span className="text-red-500">*</span>
+                ประเภททุน
               </label>
-              <select
-                name="subcategory_id"
-                value={formData.subcategory_id}
-                onChange={handleSubcategoryChange}
-                disabled={!selectedCategory}
-                className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.subcategory_id ? 'border-red-500' : 'border-gray-300'
-                } ${!selectedCategory ? 'bg-gray-100' : ''}`}
-              >
-                <option value="">-- เลือกประเภททุนย่อย --</option>
-                {selectedCategory?.subcategories.map(sub => {
-                  const isAvailable = sub.remaining_grant > 0 && sub.remaining_budget > 0;
-                  return (
-                    <option 
-                      key={sub.subcategorie_id} 
-                      value={sub.subcategorie_id}
-                      disabled={!isAvailable}
-                      className={!isAvailable ? 'text-gray-400' : ''}
-                    >
-                      {sub.subcategorie_name} 
-                      {isAvailable 
-                        ? ` (เหลือ ${sub.remaining_grant} ทุน)`
-                        : ' (เต็มแล้ว)'
-                      }
-                    </option>
-                  );
-                })}
-              </select>
-              {errors.subcategory_id && (
-                <p className="text-red-500 text-sm mt-1">{errors.subcategory_id}</p>
-              )}
+              <input
+                type="text"
+                value={selectedFund?.subcategory_name || 'ไม่ได้ระบุ'}
+                readOnly
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+              />
             </div>
 
+            {/* ระดับความสำคัญ */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ระดับความสำคัญ
+              </label>
+              <select
+                name="priority"
+                value={formData.priority}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              >
+                <option value="low">ต่ำ</option>
+                <option value="normal">ปกติ</option>
+                <option value="high">สูง</option>
+                <option value="urgent">ด่วน</option>
+              </select>
+            </div>
+
+            {/* จำนวนเงินที่ขอ */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 จำนวนเงินที่ขอ (บาท) <span className="text-red-500">*</span>
@@ -503,232 +444,251 @@ export default function ApplicationForm({ selectedFund }) {
                 name="requested_amount"
                 value={formData.requested_amount}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                placeholder="0"
+                min="0"
+                step="0.01"
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
                   errors.requested_amount ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="0"
               />
               {errors.requested_amount && (
                 <p className="text-red-500 text-sm mt-1">{errors.requested_amount}</p>
               )}
             </div>
+          </div>
+        </SimpleCard>
 
-            <div className="md:col-span-2">
+        {/* รายละเอียดโครงการ */}
+        <SimpleCard title="รายละเอียดโครงการ" icon={FileText}>
+          <div className="space-y-4">
+            {/* ชื่อโครงการ */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ชื่อโครงการ <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="project_title"
+                value={formData.project_title}
+                onChange={handleInputChange}
+                placeholder="กรอกชื่อโครงการ"
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                  errors.project_title ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errors.project_title && (
+                <p className="text-red-500 text-sm mt-1">{errors.project_title}</p>
+              )}
+            </div>
+
+            {/* รายละเอียดโครงการ */}
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 รายละเอียดโครงการ <span className="text-red-500">*</span>
               </label>
-              <div className={`text-gray-700 border rounded-lg overflow-hidden ${
-                errors.project_description ? 'border-red-500' : 'border-gray-300'
-              }`}>
-                <MenuBar editor={editor} />
-                <EditorContent 
-                  editor={editor} 
-                  className="text-gray-700 prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none"
-                />
-              </div>
+              <textarea
+                name="project_description"
+                value={formData.project_description}
+                onChange={handleInputChange}
+                rows={4}
+                placeholder="อธิบายรายละเอียดโครงการ วัตถุประสงค์ และคุณค่าที่คาดว่าจะได้รับ"
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                  errors.project_description ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
               {errors.project_description && (
                 <p className="text-red-500 text-sm mt-1">{errors.project_description}</p>
               )}
             </div>
+
+            {/* วัตถุประสงค์ */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                วัตถุประสงค์
+              </label>
+              <textarea
+                name="project_objectives"
+                value={formData.project_objectives}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="ระบุวัตถุประสงค์ของโครงการ"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* วิธีการดำเนินงาน */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                วิธีการดำเนินงาน
+              </label>
+              <textarea
+                name="project_methodology"
+                value={formData.project_methodology}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="อธิบายวิธีการดำเนินงานของโครงการ"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* ผลที่คาดว่าจะได้รับ */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ผลที่คาดว่าจะได้รับ
+              </label>
+              <textarea
+                name="expected_outcomes"
+                value={formData.expected_outcomes}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="ระบุผลที่คาดว่าจะได้รับจากโครงการ"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* งบประมาณ */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                รายละเอียดงบประมาณ
+              </label>
+              <textarea
+                name="budget_breakdown"
+                value={formData.budget_breakdown}
+                onChange={handleInputChange}
+                rows={4}
+                placeholder="ระบุรายละเอียดการใช้งบประมาณ เช่น ค่าอุปกรณ์ ค่าวัสดุ ค่าใช้จ่ายในการเดินทาง"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* ระยะเวลาดำเนินการ */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ระยะเวลาดำเนินการ
+              </label>
+              <textarea
+                name="timeline"
+                value={formData.timeline}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="ระบุกรอบเวลาการดำเนินโครงการ"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* เอกสารอ้างอิง */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                เอกสารอ้างอิง/บรรณานุกรม
+              </label>
+              <textarea
+                name="references"
+                value={formData.references}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="ระบุเอกสารอ้างอิงที่เกี่ยวข้อง"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              />
+            </div>
           </div>
-        </Card>
+        </SimpleCard>
 
-        {/* Document Upload */}
-        <Card title="เอกสารประกอบ" collapsible={false}>
-          
-          <div className="space-y-4">
-            {mockDocumentTypes.map(docType => {
-              // ถ้าเป็นเอกสารอื่นๆ (id = 6)
-              if (docType.id === 3) {
-                return (
-                  <div key={docType.id} className="border rounded-lg p-4">
-                    <div className="mb-2">
-                      <label className="font-medium text-gray-700">
-                        {docType.name}
-                      </label>
-                    </div>
-
-                    {/* แสดงไฟล์ที่อัพโหลดแล้ว */}
-                    {otherDocuments.length > 0 && (
-                      <div className="space-y-2 mb-3">
-                        {otherDocuments.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                            <div className="flex items-center gap-2 text-green-600">
-                              <Upload size={16} />
-                              <span className="text-sm">{file.name}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeOtherDocument(index)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        ))}
+        {/* เอกสารแนบ */}
+        <SimpleCard title="เอกสารแนบ" icon={Upload}>
+          <div className="space-y-6">
+            {documentTypes.map((docType) => (
+              <div key={docType.document_type_id}>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {docType.document_type_name}
+                  {docType.required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                
+                <div className="border border-gray-200 rounded-lg p-4">
+                  {uploadedFiles[docType.document_type_id] ? (
+                    // แสดงไฟล์ที่เลือกแล้ว
+                    <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-5 w-5 text-green-600" />
+                        <span className="text-sm font-medium text-green-800">
+                          {uploadedFiles[docType.document_type_id].name}
+                        </span>
+                        <span className="text-xs text-green-600">
+                          ({(uploadedFiles[docType.document_type_id].size / 1024 / 1024).toFixed(2)} MB)
+                        </span>
                       </div>
-                    )}
-
-                    {/* ปุ่มเพิ่มไฟล์ */}
-                    <div>
-                      <input
-                        type="file"
-                        id={`file-${docType.id}`}
-                        className="hidden"
-                        accept=".pdf,.doc,.docx,.xls,.xlsx"
-                        multiple
-                        onChange={(e) => {
-                          handleFileUpload(docType.id, e.target.files);
-                          // Reset input value เพื่อให้สามารถเลือกไฟล์เดิมได้อีกครั้ง
-                          e.target.value = '';
-                        }}
-                      />
-                      <label
-                        htmlFor={`file-${docType.id}`}
-                        className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                        onClick={() => {
-                          // Force reset input before opening file dialog
-                          const input = document.getElementById(`file-${docType.id}`);
-                          if (input) input.value = '';
-                        }}
-                      >
-                        <Upload size={16} />
-                        <span>เพิ่มไฟล์</span>
-                      </label>
-                      <span className="text-sm text-gray-600 ml-2">
-                        (สามารถเลือกได้หลายไฟล์)
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-
-              // เอกสารอื่นๆ นอกจาก id = 6 แสดงแบบเดิม (ไฟล์เดียว)
-              return (
-                <div key={docType.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between text-gray-700 mb-2">
-                    <label className="font-medium">
-                      {docType.name} {docType.required && <span className="text-red-500">*</span>}
-                    </label>
-                    {uploadedFiles[docType.id] && (
                       <button
                         type="button"
-                        onClick={() => removeFile(docType.id)}
+                        onClick={() => removeFile(docType.document_type_id)}
                         className="text-red-500 hover:text-red-700"
                       >
-                        <X size={20} />
+                        <X className="h-5 w-5" />
                       </button>
-                    )}
-                  </div>
-
-                  {uploadedFiles[docType.id] ? (
-                    <div className="flex items-center gap-2 text-green-600">
-                      <Upload size={16} />
-                      <span className="text-sm">{uploadedFiles[docType.id].name}</span>
                     </div>
                   ) : (
-                    <div>
-                      <input
-                        type="file"
-                        id={`file-${docType.id}`}
-                        className="hidden"
-                        accept=".pdf,.doc,.docx,.xls,.xlsx"
-                        onChange={(e) => handleFileUpload(docType.id, e.target.files)}
-                      />
-                      <label
-                        htmlFor={`file-${docType.id}`}
-                        className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                      >
-                        <Upload size={16} />
-                        <span>เลือกไฟล์</span>
-                      </label>
-                    </div>
-                  )}
-                  
-                  {errors[`doc_${docType.id}`] && (
-                    <p className="text-red-500 text-sm mt-1">{errors[`doc_${docType.id}`]}</p>
+                    // แสดงพื้นที่อัปโหลด
+                    <FileUpload
+                      onFileSelect={(files) => handleFileUpload(docType.document_type_id, files)}
+                      accept=".pdf,.doc,.docx,.xls,.xlsx"
+                      error={errors[`file_${docType.document_type_id}`]}
+                    />
                   )}
                 </div>
-              );
-            })}
+                
+                {docType.description && (
+                  <p className="text-xs text-gray-500 mt-1">{docType.description}</p>
+                )}
+              </div>
+            ))}
           </div>
+        </SimpleCard>
 
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg flex gap-2 ">
-            <AlertCircle className="text-blue-600" size={20} />
-            <p className="text-sm text-blue-700">
-              รองรับไฟล์นามสกุล .pdf, .doc, .docx, .xls, .xlsx ขนาดไม่เกิน 10 MB
-            </p>
-          </div>
-        </Card>
-
-        {/* Action Buttons */}
-        <div className="flex gap-4 justify-end">
+        {/* ปุ่มดำเนินการ */}
+        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
           <button
             type="button"
-            onClick={() => handleSubmit(true)}
-            className="btn btn-secondary"
+            onClick={saveDraft}
+            disabled={saving || loading}
+            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Save size={20} />
-            บันทึกร่าง
+            {saving ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            {saving ? 'กำลังบันทึก...' : 'บันทึกร่าง'}
           </button>
+
           <button
             type="button"
-            onClick={() => handleSubmit(false)}
-            className="btn btn-primary"
+            onClick={submitApplication}
+            disabled={loading || saving}
+            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Send size={20} />
-            ส่งคำร้อง
+            {loading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+            {loading ? 'กำลังส่ง...' : 'ส่งคำร้อง'}
           </button>
         </div>
-      </form>
 
-      {/* Add custom styles for Tiptap */}
-      <style jsx global>{`
-        .ProseMirror {
-          min-height: 200px;
-        }
-        
-        .ProseMirror:focus {
-          outline: none;
-        }
-        
-        .ProseMirror p {
-          margin: 0 0 1rem 0;
-        }
-        
-        .ProseMirror ul,
-        .ProseMirror ol {
-          padding-left: 1.5rem;
-          margin: 0 0 1rem 0;
-        }
-        
-        .ProseMirror h1,
-        .ProseMirror h2,
-        .ProseMirror h3 {
-          margin: 0 0 0.75rem 0;
-          font-weight: 600;
-        }
-        
-        .ProseMirror h2 {
-          font-size: 1.5rem;
-        }
-        
-        .ProseMirror blockquote {
-          border-left: 3px solid #e5e7eb;
-          padding-left: 1rem;
-          margin: 0 0 1rem 0;
-          color: #6b7280;
-        }
-        
-        .ProseMirror a {
-          color: #3b82f6;
-          text-decoration: underline;
-        }
-        
-        .ProseMirror-focused {
-          outline: none;
-        }
-      `}</style>
+        {/* คำเตือน */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+            <div className="text-sm text-yellow-800">
+              <p className="font-medium mb-1">ข้อควรระวัง:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>กรุณาตรวจสอบข้อมูลให้ครบถ้วนก่อนส่งคำร้อง</li>
+                <li>ไฟล์เอกสารต้องมีขนาดไม่เกิน 10MB ต่อไฟล์</li>
+                <li>หลังจากส่งคำร้องแล้ว จะไม่สามารถแก้ไขข้อมูลได้</li>
+                <li>สามารถบันทึกร่างและกลับมาแก้ไขภายหลังได้</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </form>
     </PageLayout>
   );
 }

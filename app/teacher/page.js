@@ -20,8 +20,9 @@ function TeacherPageContent() {
   const [selectedFundData, setSelectedFundData] = useState(null);
 
   const handleNavigate = (page, data) => {
-    // ถ้าออกจากหน้า application-form ให้ล้างข้อมูลทุนที่เลือก
-    if (currentPage === 'application-form' && page !== 'application-form') {
+    // ถ้าออกจากหน้าฟอร์มใดๆ ให้ล้างข้อมูลทุนที่เลือก
+    if (['application-form', 'publication-reward-form'].includes(currentPage) && 
+        !['application-form', 'publication-reward-form'].includes(page)) {
       setSelectedFundData(null);
     }
     
@@ -117,7 +118,7 @@ function TeacherPageContent() {
 export default function TeacherPage() {
   return (
     <AuthGuard 
-      allowedRoles={[1, 'teacher']}
+      allowedRoles={[1, 2]}
       requireAuth={true}
     >
       <TeacherPageContent />
