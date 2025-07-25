@@ -5,7 +5,8 @@ import { useState, useEffect } from "react";
 import { Award, Upload, Users, FileText, Plus, X, Save, Send, AlertCircle, Search } from "lucide-react";
 import PageLayout from "../common/PageLayout";
 import SimpleCard from "../common/SimpleCard";
-import { publicationRewardAPI, submissionAPI, fileAPI } from '../../../lib/teacher_api';
+import { systemAPI } from '../../../lib/api';
+import { publicationFormAPI } from '../../../lib/publication_api';
 
 // File upload component
 const FileUpload = ({ onFileSelect, accept, multiple = false, error, label }) => {
@@ -278,36 +279,61 @@ export default function PublicationRewardForm() {
     }
   }, [formData.author_status, formData.journal_quartile]);
 
+  // Debug version
   const loadInitialData = async () => {
     try {
       setLoading(true);
+      console.log('Starting loadInitialData...');
       
-      // Load years, users, and document types
+      // ใช้ API functions จาก teacher_api.js แทน fetch โดยตรง
       const [yearsResponse, usersResponse, docTypesResponse] = await Promise.all([
-        fetch('/api/years').then(res => res.json()),
-        fetch('/api/users').then(res => res.json()),
-        fetch('/api/document-types?category=publication_reward').then(res => res.json())
+        systemAPI.getYears(),                                    
+        publicationFormAPI.getUsers(),                                  
+        publicationFormAPI.getDocumentTypes()                    
       ]);
 
-      if (yearsResponse.success) {
-        setYears(yearsResponse.years || []);
-        const currentYear = yearsResponse.years?.find(y => y.year === '2568');
+      console.log('Raw API responses:');
+      console.log('Years:', yearsResponse);
+      console.log('Users:', usersResponse); 
+      console.log('Document Types:', docTypesResponse);
+
+      // Handle years response
+      if (yearsResponse && yearsResponse.years) {
+        console.log('Setting years:', yearsResponse.years);
+        setYears(yearsResponse.years);
+        const currentYear = yearsResponse.years.find(y => y.year === '2568');
         if (currentYear) {
+          console.log('Found current year:', currentYear);
           setFormData(prev => ({ ...prev, year_id: currentYear.year_id }));
         }
+      } else {
+        console.log('No years data found in response');
       }
 
-      if (usersResponse.success) {
-        setUsers(usersResponse.users || []);
+      // Handle users response  
+      if (usersResponse && usersResponse.users) {
+        console.log('Setting users:', usersResponse.users);
+        setUsers(usersResponse.users);
+      } else {
+        console.log('No users data found in response');
       }
 
-      if (docTypesResponse.success) {
-        setDocumentTypes(docTypesResponse.document_types || []);
+      // Handle document types response
+      if (docTypesResponse && docTypesResponse.document_types) {
+        console.log('Setting document types:', docTypesResponse.document_types);
+        setDocumentTypes(docTypesResponse.document_types);
+      } else {
+        console.log('No document types data found in response');
       }
+
+      console.log('Final state:');
+      console.log('Years state will be:', yearsResponse?.years || []);
+      console.log('Users state will be:', usersResponse?.users || []);
+      console.log('Document types state will be:', docTypesResponse?.document_types || []);
 
     } catch (error) {
       console.error('Error loading initial data:', error);
-      alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      alert('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -853,12 +879,83 @@ export default function PublicationRewardForm() {
 
         {/* ผู้ร่วมวิจัย */}
         <SimpleCard title="ผู้ร่วมวิจัย" icon={Users}>
-          <CoauthorSelector
-            users={users}
-            selectedCoauthors={coauthors}
-            onAddCoauthor={handleAddCoauthor}
-            onRemoveCoauthor={handleRemoveCoauthor}
-          />
+          <div className="space-y-4">
+            {/* Dropdown เลือกผู้ร่วมวิจัย */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                เพิ่มผู้ร่วมวิจัย
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => {
+                  const userId = parseInt(e.target.value);
+                  if (userId) {
+                    const user = users.find(u => u.user_id === userId);
+                    if (user) {
+                      handleAddCoauthor(user);
+                      e.target.value = ''; // Reset dropdown
+                    }
+                  }
+                }}
+              >
+                <option value="">เลือกผู้ร่วมวิจัย...</option>
+                {users.map(user => (
+                  <option 
+                    key={user.user_id} 
+                    value={user.user_id}
+                    disabled={coauthors.some(c => c.user_id === user.user_id)}
+                  >
+                    {user.user_fname} {user.user_lname} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* รายการผู้ร่วมวิจัยที่เลือกแล้ว */}
+            {coauthors.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ผู้ร่วมวิจัยที่เลือก
+                </label>
+                <div className="space-y-2">
+                  {coauthors.map((coauthor, index) => (
+                    <div
+                      key={coauthor.user_id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className="text-sm font-medium text-gray-600">
+                          {index + 1}.
+                        </span>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {coauthor.user_fname} {coauthor.user_lname}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {coauthor.email}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCoauthor(coauthor)}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {coauthors.length === 0 && (
+              <div className="text-center py-6 text-gray-500">
+                <Users className="mx-auto h-8 w-8 mb-2 text-gray-400" />
+                <p className="text-sm">ยังไม่มีผู้ร่วมวิจัย</p>
+              </div>
+            )}
+          </div>
         </SimpleCard>
 
         {/* การคำนวณเงินรางวัล */}
@@ -978,72 +1075,69 @@ export default function PublicationRewardForm() {
         </SimpleCard>
 
         {/* เอกสารแนบ */}
-        <SimpleCard title="เอกสารแนบ" icon={Upload}>
+        <SimpleCard title="เอกสารแนบ" icon={FileText}>
           <div className="space-y-6">
-            {/* เอกสารที่กำหนด */}
             {documentTypes.map((docType) => (
-              <div key={docType.document_type_id}>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {docType.document_type_name}
-                  {docType.required && <span className="text-red-500 ml-1">*</span>}
-                </label>
-                
-                <div className="border border-gray-200 rounded-lg p-4">
-                  {uploadedFiles[docType.document_type_id] ? (
-                    <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <FileText className="h-5 w-5 text-green-600" />
-                        <span className="text-sm font-medium text-green-800">
-                          {uploadedFiles[docType.document_type_id].name}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeFile(docType.document_type_id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <FileUpload
-                      onFileSelect={(files) => handleFileUpload(docType.document_type_id, files)}
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                      error={errors[`file_${docType.document_type_id}`]}
-                      label={docType.document_type_id}
-                    />
+              <div key={docType.id} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700">
+                    {docType.name}
+                    {docType.required && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
+                  </label>
+                  {uploadedFiles[docType.id] && (
+                    <button
+                      type="button"
+                      onClick={() => removeFile(docType.id)}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      ลบไฟล์
+                    </button>
                   )}
                 </div>
                 
-                {docType.description && (
-                  <p className="text-xs text-gray-500 mt-1">{docType.description}</p>
+                {uploadedFiles[docType.id] ? (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-700">
+                        {uploadedFiles[docType.id].name}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <FileUpload
+                    onFileSelect={(files) => handleFileUpload(docType.id, files)}
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    multiple={docType.multiple}
+                    error={errors[`file_${docType.id}`]}
+                    label={`doc_${docType.id}`}
+                  />
+                )}
+                
+                {errors[`file_${docType.id}`] && (
+                  <p className="text-sm text-red-600">
+                    {errors[`file_${docType.id}`]}
+                  </p>
                 )}
               </div>
             ))}
 
-            {/* เอกสารอื่นๆ (หลายไฟล์) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                เอกสารอื่นๆ (ถ้ามี)
-              </label>
-              
-              <div className="border border-gray-200 rounded-lg p-4">
-                <FileUpload
-                  onFileSelect={(files) => handleFileUpload('other', files)}
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  multiple={true}
-                  label="other"
-                />
-              </div>
-
-              {/* แสดงเอกสารอื่นๆ ที่เลือก */}
-              {otherDocuments.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium text-gray-700">เอกสารอื่นๆ ที่เลือก:</p>
+            {/* เอกสารอื่นๆ (ถ้ามี) */}
+            {otherDocuments.length > 0 && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  เอกสารอื่นๆ ที่อัปโหลดแล้ว
+                </label>
+                <div className="space-y-2">
                   {otherDocuments.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
                       <div className="flex items-center space-x-2">
-                        <FileText className="h-4 w-4 text-gray-500" />
+                        <FileText className="h-4 w-4 text-gray-600" />
                         <span className="text-sm text-gray-700">{file.name}</span>
                       </div>
                       <button
@@ -1056,8 +1150,15 @@ export default function PublicationRewardForm() {
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {documentTypes.length === 0 && (
+              <div className="text-center py-6 text-gray-500">
+                <FileText className="mx-auto h-8 w-8 mb-2 text-gray-400" />
+                <p className="text-sm">ไม่มีประเภทเอกสารที่กำหนด</p>
+              </div>
+            )}
           </div>
         </SimpleCard>
 

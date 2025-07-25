@@ -12,6 +12,7 @@ import ApplicationList from "./components/applications/ApplicationList";
 import ApplicationForm from "./components/applications/ApplicationForm";
 import UnderDevelopmentContent from "./components/common/UnderDevelopmentContent";
 import PromotionFundContent from "./components/funds/PromotionFundContent";
+import PublicationRewardForm from "./components/applications/PublicationRewardForm";
 
 function TeacherPageContent() {
   const [isOpen, setIsOpen] = useState(false);
@@ -44,6 +45,8 @@ function TeacherPageContent() {
         return <ResearchFundContent onNavigate={handleNavigate} />;
       case 'promotion-fund':
         return <PromotionFundContent onNavigate={handleNavigate} />;
+      case 'publication-reward-form':
+        return <PublicationRewardForm onNavigate={handleNavigate}/>;
       case 'applications':
         return <ApplicationList onNavigate={handleNavigate} />;
       case 'received-funds':
