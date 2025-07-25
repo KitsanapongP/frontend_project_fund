@@ -1,11 +1,11 @@
-// app/teacher/components/funds/PromotionFundContent.js - ทุนอุดหนุนกิจกรรม (Enhanced UI)
+// app/staff/components/funds/PromotionFundContent.js - ทุนอุดหนุนกิจกรรม (Enhanced UI)
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import { TrendingUp, ExternalLink, FileText, Search, Filter, ChevronDown, Eye, Download, X, Info } from "lucide-react";
 import PageLayout from "../common/PageLayout";
 import Card from "../common/Card";
-import { teacherAPI } from '../../../lib/teacher_api';
+import { staffAPI } from '../../../lib/staff_api';
 import { targetRolesUtils } from '../../../lib/target_roles_utils';
 import { FORM_TYPE_CONFIG } from '../../../lib/form_type_config';
 
@@ -98,7 +98,7 @@ export default function PromotionFundContent({ onNavigate }) {
       setLoading(true);
       setError(null);
       
-      const response = await teacherAPI.getVisibleFundsStructure(year);
+      const response = await staffAPI.getVisibleFundsStructure(year);
       console.log('Full API Response:', response);
       
       if (!response.categories || !Array.isArray(response.categories)) {
@@ -280,7 +280,7 @@ export default function PromotionFundContent({ onNavigate }) {
       subtitle="รายการทุนอุดหนุนกิจกรรมที่เปิดรับสมัคร"
       icon={TrendingUp}
       breadcrumbs={[
-        { label: "หน้าแรก", href: "/teacher" },
+        { label: "หน้าแรก", href: "/staff" },
         { label: "ทุนอุดหนุนกิจกรรม" }
       ]}
     >

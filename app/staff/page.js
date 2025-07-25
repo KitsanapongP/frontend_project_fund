@@ -1,4 +1,4 @@
-// staff/page.js - Staff Dashboard
+// Staff/page.js - Staff Dashboard
 
 "use client";
 
@@ -11,16 +11,18 @@ import ResearchFundContent from "./components/funds/ResearchFundContent";
 import ApplicationList from "./components/applications/ApplicationList";
 import ApplicationForm from "./components/applications/ApplicationForm";
 import UnderDevelopmentContent from "./components/common/UnderDevelopmentContent";
+import PromotionFundContent from "./components/funds/PromotionFundContent";
 
 function StaffPageContent() {
   const [isOpen, setIsOpen] = useState(false);
   const [submenuOpen, setSubmenuOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentPage, setCurrentPage] = useState('profile');
   const [selectedFundData, setSelectedFundData] = useState(null);
 
   const handleNavigate = (page, data) => {
-    // ถ้าออกจากหน้า application-form ให้ล้างข้อมูลทุนที่เลือก
-    if (currentPage === 'application-form' && page !== 'application-form') {
+    // ถ้าออกจากหน้าฟอร์มใดๆ ให้ล้างข้อมูลทุนที่เลือก
+    if (['application-form', 'publication-reward-form'].includes(currentPage) && 
+        !['application-form', 'publication-reward-form'].includes(page)) {
       setSelectedFundData(null);
     }
     
@@ -36,16 +38,18 @@ function StaffPageContent() {
     switch (currentPage) {
       case 'dashboard':
         return <DashboardContent onNavigate={handleNavigate} />;
+      case 'profile':
+        return <UnderDevelopmentContent currentPage={currentPage} title="ข้อมูลส่วนตัว" />;
       case 'research-fund':
         return <ResearchFundContent onNavigate={handleNavigate} />;
+      case 'promotion-fund':
+        return <PromotionFundContent onNavigate={handleNavigate} />;
       case 'applications':
         return <ApplicationList onNavigate={handleNavigate} />;
+      case 'received-funds':
+        return <UnderDevelopmentContent currentPage={currentPage} title="ทุนที่เคยได้รับ" />;
       case 'application-form':
         return <ApplicationForm selectedFund={selectedFundData} />;
-      case 'profile':
-        return <div className="text-gray-700 mt-6">Profile Page - Coming Soon</div>;
-      case 'draft':
-        return <div className="text-gray-700 mt-6">Draft Page - Coming Soon</div>;
       default:
         return <UnderDevelopmentContent currentPage={currentPage} />;
     }
@@ -53,12 +57,13 @@ function StaffPageContent() {
 
   const getPageTitle = () => {
     const titles = {
-      'dashboard': 'Dashboard',
-      'research-fund': 'กองทุนวิจัย',
-      'applications': 'คำร้องของฉัน',
-      'application-form': 'ยื่นคำร้องใหม่',
+      'dashboard': 'แดชบอร์ด',
       'profile': 'ข้อมูลส่วนตัว',
-      'draft': 'ร่างที่บันทึกไว้'
+      'promotion-fund': 'ทุนส่งเสริมกิจกรรม',
+      'research-fund': 'ทุนอุดหนุนกิจกรรม',
+      'applications': 'คำร้องของฉัน',
+      'received-funds': 'ทุนที่เคยได้รับ',
+      'application-form': 'ยื่นคำร้องใหม่'
     };
     return titles[currentPage] || currentPage;
   };
@@ -113,7 +118,7 @@ function StaffPageContent() {
 export default function StaffPage() {
   return (
     <AuthGuard 
-      allowedRoles={[2, 'staff']} // เปลี่ยนจาก [1, 'teacher'] เป็น [2, 'staff']
+      allowedRoles={[1, 2]}
       requireAuth={true}
     >
       <StaffPageContent />

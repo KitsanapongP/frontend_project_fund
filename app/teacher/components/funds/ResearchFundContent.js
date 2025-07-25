@@ -1,12 +1,13 @@
 // app/teacher/components/funds/ResearchFundContent.js - ทุนส่งเสริมงานวิจัยและนวัตกรรม (Enhanced UI)
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DollarSign, ExternalLink, FileText, Search, Filter, ChevronDown, Eye, Download, X, Info } from "lucide-react";
 import PageLayout from "../common/PageLayout";
 import Card from "../common/Card";
 import { teacherAPI } from '../../../lib/teacher_api';
 import { targetRolesUtils } from '../../../lib/target_roles_utils';
+import { FORM_TYPE_CONFIG } from '../../../lib/form_type_config';
 
 export default function ResearchFundContent({ onNavigate }) {
   const [selectedYear, setSelectedYear] = useState("2566");
@@ -26,6 +27,7 @@ export default function ResearchFundContent({ onNavigate }) {
   // Modal state for fund condition
   const [showConditionModal, setShowConditionModal] = useState(false);
   const [selectedCondition, setSelectedCondition] = useState({ title: '', content: '' });
+  const modalRef = useRef(null);
 
   useEffect(() => {
     loadInitialData();
@@ -40,6 +42,32 @@ export default function ResearchFundContent({ onNavigate }) {
   useEffect(() => {
     applyFilters();
   }, [searchTerm, statusFilter, fundCategories]);
+
+  // useEffect สำหรับ modal focus และ ESC key
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && showConditionModal) {
+        setShowConditionModal(false);
+      }
+    };
+
+    if (showConditionModal) {
+      // Add event listener เมื่อ modal เปิด
+      document.addEventListener('keydown', handleEscKey);
+      // Focus modal เมื่อเปิด
+      if (modalRef.current) {
+        modalRef.current.focus();
+      }
+      // ป้องกันไม่ให้ scroll body
+      document.body.style.overflow = 'hidden';
+    }
+
+    // Cleanup function
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+      document.body.style.overflow = 'unset';
+    };
+  }, [showConditionModal]);
 
   const loadInitialData = async () => {
     try {
@@ -99,13 +127,9 @@ export default function ResearchFundContent({ onNavigate }) {
         return;
       }
       
-      // กรองเฉพาะทุนส่งเสริมการวิจัย (จากตาราง fund_categories)
+      // กรองเฉพาะทุนส่งเสริมการวิจัย (category_id = 1)
       const researchFunds = response.categories.filter(category => {
-        const categoryName = category.category_name?.toLowerCase() || '';
-        // ตามข้อมูลในฐานข้อมูล category_id = 1 คือ 'ทุนส่งเสริมการวิจัย'
-        return categoryName.includes('วิจัย') || 
-               categoryName.includes('research') ||
-               category.category_id === 1;
+        return category.category_id === 1;
       });
       
       console.log('Research funds found:', researchFunds);
@@ -157,22 +181,15 @@ export default function ResearchFundContent({ onNavigate }) {
   };
 
   const handleViewForm = (subcategory) => {
-    // ตรวจสอบว่ามีหน้าฟอร์มออนไลน์หรือไม่
-    // ถ้าไม่มีข้อมูล has_online_form ให้ default เป็น false (ดาวน์โหลดฟอร์ม)
-    const hasOnlineForm = subcategory.has_online_form === true;
+    const formType = subcategory.form_type || 'download';
+    const formConfig = FORM_TYPE_CONFIG[formType];
     
-    if (hasOnlineForm) {
-      // ตรวจสอบว่ามี URL ฟอร์มออนไลน์ภายนอกหรือไม่
-      if (subcategory.online_form_url) {
-        // เปิดลิงก์ฟอร์มออนไลน์ภายนอกในแท็บใหม่
-        window.open(subcategory.online_form_url, '_blank');
-      } else if (onNavigate) {
-        // นำทางไปหน้าฟอร์มออนไลน์ภายในระบบ
-        onNavigate('application-form', subcategory);
-      }
+    if (formConfig.isOnlineForm && onNavigate) {
+      // ไปหน้าฟอร์มออนไลน์ตาม route ที่กำหนด
+      onNavigate(formConfig.route, subcategory);
     } else {
-      // แสดงลิงก์ดาวน์โหลดไฟล์ DOC
-      const docUrl = subcategory.form_document_url || '/documents/research-fund-form.docx';
+      // ดาวน์โหลดฟอร์ม
+      const docUrl = subcategory.form_url || '/documents/default-fund-form.docx';
       window.open(docUrl, '_blank');
     }
   };
@@ -214,33 +231,35 @@ export default function ResearchFundContent({ onNavigate }) {
     );
   }
 
-  // Helper function to render a single fund row
   const renderFundRow = (fund, category, isAvailable) => {
     // ตรวจสอบทั้ง subcategorie_name และ subcategory_name
     const fundName = fund.subcategorie_name || fund.subcategory_name || 'ไม่ระบุชื่อทุน';
     const fundId = fund.subcategorie_id || fund.subcategory_id;
     const hasOnlineForm = fund.has_online_form === true;
     const maxAmountPerGrant = fund.max_amount_per_grant || fund.allocated_amount;
-    
+    const formConfig = FORM_TYPE_CONFIG[fund.form_type] || FORM_TYPE_CONFIG['download'];
+    const buttonText = formConfig.buttonText;
+    const ButtonIcon = formConfig.buttonIcon === 'FileText' ? FileText : Download;
+
     return (
       <tr key={fundId} className={!isAvailable ? 'bg-gray-50' : ''}>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm font-medium text-gray-900">
+        <td className="px-6 py-4">
+          <div className="text-sm font-medium text-gray-900 max-w-lg break-words leading-relaxed">
             {fundName}
           </div>
         </td>
         <td className="px-6 py-4">
           <div className="text-sm text-gray-900">
             {fund.fund_condition ? (
-              <div 
+              <button
                 onClick={() => showCondition(fundName, fund.fund_condition)}
-                className="line-clamp-2 cursor-pointer hover:text-blue-600 transition-colors duration-200"
-                title="คลิกเพื่ออ่านเงื่อนไขทั้งหมด"
+                className="text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
               >
-                {fund.fund_condition}
-              </div>
+                <Info className="w-4 h-4" />
+                ดูเงื่อนไข
+              </button>
             ) : (
-              <span className="text-gray-400">ไม่ระบุเงื่อนไข</span>
+              <span className="text-gray-500">ไม่มีเงื่อนไขเฉพาะ</span>
             )}
           </div>
         </td>
@@ -253,7 +272,7 @@ export default function ResearchFundContent({ onNavigate }) {
               คงเหลือ: {formatAmount(fund.remaining_budget)}
             </div>
             <div className="text-xs text-gray-600">
-              จำนวน: {(fund.remaining_grant === null || fund.remaining_grant === undefined) ? 'ขอทุนกี่ครั้งก็ได้' : `${fund.remaining_grant || 0}/${(fund.max_grants === null || fund.max_grants === undefined) ? 'ไม่จำกัด' : fund.max_grants} ทุน`}
+              จำนวน: {(fund.remaining_grant === null || fund.remaining_grant === undefined) ? 'ไม่จำกัดครั้ง' : `${fund.remaining_grant || 0}/${(fund.max_grants === null || fund.max_grants === undefined) ? 'ไม่จำกัด' : fund.max_grants} ทุน`}
             </div>
             {maxAmountPerGrant && (
               <div className="text-xs text-green-600 font-medium">
@@ -262,33 +281,14 @@ export default function ResearchFundContent({ onNavigate }) {
             )}
           </div>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-center">
-          {isAvailable ? (
-            <button
-              onClick={() => handleViewForm(fund)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                hasOnlineForm
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-green-600 text-white hover:bg-green-700'
-              }`}
-            >
-              {hasOnlineForm ? (
-                <>
-                  <Eye size={16} />
-                  ยื่นขอออนไลน์
-                </>
-              ) : (
-                <>
-                  <Download size={16} />
-                  ดาวน์โหลดฟอร์ม
-                </>
-              )}
-            </button>
-          ) : (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-              ไม่เปิดรับสมัคร
-            </span>
-          )}
+        <td className="px-6 py-4 text-center">
+          <button
+            onClick={() => handleViewForm(fund)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+          >
+            <ButtonIcon size={16} />
+            {buttonText}
+          </button>
         </td>
       </tr>
     );
@@ -335,42 +335,13 @@ export default function ResearchFundContent({ onNavigate }) {
               <input
                 type="text"
                 placeholder="ค้นหาทุน..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="text-gray-600 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              <Filter size={16} />
-              ตัวกรอง
-              <ChevronDown size={16} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-            </button>
           </div>
         </div>
-
-        {/* Filter Panel */}
-        {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex flex-wrap gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">สถานะ:</label>
-                <select
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="all">ทั้งหมด</option>
-                  <option value="available">เปิดรับสมัคร</option>
-                  <option value="full">เต็มแล้ว</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Funds Table */}
@@ -432,46 +403,65 @@ export default function ResearchFundContent({ onNavigate }) {
         </div>
       )}
 
-      {/* Condition Modal */}
-      {showConditionModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            {/* Backdrop */}
-            <div 
-              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-              onClick={() => setShowConditionModal(false)}
-            ></div>
+        {/* Condition Modal */}
+        {showConditionModal && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={(e) => {
+              // ปิด modal เมื่อคลิกนอก modal content
+              if (e.target === e.currentTarget) {
+                setShowConditionModal(false);
+              }
+            }}
+          >
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-gray-500 opacity-75 transition-opacity duration-300 ease-in-out"
+            onClick={() => setShowConditionModal(false)}
+            aria-hidden="true"
+          ></div>
 
-            {/* Modal panel */}
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    เงื่อนไขทุน: {selectedCondition.title}
-                  </h3>
-                  <button
-                    type="button"
-                    className="text-gray-400 hover:text-gray-500"
-                    onClick={() => setShowConditionModal(false)}
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {selectedCondition.content}
-                  </p>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          {/* Modal panel */}
+          <div 
+            ref={modalRef}
+            className="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all duration-300 ease-in-out max-w-2xl w-full max-h-[90vh] flex flex-col"
+            role="dialog"
+            aria-labelledby="modal-title"
+            aria-describedby="modal-description"
+            tabIndex={-1}
+          >
+            {/* Header - Fixed */}
+            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+              <div className="flex justify-between items-start">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 pr-4" id="modal-title">
+                  เงื่อนไขทุน: {selectedCondition.title}
+                </h3>
                 <button
                   type="button"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="text-gray-400 hover:text-gray-500 flex-shrink-0"
                   onClick={() => setShowConditionModal(false)}
                 >
-                  ปิด
+                  <X size={20} />
                 </button>
               </div>
+            </div>
+            
+            {/* Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+              <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed" id="modal-description">
+                {selectedCondition.content}
+              </div>
+            </div>
+            
+            {/* Footer - Fixed */}
+            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200 flex-shrink-0">
+              <button
+                type="button"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                onClick={() => setShowConditionModal(false)}
+              >
+                ปิด
+              </button>
             </div>
           </div>
         </div>
