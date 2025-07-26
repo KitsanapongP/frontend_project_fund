@@ -2,11 +2,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Award, Upload, Users, FileText, Plus, X, Save, Send, AlertCircle, Search } from "lucide-react";
+import { Award, Upload, Users, FileText, Plus, X, Save, Send, AlertCircle, Search, Eye } from "lucide-react";
 import PageLayout from "../common/PageLayout";
 import SimpleCard from "../common/SimpleCard";
 import { systemAPI } from '../../../lib/api';
-import { publicationFormAPI } from '../../../lib/publication_api';
+import { publicationFormAPI, publicationRewardAPI } from '../../../lib/publication_api';
+import { authAPI } from '../../../lib/api';
 
 // File upload component
 const FileUpload = ({ onFileSelect, accept, multiple = false, error, label }) => {
@@ -32,9 +33,12 @@ const FileUpload = ({ onFileSelect, accept, multiple = false, error, label }) =>
 
   const handleFileSelection = (files) => {
     if (multiple) {
-      setSelectedFiles(files);
-      onFileSelect(files);
+      // สำหรับหลายไฟล์ เพิ่มเข้าไปในรายการที่มีอยู่
+      const newFiles = [...selectedFiles, ...files];
+      setSelectedFiles(newFiles);
+      onFileSelect(newFiles);
     } else {
+      // สำหรับไฟล์เดียว
       const validFiles = files.slice(0, 1);
       setSelectedFiles(validFiles);
       onFileSelect(validFiles);
@@ -52,6 +56,55 @@ const FileUpload = ({ onFileSelect, accept, multiple = false, error, label }) =>
     onFileSelect(newFiles);
   };
 
+  const viewFile = (file) => {
+    const url = URL.createObjectURL(file);
+    window.open(url, '_blank');
+  };
+
+  // สำหรับไฟล์เดียว และมีไฟล์ที่เลือกแล้ว ให้แสดงเฉพาะไฟล์ที่เลือก
+  if (!multiple && selectedFiles.length > 0) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="flex items-center gap-3">
+            <FileText className="h-5 w-5 text-green-600" />
+            <div>
+              <p className="text-sm font-medium text-green-800">{selectedFiles[0].name}</p>
+              <p className="text-xs text-green-600">
+                {(selectedFiles[0].size / 1024 / 1024).toFixed(2)} MB
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => viewFile(selectedFiles[0])}
+              className="text-blue-500 hover:text-blue-700"
+              title="ดูไฟล์"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => removeFile(0)}
+              className="text-red-500 hover:text-red-700"
+              title="ลบไฟล์"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        {error && (
+          <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+            <AlertCircle className="h-4 w-4" />
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // สำหรับหลายไฟล์ หรือยังไม่มีไฟล์เลือก
   return (
     <div className="space-y-2">
       <div
@@ -69,7 +122,13 @@ const FileUpload = ({ onFileSelect, accept, multiple = false, error, label }) =>
       >
         <Upload className="mx-auto h-6 w-6 text-gray-400 mb-2" />
         <p className="text-sm text-gray-600">
-          {multiple ? 'เลือกไฟล์หลายไฟล์' : 'เลือกไฟล์'}
+          {multiple ? 
+            'คลิกหรือลากไฟล์มาวางที่นี่ (สามารถเลือกได้หลายไฟล์)' : 
+            'คลิกหรือลากไฟล์มาวางที่นี่'
+          }
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          {accept || 'PDF, DOC, DOCX, JPG, PNG (ไม่เกิน 10MB)'}
         </p>
         <input
           id={`file-input-${label}`}
@@ -81,28 +140,54 @@ const FileUpload = ({ onFileSelect, accept, multiple = false, error, label }) =>
         />
       </div>
 
-      {selectedFiles.length > 0 && (
-        <div className="space-y-2">
-          {selectedFiles.map((file, index) => (
-            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-              <div className="flex items-center space-x-2">
-                <FileText className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-700">{file.name}</span>
+      {/* Display selected files for multiple selection */}
+      {multiple && selectedFiles.length > 0 && (
+        <div className="mt-3 space-y-2">
+          <p className="text-sm font-medium text-gray-700">ไฟล์ที่เลือก:</p>
+          <div className="space-y-2">
+            {selectedFiles.map((file, index) => (
+              <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">{file.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      viewFile(file);
+                    }}
+                    className="text-blue-500 hover:text-blue-700"
+                    title="ดูไฟล์"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFile(index);
+                    }}
+                    className="text-red-500 hover:text-red-700"
+                    title="ลบไฟล์"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => removeFile(index)}
-                className="text-red-500 hover:text-red-700"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       {error && (
-        <p className="text-red-500 text-sm flex items-center gap-1">
+        <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
           <AlertCircle className="h-4 w-4" />
           {error}
         </p>
@@ -111,17 +196,27 @@ const FileUpload = ({ onFileSelect, accept, multiple = false, error, label }) =>
   );
 };
 
-// Co-author selector component
-const CoauthorSelector = ({ users, selectedCoauthors, onAddCoauthor, onRemoveCoauthor }) => {
+const CoauthorSelector = ({ users, selectedCoauthors, onAddCoauthor, onRemoveCoauthor, currentUser }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const filteredUsers = users.filter(user =>
-    !selectedCoauthors.find(c => c.user_id === user.user_id) &&
-    (user.user_fname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     user.user_lname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     user.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredUsers = users.filter(user => {
+    // กรองผู้ใช้ปัจจุบันออก
+    if (currentUser && user.user_id === currentUser.user_id) {
+      return false;
+    }
+    
+    // กรองผู้ที่เลือกไปแล้วออก
+    if (selectedCoauthors.find(c => c.user_id === user.user_id)) {
+      return false;
+    }
+    
+    // กรองตาม search term
+    const searchLower = searchTerm.toLowerCase();
+    return user.user_fname.toLowerCase().includes(searchLower) ||
+           user.user_lname.toLowerCase().includes(searchLower) ||
+           user.email.toLowerCase().includes(searchLower);
+  });
 
   return (
     <div className="space-y-4">
@@ -205,12 +300,12 @@ export default function PublicationRewardForm() {
   const [documentTypes, setDocumentTypes] = useState([]);
   const [years, setYears] = useState([]);
   const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   // Form data state
   const [formData, setFormData] = useState({
     // Basic submission info
     year_id: null,
-    priority: 'normal',
     
     // Publication details
     author_status: '',
@@ -237,6 +332,7 @@ export default function PublicationRewardForm() {
     publication_fee_university: '',
     publication_fee_college: '',
     total_claim: 0,
+    total_claim_college: 0,
     
     // Bank info
     bank_account: '',
@@ -253,6 +349,10 @@ export default function PublicationRewardForm() {
   const [coauthors, setCoauthors] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [otherDocuments, setOtherDocuments] = useState([]);
+
+  // External funding sources
+  const [externalFundings, setExternalFundings] = useState([]);
+  const [publicationFee, setPublicationFee] = useState(0); // ค่าตีพิมพ์
 
   // Load initial data
   useEffect(() => {
@@ -271,6 +371,20 @@ export default function PublicationRewardForm() {
     }));
   }, [formData.publication_reward, formData.publication_fee_university, formData.publication_fee_college]);
 
+  // Calculate total from college (ค่าปรับปรุง + ค่าตีพิมพ์ - รวมเบิกจากนอก)
+  useEffect(() => {
+    const reward = parseFloat(formData.publication_reward) || 0;
+    const pubFee = parseFloat(publicationFee) || 0;
+    const externalTotal = externalFundings.reduce((sum, funding) => sum + (parseFloat(funding.amount) || 0), 0);
+    
+    const collegeTotal = reward + pubFee - externalTotal;
+    
+    setFormData(prev => ({
+      ...prev,
+      total_claim_college: collegeTotal > 0 ? collegeTotal : 0
+    }));
+  }, [formData.publication_reward, publicationFee, externalFundings]);
+
   // Calculate reward based on author status and quartile
   useEffect(() => {
     if (formData.author_status && formData.journal_quartile) {
@@ -279,13 +393,42 @@ export default function PublicationRewardForm() {
     }
   }, [formData.author_status, formData.journal_quartile]);
 
-  // Debug version
+  // ในฟังก์ชัน loadInitialData
   const loadInitialData = async () => {
     try {
       setLoading(true);
       console.log('Starting loadInitialData...');
       
-      // ใช้ API functions จาก teacher_api.js แทน fetch โดยตรง
+      // ดึงข้อมูลผู้ใช้ปัจจุบัน
+      let userLoaded = false;
+      let currentUserData = null;
+      
+      // พยายามดึงจาก API ก่อน
+      try {
+        const profileResponse = await authAPI.getProfile();
+        console.log('Full profile response:', profileResponse);
+        
+        if (profileResponse && profileResponse.user) {
+          currentUserData = profileResponse.user;
+          setCurrentUser(currentUserData);
+          userLoaded = true;
+          console.log('Current user from API:', currentUserData);
+        }
+      } catch (error) {
+        console.log('Could not fetch profile from API:', error);
+      }
+      
+      // ถ้าดึงจาก API ไม่ได้ ให้ใช้จาก localStorage
+      if (!userLoaded) {
+        const storedUser = authAPI.getCurrentUser();
+        console.log('Stored user from localStorage:', storedUser);
+        if (storedUser) {
+          currentUserData = storedUser;
+          setCurrentUser(storedUser);
+        }
+      }
+
+      // ใช้ API functions จาก publication_api.js
       const [yearsResponse, usersResponse, docTypesResponse] = await Promise.all([
         systemAPI.getYears(),                                    
         publicationFormAPI.getUsers(),                                  
@@ -306,30 +449,31 @@ export default function PublicationRewardForm() {
           console.log('Found current year:', currentYear);
           setFormData(prev => ({ ...prev, year_id: currentYear.year_id }));
         }
-      } else {
-        console.log('No years data found in response');
       }
 
-      // Handle users response  
+      // Handle users response และกรองผู้ใช้ปัจจุบันออก
       if (usersResponse && usersResponse.users) {
-        console.log('Setting users:', usersResponse.users);
-        setUsers(usersResponse.users);
-      } else {
-        console.log('No users data found in response');
+        console.log('All users before filtering:', usersResponse.users);
+        
+        // กรองผู้ใช้ปัจจุบันออกจากรายชื่อผู้ร่วมวิจัย
+        const filteredUsers = usersResponse.users.filter(user => {
+          // ตรวจสอบว่ามี currentUserData และ user_id
+          if (currentUserData && currentUserData.user_id) {
+            return user.user_id !== currentUserData.user_id;
+          }
+          return true; // ถ้าไม่มี currentUserData ให้แสดงทั้งหมด
+        });
+        
+        console.log('Current user ID:', currentUserData?.user_id);
+        console.log('Filtered users (without current user):', filteredUsers);
+        setUsers(filteredUsers);
       }
 
       // Handle document types response
       if (docTypesResponse && docTypesResponse.document_types) {
         console.log('Setting document types:', docTypesResponse.document_types);
         setDocumentTypes(docTypesResponse.document_types);
-      } else {
-        console.log('No document types data found in response');
       }
-
-      console.log('Final state:');
-      console.log('Years state will be:', yearsResponse?.years || []);
-      console.log('Users state will be:', usersResponse?.users || []);
-      console.log('Document types state will be:', docTypesResponse?.document_types || []);
 
     } catch (error) {
       console.error('Error loading initial data:', error);
@@ -388,13 +532,63 @@ export default function PublicationRewardForm() {
     setCoauthors(prev => prev.filter(c => c.user_id !== user.user_id));
   };
 
+  const handleAddExternalFunding = () => {
+    const newFunding = {
+      id: Date.now(),
+      fundName: '',
+      amount: '',
+      file: null
+    };
+    setExternalFundings([...externalFundings, newFunding]);
+  };
+
+  const handleRemoveExternalFunding = (id) => {
+    // หาไฟล์ที่เกี่ยวข้อง
+    const funding = externalFundings.find(f => f.id === id);
+    if (funding && funding.file) {
+      // ลบไฟล์จากเอกสารอื่นๆ ด้วย
+      setOtherDocuments(otherDocuments.filter(doc => 
+        doc.type !== 'external_funding' || doc.file !== funding.file
+      ));
+    }
+    
+    // ลบ funding
+    setExternalFundings(externalFundings.filter(f => f.id !== id));
+  };
+
+  const handleExternalFundingChange = (id, field, value) => {
+    setExternalFundings(externalFundings.map(funding => 
+      funding.id === id ? { ...funding, [field]: value } : funding
+    ));
+  };
+
+  const handleExternalFundingFileChange = (id, file) => {
+    if (file && file.type === 'application/pdf') {
+      // อัพเดตไฟล์ในตาราง
+      setExternalFundings(externalFundings.map(funding => 
+        funding.id === id ? { ...funding, file: file } : funding
+      ));
+      
+      // เพิ่มไฟล์ไปที่เอกสารอื่นๆ ด้วย
+      const newDoc = {
+        id: Date.now(),
+        name: file.name,
+        file: file,
+        type: 'external_funding'
+      };
+      setOtherDocuments([...otherDocuments, newDoc]);
+    } else {
+      alert('กรุณาเลือกไฟล์ PDF เท่านั้น');
+    }
+  };
+
   const handleFileUpload = (documentTypeId, files) => {
     if (files && files.length > 0) {
       if (documentTypeId === 'other') {
-        // Handle multiple other documents
-        setOtherDocuments(prev => [...prev, ...files]);
+        // สำหรับเอกสารอื่นๆ เก็บทั้งหมดเป็น array
+        setOtherDocuments(files);
       } else {
-        // Handle single document
+        // สำหรับเอกสารที่กำหนด เก็บเฉพาะไฟล์แรก
         setUploadedFiles(prev => ({
           ...prev,
           [documentTypeId]: files[0]
@@ -428,19 +622,26 @@ export default function PublicationRewardForm() {
     if (!formData.article_title.trim()) newErrors.article_title = 'กรุณากรอกชื่อบทความ';
     if (!formData.journal_name.trim()) newErrors.journal_name = 'กรุณากรอกชื่อวารสาร';
     if (!formData.journal_quartile) newErrors.journal_quartile = 'กรุณาเลือก Quartile';
-    if (!formData.bank_account.trim()) newErrors.bank_account = 'กรุณากรอกเลขบัญชีธนาคาร';
+    if (!formData.bank_account.trim()) newErrors.bank_account = 'กรุณากรอกเลขที่บัญชีธนาคาร';
     if (!formData.bank_name.trim()) newErrors.bank_name = 'กรุณากรอกชื่อธนาคาร';
     if (!formData.phone_number.trim()) newErrors.phone_number = 'กรุณากรอกเบอร์โทรศัพท์';
-    if (!formData.year_id) newErrors.year_id = 'กรุณาเลือกปีงบประมาณ';
+    
+    // Validate journal year
+    const currentYear = new Date().getFullYear();
+    const journalYear = parseInt(formData.journal_year);
+    if (!journalYear || journalYear < 1900 || journalYear > currentYear + 5) {
+      newErrors.journal_year = 'กรุณากรอกปีที่ถูกต้อง';
+    }
 
-    // Check required documents
-    const requiredDocs = documentTypes.filter(doc => doc.required);
-    requiredDocs.forEach(doc => {
-      if (!uploadedFiles[doc.document_type_id]) {
-        newErrors[`file_${doc.document_type_id}`] = `กรุณาแนบ${doc.document_type_name}`;
+    // Validate required documents
+    const requiredDocTypes = documentTypes.filter(doc => doc.is_required);
+    requiredDocTypes.forEach(docType => {
+      if (!uploadedFiles[docType.document_type_id]) {
+        newErrors[`file_${docType.document_type_id}`] = `กรุณาอัปโหลด${docType.document_name}`;
       }
     });
 
+    console.log('Validation errors:', newErrors);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -452,7 +653,6 @@ export default function PublicationRewardForm() {
       const applicationData = {
         submission_type: 'publication_reward',
         year_id: formData.year_id,
-        priority: formData.priority,
         ...formData,
         uploadedFiles,
         otherDocuments,
@@ -489,7 +689,6 @@ export default function PublicationRewardForm() {
       const applicationData = {
         submission_type: 'publication_reward',
         year_id: formData.year_id,
-        priority: formData.priority,
         ...formData,
         uploadedFiles,
         otherDocuments,
@@ -520,7 +719,6 @@ export default function PublicationRewardForm() {
   const resetForm = () => {
     setFormData({
       year_id: years.find(y => y.year === '2568')?.year_id || null,
-      priority: 'normal',
       author_status: '',
       article_title: '',
       journal_name: '',
@@ -586,6 +784,16 @@ export default function PublicationRewardForm() {
         {/* ข้อมูลพื้นฐาน */}
         <SimpleCard title="ข้อมูลพื้นฐาน" icon={FileText}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* ชื่อผู้ยื่นคำร้อง - แก้ไขไม่ได้ */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ชื่อผู้ยื่นคำร้อง
+              </label>
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800">
+                {currentUser ? `${currentUser.position_name} ${currentUser.user_fname} ${currentUser.user_lname}` : 'กำลังโหลด...'}
+              </div>
+            </div>
+
             {/* ปีงบประมาณ */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -632,24 +840,6 @@ export default function PublicationRewardForm() {
               {errors.author_status && (
                 <p className="text-red-500 text-sm mt-1">{errors.author_status}</p>
               )}
-            </div>
-
-            {/* ระดับความสำคัญ */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ระดับความสำคัญ
-              </label>
-              <select
-                name="priority"
-                value={formData.priority}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-              >
-                <option value="low">ต่ำ</option>
-                <option value="normal">ปกติ</option>
-                <option value="high">สูง</option>
-                <option value="urgent">ด่วน</option>
-              </select>
             </div>
 
             {/* เบอร์โทรศัพท์ */}
@@ -899,29 +1089,48 @@ export default function PublicationRewardForm() {
                 }}
               >
                 <option value="">เลือกผู้ร่วมวิจัย...</option>
-                {users.map(user => (
-                  <option 
-                    key={user.user_id} 
-                    value={user.user_id}
-                    disabled={coauthors.some(c => c.user_id === user.user_id)}
-                  >
-                    {user.user_fname} {user.user_lname} ({user.email})
-                  </option>
-                ))}
+                {users
+                  .filter(user => {
+                    // กรองผู้ใช้ปัจจุบันออก
+                    if (currentUser && user.user_id === currentUser.user_id) {
+                      return false;
+                    }
+                    // กรองผู้ที่เลือกไปแล้วออก
+                    if (coauthors.some(c => c.user_id === user.user_id)) {
+                      return false;
+                    }
+                    return true;
+                  })
+                  .map(user => (
+                    <option 
+                      key={user.user_id} 
+                      value={user.user_id}
+                    >
+                      {user.user_fname} {user.user_lname} ({user.email})
+                    </option>
+                  ))}
               </select>
             </div>
+
+            {/* แสดงจำนวนผู้ร่วมวิจัยที่สามารถเลือกได้ */}
+            <p className="text-xs text-gray-500">
+              สามารถเลือกได้ {users.filter(u => 
+                (!currentUser || u.user_id !== currentUser.user_id) && 
+                !coauthors.some(c => c.user_id === u.user_id)
+              ).length} คน
+            </p>
 
             {/* รายการผู้ร่วมวิจัยที่เลือกแล้ว */}
             {coauthors.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ผู้ร่วมวิจัยที่เลือก
+                  ผู้ร่วมวิจัยที่เลือก ({coauthors.length} คน)
                 </label>
                 <div className="space-y-2">
                   {coauthors.map((coauthor, index) => (
                     <div
                       key={coauthor.user_id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <div className="flex items-center space-x-3">
                         <span className="text-sm font-medium text-gray-600">
@@ -940,6 +1149,7 @@ export default function PublicationRewardForm() {
                         type="button"
                         onClick={() => handleRemoveCoauthor(coauthor)}
                         className="text-red-500 hover:text-red-700 transition-colors"
+                        title="ลบผู้ร่วมวิจัย"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -953,6 +1163,7 @@ export default function PublicationRewardForm() {
               <div className="text-center py-6 text-gray-500">
                 <Users className="mx-auto h-8 w-8 mb-2 text-gray-400" />
                 <p className="text-sm">ยังไม่มีผู้ร่วมวิจัย</p>
+                <p className="text-xs text-gray-400 mt-1">กรุณาเลือกผู้ร่วมวิจัยจากรายการด้านบน</p>
               </div>
             )}
           </div>
@@ -960,71 +1171,156 @@ export default function PublicationRewardForm() {
 
         {/* การคำนวณเงินรางวัล */}
         <SimpleCard title="การคำนวณเงินรางวัล" icon={Award}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* เงินรางวัลการตีพิมพ์ */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                เงินรางวัลการตีพิมพ์ (บาท)
-              </label>
-              <input
-                type="number"
-                name="publication_reward"
-                value={formData.publication_reward}
-                onChange={handleInputChange}
-                readOnly
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                คำนวณอัตโนมัติจากสถานะผู้แต่งและ Quartile
-              </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 divide-x divide-gray-200">
+            {/* ฝั่งซ้าย - ค่าปรับปรุง ค่าตีพิมพ์ และรวมเบิกจากวิทยาลัย */}
+            <div className="space-y-6 lg:pr-6">
+              {/* ค่าปรับปรุง */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ค่าปรับปรุง (บาท)
+                </label>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-2xl font-semibold text-gray-800">
+                    {formData.publication_reward.toLocaleString()}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  คำนวณอัตโนมัติจากสถานะผู้แต่งและ Quartile
+                </p>
+              </div>
+
+              {/* ค่าตีพิมพ์ */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ค่าตีพิมพ์ (บาท)
+                </label>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-2xl font-semibold text-gray-800">
+                    {publicationFee.toLocaleString()}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  คำนวณอัตโนมัติตามเงื่อนไข
+                </p>
+              </div>
+
+              {/* รวมเบิกจากวิทยาลัยการคอม */}
+              <div className="mt-8">
+                <h4 className="text-base font-medium text-gray-900 mb-3">รวมเบิกจากวิทยาลัยการคอม</h4>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm text-gray-700">จำนวน</span>
+                  <span className="text-2xl font-bold text-gray-900">
+                    {(formData.total_claim_college || 0).toLocaleString()}
+                  </span>
+                  <span className="text-sm text-gray-700">บาท</span>
+                </div>
+              </div>
             </div>
 
-            {/* ค่าธรรมเนียมการตีพิมพ์ (มหาวิทยาลัย) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ค่าธรรมเนียมการตีพิมพ์ (มหาวิทยาลัย) (บาท)
-              </label>
-              <input
-                type="number"
-                name="publication_fee_university"
-                value={formData.publication_fee_university}
-                onChange={handleInputChange}
-                placeholder="0"
-                min="0"
-                step="0.01"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-              />
-            </div>
+            {/* ฝั่งขวา - ตารางเบิกจากนอกมหาวิทยาลัย */}
+            <div className="lg:pl-6">
+              <h4 className="font-medium text-gray-900 mb-4">เบิกจากนอกมหาวิทยาลัย</h4>
+              
+              {/* ตาราง */}
+              <div className="overflow-hidden rounded-lg border border-blue-200">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-blue-50">
+                      <th className="border-b border-r border-blue-200 px-3 py-2 text-sm font-medium text-gray-700 text-center" style={{width: '60px'}}>
+                        ลำดับ
+                      </th>
+                      <th className="border-b border-r border-blue-200 px-3 py-2 text-sm font-medium text-gray-700 text-center">
+                        ชื่อทุน
+                      </th>
+                      <th className="border-b border-blue-200 px-3 py-2 text-sm font-medium text-gray-700 text-center" style={{width: '120px'}}>
+                        จำนวน
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white">
+                    {externalFundings.length === 0 ? (
+                      <tr>
+                        <td colSpan="3" className="px-4 py-8 text-center text-gray-500">
+                          ยังไม่มีข้อมูล
+                        </td>
+                      </tr>
+                    ) : (
+                      externalFundings.map((funding, index) => (
+                        <tr key={funding.id} className={index < externalFundings.length - 1 ? 'border-b border-blue-200' : ''}>
+                          <td className="border-r border-blue-200 px-3 py-2 text-center text-sm">
+                            {index + 1}
+                          </td>
+                          <td className="border-r border-blue-200 px-3 py-2 text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-700">{funding.fundName || 'แนบไฟล์หลักฐาน'}</span>
+                              <label className="cursor-pointer text-blue-500 hover:text-blue-700">
+                                <input
+                                  type="file"
+                                  accept=".pdf"
+                                  onChange={(e) => handleExternalFundingFileChange(funding.id, e.target.files[0])}
+                                  className="hidden"
+                                />
+                                <Upload className="h-4 w-4" />
+                              </label>
+                              {funding.file && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const url = URL.createObjectURL(funding.file);
+                                    window.open(url, '_blank');
+                                  }}
+                                  className="text-blue-500 hover:text-blue-700"
+                                  title="ดูไฟล์"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveExternalFunding(funding.id)}
+                                className="text-red-500 hover:text-red-700 ml-auto"
+                                title="ลบ"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              type="number"
+                              value={funding.amount}
+                              onChange={(e) => handleExternalFundingChange(funding.id, 'amount', e.target.value)}
+                              placeholder="0"
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-right text-sm focus:outline-none focus:border-blue-500"
+                            />
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-            {/* ค่าธรรมเนียมการตีพิมพ์ (วิทยาลัย) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ค่าธรรมเนียมการตีพิมพ์ (วิทยาลัย) (บาท)
-              </label>
-              <input
-                type="number"
-                name="publication_fee_college"
-                value={formData.publication_fee_college}
-                onChange={handleInputChange}
-                placeholder="0"
-                min="0"
-                step="0.01"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-              />
-            </div>
+              {/* ปุ่มเพิ่มแถว */}
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={handleAddExternalFunding}
+                  className="flex items-center gap-2 px-5 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors text-sm font-medium"
+                >
+                  <Plus className="h-4 w-4" />
+                  เพิ่ม
+                </button>
+              </div>
 
-            {/* ยอดรวมที่ขอเบิก */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ยอดรวมที่ขอเบิก (บาท)
-              </label>
-              <input
-                type="number"
-                name="total_claim"
-                value={formData.total_claim}
-                readOnly
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-blue-50 text-blue-800 font-semibold"
-              />
+              {/* แสดงยอดรวม */}
+              <div className="mt-4 text-right">
+                <span className="text-sm text-gray-700">รวม </span>
+                <span className="text-xl font-bold text-gray-900">
+                  {externalFundings.reduce((sum, funding) => sum + (parseFloat(funding.amount) || 0), 0).toLocaleString()}
+                </span>
+                <span className="text-sm text-gray-700"> บาท</span>
+              </div>
             </div>
           </div>
         </SimpleCard>
@@ -1075,88 +1371,53 @@ export default function PublicationRewardForm() {
         </SimpleCard>
 
         {/* เอกสารแนบ */}
-        <SimpleCard title="เอกสารแนบ" icon={FileText}>
+        <SimpleCard title="เอกสารแนบ" icon={Upload}>
           <div className="space-y-6">
-            {documentTypes.map((docType) => (
-              <div key={docType.id} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-700">
-                    {docType.name}
-                    {docType.required && (
-                      <span className="text-red-500 ml-1">*</span>
-                    )}
-                  </label>
-                  {uploadedFiles[docType.id] && (
-                    <button
-                      type="button"
-                      onClick={() => removeFile(docType.id)}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      ลบไฟล์
-                    </button>
-                  )}
-                </div>
-                
-                {uploadedFiles[docType.id] ? (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="h-4 w-4 text-green-600" />
-                      <span className="text-sm text-green-700">
-                        {uploadedFiles[docType.id].name}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <FileUpload
-                    onFileSelect={(files) => handleFileUpload(docType.id, files)}
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                    multiple={docType.multiple}
-                    error={errors[`file_${docType.id}`]}
-                    label={`doc_${docType.id}`}
-                  />
-                )}
-                
-                {errors[`file_${docType.id}`] && (
-                  <p className="text-sm text-red-600">
-                    {errors[`file_${docType.id}`]}
-                  </p>
-                )}
-              </div>
-            ))}
-
-            {/* เอกสารอื่นๆ (ถ้ามี) */}
-            {otherDocuments.length > 0 && (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  เอกสารอื่นๆ ที่อัปโหลดแล้ว
-                </label>
-                <div className="space-y-2">
-                  {otherDocuments.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <FileText className="h-4 w-4 text-gray-600" />
-                        <span className="text-sm text-gray-700">{file.name}</span>
+            {/* เอกสารที่กำหนด */}
+            {documentTypes && documentTypes.length > 0 ? (
+              <>
+                {documentTypes.map((docType) => {
+                  // ถ้าเป็นเอกสารอื่นๆ ให้แสดงแยก
+                  if (docType.name === 'เอกสารอื่นๆ') {
+                    return (
+                      <div key={docType.id} className="border border-gray-200 rounded-lg p-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          เอกสารอื่นๆ (ถ้ามี)
+                        </label>
+                        
+                        <FileUpload
+                          onFileSelect={(files) => handleFileUpload('other', files)}
+                          accept=".pdf"
+                          multiple={true}
+                          label="other"
+                        />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeOtherDocument(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                    );
+                  }
+                  
+                  // เอกสารประเภทอื่นๆ
+                  return (
+                    <div key={docType.id} className="border border-gray-200 rounded-lg p-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {docType.name}
+                        {docType.required && <span className="text-red-500 ml-1">*</span>}
+                      </label>
+                      
+                      <FileUpload
+                        onFileSelect={(files) => handleFileUpload(docType.id, files)}
+                        accept=".pdf"
+                        multiple={false}
+                        error={errors[`file_${docType.id}`]}
+                        label={`doc_${docType.id}`}
+                      />
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {documentTypes.length === 0 && (
+                  );
+                })}
+              </>
+            ) : (
               <div className="text-center py-6 text-gray-500">
                 <FileText className="mx-auto h-8 w-8 mb-2 text-gray-400" />
-                <p className="text-sm">ไม่มีประเภทเอกสารที่กำหนด</p>
+                <p className="text-sm">กำลังโหลดประเภทเอกสาร...</p>
               </div>
             )}
           </div>
@@ -1247,35 +1508,6 @@ export default function PublicationRewardForm() {
           </button>
         </div>
 
-        {/* สรุปการคำนวณ */}
-        {formData.total_claim > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-medium text-blue-900 mb-3">สรุปการขอเบิก</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>เงินรางวัลการตีพิมพ์:</span>
-                <span className="font-medium">{formData.publication_reward.toLocaleString()} บาท</span>
-              </div>
-              {formData.publication_fee_university > 0 && (
-                <div className="flex justify-between">
-                  <span>ค่าธรรมเนียมการตีพิมพ์ (มหาวิทยาลัย):</span>
-                  <span className="font-medium">{parseFloat(formData.publication_fee_university).toLocaleString()} บาท</span>
-                </div>
-              )}
-              {formData.publication_fee_college > 0 && (
-                <div className="flex justify-between">
-                  <span>ค่าธรรมเนียมการตีพิมพ์ (วิทยาลัย):</span>
-                  <span className="font-medium">{parseFloat(formData.publication_fee_college).toLocaleString()} บาท</span>
-                </div>
-              )}
-              <div className="border-t border-blue-300 pt-2 flex justify-between font-semibold text-blue-900">
-                <span>ยอดรวมทั้งสิ้น:</span>
-                <span>{formData.total_claim.toLocaleString()} บาท</span>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* คำเตือน */}
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
@@ -1284,7 +1516,7 @@ export default function PublicationRewardForm() {
               <p className="font-medium mb-1">ข้อควรระวัง:</p>
               <ul className="list-disc list-inside space-y-1 text-xs">
                 <li>กรุณาตรวจสอบข้อมูลให้ครบถ้วนและถูกต้องก่อนส่งคำร้อง</li>
-                <li>เอกสารแนบต้องเป็นไฟล์ PDF, DOC, DOCX หรือรูปภาพ ขนาดไม่เกิน 10MB</li>
+                <li>เอกสารแนบต้องเป็นไฟล์ PDF เท่านั้น</li>
                 <li>เงินรางวัลจะคำนวณอัตโนมัติตามสถานะผู้แต่งและ Quartile ของวารสาร</li>
                 <li>หลังจากส่งคำร้องแล้ว จะไม่สามารถแก้ไขข้อมูลได้</li>
                 <li>สามารถบันทึกร่างและกลับมาแก้ไขภายหลังได้</li>
