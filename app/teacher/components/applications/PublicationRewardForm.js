@@ -2,12 +2,112 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Award, Upload, Users, FileText, Plus, X, Save, Send, AlertCircle, Search, Eye } from "lucide-react";
+import { Award, Upload, Users, FileText, Plus, X, Save, Send, AlertCircle, Search, Eye, Calculator  } from "lucide-react";
 import PageLayout from "../common/PageLayout";
 import SimpleCard from "../common/SimpleCard";
-import { systemAPI } from '../../../lib/api';
-import { publicationFormAPI, publicationRewardAPI } from '../../../lib/publication_api';
-import { authAPI } from '../../../lib/api';
+import { systemAPI, authAPI } from '../../../lib/api';
+import { 
+  submissionAPI, 
+  publicationDetailsAPI, 
+  fileAPI, 
+  documentAPI, 
+  publicationRewardAPI, 
+  publicationFormAPI 
+} from '../../../lib/publication_api';
+import Swal from 'sweetalert2';
+import { PDFDocument } from 'pdf-lib';
+
+// SweetAlert2 configuration
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.onmouseenter = Swal.stopTimer;
+    toast.onmouseleave = Swal.resumeTimer;
+  }
+});
+
+// ========== 3. เพิ่มฟังก์ชัน mergePDFs ก่อน component ==========
+const mergePDFs = async (pdfFiles) => {
+  try {
+    const mergedPdf = await PDFDocument.create();
+    
+    for (const file of pdfFiles) {
+      if (file.type === 'application/pdf') {
+        const pdfBytes = await file.arrayBuffer();
+        const pdf = await PDFDocument.load(pdfBytes);
+        const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+        pages.forEach((page) => mergedPdf.addPage(page));
+      }
+    }
+    
+    const mergedPdfBytes = await mergedPdf.save();
+    const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+    return new File([blob], 'merged_documents.pdf', { type: 'application/pdf' });
+  } catch (error) {
+    console.error('Error merging PDFs:', error);
+    throw error;
+  }
+};
+
+// ========== เพิ่มระบบ Draft ด้วย localStorage ==========
+
+// 1. เพิ่ม utility functions สำหรับจัดการ draft
+const DRAFT_KEY = 'publication_reward_draft';
+
+// ฟังก์ชันบันทึก draft ลง localStorage
+const saveDraftToLocal = (data) => {
+  try {
+    const draftData = {
+      formData: data.formData,
+      coauthors: data.coauthors,
+      otherDocuments: data.otherDocuments.map(doc => ({
+        documentTypeId: doc.documentTypeId,
+        description: doc.description,
+        fileName: doc.file?.name || null,
+        fileSize: doc.file?.size || null,
+        fileType: doc.file?.type || null
+      })),
+      savedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 วัน
+    };
+    
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
+    return true;
+  } catch (error) {
+    console.error('Error saving draft to localStorage:', error);
+    return false;
+  }
+};
+
+// ฟังก์ชันโหลด draft จาก localStorage
+const loadDraftFromLocal = () => {
+  try {
+    const draftString = localStorage.getItem(DRAFT_KEY);
+    if (!draftString) return null;
+    
+    const draft = JSON.parse(draftString);
+    
+    // ตรวจสอบว่า draft หมดอายุหรือไม่
+    if (new Date(draft.expiresAt) < new Date()) {
+      localStorage.removeItem(DRAFT_KEY);
+      return null;
+    }
+    
+    return draft;
+  } catch (error) {
+    console.error('Error loading draft from localStorage:', error);
+    return null;
+  }
+};
+
+// ฟังก์ชันลบ draft
+const deleteDraftFromLocal = () => {
+  localStorage.removeItem(DRAFT_KEY);
+};
 
 // File upload component
 const FileUpload = ({ onFileSelect, accept, multiple = false, error, label }) => {
@@ -292,7 +392,8 @@ const CoauthorSelector = ({ users, selectedCoauthors, onAddCoauthor, onRemoveCoa
   );
 };
 
-export default function PublicationRewardForm() {
+
+export default function PublicationRewardForm({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
@@ -301,7 +402,11 @@ export default function PublicationRewardForm() {
   const [years, setYears] = useState([]);
   const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-
+  const [pendingFiles, setPendingFiles] = useState({
+    article: null,
+    others: []
+  });
+  const [mergedPdfFile, setMergedPdfFile] = useState(null);
   // Form data state
   const [formData, setFormData] = useState({
     // Basic submission info
@@ -357,6 +462,10 @@ export default function PublicationRewardForm() {
   // Load initial data
   useEffect(() => {
     loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    checkAndLoadDraft();
   }, []);
 
   // Calculate total claim amount
@@ -483,26 +592,86 @@ export default function PublicationRewardForm() {
     }
   };
 
+  const checkAndLoadDraft = async () => {
+    const draft = loadDraftFromLocal();
+    if (draft) {
+      const savedDate = new Date(draft.savedAt).toLocaleString('th-TH');
+      
+      const result = await Swal.fire({
+        title: 'พบข้อมูลที่บันทึกไว้',
+        html: `
+          <p>พบข้อมูลร่างที่บันทึกไว้เมื่อ ${savedDate}</p>
+          <p class="text-lg font-semibold mt-2">ต้องการโหลดข้อมูลนี้หรือไม่?</p>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'โหลดข้อมูล',
+        cancelButtonText: 'เริ่มใหม่',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33'
+      });
+
+      if (result.isConfirmed) {
+        // โหลดข้อมูลฟอร์ม
+        setFormData(draft.formData);
+        setCoauthors(draft.coauthors || []);
+        
+        // แจ้งเตือนเรื่องไฟล์
+        if (draft.otherDocuments.length > 0) {
+          const fileList = draft.otherDocuments
+            .filter(doc => doc.fileName)
+            .map(doc => `• ${doc.fileName} (${(doc.fileSize / 1024 / 1024).toFixed(2)} MB)`)
+            .join('<br>');
+          
+          if (fileList) {
+            Swal.fire({
+              icon: 'info',
+              title: 'กรุณาเลือกไฟล์ใหม่',
+              html: `
+                <p>ไฟล์ที่เคยเลือกไว้:</p>
+                <div class="text-left mt-2 text-sm">${fileList}</div>
+                <p class="mt-3 text-sm text-gray-600">เนื่องจากความปลอดภัย กรุณาเลือกไฟล์เหล่านี้อีกครั้ง</p>
+              `,
+              confirmButtonColor: '#3085d6'
+            });
+            
+            // เก็บข้อมูลไฟล์ที่ต้อง re-upload
+            setPendingFiles({
+              others: draft.otherDocuments.filter(doc => doc.fileName)
+            });
+          }
+        }
+        
+        Toast.fire({
+          icon: 'success',
+          title: 'โหลดข้อมูลร่างเรียบร้อยแล้ว'
+        });
+      } else {
+        deleteDraftFromLocal();
+      }
+    }
+  };
+
   const calculateReward = (authorStatus, quartile) => {
     // Reward calculation logic based on author status and journal quartile
     const rewardRates = {
       'first_author': {
-        'Q1': 50000,
-        'Q2': 40000,
-        'Q3': 30000,
-        'Q4': 20000
+        'T5': 50000,
+        'T10': 45000,
+        'Q1': 40000,
+        'Q2': 30000,
+        'Q3': 20000,
+        'Q4': 10000,
+        'TCI': 5000
       },
       'corresponding_author': {
-        'Q1': 50000,
-        'Q2': 40000,
-        'Q3': 30000,
-        'Q4': 20000
-      },
-      'co_author': {
-        'Q1': 25000,
-        'Q2': 20000,
-        'Q3': 15000,
-        'Q4': 10000
+        'T5': 50000,
+        'T10': 45000,
+        'Q1': 40000,
+        'Q2': 30000,
+        'Q3': 20000,
+        'Q4': 10000,
+        'TCI': 5000
       }
     };
 
@@ -528,8 +697,26 @@ export default function PublicationRewardForm() {
     }
   };
 
-  const handleRemoveCoauthor = (user) => {
-    setCoauthors(prev => prev.filter(c => c.user_id !== user.user_id));
+  const handleRemoveCoauthor = async (index) => {
+    const result = await Swal.fire({
+      title: 'ยืนยันการลบผู้แต่งร่วม?',
+      text: `ต้องการลบ ${coauthors[index].user_fname} ${coauthors[index].user_lname} ออกจากรายชื่อผู้แต่งร่วมหรือไม่?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'ลบ',
+      cancelButtonText: 'ยกเลิก'
+    });
+
+    if (result.isConfirmed) {
+      setCoauthors(prev => prev.filter((_, i) => i !== index));
+      
+      Toast.fire({
+        icon: 'success',
+        title: 'ลบผู้แต่งร่วมเรียบร้อยแล้ว'
+      });
+    }
   };
 
   const handleAddExternalFunding = () => {
@@ -602,12 +789,28 @@ export default function PublicationRewardForm() {
     }
   };
 
-  const removeFile = (documentTypeId) => {
-    setUploadedFiles(prev => {
-      const updated = { ...prev };
-      delete updated[documentTypeId];
-      return updated;
+  const removeFile = async (index) => {
+    const result = await Swal.fire({
+      title: 'ยืนยันการลบไฟล์?',
+      text: 'คุณต้องการลบไฟล์นี้หรือไม่?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'ลบ',
+      cancelButtonText: 'ยกเลิก'
     });
+
+    if (result.isConfirmed) {
+      const newFiles = selectedFiles.filter((_, i) => i !== index);
+      setSelectedFiles(newFiles);
+      onFileSelect(newFiles);
+      
+      Toast.fire({
+        icon: 'success',
+        title: 'ลบไฟล์เรียบร้อยแล้ว'
+      });
+    }
   };
 
   const removeOtherDocument = (index) => {
@@ -616,101 +819,657 @@ export default function PublicationRewardForm() {
 
   const validateForm = () => {
     const newErrors = {};
-
-    // Required fields validation
-    if (!formData.author_status) newErrors.author_status = 'กรุณาเลือกสถานะผู้ยื่น';
-    if (!formData.article_title.trim()) newErrors.article_title = 'กรุณากรอกชื่อบทความ';
-    if (!formData.journal_name.trim()) newErrors.journal_name = 'กรุณากรอกชื่อวารสาร';
-    if (!formData.journal_quartile) newErrors.journal_quartile = 'กรุณาเลือก Quartile';
-    if (!formData.bank_account.trim()) newErrors.bank_account = 'กรุณากรอกเลขที่บัญชีธนาคาร';
-    if (!formData.bank_name.trim()) newErrors.bank_name = 'กรุณากรอกชื่อธนาคาร';
-    if (!formData.phone_number.trim()) newErrors.phone_number = 'กรุณากรอกเบอร์โทรศัพท์';
     
-    // Validate journal year
-    const currentYear = new Date().getFullYear();
-    const journalYear = parseInt(formData.journal_year);
-    if (!journalYear || journalYear < 1900 || journalYear > currentYear + 5) {
-      newErrors.journal_year = 'กรุณากรอกปีที่ถูกต้อง';
+    if (!formData.year_id) newErrors.year_id = 'กรุณาเลือกปีงบประมาณ';
+    if (!formData.author_status) newErrors.author_status = 'กรุณาเลือกสถานะผู้แต่ง';
+    if (!formData.article_title) newErrors.article_title = 'กรุณากรอกชื่อบทความ';
+    if (!formData.journal_name) newErrors.journal_name = 'กรุณากรอกชื่อวารสาร';
+    if (!formData.journal_quartile) newErrors.journal_quartile = 'กรุณาเลือก Journal Quartile';
+    
+    setErrors(newErrors);
+    
+    // แสดง error ด้วย SweetAlert ถ้ามี
+    if (Object.keys(newErrors).length > 0) {
+      const errorList = Object.values(newErrors).map(err => `• ${err}`).join('<br>');
+      Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลไม่ครบถ้วน',
+        html: errorList,
+        confirmButtonColor: '#3085d6'
+      });
+      return false;
     }
+    
+    return true;
+  };
 
-    // Validate required documents
-    const requiredDocTypes = documentTypes.filter(doc => doc.is_required);
-    requiredDocTypes.forEach(docType => {
-      if (!uploadedFiles[docType.document_type_id]) {
-        newErrors[`file_${docType.document_type_id}`] = `กรุณาอัปโหลด${docType.document_name}`;
+  const showSubmissionConfirmation = async () => {
+    const publicationDate = formData.journal_month && formData.journal_year 
+      ? `${formData.journal_month}/${formData.journal_year}` 
+      : '-';
+
+    // รวบรวมไฟล์ทั้งหมดเพื่อแสดงและรวม PDF
+    const allFiles = [];
+    const allFilesList = [];
+    
+    // ไฟล์จาก uploadedFiles
+    Object.entries(uploadedFiles).forEach(([key, file]) => {
+      if (file) {
+        const docType = documentTypes.find(dt => dt.id == key);
+        allFiles.push(file);
+        allFilesList.push({
+          name: file.name,
+          type: docType?.name || 'เอกสาร',
+          size: file.size
+        });
+      }
+    });
+    
+    // ไฟล์จาก otherDocuments
+    if (otherDocuments && Array.isArray(otherDocuments) && otherDocuments.length > 0) {
+      otherDocuments.forEach(doc => {
+        const file = doc.file || doc;
+        if (file && (file.name || doc.name)) {
+          allFiles.push(file);
+          allFilesList.push({
+            name: file.name || doc.name,
+            type: 'เอกสารอื่นๆ',
+            size: file.size || doc.size || 0
+          });
+        }
+      });
+    }
+    
+    // ไฟล์จาก external funding
+    externalFundings.forEach(funding => {
+      if (funding.file) {
+        allFiles.push(funding.file);
+        allFilesList.push({
+          name: funding.file.name,
+          type: 'หลักฐานทุนภายนอก',
+          size: funding.file.size
+        });
       }
     });
 
-    console.log('Validation errors:', newErrors);
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    // ตรวจสอบว่ามีไฟล์หรือไม่
+    if (allFiles.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ไม่พบเอกสารแนบ',
+        text: 'กรุณาแนบไฟล์บทความอย่างน้อย 1 ไฟล์',
+        confirmButtonColor: '#3085d6'
+      });
+      return false;
+    }
 
+    // สร้าง PDF รวม
+    let mergedPdfBlob = null;
+    let mergedPdfUrl = null;
+    let previewViewed = false; // ใช้ตัวแปรใน scope แทน state
+
+    try {
+      // แสดง loading ขณะรวม PDF
+      Swal.fire({
+        title: 'กำลังเตรียมเอกสาร...',
+        html: 'กำลังรวมไฟล์ PDF ทั้งหมด',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // กรองเฉพาะไฟล์ PDF
+      const pdfFiles = allFiles.filter(file => file.type === 'application/pdf');
+      
+      if (pdfFiles.length > 0) {
+        if (pdfFiles.length > 1) {
+          // รวม PDF หลายไฟล์
+          mergedPdfBlob = await mergePDFs(pdfFiles);
+          // แปลงเป็น File object และเก็บไว้ใน state
+          const mergedFile = new File([mergedPdfBlob], 'merged_documents.pdf', { type: 'application/pdf' });
+          setMergedPdfFile(mergedFile);
+        } else {
+          // ใช้ PDF เดียว
+          mergedPdfBlob = pdfFiles[0];
+          setMergedPdfFile(pdfFiles[0]);
+        }
+        mergedPdfUrl = URL.createObjectURL(mergedPdfBlob);
+      }
+
+      Swal.close();
+    } catch (error) {
+      console.error('Error creating merged PDF:', error);
+      Swal.close();
+      setMergedPdfFile(null);
+      Swal.fire({
+        icon: 'error',
+        title: 'ไม่สามารถรวมไฟล์ PDF ได้',
+        text: 'กรุณาตรวจสอบไฟล์และลองใหม่อีกครั้ง',
+        confirmButtonColor: '#3085d6'
+      });
+      return false;
+    }
+
+    const summaryHTML = `
+      <div class="text-left space-y-4">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h4 class="font-semibold text-gray-700 mb-2">ข้อมูลบทความ</h4>
+          <div class="space-y-2 text-sm">
+            <p><span class="font-medium">ชื่อบทความ:</span> ${formData.article_title || '-'}</p>
+            <p><span class="font-medium">วารสาร:</span> ${formData.journal_name || '-'}</p>
+            <p><span class="font-medium">Quartile:</span> ${formData.journal_quartile || '-'}</p>
+            <p><span class="font-medium">วันที่ตีพิมพ์:</span> ${publicationDate}</p>
+            <p><span class="font-medium">DOI:</span> ${formData.doi || '-'}</p>
+          </div>
+        </div>
+
+        <div class="bg-blue-50 p-4 rounded-lg">
+          <h4 class="font-semibold text-blue-700 mb-2">ข้อมูลผู้แต่ง</h4>
+          <div class="space-y-2 text-sm">
+            <p><span class="font-medium">สถานะผู้แต่ง:</span> ${
+              formData.author_status === 'first_author' ? 'ผู้แต่งหลัก' :
+              formData.author_status === 'corresponding_author' ? 'Corresponding Author' : '-'
+            }</p>
+            <p><span class="font-medium">จำนวนผู้แต่งร่วม:</span> ${coauthors.length} คน</p>
+            ${coauthors.length > 0 ? `
+              <div class="mt-2">
+                <span class="font-medium">รายชื่อผู้แต่งร่วม:</span>
+                <ul class="ml-4 mt-1">
+                  ${coauthors.map(author => `<li>• ${author.user_fname} ${author.user_lname}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="bg-green-50 p-4 rounded-lg">
+          <h4 class="font-semibold text-green-700 mb-2">จำนวนเงินที่ขอเบิก</h4>
+          <div class="space-y-2 text-sm">
+            <p><span class="font-medium">ค่าปรับปรุง:</span> ${formData.publication_reward.toLocaleString()} บาท</p>
+            <p><span class="font-medium">ค่าตีพิมพ์:</span> ${publicationFee.toLocaleString()} บาท</p>
+            ${externalFundings.length > 0 ? `
+              <div class="mt-2">
+                <span class="font-medium">เบิกจากทุนภายนอก:</span>
+                <ul class="ml-4 mt-1">
+                  ${externalFundings.map(funding => {
+                    const fundName = funding.fundName || funding.file?.name || 'ไม่ระบุชื่อ';
+                    const amount = parseFloat(funding.amount) || 0;
+                    return `<li>• ${fundName}: ${amount.toLocaleString()} บาท</li>`;
+                  }).join('')}
+                </ul>
+                <p class="mt-1"><span class="font-medium">รวมทุนภายนอก:</span> ${externalFundings.reduce((sum, funding) => sum + (parseFloat(funding.amount) || 0), 0).toLocaleString()} บาท</p>
+              </div>
+            ` : ''}
+            <p class="text-lg font-semibold text-green-600 pt-2 border-t">
+              รวมเบิกจากวิทยาลัย: ${(formData.total_claim_college || 0).toLocaleString()} บาท
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-yellow-50 p-4 rounded-lg">
+          <h4 class="font-semibold text-yellow-700 mb-2">เอกสารแนบ</h4>
+          <div class="space-y-3 text-sm">
+            <div>
+              <p class="font-medium mb-2">ไฟล์ทั้งหมด (${allFilesList.length} ไฟล์):</p>
+              <div class="bg-white p-3 rounded border max-h-32 overflow-y-auto">
+                <ul class="space-y-1">
+                  ${allFilesList.map(file => `
+                    <li class="flex justify-between items-center text-xs">
+                      <span>📄 ${file.name} (${file.type})</span>
+                      <span class="text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+            </div>
+
+            ${mergedPdfUrl ? `
+              <div class="bg-blue-50 border border-blue-200 p-3 rounded">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="font-medium text-blue-800">📋 เอกสารรวม (PDF)</p>
+                    <p class="text-xs text-blue-600">ไฟล์ PDF ทั้งหมดรวมเป็นไฟล์เดียว</p>
+                  </div>
+                  <button
+                    id="preview-pdf-btn"
+                    type="button"
+                    class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                  >
+                    👀 ดูตัวอย่าง
+                  </button>
+                </div>
+                <div id="preview-status" class="mt-2 text-xs">
+                  <span class="text-red-600">⚠️ กรุณาดูตัวอย่างเอกสารก่อนส่งคำร้อง</span>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        ${formData.bank_account || formData.bank_name ? `
+          <div class="bg-purple-50 p-4 rounded-lg">
+            <h4 class="font-semibold text-purple-700 mb-2">ข้อมูลธนาคาร</h4>
+            <div class="space-y-2 text-sm">
+              <p><span class="font-medium">เลขบัญชี:</span> ${formData.bank_account || '-'}</p>
+              <p><span class="font-medium">ธนาคาร:</span> ${formData.bank_name || '-'}</p>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    // ใช้ลูปแทน async/await เพื่อให้ SweetAlert สามารถ update ได้
+    let dialogResult = null;
+    
+    const showDialog = () => {
+      return Swal.fire({
+        title: 'ตรวจสอบข้อมูลก่อนส่งคำร้อง',
+        html: summaryHTML,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'ยืนยันส่งคำร้อง',
+        cancelButtonText: 'ยกเลิก',
+        width: '700px',
+        customClass: {
+          htmlContainer: 'text-left'
+        },
+        // เปลี่ยนเป็นการตรวจสอบแบบ dynamic
+        preConfirm: () => {
+          if (mergedPdfUrl && !previewViewed) {
+            Swal.showValidationMessage('กรุณาดูตัวอย่างเอกสารรวมก่อนส่งคำร้อง');
+            return false;
+          }
+          return true;
+        },
+        didOpen: () => {
+          // เพิ่ม event listener สำหรับปุ่มดูตัวอย่าง
+          const previewBtn = document.getElementById('preview-pdf-btn');
+          const previewStatus = document.getElementById('preview-status');
+          
+          if (previewBtn && mergedPdfUrl) {
+            previewBtn.addEventListener('click', () => {
+              window.open(mergedPdfUrl, '_blank');
+              previewViewed = true; // อัพเดตตัวแปรใน scope
+              
+              // อัพเดตสถานะ
+              if (previewStatus) {
+                previewStatus.innerHTML = '<span class="text-green-600">✅ ดูตัวอย่างเอกสารแล้ว</span>';
+              }
+              
+              // เปลี่ยนสีปุ่ม
+              previewBtn.className = 'px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors';
+              previewBtn.innerHTML = '✅ ดูแล้ว';
+              
+              // ซ่อน validation message ถ้ามี
+              const validationMessage = document.querySelector('.swal2-validation-message');
+              if (validationMessage) {
+                validationMessage.style.display = 'none';
+              }
+            });
+          }
+        },
+        willClose: () => {
+          // ลบ URL object เมื่อปิด dialog
+          if (mergedPdfUrl) {
+            URL.revokeObjectURL(mergedPdfUrl);
+          }
+        }
+      });
+    };
+
+    const result = await showDialog();
+    return result.isConfirmed;
+  };
+  
   const saveDraft = async () => {
     try {
       setSaving(true);
+      
+      // แสดง loading
+      Swal.fire({
+        title: 'กำลังบันทึกร่าง...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+          Swal.showLoading();
+        }
+      });
 
-      const applicationData = {
-        submission_type: 'publication_reward',
-        year_id: formData.year_id,
-        ...formData,
-        uploadedFiles,
-        otherDocuments,
-        coauthors: coauthors.map(c => c.user_id),
-        isDraft: true
-      };
+      // รอเล็กน้อยเพื่อให้ UI update
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      if (currentSubmissionId) {
-        await submissionAPI.updateSubmission(currentSubmissionId, applicationData);
-        alert('บันทึกร่างเรียบร้อยแล้ว');
+      // บันทึกข้อมูลลง localStorage
+      const saved = saveDraftToLocal({
+        formData,
+        coauthors,
+        otherDocuments
+      });
+
+      Swal.close();
+
+      if (saved) {
+        Toast.fire({
+          icon: 'success',
+          title: 'บันทึกร่างเรียบร้อยแล้ว',
+          html: '<small>ข้อมูลจะถูกเก็บไว้ 7 วัน</small>'
+        });
       } else {
-        const response = await publicationRewardAPI.createApplication(applicationData);
-        setCurrentSubmissionId(response.submission.submission_id);
-        alert('บันทึกร่างเรียบร้อยแล้ว');
+        throw new Error('ไม่สามารถบันทึกข้อมูลได้');
       }
-
+      
     } catch (error) {
       console.error('Error saving draft:', error);
-      alert('เกิดข้อผิดพลาดในการบันทึกร่าง: ' + (error.message || 'กรุณาลองใหม่อีกครั้ง'));
+      Swal.close();
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถบันทึกร่างได้ อาจเนื่องจากพื้นที่จัดเก็บเต็ม',
+        confirmButtonColor: '#3085d6'
+      });
     } finally {
       setSaving(false);
     }
   };
 
+  //ฟังก์ชัน auto-save
+  useEffect(() => {
+    const autoSaveTimer = setTimeout(() => {
+      if (formData.article_title || formData.journal_name) {
+        saveDraftToLocal({
+          formData,
+          coauthors,
+          otherDocuments
+        });
+        console.log('Auto-saved draft');
+      }
+    }, 30000); // auto-save ทุก 30 วินาที
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [formData, coauthors, otherDocuments]);
+
+  // ฟังก์ชันลบร่าง
+  const deleteDraft = async () => {
+    const result = await Swal.fire({
+      title: 'ยืนยันการลบร่าง?',
+      text: 'ข้อมูลที่บันทึกไว้จะถูกลบทั้งหมด',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'ลบร่าง',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6'
+    });
+
+    if (result.isConfirmed) {
+      deleteDraftFromLocal();
+      resetForm();
+      
+      Toast.fire({
+        icon: 'success',
+        title: 'ลบร่างเรียบร้อยแล้ว'
+      });
+    }
+  };
+
   const submitApplication = async () => {
+    // ตรวจสอบข้อมูลก่อน
     if (!validateForm()) {
-      alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+      Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลไม่ครบถ้วน',
+        text: 'กรุณากรอกข้อมูลให้ครบถ้วนก่อนส่งคำร้อง',
+        confirmButtonColor: '#3085d6'
+      });
+      return;
+    }
+
+    // แสดงหน้ายืนยันข้อมูล
+    const confirmed = await showSubmissionConfirmation();
+    if (!confirmed) {
       return;
     }
 
     try {
       setLoading(true);
 
-      const applicationData = {
-        submission_type: 'publication_reward',
-        year_id: formData.year_id,
-        ...formData,
-        uploadedFiles,
-        otherDocuments,
-        coauthors: coauthors.map(c => c.user_id),
-        isDraft: false
-      };
+      // แสดง loading dialog
+      Swal.fire({
+        title: 'กำลังส่งคำร้อง...',
+        html: 'กำลังเตรียมเอกสาร...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+          Swal.showLoading();
+        }
+      });
 
       let submissionId = currentSubmissionId;
+      let finalFile = null;
+      let fileDescription = '';
 
-      if (!submissionId) {
-        const response = await publicationRewardAPI.createApplication(applicationData);
-        submissionId = response.submission.submission_id;
+      // ใช้ merged PDF ที่เตรียมไว้แล้ว
+      if (mergedPdfFile) {
+        finalFile = mergedPdfFile;
+        fileDescription = `เอกสารรวม (${Object.keys(uploadedFiles).length + (otherDocuments?.length || 0) + externalFundings.filter(f => f.file).length} ไฟล์)`;
+      } else {
+        // fallback: รวบรวมไฟล์ทั้งหมดใหม่
+        const allFiles = [];
+        
+        // เพิ่มไฟล์บทความ
+        Object.values(uploadedFiles).forEach(file => {
+          if (file) allFiles.push(file);
+        });
+        
+        // เพิ่มเอกสารอื่นๆ
+        if (otherDocuments && otherDocuments.length > 0) {
+          otherDocuments.forEach(doc => {
+            const file = doc.file || doc;
+            if (file) allFiles.push(file);
+          });
+        }
+        
+        // เพิ่มไฟล์จาก external funding
+        externalFundings.forEach(funding => {
+          if (funding.file) allFiles.push(funding.file);
+        });
+
+        // ตรวจสอบว่ามีไฟล์หรือไม่
+        if (allFiles.length === 0) {
+          Swal.close();
+          Swal.fire({
+            icon: 'warning',
+            title: 'ไม่พบเอกสารแนบ',
+            text: 'กรุณาแนบไฟล์บทความอย่างน้อย 1 ไฟล์',
+            confirmButtonColor: '#3085d6'
+          });
+          setLoading(false);
+          return;
+        }
+
+        // ใช้ไฟล์แรกหรือรวม PDF
+        const pdfFiles = allFiles.filter(file => file.type === 'application/pdf');
+        if (pdfFiles.length > 1) {
+          try {
+            finalFile = await mergePDFs(pdfFiles);
+            fileDescription = `เอกสารรวม ${allFiles.length} ไฟล์`;
+          } catch (error) {
+            finalFile = allFiles[0];
+            fileDescription = 'ไฟล์บทความที่ตีพิมพ์';
+          }
+        } else if (pdfFiles.length === 1) {
+          finalFile = pdfFiles[0];
+          fileDescription = 'ไฟล์บทความที่ตีพิมพ์';
+        } else {
+          finalFile = allFiles[0];
+          fileDescription = 'ไฟล์บทความที่ตีพิมพ์';
+        }
       }
 
-      await publicationRewardAPI.submitApplication(submissionId);
+      // Step 1: สร้าง submission ถ้ายังไม่มี
+      if (!submissionId) {
+        Swal.update({
+          html: 'กำลังสร้างคำร้อง...'
+        });
+
+        const createResponse = await submissionAPI.create({
+          submission_type: 'publication_reward',
+          year_id: formData.year_id,
+        });
+        
+        submissionId = createResponse.submission.submission_id;
+        console.log('Created submission:', submissionId);
+
+        // Step 2: เพิ่ม publication details
+        Swal.update({
+          html: 'กำลังบันทึกข้อมูลบทความ...'
+        });
+
+        const publicationDate = formData.journal_year && formData.journal_month 
+          ? `${formData.journal_year}-${formData.journal_month.padStart(2, '0')}-01`
+          : new Date().toISOString().split('T')[0];
+
+        await publicationDetailsAPI.add(submissionId, {
+          article_title: formData.article_title,
+          journal_name: formData.journal_name,
+          publication_date: publicationDate,
+          publication_type: formData.journal_type || 'journal',
+          journal_quartile: formData.journal_quartile,
+          impact_factor: parseFloat(formData.impact_factor) || null,
+          doi: formData.doi || '',
+          url: formData.journal_url || '',
+          page_numbers: formData.journal_pages || '',
+          volume_issue: formData.journal_issue || '',
+          indexing: formData.article_online_db || '',
+          publication_reward: parseFloat(formData.publication_reward) || 0,
+          author_count: coauthors.length + 1,
+          is_corresponding_author: formData.author_status === 'corresponding_author',
+          author_status: formData.author_status
+        });
+
+        // Step 3: อัปโหลดไฟล์หลัก
+        Swal.update({
+          html: 'กำลังอัปโหลดเอกสาร...'
+        });
+
+        // อัปโหลดไฟล์หลัก (ที่รวมแล้วหรือไฟล์เดียว)
+        const fileResponse = await fileAPI.upload(finalFile);
+        await documentAPI.attach(submissionId, {
+          file_id: fileResponse.file.file_id,
+          document_type_id: 1, // สมมติว่า 1 คือ document type สำหรับไฟล์บทความ
+          description: fileDescription,
+          display_order: 1
+        });
+
+        // ถ้ามีไฟล์ที่ไม่ใช่ PDF และมีหลายไฟล์ ให้แนบไฟล์ที่ไม่ใช่ PDF แยก
+        if (allFiles.length > 1) {
+          const nonPdfFiles = allFiles.filter(file => file.type !== 'application/pdf');
+          
+          if (nonPdfFiles.length > 0) {
+            Swal.update({
+              html: `กำลังอัปโหลดเอกสารเพิ่มเติม ${nonPdfFiles.length} ไฟล์...`
+            });
+
+            const uploadPromises = nonPdfFiles.map((file, index) => 
+              fileAPI.upload(file)
+                .then(response => 
+                  documentAPI.attach(submissionId, {
+                    file_id: response.file.file_id,
+                    document_type_id: 99, // 99 สำหรับเอกสารอื่นๆ
+                    description: `เอกสารเพิ่มเติม - ${file.name}`,
+                    display_order: index + 2
+                  })
+                )
+                .catch(error => {
+                  console.error(`Error uploading non-PDF file ${index}:`, error);
+                  // ไม่ throw error เพื่อให้ดำเนินการต่อได้
+                })
+            );
+
+            await Promise.allSettled(uploadPromises);
+          }
+        }
+      }
+
+      // Step 4: Submit submission
+      Swal.update({
+        html: 'กำลังส่งคำร้อง...'
+      });
+
+      await submissionAPI.submit(submissionId);
       
-      alert('ส่งคำร้องเรียบร้อยแล้ว');
+      // ปิด loading dialog
+      Swal.close();
+
+      // ลบ draft จาก localStorage (ถ้ามี)
+      if (typeof deleteDraftFromLocal === 'function') {
+        deleteDraftFromLocal();
+      }
+
+      // แสดงข้อความสำเร็จ
+      await Swal.fire({
+        icon: 'success',
+        title: 'ส่งคำร้องสำเร็จ',
+        html: `
+          <div class="text-center">
+            <p>คำร้องของคุณได้ถูกส่งเรียบร้อยแล้ว</p>
+            <p class="text-sm text-gray-600 mt-2">เลขที่คำร้อง: ${createResponse?.submission?.submission_number || submissionId}</p>
+            <div class="mt-4 p-3 bg-gray-100 rounded">
+              <p class="text-sm text-gray-700">
+                <strong>เอกสารที่แนบ:</strong> ${fileDescription}
+                ${allFiles.length > 1 && allFiles.some(f => f.type !== 'application/pdf') ? 
+                  `<br><small class="text-gray-500">และเอกสารเพิ่มเติมอื่นๆ</small>` : ''}
+              </p>
+            </div>
+          </div>
+        `,
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'ตกลง'
+      });
+
+      // รีเซ็ตฟอร์ม
       resetForm();
+      
+      // Navigate ไปหน้ารายการคำร้อง (ถ้ามี prop onNavigate)
+      if (onNavigate) {
+        onNavigate('applications');
+      }
       
     } catch (error) {
       console.error('Error submitting application:', error);
-      alert('เกิดข้อผิดพลาดในการส่งคำร้อง: ' + (error.message || 'กรุณาลองใหม่อีกครั้ง'));
+      Swal.close();
+      
+      // จัดการ error message
+      let errorMessage = 'ไม่สามารถส่งคำร้องได้ กรุณาลองใหม่อีกครั้ง';
+      let errorDetail = '';
+      
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = 'กรุณาเข้าสู่ระบบใหม่';
+        } else if (error.response.status === 400) {
+          errorMessage = 'ข้อมูลไม่ถูกต้อง';
+          errorDetail = error.response.data?.error || 'กรุณาตรวจสอบข้อมูลอีกครั้ง';
+        } else if (error.response.data?.error) {
+          errorDetail = error.response.data.error;
+        }
+      } else if (error.request) {
+        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+        errorDetail = 'กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต';
+      } else {
+        errorDetail = error.message;
+      }
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
+        footer: errorDetail ? `<small>${errorDetail}</small>` : '',
+        confirmButtonColor: '#3085d6'
+      });
     } finally {
       setLoading(false);
     }
@@ -753,6 +1512,8 @@ export default function PublicationRewardForm() {
     setOtherDocuments([]);
     setErrors({});
     setCurrentSubmissionId(null);
+    deleteDraftFromLocal();
+    setMergedPdfFile(null);
   };
 
   if (loading && !years.length) {
@@ -776,7 +1537,6 @@ export default function PublicationRewardForm() {
       icon={Award}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/teacher" },
-        { label: "เลือกคำร้อง" },
         { label: "ขอเบิกเงินรางวัลการตีพิมพ์" }
       ]}
     >
@@ -803,7 +1563,7 @@ export default function PublicationRewardForm() {
                 name="year_id"
                 value={formData.year_id || ''}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                className={`w-full text-gray-600 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
                   errors.year_id ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
@@ -835,7 +1595,6 @@ export default function PublicationRewardForm() {
                 <option value="">เลือกสถานะ</option>
                 <option value="first_author">ผู้แต่งหลัก (First Author)</option>
                 <option value="corresponding_author">ผู้แต่งที่รับผิดชอบบทความ (Corresponding Author)</option>
-                <option value="co_author">ผู้แต่งร่วม (Co-author)</option>
               </select>
               {errors.author_status && (
                 <p className="text-red-500 text-sm mt-1">{errors.author_status}</p>
@@ -921,11 +1680,16 @@ export default function PublicationRewardForm() {
                     errors.journal_quartile ? 'border-red-500' : 'border-gray-300'
                   }`}
                 >
-                  <option value="">เลือก Quartile</option>
-                  <option value="Q1">Q1</option>
-                  <option value="Q2">Q2</option>
-                  <option value="Q3">Q3</option>
-                  <option value="Q4">Q4</option>
+                  <option value="" disabled={formData.journal_quartile !== ''} hidden={formData.journal_quartile !== ''}>
+                    เลือก Quartile
+                  </option>
+                  <option value="T5">Top 5%</option>
+                  <option value="T10">Top 10%</option>
+                  <option value="Q1">Quartile 1</option>
+                  <option value="Q2">Quartile 2</option>
+                  <option value="Q3">Quartile 3</option>
+                  <option value="Q4">Quartile 4</option>
+                  <option value="TCI">TCI กลุ่มที่ 1</option>
                 </select>
                 {errors.journal_quartile && (
                   <p className="text-red-500 text-sm mt-1">{errors.journal_quartile}</p>
@@ -1145,14 +1909,13 @@ export default function PublicationRewardForm() {
                           </p>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCoauthor(coauthor)}
-                        className="text-red-500 hover:text-red-700 transition-colors"
-                        title="ลบผู้ร่วมวิจัย"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCoauthor(index)}  // เปลี่ยนจากเดิม
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
                     </div>
                   ))}
                 </div>
@@ -1168,25 +1931,43 @@ export default function PublicationRewardForm() {
             )}
           </div>
         </SimpleCard>
+        {/* การคำนวณเงินรางวัล */}
+        <SimpleCard title="การคำนวณเงินรางวัล" icon={Calculator}>
+            {/* การคำนวณเงินรางวัล */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                เงินรางวัล (บาท)
+              </label>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="text-2xl font-semibold text-gray-800">
+                  {formData.publication_reward.toLocaleString()}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                คำนวณอัตโนมัติจากสถานะผู้แต่งและ Quartile
+              </p>
+            </div>
+        </SimpleCard>
 
         {/* การคำนวณเงินรางวัล */}
-        <SimpleCard title="การคำนวณเงินรางวัล" icon={Award}>
+        <SimpleCard title="ค่าปรับปรุงบทความและค่าการตีพิมพ์" icon={Award}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 divide-x divide-gray-200">
             {/* ฝั่งซ้าย - ค่าปรับปรุง ค่าตีพิมพ์ และรวมเบิกจากวิทยาลัย */}
             <div className="space-y-6 lg:pr-6">
-              {/* ค่าปรับปรุง */}
+            {/* ค่าปรับปรุง */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   ค่าปรับปรุง (บาท)
                 </label>
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-2xl font-semibold text-gray-800">
-                    {formData.publication_reward.toLocaleString()}
-                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    className="text-2xl font-semibold text-gray-800 w-full bg-transparent border-none focus:outline-none"
+                    onChange={(e) => e.target.value = Math.max(Number(e.target.value), 0)}
+                  />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  คำนวณอัตโนมัติจากสถานะผู้แต่งและ Quartile
-                </p>
               </div>
 
               {/* ค่าตีพิมพ์ */}
@@ -1195,13 +1976,14 @@ export default function PublicationRewardForm() {
                   ค่าตีพิมพ์ (บาท)
                 </label>
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-2xl font-semibold text-gray-800">
-                    {publicationFee.toLocaleString()}
-                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    className="text-2xl font-semibold text-gray-800 w-full bg-transparent border-none focus:outline-none"
+                    onChange={(e) => e.target.value = Math.max(Number(e.target.value), 0)}
+                  />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  คำนวณอัตโนมัติตามเงื่อนไข
-                </p>
               </div>
 
               {/* รวมเบิกจากวิทยาลัยการคอม */}
@@ -1219,8 +2001,8 @@ export default function PublicationRewardForm() {
 
             {/* ฝั่งขวา - ตารางเบิกจากนอกมหาวิทยาลัย */}
             <div className="lg:pl-6">
-              <h4 className="font-medium text-gray-900 mb-4">เบิกจากนอกมหาวิทยาลัย</h4>
-              
+              <h4 className="font-medium text-gray-900 mb-4">รายการที่มหาวิทยาลัยหรือหน่วยงานภายนอกสนับสนุน</h4>
+            
               {/* ตาราง */}
               <div className="overflow-hidden rounded-lg border border-blue-200">
                 <table className="w-full">
@@ -1252,7 +2034,7 @@ export default function PublicationRewardForm() {
                           </td>
                           <td className="border-r border-blue-200 px-3 py-2 text-sm">
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-700">{funding.fundName || 'แนบไฟล์หลักฐาน'}</span>
+                              <span className="text-gray-700">{funding.fundName || funding.file?.name || 'แนบไฟล์หลักฐาน'}</span>
                               <label className="cursor-pointer text-blue-500 hover:text-blue-700">
                                 <input
                                   type="file"
@@ -1479,6 +2261,15 @@ export default function PublicationRewardForm() {
 
         {/* ปุ่มดำเนินการ */}
         <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
+          <button
+            type="button"
+            onClick={deleteDraft}
+            className="px-4 py-2 text-red-600 border border-red-300 rounded-md hover:bg-red-50"
+          >
+            <X className="h-4 w-4 inline mr-2" />
+            ลบร่าง
+          </button>
+
           <button
             type="button"
             onClick={saveDraft}
