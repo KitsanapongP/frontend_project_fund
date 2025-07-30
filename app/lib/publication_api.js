@@ -1,4 +1,4 @@
-// app/lib/publication_api.js - Fixed to match API documentation
+// app/lib/publication_api.js - Updated with submissionUsersAPI
 import apiClient from './api';
 
 const API_BASE_URL = 'http://localhost:8080/api/v1';
@@ -20,7 +20,6 @@ export const submissionAPI = {
       const response = await apiClient.post('/submissions', {
         submission_type: data.submission_type,
         year_id: data.year_id,
-        priority: data.priority || 'normal'
       });
       return response;
     } catch (error) {
@@ -74,6 +73,88 @@ export const submissionAPI = {
   }
 };
 
+// Submission Users Management API
+export const submissionUsersAPI = {
+  
+  // 1. Add user to submission (co-author)
+  async addUser(submissionId, userData) {
+    try {
+      const response = await apiClient.post(`/submissions/${submissionId}/users`, userData);
+      return response;
+    } catch (error) {
+      console.error('Error adding user to submission:', error);
+      throw error;
+    }
+  },
+
+  // 2. Get all users for submission
+  async getUsers(submissionId) {
+    try {
+      const response = await apiClient.get(`/submissions/${submissionId}/users`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching submission users:', error);
+      throw error;
+    }
+  },
+
+  // 3. Update user role in submission
+  async updateUser(submissionId, userId, updateData) {
+    try {
+      const response = await apiClient.put(`/submissions/${submissionId}/users/${userId}`, updateData);
+      return response;
+    } catch (error) {
+      console.error('Error updating submission user:', error);
+      throw error;
+    }
+  },
+
+  // 4. Remove user from submission
+  async removeUser(submissionId, userId) {
+    try {
+      const response = await apiClient.delete(`/submissions/${submissionId}/users/${userId}`);
+      return response;
+    } catch (error) {
+      console.error('Error removing user from submission:', error);
+      throw error;
+    }
+  },
+
+  // 5. Add multiple users at once (batch operation)
+  async addMultipleUsers(submissionId, usersData) {
+    try {
+      const response = await apiClient.post(`/submissions/${submissionId}/users/batch`, {
+        users: usersData
+      });
+      return response;
+    } catch (error) {
+      console.error('Error adding multiple users to submission:', error);
+      throw error;
+    }
+  },
+
+  // 6. Set all co-authors (replace existing)
+  async setCoauthors(submissionId, coauthors) {
+    try {
+      // Prepare users data with co-author role
+      const usersData = coauthors.map((coauthor, index) => ({
+        user_id: coauthor.user_id,
+        role: 'co_author',
+        order_sequence: index + 2, // Start from 2 (1 is main author)
+        is_active: true
+      }));
+
+      const response = await apiClient.post(`/submissions/${submissionId}/users/set-coauthors`, {
+        coauthors: usersData
+      });
+      return response;
+    } catch (error) {
+      console.error('Error setting co-authors:', error);
+      throw error;
+    }
+  }
+};
+
 // Publication Details API
 export const publicationDetailsAPI = {
   // Add publication details to submission
@@ -91,10 +172,28 @@ export const publicationDetailsAPI = {
         page_numbers: details.page_numbers,
         volume_issue: details.volume_issue,
         indexing: details.indexing,
-        publication_reward: details.publication_reward,
+        
+        // เงินรางวัลและการคำนวณ
+        publication_reward: details.reward_amount,
+        revision_fee: details.revision_fee,
+        publication_fee: details.publication_fee,
+        external_funding_amount: details.external_funding_amount,
+        total_amount: details.total_amount,
+        
+        // ข้อมูลผู้แต่ง
         author_count: details.author_count,
         is_corresponding_author: details.is_corresponding_author,
-        author_status: details.author_status
+        author_status: details.author_status,
+        
+        // ข้อมูลธนาคาร
+        bank_account: details.bank_account,
+        bank_name: details.bank_name,
+        phone_number: details.phone_number,
+        
+        // อื่นๆ
+        university_ranking: details.university_ranking,
+        has_university_fund: details.has_university_fund,
+        university_fund_ref: details.university_fund_ref
       });
       return response;
     } catch (error) {
@@ -111,51 +210,51 @@ export const fileAPI = {
     try {
       const formData = new FormData();
       formData.append('file', file);
-
-      const response = await fetch(`${API_BASE_URL}/files/upload`, {
-        method: 'POST',
+      
+      const response = await apiClient.post('/files/upload', formData, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        },
-        body: formData
+          'Content-Type': 'multipart/form-data'
+        }
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload file');
-      }
-
-      return response.json();
+      
+      return response;
     } catch (error) {
       console.error('Error uploading file:', error);
       throw error;
     }
   },
 
-  // Get file info
-  async getInfo(id) {
+  // Get file by ID
+  async getById(fileId) {
     try {
-      const response = await apiClient.get(`/files/${id}`);
+      const response = await apiClient.get(`/files/${fileId}`);
       return response;
     } catch (error) {
-      console.error('Error fetching file info:', error);
+      console.error('Error fetching file:', error);
       throw error;
     }
   },
 
   // Download file
-  async download(id) {
+  async download(fileId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/files/${id}/download`, {
-        headers: getAuthHeaders()
+      const response = await apiClient.get(`/files/${fileId}/download`, {
+        responseType: 'blob'
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to download file');
-      }
-
-      return response.blob();
+      return response;
     } catch (error) {
       console.error('Error downloading file:', error);
+      throw error;
+    }
+  },
+
+  // Delete file
+  async delete(fileId) {
+    try {
+      const response = await apiClient.delete(`/files/${fileId}`);
+      return response;
+    } catch (error) {
+      console.error('Error deleting file:', error);
       throw error;
     }
   }
@@ -188,6 +287,17 @@ export const documentAPI = {
       console.error('Error fetching documents:', error);
       throw error;
     }
+  },
+
+  // Remove document from submission
+  async detach(submissionId, documentId) {
+    try {
+      const response = await apiClient.delete(`/submissions/${submissionId}/documents/${documentId}`);
+      return response;
+    } catch (error) {
+      console.error('Error detaching document:', error);
+      throw error;
+    }
   }
 };
 
@@ -199,7 +309,6 @@ export const publicationRewardAPI = {
       const {
         // Submission data
         year_id,
-        priority = 'normal',
         
         // Publication details
         article_title,
@@ -219,19 +328,32 @@ export const publicationRewardAPI = {
         
         // Files
         uploadedFiles = {},
-        otherDocuments = []
+        otherDocuments = [],
+        
+        // Co-authors
+        coauthors = []
       } = applicationData;
 
       // Step 1: Create submission
       const submissionResponse = await submissionAPI.create({
         submission_type: 'publication_reward',
         year_id,
-        priority
       });
       
       const submissionId = submissionResponse.submission.submission_id;
 
-      // Step 2: Add publication details
+      // Step 2: Add co-authors to submission_users
+      if (coauthors && coauthors.length > 0) {
+        try {
+          await submissionUsersAPI.setCoauthors(submissionId, coauthors);
+          console.log('Co-authors added successfully');
+        } catch (error) {
+          console.error('Error adding co-authors:', error);
+          // Don't throw error here, continue with submission
+        }
+      }
+
+      // Step 3: Add publication details
       const publicationDate = journal_year && journal_month 
         ? `${journal_year}-${journal_month.padStart(2, '0')}-01`
         : new Date().toISOString().split('T')[0];
@@ -254,7 +376,7 @@ export const publicationRewardAPI = {
         author_status
       });
 
-      // Step 3: Upload files and attach documents
+      // Step 4: Upload files and attach documents
       const uploadPromises = [];
 
       // Upload main article file
@@ -320,7 +442,7 @@ export const publicationRewardAPI = {
   }
 };
 
-// Helper API for form data (คงเดิม)
+// Helper API for form data
 export const publicationFormAPI = {
   async getUsers(role = null) {
     try {
@@ -347,6 +469,7 @@ export const publicationFormAPI = {
 // Export all APIs
 export default {
   submission: submissionAPI,
+  submissionUsers: submissionUsersAPI,
   publicationDetails: publicationDetailsAPI,
   file: fileAPI,
   document: documentAPI,

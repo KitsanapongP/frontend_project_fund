@@ -1,4 +1,4 @@
-// app/lib/teacher_api.js - Teacher specific API methods (Updated with Submission Management)
+// app/lib/teacher_api.js - Teacher specific API methods (Updated with Submission Users Management)
 
 import apiClient from '../lib/api';
 import { targetRolesUtils } from '../lib/target_roles_utils';
@@ -233,6 +233,89 @@ export const submissionAPI = {
   }
 };
 
+// ==================== SUBMISSION USERS MANAGEMENT API ====================
+
+export const submissionUsersAPI = {
+  
+  // 1. Add user to submission (co-author)
+  async addUser(submissionId, userData) {
+    try {
+      const response = await apiClient.post(`/submissions/${submissionId}/users`, userData);
+      return response;
+    } catch (error) {
+      console.error('Error adding user to submission:', error);
+      throw error;
+    }
+  },
+
+  // 2. Get all users for submission
+  async getUsers(submissionId) {
+    try {
+      const response = await apiClient.get(`/submissions/${submissionId}/users`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching submission users:', error);
+      throw error;
+    }
+  },
+
+  // 3. Update user role in submission
+  async updateUser(submissionId, userId, updateData) {
+    try {
+      const response = await apiClient.put(`/submissions/${submissionId}/users/${userId}`, updateData);
+      return response;
+    } catch (error) {
+      console.error('Error updating submission user:', error);
+      throw error;
+    }
+  },
+
+  // 4. Remove user from submission
+  async removeUser(submissionId, userId) {
+    try {
+      const response = await apiClient.delete(`/submissions/${submissionId}/users/${userId}`);
+      return response;
+    } catch (error) {
+      console.error('Error removing user from submission:', error);
+      throw error;
+    }
+  },
+
+  // 5. Add multiple users at once (batch operation)
+  async addMultipleUsers(submissionId, usersData) {
+    try {
+      const response = await apiClient.post(`/submissions/${submissionId}/users/batch`, {
+        users: usersData
+      });
+      return response;
+    } catch (error) {
+      console.error('Error adding multiple users to submission:', error);
+      throw error;
+    }
+  },
+
+  // 6. Set all co-authors (replace existing)
+  async setCoauthors(submissionId, coauthors) {
+    try {
+      // Prepare users data with co-author role
+      const usersData = coauthors.map((coauthor, index) => ({
+        user_id: coauthor.user_id,
+        role: 'co_author',
+        order_sequence: index + 2, // Start from 2 (1 is main author)
+        is_active: true
+      }));
+
+      const response = await apiClient.post(`/submissions/${submissionId}/users/set-coauthors`, {
+        coauthors: usersData
+      });
+      return response;
+    } catch (error) {
+      console.error('Error setting co-authors:', error);
+      throw error;
+    }
+  }
+};
+
 // ==================== FILE UPLOAD API ====================
 
 export const fileAPI = {
@@ -334,103 +417,6 @@ export const documentAPI = {
 
 export const fundApplicationAPI = {
   
-  // Create fund application with all details and files
-  async createApplication(applicationData) {
-    try {
-      console.log('Creating fund application:', applicationData);
-      
-      const {
-        // Basic submission data
-        submission_type = 'fund_application',
-        year_id,
-        priority = 'normal',
-        
-        // Fund application details
-        project_title,
-        project_description,
-        requested_amount,
-        subcategory_id,
-        
-        // Files
-        uploadedFiles = {},
-        
-        // Other data
-        ...otherData
-      } = applicationData;
-
-      // Step 1: Create submission
-      const submissionResponse = await submissionAPI.createSubmission({
-        submission_type,
-        year_id,
-        priority
-      });
-      
-      const submissionId = submissionResponse.submission.submission_id;
-      console.log('Created submission:', submissionId);
-
-      // Step 2: Upload files and attach documents
-      const uploadPromises = Object.entries(uploadedFiles).map(async ([documentTypeId, file]) => {
-        if (file) {
-          try {
-            // Upload file
-            const fileResponse = await fileAPI.uploadFile(file);
-            const fileId = fileResponse.file.file_id;
-            
-            // Attach to submission
-            await documentAPI.attachDocument(submissionId, {
-              file_id: fileId,
-              document_type_id: parseInt(documentTypeId)
-            });
-            
-            return { documentTypeId, fileId, success: true };
-          } catch (error) {
-            console.error(`Error uploading file for document type ${documentTypeId}:`, error);
-            return { documentTypeId, error, success: false };
-          }
-        }
-      });
-
-      const uploadResults = await Promise.all(uploadPromises.filter(Boolean));
-      console.log('File upload results:', uploadResults);
-
-      // Step 3: Add fund application details
-      const detailsResponse = await apiClient.post(`/submissions/${submissionId}/fund-details`, {
-        project_title,
-        project_description,
-        requested_amount: parseFloat(requested_amount) || 0,
-        subcategory_id: parseInt(subcategory_id),
-        ...otherData
-      });
-
-      return {
-        success: true,
-        submission: submissionResponse.submission,
-        details: detailsResponse,
-        uploadResults
-      };
-      
-    } catch (error) {
-      console.error('Error creating fund application:', error);
-      throw error;
-    }
-  },
-
-  // Submit fund application (change status to submitted)
-  async submitApplication(submissionId) {
-    try {
-      const response = await submissionAPI.submitSubmission(submissionId);
-      return response;
-    } catch (error) {
-      console.error('Error submitting fund application:', error);
-      throw error;
-    }
-  }
-};
-
-// ==================== PUBLICATION REWARD API ====================
-
-export const publicationRewardAPI = {
-  
   // Create publication reward application with all details and files
   async createApplication(applicationData) {
     try {
@@ -440,20 +426,39 @@ export const publicationRewardAPI = {
         // Basic submission data
         submission_type = 'publication_reward',
         year_id,
-        priority = 'normal',
         
-        // Publication details
-        author_status,
+        // Publication details - อัปเดตตาม database schema ใหม่
+        author_status,                    // จะส่งเป็น author_type
         article_title,
         journal_name,
         journal_quartile,
-        publication_reward,
+        publication_date,
+        publication_type,
+        impact_factor,
+        doi,
+        url,
+        page_numbers,
+        volume_issue,
+        indexing,
         
-        // Files
+        // === เงินรางวัลและการคำนวณ (ใหม่) ===
+        publication_reward,               // เงินรางวัลฐาน
+        reward_approve_amount = 0,        // จำนวนเงินรางวัลที่อนุมัติ
+        revision_fee = 0,                 // ค่าปรับปรุง
+        publication_fee = 0,              // ค่าตีพิมพ์
+        external_funding_amount = 0,      // รวมจำนวนเงินจากทุนที่ user แนบเข้ามา
+        total_amount = 0,                 // ยอดรวมหลังหักลบ
+        total_approve_amount = 0,         // จำนวนเงินจริงที่วิทยาลัยจ่ายให้
+        
+        // === ข้อมูลผู้แต่ง ===
+        author_count = 1,
+        
+        // === อื่นๆ ===
+        announce_reference_number = '',
+        
+        // Files และ Coauthors
         uploadedFiles = {},
         otherDocuments = [],
-        
-        // Coauthors
         coauthors = [],
         
         // Other data
@@ -464,13 +469,25 @@ export const publicationRewardAPI = {
       const submissionResponse = await submissionAPI.createSubmission({
         submission_type,
         year_id,
-        priority
       });
       
       const submissionId = submissionResponse.submission.submission_id;
       console.log('Created submission:', submissionId);
 
-      // Step 2: Upload files and attach documents
+      // Step 2: Add co-authors to submission_users
+      if (coauthors && coauthors.length > 0) {
+        console.log('Adding co-authors to submission:', coauthors);
+        
+        try {
+          await submissionUsersAPI.setCoauthors(submissionId, coauthors);
+          console.log('Co-authors added successfully');
+        } catch (error) {
+          console.error('Error adding co-authors:', error);
+          // Don't throw error here, continue with submission
+        }
+      }
+
+      // Step 3: Upload files and attach documents
       const uploadPromises = [];
       
       // Regular documents
@@ -503,7 +520,154 @@ export const publicationRewardAPI = {
       await Promise.all(uploadPromises);
       console.log('Files uploaded and attached successfully');
 
-      // Step 3: Add publication reward details
+      // Step 4: Add publication reward details - ส่งข้อมูลใหม่ที่เพิ่มเข้ามา
+      const detailsResponse = await apiClient.post(`/submissions/${submissionId}/publication-details`, {
+        // ข้อมูลพื้นฐาน
+        article_title,
+        journal_name,
+        journal_quartile,
+        publication_date,
+        publication_type,
+        impact_factor,
+        doi,
+        url,
+        page_numbers,
+        volume_issue,
+        indexing,
+        
+        // === เงินรางวัลและการคำนวณ (ใหม่) ===
+        publication_reward: parseFloat(publication_reward) || 0,
+        reward_approve_amount: parseFloat(reward_approve_amount) || 0,
+        revision_fee: parseFloat(revision_fee) || 0,
+        publication_fee: parseFloat(publication_fee) || 0,
+        external_funding_amount: parseFloat(external_funding_amount) || 0,
+        total_amount: parseFloat(total_amount) || 0,
+        total_approve_amount: parseFloat(total_approve_amount) || 0,
+        
+        // === ข้อมูลผู้แต่ง ===
+        author_status,  // จะถูกแปลงเป็น author_type ใน backend
+        author_count: parseInt(author_count) || 1,
+        
+        // === อื่นๆ ===
+        announce_reference_number,
+        
+        // Coauthors (for reference in publication details)
+        coauthors: coauthors.map(c => c.user_id),
+        ...otherData
+      });
+
+      return {
+        success: true,
+        submission: submissionResponse.submission,
+        details: detailsResponse
+      };
+      
+    } catch (error) {
+      console.error('Error creating publication reward application:', error);
+      throw error;
+    }
+  },
+
+  // Submit publication reward application
+  async submitApplication(submissionId) {
+    try {
+      const response = await submissionAPI.submitSubmission(submissionId);
+      return response;
+    } catch (error) {
+      console.error('Error submitting publication reward application:', error);
+      throw error;
+    }
+  }
+};
+
+// ==================== PUBLICATION REWARD API ====================
+
+export const publicationRewardAPI = {
+  
+  // Create publication reward application with all details and files
+  async createApplication(applicationData) {
+    try {
+      console.log('Creating publication reward application:', applicationData);
+      
+      const {
+        // Basic submission data
+        submission_type = 'publication_reward',
+        year_id,
+        
+        // Publication details
+        author_status,
+        article_title,
+        journal_name,
+        journal_quartile,
+        publication_reward,
+        
+        // Files
+        uploadedFiles = {},
+        otherDocuments = [],
+        
+        // Coauthors
+        coauthors = [],
+        
+        // Other data
+        ...otherData
+      } = applicationData;
+
+      // Step 1: Create submission
+      const submissionResponse = await submissionAPI.createSubmission({
+        submission_type,
+        year_id,
+      });
+      
+      const submissionId = submissionResponse.submission.submission_id;
+      console.log('Created submission:', submissionId);
+
+      // Step 2: Add co-authors to submission_users
+      if (coauthors && coauthors.length > 0) {
+        console.log('Adding co-authors to submission:', coauthors);
+        
+        try {
+          await submissionUsersAPI.setCoauthors(submissionId, coauthors);
+          console.log('Co-authors added successfully');
+        } catch (error) {
+          console.error('Error adding co-authors:', error);
+          // Don't throw error here, continue with submission
+        }
+      }
+
+      // Step 3: Upload files and attach documents
+      const uploadPromises = [];
+      
+      // Regular documents
+      Object.entries(uploadedFiles).forEach(([documentTypeId, file]) => {
+        if (file) {
+          uploadPromises.push(
+            fileAPI.uploadFile(file).then(fileResponse => 
+              documentAPI.attachDocument(submissionId, {
+                file_id: fileResponse.file.file_id,
+                document_type_id: parseInt(documentTypeId)
+              })
+            )
+          );
+        }
+      });
+
+      // Other documents (multiple files)
+      otherDocuments.forEach((file, index) => {
+        uploadPromises.push(
+          fileAPI.uploadFile(file).then(fileResponse => 
+            documentAPI.attachDocument(submissionId, {
+              file_id: fileResponse.file.file_id,
+              document_type_id: 11, // Other documents type
+              description: `เอกสารอื่นๆ ${index + 1}`
+            })
+          )
+        );
+      });
+
+      await Promise.all(uploadPromises);
+      console.log('Files uploaded and attached successfully');
+
+      // Step 4: Add publication reward details
       const detailsResponse = await apiClient.post(`/submissions/${submissionId}/publication-details`, {
         author_status,
         article_title,
@@ -580,13 +744,93 @@ export const submissionUtils = {
   }
 };
 
-// Default export - รวม legacy teacherAPI
+// ==================== CO-AUTHORS MANAGEMENT API (LEGACY - รักษาไว้เพื่อ backward compatibility) ====================
+
+export const coauthorsAPI = {
+  
+  // 1. Add co-author to submission (ใช้ submissionUsersAPI แทน)
+  async addCoauthor(submissionId, coauthorData) {
+    try {
+      const userData = {
+        user_id: coauthorData.user_id,
+        role: 'co_author',
+        order_sequence: coauthorData.order_sequence || 2,
+        is_active: true
+      };
+      
+      const response = await submissionUsersAPI.addUser(submissionId, userData);
+      return response;
+    } catch (error) {
+      console.error('Error adding co-author:', error);
+      throw error;
+    }
+  },
+
+  // 2. Get all co-authors for submission
+  async getCoauthors(submissionId) {
+    try {
+      const response = await submissionUsersAPI.getUsers(submissionId);
+      // Filter only co-authors
+      return {
+        ...response,
+        coauthors: response.users?.filter(user => user.role === 'co_author') || []
+      };
+    } catch (error) {
+      console.error('Error fetching co-authors:', error);
+      throw error;
+    }
+  },
+
+  // 3. Update co-author information
+  async updateCoauthor(submissionId, userId, updateData) {
+    try {
+      const response = await submissionUsersAPI.updateUser(submissionId, userId, updateData);
+      return response;
+    } catch (error) {
+      console.error('Error updating co-author:', error);
+      throw error;
+    }
+  },
+
+  // 4. Remove co-author from submission
+  async removeCoauthor(submissionId, userId) {
+    try {
+      const response = await submissionUsersAPI.removeUser(submissionId, userId);
+      return response;
+    } catch (error) {
+      console.error('Error removing co-author:', error);
+      throw error;
+    }
+  },
+
+  // 5. Get submission with full co-authors details
+  async getSubmissionWithCoauthors(submissionId) {
+    try {
+      const [submissionResponse, usersResponse] = await Promise.all([
+        submissionAPI.getSubmission(submissionId),
+        submissionUsersAPI.getUsers(submissionId)
+      ]);
+      
+      return {
+        ...submissionResponse,
+        coauthors: usersResponse.users?.filter(user => user.role === 'co_author') || []
+      };
+    } catch (error) {
+      console.error('Error fetching submission with co-authors:', error);
+      throw error;
+    }
+  }
+};
+
+// อัปเดต default export
 export default {
   ...teacherAPI,
   submission: submissionAPI,
+  submissionUsers: submissionUsersAPI,  // เพิ่มใหม่
   file: fileAPI,
   document: documentAPI,
   fundApplication: fundApplicationAPI,
   publicationReward: publicationRewardAPI,
+  coauthors: coauthorsAPI,
   utils: submissionUtils
 };
