@@ -1,8 +1,6 @@
 // app/lib/publication_api.js - Updated with submissionUsersAPI
 import apiClient from './api';
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
-
 // Helper function to get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem('access_token');
@@ -62,12 +60,23 @@ export const submissionAPI = {
   },
 
   // Submit submission (change status)
-  async submit(id) {
+  async submitSubmission(id) {
     try {
       const response = await apiClient.post(`/submissions/${id}/submit`);
       return response;
     } catch (error) {
       console.error('Error submitting:', error);
+      throw error;
+    }
+  },
+
+  // Get documents for submission - เพิ่มใหม่
+  async getDocuments(submissionId) {
+    try {
+      const response = await submissionAPI.getDocuments(submissionId);
+      return response;
+    } catch (error) {
+      console.error('Error fetching documents:', error);
       throw error;
     }
   }
@@ -203,56 +212,48 @@ export const publicationDetailsAPI = {
   }
 };
 
-// File Management API
 export const fileAPI = {
-  // Upload file
-  async upload(file) {
+  async uploadFile(file) {
+      try {
+        return await apiClient.uploadFile('/files/upload', file);
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        throw error;
+      }
+    },
+
+  async getFileInfo(fileId) {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await apiClient.post('/files/upload', formData, {
+      return await apiClient.getFileInfo('GET', `/files/managed/${fileId}`);
+    } catch (error) {
+      console.error('Error fetching file info:', error);
+      throw error;
+    }
+  },
+
+  async downloadFile(fileId) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/files/managed/${fileId}/download`, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Authorization': `Bearer ${token}`
         }
       });
-      
-      return response;
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      throw error;
-    }
-  },
 
-  // Get file by ID
-  async getById(fileId) {
-    try {
-      const response = await apiClient.get(`/files/${fileId}`);
-      return response;
-    } catch (error) {
-      console.error('Error fetching file:', error);
-      throw error;
-    }
-  },
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-  // Download file
-  async download(fileId) {
-    try {
-      const response = await apiClient.get(`/files/${fileId}/download`, {
-        responseType: 'blob'
-      });
-      return response;
+      return response.blob();
     } catch (error) {
       console.error('Error downloading file:', error);
       throw error;
     }
   },
 
-  // Delete file
-  async delete(fileId) {
+  async deleteFile(fileId) {
     try {
-      const response = await apiClient.delete(`/files/${fileId}`);
-      return response;
+      return await apiClient.deleteFile('DELETE', `/files/managed/${fileId}`);
     } catch (error) {
       console.error('Error deleting file:', error);
       throw error;
@@ -260,42 +261,12 @@ export const fileAPI = {
   }
 };
 
-// Document Management API
 export const documentAPI = {
-  // Attach document to submission
-  async attach(submissionId, documentData) {
+  async attachDocument(submissionId, documentData) {
     try {
-      const response = await apiClient.post(`/submissions/${submissionId}/documents`, {
-        file_id: documentData.file_id,
-        document_type_id: documentData.document_type_id,
-        description: documentData.description,
-        display_order: documentData.display_order || 1
-      });
-      return response;
+      return await apiClient.post(`/submissions/${submissionId}/attach-document`, documentData);
     } catch (error) {
       console.error('Error attaching document:', error);
-      throw error;
-    }
-  },
-
-  // Get submission documents
-  async getBySubmission(submissionId) {
-    try {
-      const response = await apiClient.get(`/submissions/${submissionId}/documents`);
-      return response;
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-      throw error;
-    }
-  },
-
-  // Remove document from submission
-  async detach(submissionId, documentId) {
-    try {
-      const response = await apiClient.delete(`/submissions/${submissionId}/documents/${documentId}`);
-      return response;
-    } catch (error) {
-      console.error('Error detaching document:', error);
       throw error;
     }
   }
@@ -303,47 +274,62 @@ export const documentAPI = {
 
 // Combined Publication Reward API (ใช้ APIs ด้านบนร่วมกัน)
 export const publicationRewardAPI = {
-  // Create complete publication reward application
+// แก้ไขฟังก์ชัน createApplication ใน publicationRewardAPI
+
   async createApplication(applicationData) {
     try {
       const {
-        // Submission data
+        submission_type = 'publication_reward',
         year_id,
         
         // Publication details
+        author_status,
         article_title,
         journal_name,
+        journal_issue,
+        journal_pages,
         journal_month,
         journal_year,
+        journal_url,
+        doi,
+        article_online_db,
         journal_quartile,
         impact_factor,
-        doi,
-        journal_url,
-        journal_pages,
-        journal_issue,
-        article_online_db,
         publication_reward,
-        author_status,
-        author_count,
         
-        // Files
+        // Files - เพิ่มส่วนนี้
         uploadedFiles = {},
         otherDocuments = [],
         
-        // Co-authors
-        coauthors = []
+        // Coauthors
+        coauthors = [],
+        
+        isDraft = false
       } = applicationData;
 
-      // Step 1: Create submission
-      const submissionResponse = await submissionAPI.create({
-        submission_type: 'publication_reward',
+      console.log('Starting publication reward creation with data:', {
+        submission_type,
         year_id,
+        priority,
+        uploadedFiles: Object.keys(uploadedFiles),
+        otherDocuments: otherDocuments.length,
+        coauthors: coauthors.length
+      });
+
+      // Step 1: Create submission
+      const submissionResponse = await submissionAPI.createSubmission({
+        submission_type,
+        year_id,
+        priority
       });
       
       const submissionId = submissionResponse.submission.submission_id;
+      console.log('Created submission:', submissionId);
 
       // Step 2: Add co-authors to submission_users
       if (coauthors && coauthors.length > 0) {
+        console.log('Adding co-authors to submission:', coauthors);
+        
         try {
           await submissionUsersAPI.setCoauthors(submissionId, coauthors);
           console.log('Co-authors added successfully');
@@ -371,41 +357,72 @@ export const publicationRewardAPI = {
         volume_issue: journal_issue,
         indexing: article_online_db,
         publication_reward: parseFloat(publication_reward),
-        author_count: author_count || 1,
+        author_count: coauthors.length + 1, // +1 for main author
         is_corresponding_author: author_status === 'corresponding_author',
         author_status
       });
 
-      // Step 4: Upload files and attach documents
+      console.log('Publication details added successfully');
+
+      // Step 4: Upload files and attach documents - เพิ่มส่วนนี้
       const uploadPromises = [];
 
-      // Upload main article file
-      if (uploadedFiles.article_file && uploadedFiles.article_file.length > 0) {
-        uploadPromises.push(
-          fileAPI.upload(uploadedFiles.article_file[0])
-            .then(res => documentAPI.attach(submissionId, {
-              file_id: res.file.file_id,
-              document_type_id: 1, // Assuming 1 is for article file
-              description: 'ไฟล์บทความที่ตีพิมพ์'
-            }))
-        );
-      }
+      // Upload main files from uploadedFiles object
+      Object.entries(uploadedFiles).forEach(([documentTypeId, files]) => {
+        if (files && files.length > 0) {
+          files.forEach((file, index) => {
+            uploadPromises.push(
+              fileAPI.uploadFile(file)
+                .then(fileResponse => {
+                  console.log(`File uploaded successfully:`, fileResponse.file);
+                  return documentAPI.attachDocument(submissionId, {
+                    file_id: fileResponse.file.file_id,
+                    document_type_id: parseInt(documentTypeId),
+                    description: `${file.name}`,
+                    display_order: index + 1
+                  });
+                })
+                .then(docResponse => {
+                  console.log(`Document attached successfully:`, docResponse);
+                  return docResponse;
+                })
+                .catch(error => {
+                  console.error(`Error processing file ${file.name}:`, error);
+                  throw error;
+                })
+            );
+          });
+        }
+      });
 
       // Upload other documents
-      otherDocuments.forEach((doc, index) => {
-        if (doc.file) {
+      otherDocuments.forEach((file, index) => {
+        if (file) {
           uploadPromises.push(
-            fileAPI.upload(doc.file)
-              .then(res => documentAPI.attach(submissionId, {
-                file_id: res.file.file_id,
-                document_type_id: doc.documentTypeId || 99, // Use provided type or default
-                description: doc.description || `เอกสารอื่นๆ ${index + 1}`
-              }))
+            fileAPI.uploadFile(file)
+              .then(fileResponse => {
+                console.log(`Other document uploaded:`, fileResponse.file);
+                return documentAPI.attachDocument(submissionId, {
+                  file_id: fileResponse.file.file_id,
+                  document_type_id: 99, // Default type for other documents
+                  description: `เอกสารอื่นๆ ${index + 1}: ${file.name}`,
+                  display_order: index + 1
+                });
+              })
+              .catch(error => {
+                console.error(`Error processing other document ${file.name}:`, error);
+                throw error;
+              })
           );
         }
       });
 
-      await Promise.all(uploadPromises);
+      // Wait for all file uploads to complete
+      if (uploadPromises.length > 0) {
+        console.log(`Uploading ${uploadPromises.length} files...`);
+        await Promise.all(uploadPromises);
+        console.log('All files uploaded and attached successfully');
+      }
 
       return {
         success: true,
@@ -418,7 +435,6 @@ export const publicationRewardAPI = {
       throw error;
     }
   },
-
   // Submit application
   async submitApplication(submissionId) {
     try {

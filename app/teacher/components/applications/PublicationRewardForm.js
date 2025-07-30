@@ -117,6 +117,20 @@ const deleteDraftFromLocal = () => {
   localStorage.removeItem(DRAFT_KEY);
 };
 
+// Helper function สำหรับแสดงชื่อประเภทเอกสาร
+const getDocumentTypeName = (documentTypeId) => {
+  const typeMap = {
+    1: 'บทความที่ตีพิมพ์',
+    2: 'หลักฐานการตีพิมพ์',
+    3: 'เอกสารประกอบ',
+    11: 'เอกสารอื่นๆ',
+    12: 'เอกสารเบิกจ่ายภายนอก'
+  };
+  
+  return typeMap[documentTypeId] || `เอกสารประเภท ${documentTypeId}`;
+};
+
+
 // File upload component
 const FileUpload = ({ onFileSelect, accept, multiple = false, error, label }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -508,6 +522,35 @@ export default function PublicationRewardForm({ onNavigate }) {
       setFormData(prev => ({ ...prev, publication_reward: reward }));
     }
   }, [formData.author_status, formData.journal_quartile]);
+
+  const getFileCountByType = () => {
+    const counts = {
+      main: Object.keys(uploadedFiles).length,
+      other: otherDocuments?.length || 0,
+      external: externalFundings?.filter(f => f.file).length || 0
+    };
+    
+    const total = counts.main + counts.other + counts.external;
+    
+    return {
+      ...counts,
+      total,
+      summary: `รวม ${total} ไฟล์ (หลัก: ${counts.main}, อื่นๆ: ${counts.other}, ภายนอก: ${counts.external})`
+    };
+  };
+
+  // เพิ่มฟังก์ชัน getDocumentTypeName ใน component ด้วย
+  const getDocumentTypeName = (documentTypeId) => {
+    const typeMap = {
+      1: 'บทความที่ตีพิมพ์',
+      2: 'หลักฐานการตีพิมพ์',
+      3: 'เอกสารประกอบ',
+      11: 'เอกสารอื่นๆ',
+      12: 'เอกสารเบิกจ่ายภายนอก'
+    };
+    
+    return typeMap[documentTypeId] || `เอกสารประเภท ${documentTypeId}`;
+  };
 
   // ในฟังก์ชัน loadInitialData
   const loadInitialData = async () => {
@@ -1309,22 +1352,12 @@ const debugFileStates = () => {
     console.log('  No external fundings');
   }
   
-  console.log('4. mergedPdfFile state:');
-  if (mergedPdfFile) {
-    console.log('  Merged PDF exists:', {
-      name: mergedPdfFile.name,
-      type: mergedPdfFile.type,
-      size: mergedPdfFile.size
-    });
-  } else {
-    console.log('  No merged PDF file');
-  }
   
   console.groupEnd();
 };
 
 
-// Updated submitApplication function in PublicationRewardForm.js
+  // ฟังก์ชัน submitApplication ที่แก้ไขแล้วจากไฟล์ PublicationRewardForm.js จริง
 
   const submitApplication = async () => {
     // ตรวจสอบข้อมูลก่อน
@@ -1364,318 +1397,290 @@ const debugFileStates = () => {
       let finalFile = null;
       let fileDescription = '';
 
-      // รวบรวมไฟล์ทั้งหมด
+      // รวบรวมไฟล์ทั้งหมด - แก้ไขส่วนนี้
       const allFiles = [];
-      
-      // เพิ่มไฟล์บทความ
-      Object.values(uploadedFiles).forEach(file => {
+
+      // 1. เพิ่มไฟล์บทความและเอกสารหลัก (document_type_id 1-10)
+      Object.entries(uploadedFiles).forEach(([docTypeId, file]) => {
         if (file) {
-          console.log('Adding uploaded file:', file.name, file.type, file.size);
-          allFiles.push(file);
+          allFiles.push({
+            file: file,
+            document_type_id: parseInt(docTypeId),
+            description: `${file.name} (ประเภท ${docTypeId})`
+          });
         }
       });
-      
-      // เพิ่มเอกสารอื่นๆ
+
+      // 2. เพิ่มเอกสารอื่นๆ (document_type_id = 11)
       if (otherDocuments && otherDocuments.length > 0) {
-        otherDocuments.forEach(doc => {
+        otherDocuments.forEach((doc, index) => {
           const file = doc.file || doc;
           if (file) {
-            console.log('Adding other document:', file.name, file.type, file.size);
-            allFiles.push(file);
+            allFiles.push({
+              file: file,
+              document_type_id: 11, // เอกสารอื่นๆ
+              description: doc.description || `เอกสารอื่นๆ ${index + 1}: ${file.name}`
+            });
           }
         });
       }
-      
-      // เพิ่มไฟล์จาก external funding
-      externalFundings.forEach(funding => {
-        if (funding.file) {
-          console.log('Adding external funding file:', funding.file.name, funding.file.type, funding.file.size);
-          allFiles.push(funding.file);
-        }
+
+      // 3. เพิ่มไฟล์เบิกจ่ายภายนอก (document_type_id = 12)
+      if (externalFundings && externalFundings.length > 0) {
+        externalFundings.forEach((funding, index) => {
+          if (funding.file) {
+            allFiles.push({
+              file: funding.file,
+              document_type_id: 12, // เอกสารเบิกจ่ายภายนอก
+              description: `เอกสารเบิกจ่ายภายนอก: ${funding.fundName || `ทุนที่ ${index + 1}`}`,
+              external_funding_id: funding.id || null // เก็บ reference ถ้ามี
+            });
+          }
+        });
+      }
+
+      console.log(`Total files to upload: ${allFiles.length}`);
+      console.log('Files breakdown:', {
+        mainDocuments: Object.keys(uploadedFiles).length,
+        otherDocuments: otherDocuments?.length || 0,
+        externalFundings: externalFundings?.filter(f => f.file).length || 0
       });
 
-      console.log('Total files collected:', allFiles.length);
-      console.log('All files:', allFiles.map(f => ({ name: f.name, type: f.type, size: f.size })));
-
-      // ตรวจสอบว่ามีไฟล์หรือไม่
-      if (allFiles.length === 0) {
-        Swal.close();
-        Swal.fire({
-          icon: 'warning',
-          title: 'ไม่พบเอกสารแนบ',
-          text: 'กรุณาแนบไฟล์บทความอย่างน้อย 1 ไฟล์',
-          confirmButtonColor: '#3085d6'
-        });
-        setLoading(false);
-        return;
-      }
-
-      // ใช้ merged PDF ที่เตรียมไว้แล้ว หรือเตรียมไฟล์ใหม่
+      // ใช้ merged PDF file ถ้ามี
       if (mergedPdfFile) {
-        finalFile = mergedPdfFile;
-        fileDescription = `เอกสารรวม (${allFiles.length} ไฟล์)`;
-        console.log('Using merged PDF file:', finalFile.name, finalFile.size);
-      } else {
-        // ใช้ไฟล์แรกหรือรวม PDF
-        const pdfFiles = allFiles.filter(file => file.type === 'application/pdf');
-        console.log('PDF files found:', pdfFiles.length);
-        
-        if (pdfFiles.length > 1) {
-          try {
-            console.log('Merging multiple PDF files...');
-            finalFile = await mergePDFs(pdfFiles);
-            fileDescription = `เอกสารรวม ${allFiles.length} ไฟล์`;
-            console.log('Successfully merged PDFs into:', finalFile.name, finalFile.size);
-          } catch (error) {
-            console.error('Error merging PDFs:', error);
-            finalFile = allFiles[0];
-            fileDescription = 'ไฟล์บทความที่ตีพิมพ์';
-            console.log('Using first file as fallback:', finalFile?.name);
-          }
-        } else if (pdfFiles.length === 1) {
-          finalFile = pdfFiles[0];
-          fileDescription = 'ไฟล์บทความที่ตีพิมพ์';
-          console.log('Using single PDF file:', finalFile.name, finalFile.size);
-        } else {
-          finalFile = allFiles[0];
-          fileDescription = 'ไฟล์บทความที่ตีพิมพ์';
-          console.log('Using first available file (not PDF):', finalFile?.name);
-        }
+        allFiles.push({
+          file: mergedPdfFile,
+          document_type_id: 1, // บทความหลัก
+          description: 'เอกสารรวม (Merged PDF)'
+        });
       }
 
-      console.log('Final file selected:', finalFile ? {
-        name: finalFile.name,
-        type: finalFile.type,
-        size: finalFile.size
-      } : 'null');
+      console.log(`Total files to upload: ${allFiles.length}`);
 
-      // Step 1: สร้าง submission ถ้ายังไม่มี
+      // สร้าง submission ถ้ายังไม่มี
       if (!submissionId) {
         Swal.update({
           html: 'กำลังสร้างคำร้อง...'
         });
 
-        const createResponse = await submissionAPI.create({
+        const submissionResponse = await submissionAPI.create({
           submission_type: 'publication_reward',
           year_id: formData.year_id,
+          priority: formData.priority || 'normal'
         });
         
-        submissionId = createResponse.submission.submission_id;
+        submissionId = submissionResponse.submission.submission_id;
         setCurrentSubmissionId(submissionId);
         console.log('Created submission:', submissionId);
+      }
 
-        // Step 2: เพิ่ม co-authors ลง submission_users table
-        if (coauthors && coauthors.length > 0) {
-          Swal.update({
-            html: 'กำลังเพิ่มผู้ร่วมวิจัย...'
-          });
-
-          try {
-            console.log('Adding co-authors to submission_users:', coauthors);
-            
-            // เรียกใช้ API ใหม่สำหรับการจัดการ submission_users
-            await (submissionUsersAPI || teacherSubmissionUsersAPI).setCoauthors(submissionId, coauthors);
-            
-            console.log('Co-authors added to submission_users successfully');
-          } catch (error) {
-            console.error('Error adding co-authors to submission_users:', error);
-            // ไม่ให้ fail ทั้งหมด แต่แสดง warning
-            console.warn('Warning: Could not add co-authors to submission_users, continuing with submission...');
-          }
-        }
-
-        // Step 3: เพิ่ม publication details
+      // เพิ่ม co-authors
+      if (coauthors && coauthors.length > 0) {
         Swal.update({
-          html: 'กำลังบันทึกข้อมูลบทความ...'
+          html: 'กำลังเพิ่มผู้แต่งร่วม...'
         });
 
-        const publicationDate = formData.journal_year && formData.journal_month 
-          ? `${formData.journal_year}-${formData.journal_month.padStart(2, '0')}-01`
-          : new Date().toISOString().split('T')[0];
-
-        await publicationDetailsAPI.add(submissionId, {
-          article_title: formData.article_title,
-          journal_name: formData.journal_name,
-          publication_date: publicationDate,
-          publication_type: formData.journal_type || 'journal',
-          journal_quartile: formData.journal_quartile,
-          impact_factor: parseFloat(formData.impact_factor) || null,
-          doi: formData.doi || '',
-          url: formData.journal_url || '',
-          page_numbers: formData.journal_pages || '',
-          volume_issue: formData.journal_issue || '',
-          indexing: formData.article_online_db || '',
-          
-          // เงินรางวัลและการคำนวณ
-          reward_amount: parseFloat(formData.publication_reward) || 0,
-          revision_fee: parseFloat(formData.revision_fee) || 0,
-          publication_fee: parseFloat(formData.publication_fee) || 0,
-          external_funding_amount: parseFloat(formData.external_funding_amount) || 0,
-          total_amount: parseFloat(formData.total_amount) || 0,
-          
-          // ข้อมูลผู้แต่ง
-          author_count: coauthors.length + 1,
-          is_corresponding_author: formData.author_status === 'corresponding_author',
-          author_status: formData.author_status,
-          
-          // ข้อมูลธนาคาร
-          bank_account: formData.bank_account,
-          bank_name: formData.bank_name,
-          phone_number: formData.phone_number,
-          
-          // อื่นๆ
-          university_ranking: formData.university_ranking || '',
-          has_university_fund: formData.has_university_fund === 'yes',
-          university_fund_ref: formData.university_fund_ref || ''
-        });
-
-        // Step 4: อัปโหลดไฟล์หลัก
-        Swal.update({
-          html: 'กำลังอัปโหลดเอกสาร...'
-        });
-
-        // ตรวจสอบว่ามีไฟล์ที่จะอัปโหลดหรือไม่
-        if (!finalFile) {
-          throw new Error('ไม่พบไฟล์ที่จะอัปโหลด กรุณาแนบไฟล์บทความ');
-        }
-
-        // อัปโหลดไฟล์หลัก (ที่รวมแล้วหรือไฟล์เดียว)
-        const fileResponse = await fileAPI.upload(finalFile);
-        
-        // ตรวจสอบผลลัพธ์การอัปโหลด
-        if (!fileResponse || !fileResponse.file || !fileResponse.file.file_id) {
-          throw new Error('การอัปโหลดไฟล์ล้มเหลว');
-        }
-        
-        await documentAPI.attach(submissionId, {
-          file_id: fileResponse.file.file_id,
-          document_type_id: 1, // สมมติว่า 1 คือ document type สำหรับไฟล์บทความ
-          description: fileDescription,
-          display_order: 1
-        });
-
-        // ถ้ามีไฟล์ที่ไม่ใช่ PDF และมีหลายไฟล์ ให้แนบไฟล์ที่ไม่ใช่ PDF แยก
-        if (allFiles.length > 1) {
-          const nonPdfFiles = allFiles.filter(file => file.type !== 'application/pdf');
-          
-          if (nonPdfFiles.length > 0) {
-            Swal.update({
-              html: `กำลังอัปโหลดเอกสารเพิ่มเติม ${nonPdfFiles.length} ไฟล์...`
-            });
-
-            const uploadPromises = nonPdfFiles.map((file, index) => 
-              fileAPI.upload(file)
-                .then(response => 
-                  documentAPI.attach(submissionId, {
-                    file_id: response.file.file_id,
-                    document_type_id: 99, // 99 สำหรับเอกสารอื่นๆ
-                    description: `เอกสารเพิ่มเติม - ${file.name}`,
-                    display_order: index + 2
-                  })
-                )
-                .catch(error => {
-                  console.error(`Error uploading non-PDF file ${index}:`, error);
-                  // ไม่ throw error เพื่อให้ดำเนินการต่อได้
-                })
-            );
-
-            await Promise.allSettled(uploadPromises);
-          }
+        try {
+          await submissionUsersAPI.setCoauthors(submissionId, coauthors.map(c => c.user_id));
+          console.log('Co-authors added successfully');
+        } catch (error) {
+          console.error('Error adding co-authors:', error);
+          // ไม่หยุดกระบวนการ
         }
       }
 
-      // Step 5: Submit submission
+      // เพิ่มรายละเอียด publication
+      Swal.update({
+        html: 'กำลังบันทึกรายละเอียดบทความ...'
+      });
+
+      const publicationDate = formData.journal_year && formData.journal_month 
+        ? `${formData.journal_year}-${formData.journal_month.padStart(2, '0')}-01`
+        : new Date().toISOString().split('T')[0];
+
+      const publicationData = {
+        article_title: formData.article_title,
+        journal_name: formData.journal_name,
+        publication_date: publicationDate,
+        publication_type: formData.journal_type || 'journal',
+        journal_quartile: formData.journal_quartile,
+        impact_factor: parseFloat(formData.impact_factor) || null,
+        doi: formData.doi || '',
+        url: formData.journal_url || '',
+        page_numbers: formData.journal_pages || '',
+        volume_issue: formData.journal_issue || '',
+        indexing: formData.article_online_db || '',
+        
+        // เงินรางวัลและการคำนวณ
+        reward_amount: parseFloat(formData.publication_reward) || 0,
+        revision_fee: parseFloat(formData.revision_fee) || 0,
+        publication_fee: parseFloat(formData.publication_fee) || 0,
+        external_funding_amount: parseFloat(formData.external_funding_amount) || 0,
+        total_amount: parseFloat(formData.total_amount) || 0,
+        
+        // ข้อมูลผู้แต่ง
+        author_count: coauthors.length + 1,
+        is_corresponding_author: formData.author_status === 'corresponding_author',
+        author_status: formData.author_status,
+        
+        // ข้อมูลธนาคาร
+        bank_account: formData.bank_account,
+        bank_name: formData.bank_name,
+        bank_account_name: formData.bank_account_name || '',
+        
+        // ข้อมูลเพิ่มเติม
+        announce_reference_number: formData.announce_reference_number || ''
+      };
+
+      console.log('Publication data to send:', publicationData);
+      console.log('Submission ID:', submissionId);
+
+      try {
+        await publicationDetailsAPI.add(submissionId, publicationData);
+        console.log('Publication details saved successfully');
+      } catch (error) {
+        console.error('Failed to save publication details:', error);
+        
+        // แสดงข้อผิดพลาดแบบละเอียด
+        Swal.fire({
+          icon: 'error',
+          title: 'ไม่สามารถบันทึกรายละเอียดบทความได้',
+          text: `Error: ${error.message}`,
+          confirmButtonColor: '#ef4444'
+        });
+        return; // หยุดกระบวนการ
+      }
+
+      // อัปโหลดไฟล์
+      if (allFiles.length > 0) {
+        Swal.update({
+          html: `กำลังอัปโหลดไฟล์... (0/${allFiles.length})`
+        });
+
+        console.log('Starting file upload process...');
+
+        for (let i = 0; i < allFiles.length; i++) {
+          const fileData = allFiles[i];
+          
+          try {
+            console.log(`Uploading file ${i + 1}:`, {
+              name: fileData.file.name,
+              size: fileData.file.size,
+              type: fileData.file.type,
+              document_type_id: fileData.document_type_id,
+              description: fileData.description
+            });
+
+            // อัปโหลดไฟล์
+            const uploadResponse = await fileAPI.uploadFile(fileData.file);
+            console.log(`File ${i + 1} upload response:`, uploadResponse);
+            
+            if (!uploadResponse.success || !uploadResponse.file || !uploadResponse.file.file_id) {
+              throw new Error('Upload response missing file_id');
+            }
+
+            // เตรียมข้อมูลสำหรับแนบเอกสาร
+            const attachData = {
+              file_id: uploadResponse.file.file_id,
+              document_type_id: fileData.document_type_id,
+              description: fileData.description,
+              display_order: i + 1
+            };
+
+            // เพิ่มข้อมูลพิเศษสำหรับเอกสารเบิกจ่ายภายนอก
+            if (fileData.document_type_id === 12 && fileData.external_funding_id) {
+              attachData.external_funding_id = fileData.external_funding_id;
+            }
+
+            console.log(`Attaching document ${i + 1}:`, attachData);
+            
+            const attachResponse = await documentAPI.attachDocument(submissionId, attachData);
+            console.log(`Document ${i + 1} attach response:`, attachResponse);
+
+            if (!attachResponse.success) {
+              throw new Error(`Failed to attach document: ${attachResponse.message || 'Unknown error'}`);
+            }
+
+            // อัปเดต progress
+            Swal.update({
+              html: `กำลังอัปโหลดไฟล์... (${i + 1}/${allFiles.length})`
+            });
+            
+          } catch (error) {
+            console.error(`Error processing file ${fileData.file.name}:`, error);
+            
+            // แสดงข้อผิดพลาดแบบละเอียด
+            Swal.fire({
+              icon: 'error',
+              title: 'ไม่สามารถอัปโหลดไฟล์ได้',
+              html: `
+                <div class="text-left">
+                  <p><strong>ไฟล์:</strong> ${fileData.file.name}</p>
+                  <p><strong>ประเภท:</strong> ${getDocumentTypeName(fileData.document_type_id)}</p>
+                  <p><strong>ข้อผิดพลาด:</strong> ${error.message}</p>
+                  <p class="text-sm text-gray-600 mt-2">กรุณาตรวจสอบไฟล์และลองใหม่อีกครั้ง</p>
+                </div>
+              `,
+              confirmButtonColor: '#ef4444'
+            });
+            throw error; // หยุดกระบวนการ
+          }
+        }
+
+        console.log('All files uploaded and attached successfully');
+      } else {
+        console.log('No files to upload');
+      }
+
+      // ส่งคำร้อง
       Swal.update({
         html: 'กำลังส่งคำร้อง...'
       });
 
-      const submitResponse = await submissionAPI.submit(submissionId);
-      
-      // ปิด loading dialog
-      Swal.close();
+      await submissionAPI.submitSubmission(submissionId);
 
-      // ลบ draft จาก localStorage (ถ้ามี)
-      if (typeof deleteDraftFromLocal === 'function') {
-        deleteDraftFromLocal();
-      }
+      // ลบข้อมูลร่างจาก localStorage
+      deleteDraftFromLocal();
 
-      // แสดงข้อความสำเร็จ
-      await Swal.fire({
+      const fileCounts = getFileCountByType();
+
+      // แสดงผลสำเร็จ
+      Swal.fire({
         icon: 'success',
-        title: 'ส่งคำร้องสำเร็จ',
+        title: 'ส่งคำร้องสำเร็จ!',
         html: `
-          <div class="text-center">
-            <p>คำร้องของคุณได้ถูกส่งเรียบร้อยแล้ว</p>
-            <p class="text-sm text-gray-600 mt-2">เลขที่คำร้อง: ${submitResponse?.submission?.submission_number || submissionId}</p>
-            
-            ${coauthors.length > 0 ? `
-              <div class="mt-4 p-3 bg-blue-50 rounded">
-                <p class="text-sm text-blue-700">
-                  <strong>ผู้ร่วมวิจัย:</strong> ${coauthors.length} คน
-                </p>
-                <div class="text-xs text-blue-600 mt-1">
-                  ${coauthors.map(author => `• ${author.user_fname} ${author.user_lname}`).join('<br>')}
-                </div>
-              </div>
-            ` : ''}
-            
-            <div class="mt-4 p-3 bg-gray-100 rounded">
-              <p class="text-sm text-gray-700">
-                <strong>เอกสารที่แนบ:</strong> ${fileDescription}
-                ${allFiles.length > 1 && allFiles.some(f => f.type !== 'application/pdf') ? 
-                  `<br><small class="text-gray-500">และเอกสารเพิ่มเติมอื่นๆ</small>` : ''}
-              </p>
+          <div class="text-left">
+            <p><strong>รหัสคำร้อง:</strong> ${submissionId}</p>
+            <p><strong>ไฟล์ที่แนับ:</strong> ${fileCounts.summary}</p>
+            <div class="mt-2 text-sm text-gray-600">
+              <ul class="list-disc list-inside">
+                ${fileCounts.main > 0 ? `<li>เอกสารหลัก: ${fileCounts.main} ไฟล์</li>` : ''}
+                ${fileCounts.other > 0 ? `<li>เอกสารอื่นๆ: ${fileCounts.other} ไฟล์</li>` : ''}
+                ${fileCounts.external > 0 ? `<li>เอกสารเบิกจ่ายภายนอก: ${fileCounts.external} ไฟล์</li>` : ''}
+              </ul>
             </div>
-            
-            <div class="mt-4 p-3 bg-green-50 rounded border border-green-200">
-              <p class="text-sm text-green-700">
-                <strong>ยอดเงินที่ขอเบิก:</strong> ${formatCurrency(formData.total_amount || 0)} บาท
-              </p>
-            </div>
+            <p class="text-green-600 mt-3">ระบบจะแจ้งผลการพิจารณาผ่านอีเมล</p>
           </div>
         `,
-        confirmButtonColor: '#3085d6',
-        confirmButtonText: 'ตกลง'
+        confirmButtonColor: '#10b981',
+        confirmButtonText: 'เรียบร้อย',
+        width: '500px'
+      }).then(() => {
+        resetForm();
+        
+        if (onNavigate) {
+          onNavigate('applications');
+        }
       });
 
-      // รีเซ็ตฟอร์ม
-      resetForm();
-      
-      // Navigate ไปหน้ารายการคำร้อง (ถ้ามี prop onNavigate)
-      if (onNavigate) {
-        onNavigate('applications');
-      }
-      
     } catch (error) {
       console.error('Error submitting application:', error);
-      Swal.close();
-      
-      // จัดการ error message
-      let errorMessage = 'ไม่สามารถส่งคำร้องได้ กรุณาลองใหม่อีกครั้ง';
-      let errorDetail = '';
-      
-      if (error.response) {
-        if (error.response.status === 401) {
-          errorMessage = 'กรุณาเข้าสู่ระบบใหม่';
-        } else if (error.response.status === 400) {
-          errorMessage = 'ข้อมูลไม่ถูกต้อง';
-          errorDetail = error.response.data?.error || 'กรุณาตรวจสอบข้อมูลอีกครั้ง';
-        } else if (error.response.data?.error) {
-          errorDetail = error.response.data.error;
-        }
-      } else if (error.request) {
-        errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
-        errorDetail = 'กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต';
-      } else {
-        errorDetail = error.message;
-      }
       
       Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
-        text: errorMessage,
-        footer: errorDetail ? `<small>${errorDetail}</small>` : '',
-        confirmButtonColor: '#3085d6'
+        text: error.message || 'ไม่สามารถส่งคำร้องได้ กรุณาลองใหม่อีกครั้ง',
+        confirmButtonColor: '#ef4444'
       });
     } finally {
       setLoading(false);
@@ -1695,7 +1700,6 @@ const debugFileStates = () => {
       journal_url: '',
       doi: '',
       article_online_db: '',
-      journal_tier: '',
       journal_quartile: '',
       in_isi: false,
       in_scopus: false,
