@@ -1466,7 +1466,6 @@ const debugFileStates = () => {
         const submissionResponse = await submissionAPI.create({
           submission_type: 'publication_reward',
           year_id: formData.year_id,
-          priority: formData.priority || 'normal'
         });
         
         submissionId = submissionResponse.submission.submission_id;
@@ -1474,18 +1473,126 @@ const debugFileStates = () => {
         console.log('Created submission:', submissionId);
       }
 
-      // เพิ่ม co-authors
-      if (coauthors && coauthors.length > 0) {
+      // Step 2: จัดการ Users ใน Submission - ใช้ API จาก publication_api.js
+      if (currentUser && (coauthors.length > 0 || formData.author_status)) {
         Swal.update({
-          html: 'กำลังเพิ่มผู้แต่งร่วม...'
+          html: 'กำลังจัดการผู้แต่ง...'
         });
 
         try {
-          await submissionUsersAPI.setCoauthors(submissionId, coauthors.map(c => c.user_id));
-          console.log('Co-authors added successfully');
+          console.log('=== Managing Submission Users via API ===');
+          console.log('Current User:', currentUser);
+          console.log('Co-authors:', coauthors);
+          console.log('Author Status:', formData.author_status);
+
+          // เตรียมข้อมูล users ทั้งหมด
+          const allUsers = [];
+
+          // 1. เพิ่ม Main Author ถ้ามี author_status
+          if (formData.author_status) {
+            allUsers.push({
+              user_id: currentUser.user_id,
+              role: formData.author_status, // "first_author" หรือ "corresponding_author"
+              order_sequence: 1,
+              is_active: true,
+              is_primary: true
+            });
+          }
+
+          // 2. เพิ่ม Co-authors
+          if (coauthors && coauthors.length > 0) {
+            coauthors.forEach((coauthor, index) => {
+              allUsers.push({
+                user_id: coauthor.user_id,
+                role: 'co_author',
+                order_sequence: index + 2,
+                is_active: true,
+                is_primary: false
+              });
+            });
+          }
+
+          console.log('All users to add:', allUsers);
+
+          // ลองใช้ batch API ก่อน
+          let batchSuccess = false;
+          
+          try {
+            const batchResult = await submissionUsersAPI.addMultipleUsers(submissionId, allUsers);
+            console.log('✅ Batch API successful:', batchResult);
+            
+            if (batchResult.success) {
+              batchSuccess = true;
+              console.log('Successfully added users via batch API');
+            }
+          } catch (batchError) {
+            console.log('Batch API failed, trying individual additions:', batchError);
+          }
+
+          // ถ้า batch ไม่สำเร็จ ให้เพิ่มทีละคน
+          if (!batchSuccess) {
+            console.log('Adding users individually...');
+            
+            let successCount = 0;
+            const errors = [];
+
+            for (let i = 0; i < allUsers.length; i++) {
+              const user = allUsers[i];
+              
+              try {
+                console.log(`Adding user ${i + 1}:`, {
+                  user_id: user.user_id,
+                  role: user.role,
+                  is_primary: user.is_primary
+                });
+
+                await submissionUsersAPI.addUser(submissionId, user);
+                console.log(`✅ Added user ${i + 1} successfully`);
+                successCount++;
+
+              } catch (individualError) {
+                console.error(`❌ Error adding user ${i + 1}:`, individualError);
+                errors.push(`User ${user.user_id}: ${individualError.message}`);
+              }
+            }
+
+            // ตรวจสอบผลลัพธ์
+            if (successCount === 0) {
+              console.error('Failed to add any users:', errors);
+              
+              Toast.fire({
+                icon: 'error',
+                title: 'ไม่สามารถเพิ่มผู้แต่งได้',
+                text: `Errors: ${errors.slice(0, 2).join('; ')}${errors.length > 2 ? '...' : ''}`
+              });
+            } else {
+              console.log(`✅ Successfully added ${successCount}/${allUsers.length} users individually`);
+              
+              if (errors.length > 0) {
+                console.warn('Some users failed:', errors);
+                Toast.fire({
+                  icon: 'warning',
+                  title: `เพิ่มผู้แต่งได้ ${successCount}/${allUsers.length} คน`,
+                  text: 'มีข้อผิดพลาดบางส่วน'
+                });
+              } else {
+                Toast.fire({
+                  icon: 'success',
+                  title: `เพิ่มผู้แต่งสำเร็จ ${successCount} คน`
+                });
+              }
+            }
+          }
+
         } catch (error) {
-          console.error('Error adding co-authors:', error);
-          // ไม่หยุดกระบวนการ
+          console.error('❌ Failed to manage submission users:', error);
+          
+          // แสดง warning แต่ยังคงดำเนินการต่อ
+          Toast.fire({
+            icon: 'warning',
+            title: 'จัดการผู้แต่งไม่สมบูรณ์',
+            text: `Warning: ${error.message}`
+          });
         }
       }
 

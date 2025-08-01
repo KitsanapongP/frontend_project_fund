@@ -274,7 +274,6 @@ export const documentAPI = {
 
 // Combined Publication Reward API (ใช้ APIs ด้านบนร่วมกัน)
 export const publicationRewardAPI = {
-// แก้ไขฟังก์ชัน createApplication ใน publicationRewardAPI
 
   async createApplication(applicationData) {
     try {

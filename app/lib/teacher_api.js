@@ -234,13 +234,20 @@ export const submissionAPI = {
 };
 
 // ==================== SUBMISSION USERS MANAGEMENT API ====================
-
 export const submissionUsersAPI = {
   
-  // 1. Add user to submission (co-author)
+  // 1. เพิ่ม user ลงใน submission (co-author, advisor, etc.)
   async addUser(submissionId, userData) {
     try {
-      const response = await apiClient.post(`/submissions/${submissionId}/users`, userData);
+      // รองรับการส่งข้อมูล co-author แบบง่าย
+      const requestData = {
+        user_id: userData.user_id,
+        role: userData.role || 'coauthor', // default เป็น coauthor
+        order_sequence: userData.order_sequence || 0,
+        is_active: userData.is_active !== undefined ? userData.is_active : true
+      };
+
+      const response = await apiClient.post(`/submissions/${submissionId}/users`, requestData);
       return response;
     } catch (error) {
       console.error('Error adding user to submission:', error);
@@ -248,7 +255,7 @@ export const submissionUsersAPI = {
     }
   },
 
-  // 2. Get all users for submission
+  // 2. ดู users ทั้งหมดใน submission
   async getUsers(submissionId) {
     try {
       const response = await apiClient.get(`/submissions/${submissionId}/users`);
@@ -259,7 +266,7 @@ export const submissionUsersAPI = {
     }
   },
 
-  // 3. Update user role in submission
+  // 3. แก้ไข user ใน submission
   async updateUser(submissionId, userId, updateData) {
     try {
       const response = await apiClient.put(`/submissions/${submissionId}/users/${userId}`, updateData);
@@ -270,49 +277,95 @@ export const submissionUsersAPI = {
     }
   },
 
-  // 4. Remove user from submission
+  // 4. ลบ user จาก submission
   async removeUser(submissionId, userId) {
     try {
       const response = await apiClient.delete(`/submissions/${submissionId}/users/${userId}`);
       return response;
     } catch (error) {
-      console.error('Error removing user from submission:', error);
+      console.error('Error removing submission user:', error);
       throw error;
     }
   },
 
-  // 5. Add multiple users at once (batch operation)
+  // 5. เพิ่ม users หลายคนพร้อมกัน
   async addMultipleUsers(submissionId, usersData) {
     try {
+      const formattedUsers = usersData.map((user, index) => ({
+        user_id: typeof user === 'object' ? user.user_id : user,
+        role: typeof user === 'object' ? (user.role || 'coauthor') : 'coauthor',
+        order_sequence: typeof user === 'object' ? user.order_sequence : (index + 2),
+        is_active: typeof user === 'object' ? (user.is_active !== undefined ? user.is_active : true) : true
+      }));
+
       const response = await apiClient.post(`/submissions/${submissionId}/users/batch`, {
-        users: usersData
+        users: formattedUsers
       });
       return response;
     } catch (error) {
-      console.error('Error adding multiple users to submission:', error);
+      console.error('Error adding multiple users:', error);
       throw error;
     }
   },
 
-  // 6. Set all co-authors (replace existing)
-  async setCoauthors(submissionId, coauthors) {
+  // 6. Set co-authors (replace all existing co-authors)
+  async setCoauthors(submissionId, coauthorsData) {
     try {
-      // Prepare users data with co-author role
-      const usersData = coauthors.map((coauthor, index) => ({
-        user_id: coauthor.user_id,
-        role: 'co_author',
-        order_sequence: index + 2, // Start from 2 (1 is main author)
-        is_active: true
-      }));
+      const formattedCoauthors = coauthorsData.map((coauthor, index) => {
+        if (typeof coauthor === 'object' && coauthor.user_id) {
+          return {
+            user_id: coauthor.user_id,
+            role: 'coauthor',
+            order_sequence: coauthor.order_sequence || (index + 2),
+            is_active: coauthor.is_active !== undefined ? coauthor.is_active : true
+          };
+        } else if (typeof coauthor === 'number') {
+          return {
+            user_id: coauthor,
+            role: 'coauthor',
+            order_sequence: index + 2,
+            is_active: true
+          };
+        } else {
+          throw new Error(`Invalid coauthor data: ${JSON.stringify(coauthor)}`);
+        }
+      });
 
       const response = await apiClient.post(`/submissions/${submissionId}/users/set-coauthors`, {
-        coauthors: usersData
+        coauthors: formattedCoauthors
       });
       return response;
     } catch (error) {
       console.error('Error setting co-authors:', error);
       throw error;
     }
+  },
+
+  // 7. Helper functions สำหรับ co-authors
+  async getCoauthors(submissionId) {
+    try {
+      const response = await this.getUsers(submissionId);
+      return {
+        ...response,
+        coauthors: response.users?.filter(user => user.role === 'coauthor') || []
+      };
+    } catch (error) {
+      console.error('Error fetching co-authors:', error);
+      throw error;
+    }
+  },
+
+  // 8. เพิ่ม co-author (wrapper function)
+  async addCoauthor(submissionId, coauthorData) {
+    return this.addUser(submissionId, {
+      ...coauthorData,
+      role: 'coauthor'
+    });
+  },
+
+  // 9. ลบ co-author (wrapper function)
+  async removeCoauthor(submissionId, userId) {
+    return this.removeUser(submissionId, userId);
   }
 };
 
@@ -627,7 +680,7 @@ export const publicationRewardAPI = {
         
         try {
           await submissionUsersAPI.setCoauthors(submissionId, coauthors);
-          console.log('Co-authors added successfully');
+          console.log('Co-authors added successfully via submissionUsersAPI');
         } catch (error) {
           console.error('Error adding co-authors:', error);
           // Don't throw error here, continue with submission
@@ -681,6 +734,7 @@ export const publicationRewardAPI = {
       return {
         success: true,
         submission: submissionResponse.submission,
+        submissionId: submissionId,
         details: detailsResponse
       };
       
@@ -744,84 +798,6 @@ export const submissionUtils = {
   }
 };
 
-// ==================== CO-AUTHORS MANAGEMENT API (LEGACY - รักษาไว้เพื่อ backward compatibility) ====================
-
-export const coauthorsAPI = {
-  
-  // 1. Add co-author to submission (ใช้ submissionUsersAPI แทน)
-  async addCoauthor(submissionId, coauthorData) {
-    try {
-      const userData = {
-        user_id: coauthorData.user_id,
-        role: 'co_author',
-        order_sequence: coauthorData.order_sequence || 2,
-        is_active: true
-      };
-      
-      const response = await submissionUsersAPI.addUser(submissionId, userData);
-      return response;
-    } catch (error) {
-      console.error('Error adding co-author:', error);
-      throw error;
-    }
-  },
-
-  // 2. Get all co-authors for submission
-  async getCoauthors(submissionId) {
-    try {
-      const response = await submissionUsersAPI.getUsers(submissionId);
-      // Filter only co-authors
-      return {
-        ...response,
-        coauthors: response.users?.filter(user => user.role === 'co_author') || []
-      };
-    } catch (error) {
-      console.error('Error fetching co-authors:', error);
-      throw error;
-    }
-  },
-
-  // 3. Update co-author information
-  async updateCoauthor(submissionId, userId, updateData) {
-    try {
-      const response = await submissionUsersAPI.updateUser(submissionId, userId, updateData);
-      return response;
-    } catch (error) {
-      console.error('Error updating co-author:', error);
-      throw error;
-    }
-  },
-
-  // 4. Remove co-author from submission
-  async removeCoauthor(submissionId, userId) {
-    try {
-      const response = await submissionUsersAPI.removeUser(submissionId, userId);
-      return response;
-    } catch (error) {
-      console.error('Error removing co-author:', error);
-      throw error;
-    }
-  },
-
-  // 5. Get submission with full co-authors details
-  async getSubmissionWithCoauthors(submissionId) {
-    try {
-      const [submissionResponse, usersResponse] = await Promise.all([
-        submissionAPI.getSubmission(submissionId),
-        submissionUsersAPI.getUsers(submissionId)
-      ]);
-      
-      return {
-        ...submissionResponse,
-        coauthors: usersResponse.users?.filter(user => user.role === 'co_author') || []
-      };
-    } catch (error) {
-      console.error('Error fetching submission with co-authors:', error);
-      throw error;
-    }
-  }
-};
-
 // อัปเดต default export
 export default {
   ...teacherAPI,
@@ -831,6 +807,5 @@ export default {
   document: documentAPI,
   fundApplication: fundApplicationAPI,
   publicationReward: publicationRewardAPI,
-  coauthors: coauthorsAPI,
   utils: submissionUtils
 };
