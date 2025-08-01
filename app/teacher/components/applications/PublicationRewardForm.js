@@ -1504,9 +1504,9 @@ const debugFileStates = () => {
             coauthors.forEach((coauthor, index) => {
               allUsers.push({
                 user_id: coauthor.user_id,
-                role: 'co_author',
+                role: 'coauthor',
                 order_sequence: index + 2,
-                is_active: true,
+                is_active: false,
                 is_primary: false
               });
             });
@@ -1834,7 +1834,7 @@ const debugFileStates = () => {
   if (loading && !years.length) {
     return (
       <PageLayout
-        title="แบบฟอร์มขอเบิกเงินรางวัลการตีพิมพ์บทความ"
+        title="แบบฟอร์มขอเบิกเงินรางวัลการตีพิมพ์เผยแพร่ผลงานวิจัยที่ได้รับการตีพิมพ์ในสาขาวิทยาศาสตร์และเทคโนโลยี"
         subtitle="กำลังโหลดข้อมูล..."
         icon={Award}
       >
@@ -1847,7 +1847,7 @@ const debugFileStates = () => {
 
   return (
     <PageLayout
-      title="แบบฟอร์มขอเบิกเงินรางวัลการตีพิมพ์บทความ"
+      title="แบบฟอร์มขอเบิกเงินรางวัลการตีพิมพ์เผยแพร่ผลงานวิจัยที่ได้รับการตีพิมพ์ในสาขาวิทยาศาสตร์และเทคโนโลยี"
       subtitle="สำหรับขอเบิกเงินรางวัลและค่าใช้จ่ายในการตีพิมพ์บทความวิชาการ"
       icon={Award}
       breadcrumbs={[
