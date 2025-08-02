@@ -1,5 +1,6 @@
-// modals/SubcategoryModal.js
+// app/admin/components/settings/SubcategoryModal.js
 import React, { useState, useEffect } from "react";
+import { DollarSign, AlertCircle } from "lucide-react";
 
 const SubcategoryModal = ({ 
   isOpen, 
@@ -12,15 +13,23 @@ const SubcategoryModal = ({
     subcategory_name: "",
     fund_condition: "",
     target_roles: [],
+    allocated_amount: "",
+    remaining_budget: "",
     status: "active"
   });
 
   useEffect(() => {
     if (editingSubcategory) {
+      // ใช้ค่าจาก budget ตัวแรก (เพราะทุกตัวใน subcategory เดียวกันมีค่าเท่ากัน)
+      const allocatedAmount = editingSubcategory.budgets?.[0]?.allocated_amount || 0;
+      const remainingBudget = editingSubcategory.budgets?.[0]?.remaining_budget || 0;
+
       setSubcategoryForm({
         subcategory_name: editingSubcategory.subcategory_name || "",
         fund_condition: editingSubcategory.fund_condition || "",
         target_roles: editingSubcategory.target_roles || [],
+        allocated_amount: allocatedAmount.toString(),
+        remaining_budget: remainingBudget.toString(),
         status: editingSubcategory.status || "active"
       });
     } else {
@@ -28,6 +37,8 @@ const SubcategoryModal = ({
         subcategory_name: "",
         fund_condition: "",
         target_roles: [],
+        allocated_amount: "",
+        remaining_budget: "",
         status: "active"
       });
     }
@@ -47,13 +58,35 @@ const SubcategoryModal = ({
     }
   };
 
+  const handleAllocatedAmountChange = (value) => {
+    const amount = parseFloat(value) || 0;
+    const used = parseFloat(subcategoryForm.allocated_amount) - parseFloat(subcategoryForm.remaining_budget) || 0;
+    
+    setSubcategoryForm({ 
+      ...subcategoryForm, 
+      allocated_amount: value,
+      remaining_budget: (amount - used).toString()
+    });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(subcategoryForm);
+    
+    const dataToSave = {
+      ...subcategoryForm,
+      allocated_amount: parseFloat(subcategoryForm.allocated_amount) || 0
+    };
+    
+    // ไม่ส่ง remaining_budget เพราะจะคำนวณใน backend
+    delete dataToSave.remaining_budget;
+    
+    onSave(dataToSave);
     setSubcategoryForm({
       subcategory_name: "",
       fund_condition: "",
       target_roles: [],
+      allocated_amount: "",
+      remaining_budget: "",
       status: "active"
     });
   };
@@ -87,47 +120,96 @@ const SubcategoryModal = ({
                   ...subcategoryForm, 
                   subcategory_name: e.target.value 
                 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full text-gray-600 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 placeholder="ระบุชื่อทุนย่อย"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700">เงื่อนไขการรับทุน</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">เงื่อนไขทุน</label>
               <textarea
                 value={subcategoryForm.fund_condition}
                 onChange={(e) => setSubcategoryForm({ 
                   ...subcategoryForm, 
                   fund_condition: e.target.value 
                 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                rows={4}
-                placeholder="ระบุเงื่อนไขการรับทุน"
+                className="w-full text-gray-600 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                rows="3"
+                placeholder="ระบุเงื่อนไขของทุน (ถ้ามี)"
               />
+            </div>
+
+            {/* ส่วนงบประมาณ */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-3 text-gray-700 flex items-center gap-2">
+                <DollarSign size={16} />
+                ข้อมูลงบประมาณ
+              </h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700">
+                    งบประมาณรวม (บาท)
+                  </label>
+                  <input
+                    type="number"
+                    value={subcategoryForm.allocated_amount}
+                    onChange={(e) => handleAllocatedAmountChange(e.target.value)}
+                    className="w-full text-gray-600 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="0"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700">
+                    งบประมาณคงเหลือ (บาท)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={subcategoryForm.remaining_budget}
+                      readOnly
+                      className="w-full text-gray-600 px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed"
+                      placeholder="คำนวณอัตโนมัติ"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      <AlertCircle size={16} className="text-gray-400" />
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    * คำนวณอัตโนมัติจากงบประมาณรวม
+                  </p>
+                </div>
+              </div>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700">กลุ่มเป้าหมาย</label>
-              <div className="space-y-3">
-                <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+              <label className="block text-sm font-medium mb-2 text-gray-700">บทบาทที่สามารถเห็นทุนนี้</label>
+              <div className="space-y-2">
+                <label className="flex items-center">
                   <input
                     type="checkbox"
                     checked={subcategoryForm.target_roles.includes("1")}
                     onChange={(e) => handleTargetRoleChange("1", e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3"
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium">อาจารย์</span>
+                  <span className="ml-2 text-sm text-gray-600">อาจารย์</span>
                 </label>
-                <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                <label className="flex items-center">
                   <input
                     type="checkbox"
                     checked={subcategoryForm.target_roles.includes("2")}
                     onChange={(e) => handleTargetRoleChange("2", e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3"
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium">เจ้าหน้าที่</span>
+                  <span className="ml-2 text-sm text-gray-600">เจ้าหน้าที่</span>
                 </label>
               </div>
+              <p className="mt-2 text-xs text-gray-500">
+                * หากไม่เลือกบทบาทใด จะมีเฉพาะผู้ดูแลระบบเท่านั้นที่เห็นทุนนี้
+              </p>
             </div>
             
             <div>
@@ -138,7 +220,7 @@ const SubcategoryModal = ({
                   ...subcategoryForm, 
                   status: e.target.value 
                 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full text-gray-600 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               >
                 <option value="active">เปิดใช้งาน</option>
                 <option value="disable">ปิดใช้งาน</option>

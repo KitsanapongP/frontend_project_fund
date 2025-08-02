@@ -384,8 +384,10 @@ export default function FundSettingsContent({ onNavigate }) {
       adminAPI.validateSubcategoryData(dataWithCategory);
       
       if (editingSubcategory) {
-        // Update existing subcategory
-        await adminAPI.updateSubcategory(editingSubcategory.subcategory_id, dataWithCategory);
+        // Update existing subcategory ก่อน
+        await adminAPI.updateSubcategory(editingSubcategory.subcategory_id, subcategoryData);
+        
+        // อัพเดท state ของ subcategory
         setCategories(prev => prev.map(cat => {
           if (cat.category_id === selectedCategoryForSub.category_id) {
             return {
@@ -399,6 +401,40 @@ export default function FundSettingsContent({ onNavigate }) {
           }
           return cat;
         }));
+        
+        // จากนั้นค่อยอัพเดทงบประมาณ (ถ้ามีการเปลี่ยนแปลง)
+        if (subcategoryData.allocated_amount !== undefined) {
+          const budgetsToUpdate = editingSubcategory.budgets || [];
+          
+          for (const budget of budgetsToUpdate) {
+            try {
+              await adminAPI.updateBudget(budget.subcategory_budget_id, {
+                allocated_amount: subcategoryData.allocated_amount,
+                remaining_budget: subcategoryData.allocated_amount - (budget.used_amount || 0)
+              });
+            } catch (error) {
+              console.error(`Error updating budget ${budget.subcategory_budget_id}:`, error);
+            }
+          }
+          
+          // อัพเดท state ของ budgets
+          setCategories(prev => prev.map(cat => ({
+            ...cat,
+            subcategories: cat.subcategories.map(sub => {
+              if (sub.subcategory_id === editingSubcategory.subcategory_id) {
+                return {
+                  ...sub,
+                  budgets: sub.budgets.map(budget => ({
+                    ...budget,
+                    allocated_amount: subcategoryData.allocated_amount,
+                    remaining_budget: subcategoryData.allocated_amount - (budget.used_amount || 0)
+                  }))
+                };
+              }
+              return sub;
+            })
+          })));
+        }
       } else {
         // Add new subcategory
         const response = await adminAPI.createSubcategory(dataWithCategory);
@@ -619,7 +655,7 @@ export default function FundSettingsContent({ onNavigate }) {
     >
       {/* Tab Navigation */}
       <div className="bg-white rounded-lg shadow-sm mb-6">
-        <div className="flex border-b">
+        <div className="flex">
           <button
             onClick={() => setActiveTab("funds")}
             className={`px-6 py-3 font-medium transition-colors ${

@@ -80,23 +80,6 @@ const BudgetModal = ({
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700">จำนวนเงินที่จัดสรร (บาท)</label>
-              <input
-                type="number"
-                required
-                min="0"
-                step="0.01"
-                value={budgetForm.allocated_amount}
-                onChange={(e) => setBudgetForm({ 
-                  ...budgetForm, 
-                  allocated_amount: e.target.value 
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="0"
-              />
-            </div>
-            
-            <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">วงเงินสูงสุดต่อทุน (บาท)</label>
               <input
                 type="number"

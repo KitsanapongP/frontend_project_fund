@@ -423,10 +423,10 @@ const SubcategoryRow = ({
           )}
           
           <div 
-            className="flex items-center gap-3 cursor-pointer"
+            className="flex items-center gap-3 cursor-pointer flex-1"
             onClick={onToggle}
           >
-            {isExpanded ? 
+            {isExpanded ?
               <ChevronDown size={16} className="text-gray-500" /> : 
               <ChevronRight size={16} className="text-gray-500" />
             }
@@ -462,6 +462,17 @@ const SubcategoryRow = ({
                 );
               })()}
             </div>
+            
+            {/* แสดงงบประมาณรวม - ใช้ค่าจาก budget ตัวแรก (เพราะทุกตัวใน subcategory เดียวกันมีค่าเท่ากัน) */}
+            {subcategory.budgets && subcategory.budgets.length > 0 && (
+              <div className="flex items-center gap-3 ml-auto mr-4 text-sm">
+                <span className="text-gray-600">
+                  งบประมาณทั้งหมด: <span className="font-medium text-green-600">
+                    {parseFloat(subcategory.budgets[0].allocated_amount || 0).toLocaleString()} บาท
+                  </span>
+                </span>
+              </div>
+            )}
           </div>
         </div>
         
@@ -558,8 +569,6 @@ const BudgetRow = ({
               </span>
             </div>
             <div className="text-sm text-gray-600 space-y-1 ml-6">
-              <p>งบประมาณ: {budget.allocated_amount?.toLocaleString()} บาท</p>
-              <p>เหลือ: {budget.remaining_budget?.toLocaleString()} บาท</p>
               <p>วงเงินต่อทุน: {budget.max_amount_per_grant?.toLocaleString()} บาท</p>
               <p>จำนวนทุน: {
                 budget.max_grants === null || budget.max_grants === 0 ? (
