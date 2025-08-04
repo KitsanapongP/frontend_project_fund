@@ -537,6 +537,8 @@ export default function PublicationRewardForm({ onNavigate }) {
     journal_quartile: '',
     in_isi: false,
     in_scopus: false,
+    in_web_of_science: false,
+    in_tci: false,
     article_type: '',
     journal_type: '',
     
@@ -633,6 +635,40 @@ export default function PublicationRewardForm({ onNavigate }) {
       }
     }
   }, [formData.journal_quartile, formData.revision_fee, formData.publication_fee]);
+
+  // Clear fees and external funding when quartile changes to ineligible ones
+  useEffect(() => {
+    if (formData.journal_quartile) {
+      const maxLimit = getMaxFeeLimit(formData.journal_quartile);
+      
+      // If quartile doesn't allow fees
+      if (maxLimit === 0) {
+        // Clear revision and publication fees
+        setFormData(prev => ({
+          ...prev,
+          revision_fee: 0,
+          publication_fee: 0
+        }));
+        
+        // Clear external fundings
+        setExternalFundings([]);
+        
+        // Clear external funding documents from otherDocuments
+        setOtherDocuments(prev => 
+          prev.filter(doc => doc.type !== 'external_funding')
+        );
+        
+        // Show notification
+        if (formData.revision_fee > 0 || formData.publication_fee > 0 || externalFundings.length > 0) {
+          Toast.fire({
+            icon: 'info',
+            title: 'Quartile นี้ไม่สามารถเบิกค่าใช้จ่ายได้',
+            text: 'ระบบได้ล้างข้อมูลค่าปรับปรุง ค่าตีพิมพ์ และทุนภายนอกแล้ว'
+          });
+        }
+      }
+    }
+  }, [formData.journal_quartile]);
 
   // =================================================================
   // HELPER FUNCTIONS
@@ -2066,12 +2102,12 @@ export default function PublicationRewardForm({ onNavigate }) {
         {/* =================================================================
         // BASIC INFORMATION SECTION
         // ================================================================= */}
-        <SimpleCard title="ข้อมูลพื้นฐาน" icon={FileText}>
+        <SimpleCard title="ข้อมูลพื้นฐาน (Basic Information)" icon={FileText}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Applicant Name - Read Only */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ชื่อผู้ยื่นคำร้อง
+                ชื่อผู้ยื่นคำร้อง (Applicant Name)
               </label>
               <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800">
                 {currentUser ? `${currentUser.position_name} ${currentUser.user_fname} ${currentUser.user_lname}` : 'กำลังโหลด...'}
@@ -2081,7 +2117,7 @@ export default function PublicationRewardForm({ onNavigate }) {
             {/* Budget Year */}
             <div id="field-year_id">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ปีงบประมาณ <span className="text-red-500">*</span>
+                ปีงบประมาณ (Budget Year) <span className="text-red-500">*</span>
               </label>
               <select
                 name="year_id"
@@ -2092,7 +2128,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                 }`}
               >
                 <option value="" disabled={formData.year_id !== ''} hidden={formData.year_id !== ''}>
-                  เลือกปีงบประมาณ
+                  เลือกปีงบประมาณ (Select Budget Year)
                 </option>
                 {years.map(year => (
                   <option key={year.year_id} value={year.year_id}>
@@ -2108,7 +2144,7 @@ export default function PublicationRewardForm({ onNavigate }) {
             {/* Author Status */}
             <div id="field-author_status">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                สถานะผู้ยื่น <span className="text-red-500">*</span>
+                สถานะผู้ยื่น (Author Status) <span className="text-red-500">*</span>
               </label>
               <select
                 name="author_status"
@@ -2119,7 +2155,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                 }`}
               >
                 <option value="" disabled={formData.author_status !== ''} hidden={formData.author_status !== ''}>
-                  เลือกสถานะ
+                  เลือกสถานะ (Select Status)
                 </option>
                 <option value="first_author">ผู้แต่งหลัก (First Author)</option>
                 <option value="corresponding_author">ผู้แต่งที่รับผิดชอบบทความ (Corresponding Author)</option>
@@ -2132,7 +2168,7 @@ export default function PublicationRewardForm({ onNavigate }) {
             {/* Phone Number */}
             <div id="field-phone_number">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                เบอร์โทรศัพท์ <span className="text-red-500">*</span>
+                เบอร์โทรศัพท์ (Phone Number) <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
@@ -2146,7 +2182,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                   errors.phone_number ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
-              <p className="text-xs text-gray-500 mt-1">รูปแบบ: XXX-XXX-XXXX</p>
+              <p className="text-xs text-gray-500 mt-1">รูปแบบ (Format): XXX-XXX-XXXX</p>
               {errors.phone_number && (
                 <p className="text-red-500 text-sm mt-1">{errors.phone_number}</p>
               )}
@@ -2157,19 +2193,19 @@ export default function PublicationRewardForm({ onNavigate }) {
         {/* =================================================================
         // ARTICLE INFORMATION SECTION
         // ================================================================= */}
-        <SimpleCard title="ข้อมูลบทความ" icon={FileText}>
+        <SimpleCard title="ข้อมูลบทความ (Article Information)" icon={FileText}>
           <div className="space-y-4">
             {/* Article Title */}
             <div id="field-article_title">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ชื่อบทความ <span className="text-red-500">*</span>
+                ชื่อบทความ (Article Title) <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 name="article_title"
                 value={formData.article_title}
                 onChange={handleInputChange}
-                placeholder="กรอกชื่อบทความภาษาอังกฤษ"
+                placeholder="กรอกชื่อบทความภาษาอังกฤษ (Enter article title in English)"
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
                   errors.article_title ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -2183,14 +2219,14 @@ export default function PublicationRewardForm({ onNavigate }) {
               {/* Journal Name */}
               <div id="field-journal_name">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ชื่อวารสาร <span className="text-red-500">*</span>
+                  ชื่อวารสาร (Journal Name) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="journal_name"
                   value={formData.journal_name}
                   onChange={handleInputChange}
-                  placeholder="ชื่อวารสารที่ตีพิมพ์"
+                  placeholder="ชื่อวารสารที่ตีพิมพ์ (Journal name)"
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
                     errors.journal_name ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -2203,7 +2239,7 @@ export default function PublicationRewardForm({ onNavigate }) {
               {/* Quartile */}
               <div id="field-journal_quartile">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Quartile <span className="text-red-500">*</span>
+                  ควอร์ไทล์ (Quartile) <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="journal_quartile"
@@ -2214,7 +2250,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                   }`}
                 >
                   <option value="" disabled={formData.journal_quartile !== ''} hidden={formData.journal_quartile !== ''}>
-                    เลือก Quartile
+                    เลือกควอร์ไทล์ (Select Quartile)
                   </option>
                   <option value="T5">Top 5%</option>
                   <option value="T10">Top 10%</option>
@@ -2222,7 +2258,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                   <option value="Q2">Quartile 2</option>
                   <option value="Q3">Quartile 3</option>
                   <option value="Q4">Quartile 4</option>
-                  <option value="TCI">TCI กลุ่มที่ 1</option>
+                  <option value="TCI">TCI กลุ่มที่ 1 (TCI Group 1)</option>
                 </select>
                 {errors.journal_quartile && (
                   <p className="text-red-500 text-sm mt-1">{errors.journal_quartile}</p>
@@ -2239,7 +2275,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                   name="journal_issue"
                   value={formData.journal_issue}
                   onChange={handleInputChange}
-                  placeholder="เช่น Vol.10, No.2"
+                  placeholder="เช่น (e.g.) Vol.10, No.2"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -2247,14 +2283,14 @@ export default function PublicationRewardForm({ onNavigate }) {
               {/* Pages */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  หน้า
+                  หน้า (Pages)
                 </label>
                 <input
                   type="text"
                   name="journal_pages"
                   value={formData.journal_pages}
                   onChange={handleInputChange}
-                  placeholder="เช่น 123-145"
+                  placeholder="เช่น (e.g.) 123-145"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -2262,7 +2298,7 @@ export default function PublicationRewardForm({ onNavigate }) {
               {/* Publication Month */}
               <div id="field-journal_month">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  เดือนที่ตีพิมพ์ <span className="text-red-500">*</span>
+                  เดือนที่ตีพิมพ์ (Publication Month) <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="journal_month"
@@ -2273,20 +2309,20 @@ export default function PublicationRewardForm({ onNavigate }) {
                   }`}
                 >
                   <option value="" disabled={formData.journal_month !== ''} hidden={formData.journal_month !== ''}>
-                    เลือกเดือน
+                    เลือกเดือน (Select Month)
                   </option>
-                  <option value="01">มกราคม</option>
-                  <option value="02">กุมภาพันธ์</option>
-                  <option value="03">มีนาคม</option>
-                  <option value="04">เมษายน</option>
-                  <option value="05">พฤษภาคม</option>
-                  <option value="06">มิถุนายน</option>
-                  <option value="07">กรกฎาคม</option>
-                  <option value="08">สิงหาคม</option>
-                  <option value="09">กันยายน</option>
-                  <option value="10">ตุลาคม</option>
-                  <option value="11">พฤศจิกายน</option>
-                  <option value="12">ธันวาคม</option>
+                  <option value="01">มกราคม (January)</option>
+                  <option value="02">กุมภาพันธ์ (February)</option>
+                  <option value="03">มีนาคม (March)</option>
+                  <option value="04">เมษายน (April)</option>
+                  <option value="05">พฤษภาคม (May)</option>
+                  <option value="06">มิถุนายน (June)</option>
+                  <option value="07">กรกฎาคม (July)</option>
+                  <option value="08">สิงหาคม (August)</option>
+                  <option value="09">กันยายน (September)</option>
+                  <option value="10">ตุลาคม (October)</option>
+                  <option value="11">พฤศจิกายน (November)</option>
+                  <option value="12">ธันวาคม (December)</option>
                 </select>
                 {errors.journal_month && (
                   <p className="text-red-500 text-sm mt-1">{errors.journal_month}</p>
@@ -2296,7 +2332,7 @@ export default function PublicationRewardForm({ onNavigate }) {
               {/* Publication Year */}
               <div id="field-journal_year">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ปีที่ตีพิมพ์ <span className="text-red-500">*</span>
+                  ปีที่ตีพิมพ์ (Publication Year) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -2310,7 +2346,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                     errors.journal_year ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
-                <p className="text-xs text-gray-500 mt-1">ปี ค.ศ. (2000-{new Date().getFullYear() + 1})</p>
+                <p className="text-xs text-gray-500 mt-1">ปี ค.ศ. (A.D.) (2000-{new Date().getFullYear() + 1})</p>
                 {errors.journal_year && (
                   <p className="text-red-500 text-sm mt-1">{errors.journal_year}</p>
                 )}
@@ -2320,14 +2356,14 @@ export default function PublicationRewardForm({ onNavigate }) {
             {/* DOI */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                DOI
+                DOI (Digital Object Identifier)
               </label>
               <input
                 type="text"
                 name="doi"
                 value={formData.doi}
                 onChange={handleInputChange}
-                placeholder="เช่น 10.1016/j.example.2023.01.001"
+                placeholder="เช่น (e.g.) 10.1016/j.example.2023.01.001"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
@@ -2335,7 +2371,7 @@ export default function PublicationRewardForm({ onNavigate }) {
             {/* URL */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                URL ของบทความ
+                URL ของบทความ (Article URL)
               </label>
               <input
                 type="url"
@@ -2347,12 +2383,12 @@ export default function PublicationRewardForm({ onNavigate }) {
               />
             </div>
 
-            {/* Database checkboxes */}
+            {/* Database checkboxes - Updated per requirement */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">
-                ฐานข้อมูลที่ปรากฏ
+                ฐานข้อมูลที่ปรากฏ (Database Indexed)
               </label>
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-6">
                 <label className="flex items-center">
                   <input
                     type="checkbox"
@@ -2361,7 +2397,17 @@ export default function PublicationRewardForm({ onNavigate }) {
                     onChange={handleInputChange}
                     className="mr-2"
                   />
-                  ISI Web of Science
+                  ISI
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="in_web_of_science"
+                    checked={formData.in_web_of_science || false}
+                    onChange={handleInputChange}
+                    className="mr-2"
+                  />
+                  Web of Science
                 </label>
                 <label className="flex items-center">
                   <input
@@ -2373,6 +2419,16 @@ export default function PublicationRewardForm({ onNavigate }) {
                   />
                   Scopus
                 </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="in_tci"
+                    checked={formData.in_tci || false}
+                    onChange={handleInputChange}
+                    className="mr-2"
+                  />
+                  TCI
+                </label>
               </div>
             </div>
           </div>
@@ -2381,12 +2437,12 @@ export default function PublicationRewardForm({ onNavigate }) {
         {/* =================================================================
         // CO-AUTHORS SECTION
         // ================================================================= */}
-        <SimpleCard title="ผู้ร่วมวิจัย" icon={Users}>
+        <SimpleCard title="ผู้ร่วมวิจัย (Co-Author)" icon={Users}>
           <div className="space-y-4">
             {/* Co-author selection dropdown */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                เพิ่มผู้ร่วมวิจัย
+                เพิ่มผู้ร่วมวิจัย (Add Co-Author)
               </label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -2401,7 +2457,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                   }
                 }}
               >
-                <option value="">เลือกผู้ร่วมวิจัย...</option>
+                <option value="">เลือกผู้ร่วมวิจัย... (Select Co-Author...)</option>
                 {users
                   .filter(user => {
                     // Filter out current user
@@ -2427,17 +2483,17 @@ export default function PublicationRewardForm({ onNavigate }) {
 
             {/* Available co-authors count */}
             <p className="text-xs text-gray-500">
-              สามารถเลือกได้ {users.filter(u => 
+              สามารถเลือกได้ (Available): {users.filter(u => 
                 (!currentUser || u.user_id !== currentUser.user_id) && 
                 !coauthors.some(c => c.user_id === u.user_id)
-              ).length} คน
+              ).length} คน (persons)
             </p>
 
             {/* Selected co-authors list */}
             {coauthors.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ผู้ร่วมวิจัยที่เลือก ({coauthors.length} คน)
+                  ผู้ร่วมวิจัยที่เลือก (Selected Co-researchers) ({coauthors.length} คน/persons)
                 </label>
                 <div className="space-y-2">
                   {coauthors.map((coauthor, index) => (
@@ -2475,8 +2531,8 @@ export default function PublicationRewardForm({ onNavigate }) {
             {coauthors.length === 0 && (
               <div className="text-center py-6 text-gray-500">
                 <Users className="mx-auto h-8 w-8 mb-2 text-gray-400" />
-                <p className="text-sm">ยังไม่มีผู้ร่วมวิจัย</p>
-                <p className="text-xs text-gray-400 mt-1">กรุณาเลือกผู้ร่วมวิจัยจากรายการด้านบน</p>
+                <p className="text-sm">ยังไม่มีผู้ร่วมวิจัย (No co-researchers yet)</p>
+                <p className="text-xs text-gray-400 mt-1">กรุณาเลือกผู้ร่วมวิจัยจากรายการด้านบน (Please select co-researchers from the list above)</p>
               </div>
             )}
           </div>
@@ -2485,10 +2541,12 @@ export default function PublicationRewardForm({ onNavigate }) {
         {/* =================================================================
         // REWARD CALCULATION SECTION
         // ================================================================= */}
-        <SimpleCard title="การคำนวณเงินรางวัล" icon={Calculator}>
+        <SimpleCard title="การคำนวณเงินรางวัล (Reward Calculation)" icon={Calculator}>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               เงินรางวัล (บาท)
+              <br />
+              <span className="text-xs font-normal text-gray-500">Reward Amount (Baht)</span>
             </label>
             <div className="bg-gray-50 rounded-lg p-3">
               <div className="text-2xl font-semibold text-gray-800">
@@ -2497,6 +2555,8 @@ export default function PublicationRewardForm({ onNavigate }) {
             </div>
             <p className="text-xs text-gray-500 mt-1">
               คำนวณอัตโนมัติจากสถานะผู้แต่งและ Quartile
+              <br />
+              (Automatically calculated based on author status and quartile)
             </p>
           </div>
         </SimpleCard>
@@ -2504,10 +2564,10 @@ export default function PublicationRewardForm({ onNavigate }) {
         {/* =================================================================
         // FEES AND FUNDING SECTION
         // ================================================================= */}
-        <SimpleCard title="ค่าปรับปรุงบทความและค่าการตีพิมพ์" icon={Award}>
+        <SimpleCard title="ค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์ (Manuscript Editing Fee and Page Charge)" icon={Award}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 divide-x divide-gray-200">
             {/* Left side - Revision fee, Publication fee, and College total */}
-            <div className="space-y-6 lg:pr-6" id="field-fees_limit">
+            <div className="space-y-6 lg:pr-6">
               {/* Show fee limit info */}
               {formData.journal_quartile && (
                 <div className={`p-4 rounded-lg ${
@@ -2518,14 +2578,16 @@ export default function PublicationRewardForm({ onNavigate }) {
                   <p className="text-sm font-medium text-gray-700">
                     {getMaxFeeLimit(formData.journal_quartile) > 0 ? (
                       <>
-                        วงเงินค่าปรับปรุงและค่าตีพิมพ์รวมกันไม่เกิน: 
+                        วงเงินค่าปรับปรุงและค่าตีพิมพ์รวมกันไม่เกิน (Maximum total for editing and page charge): 
                         <span className="text-blue-700 font-bold ml-1">
-                          {formatCurrency(getMaxFeeLimit(formData.journal_quartile))} บาท
+                          {formatCurrency(getMaxFeeLimit(formData.journal_quartile))} บาท (Baht)
                         </span>
                       </>
                     ) : (
                       <span className="text-red-600">
                         Quartile นี้ไม่สามารถเบิกค่าปรับปรุงและค่าตีพิมพ์ได้
+                        <br />
+                        (This quartile is not eligible for editing fee and page charge reimbursement)
                       </span>
                     )}
                   </p>
@@ -2533,9 +2595,11 @@ export default function PublicationRewardForm({ onNavigate }) {
               )}
 
               {/* Revision Fee */}
-              <div>
+              <div id="field-fees_limit">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   ค่าปรับปรุงบทความ (บาท)
+                  <br />
+                  <span className="text-xs font-normal text-gray-600">Manuscript Editing Fee (Baht)</span>
                 </label>
                 <div className={`bg-gray-50 rounded-lg p-3 ${feeError ? 'border-2 border-red-500' : ''}`}>
                   <input
@@ -2562,7 +2626,9 @@ export default function PublicationRewardForm({ onNavigate }) {
               {/* Publication Fee */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ค่าตีพิมพ์ (บาท)
+                  ค่าธรรมเนียมการตีพิมพ์ (บาท)
+                  <br />
+                  <span className="text-xs font-normal text-gray-600">Page Charge (Baht)</span>
                 </label>
                 <div className={`bg-gray-50 rounded-lg p-3 ${feeError ? 'border-2 border-red-500' : ''}`}>
                   <input
@@ -2595,7 +2661,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                   </p>
                   {formData.journal_quartile && getMaxFeeLimit(formData.journal_quartile) > 0 && (
                     <p className="text-xs text-red-500 mt-1">
-                      ใช้ไปแล้ว: {formatCurrency((parseFloat(formData.revision_fee) || 0) + (parseFloat(formData.publication_fee) || 0))} บาท
+                      ใช้ไปแล้ว (Used): {formatCurrency((parseFloat(formData.revision_fee) || 0) + (parseFloat(formData.publication_fee) || 0))} บาท (Baht)
                     </p>
                   )}
                 </div>
@@ -2603,27 +2669,35 @@ export default function PublicationRewardForm({ onNavigate }) {
 
               {/* College Total */}
               <div className="mt-8">
-                <h4 className="text-base font-medium text-gray-900 mb-3">รวมเบิกจากวิทยาลัยการคอม</h4>
+                <h4 className="text-base font-medium text-gray-900 mb-3">
+                  รวมเบิกจากวิทยาลัยการคอม
+                  <br />
+                  <span className="text-sm font-normal text-gray-600">Total Reimbursement from CP-KKU</span>
+                </h4>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-gray-700">จำนวน</span>
+                  <span className="text-sm text-gray-700">จำนวน (Amount)</span>
                   <span className="text-2xl font-bold text-gray-900">
                     {formatCurrency(formData.total_amount || 0)}
                   </span>
-                  <span className="text-sm text-gray-700">บาท</span>
+                  <span className="text-sm text-gray-700">บาท (Baht)</span>
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  = เงินรางวัล ({formatCurrency(formData.publication_reward || 0)}) 
-                  + ค่าปรับปรุง ({formatCurrency(formData.revision_fee || 0)}) 
-                  + ค่าตีพิมพ์ ({formatCurrency(formData.publication_fee || 0)}) 
-                  - ทุนภายนอก ({formatCurrency(formData.external_funding_amount || 0)})
+                  = เงินรางวัล (Reward) ({formatCurrency(formData.publication_reward || 0)}) 
+                  + ค่าปรับปรุง (Editing) ({formatCurrency(formData.revision_fee || 0)}) 
+                  + ค่าตีพิมพ์ (Page Charge) ({formatCurrency(formData.publication_fee || 0)}) 
+                  - ทุนภายนอก (External Funding) ({formatCurrency(formData.external_funding_amount || 0)})
                 </div>
               </div>
             </div>
 
             {/* Right side - External funding table */}
             <div className="lg:pl-6">
-              <h4 className="font-medium text-gray-900 mb-4">รายการที่มหาวิทยาลัยหรือหน่วยงานภายนอกสนับสนุน</h4>
-            
+              <h4 className="font-medium text-gray-900 mb-4">
+                รายการที่มหาวิทยาลัยหรือหน่วยงานภายนอกสนับสนุน
+                <br />
+                <span className="text-sm font-normal text-gray-600">External Funding Sources</span>
+              </h4>
+              
               {/* External funding table */}
               <div className="overflow-hidden rounded-lg border border-blue-200">
                 <table className="w-full">
@@ -2631,20 +2705,38 @@ export default function PublicationRewardForm({ onNavigate }) {
                     <tr className="bg-blue-50">
                       <th className="border-b border-r border-blue-200 px-3 py-2 text-sm font-medium text-gray-700 text-center" style={{width: '60px'}}>
                         ลำดับ
+                        <br />
+                        <span className="text-xs font-normal">No.</span>
                       </th>
                       <th className="border-b border-r border-blue-200 px-3 py-2 text-sm font-medium text-gray-700 text-center">
                         ชื่อทุน
+                        <br />
+                        <span className="text-xs font-normal">Fund Name</span>
                       </th>
                       <th className="border-b border-blue-200 px-3 py-2 text-sm font-medium text-gray-700 text-center" style={{width: '120px'}}>
                         จำนวน
+                        <br />
+                        <span className="text-xs font-normal">Amount</span>
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white">
-                    {externalFundings.length === 0 ? (
+                    {(!formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0) ? (
                       <tr>
                         <td colSpan="3" className="px-4 py-8 text-center text-gray-500">
-                          ยังไม่มีข้อมูล
+                          <div className="text-sm">
+                            ไม่สามารถเพิ่มทุนภายนอกได้
+                            <br />
+                            <span className="text-xs">
+                              (External funding not available for this quartile)
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : externalFundings.length === 0 ? (
+                      <tr>
+                        <td colSpan="3" className="px-4 py-8 text-center text-gray-500">
+                          ยังไม่มีข้อมูล (No data)
                         </td>
                       </tr>
                     ) : (
@@ -2655,7 +2747,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                           </td>
                           <td className="border-r border-blue-200 px-3 py-2 text-sm">
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-700">{funding.fundName || funding.file?.name || 'แนบไฟล์หลักฐาน'}</span>
+                              <span className="text-gray-700">{funding.fundName || funding.file?.name || 'แนบไฟล์หลักฐาน (Attach evidence)'}</span>
                               <label className="cursor-pointer text-blue-500 hover:text-blue-700">
                                 <input
                                   type="file"
@@ -2673,7 +2765,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                                     window.open(url, '_blank');
                                   }}
                                   className="text-blue-500 hover:text-blue-700"
-                                  title="ดูไฟล์"
+                                  title="ดูไฟล์ (View file)"
                                 >
                                   <Eye className="h-4 w-4" />
                                 </button>
@@ -2682,7 +2774,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                                 type="button"
                                 onClick={() => handleRemoveExternalFunding(funding.id)}
                                 className="text-red-500 hover:text-red-700 ml-auto"
-                                title="ลบ"
+                                title="ลบ (Delete)"
                               >
                                 <X className="h-4 w-4" />
                               </button>
@@ -2703,26 +2795,36 @@ export default function PublicationRewardForm({ onNavigate }) {
                   </tbody>
                 </table>
               </div>
-
+              
               {/* Add row button */}
               <div className="mt-4">
                 <button
                   type="button"
                   onClick={handleAddExternalFunding}
-                  className="flex items-center gap-2 px-5 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors text-sm font-medium"
+                  disabled={!formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0}
+                  className={`flex items-center gap-2 px-5 py-2 rounded-full transition-colors text-sm font-medium ${
+                    !formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-green-500 text-white hover:bg-green-600'
+                  }`}
+                  title={
+                    !formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0
+                      ? 'กรุณาเลือก Quartile ที่สามารถเบิกค่าใช้จ่ายได้ก่อน'
+                      : 'เพิ่มรายการทุนภายนอก'
+                  }
                 >
                   <Plus className="h-4 w-4" />
-                  เพิ่ม
+                  เพิ่ม (Add)
                 </button>
               </div>
 
               {/* External funding total */}
               <div className="mt-4 text-right">
-                <span className="text-sm text-gray-700">รวม </span> 
+                <span className="text-sm text-gray-700">รวม (Total) </span> 
                 <span className="text-xl font-bold text-gray-900">
                   {formatCurrency((externalFundings || []).reduce((sum, funding) => sum + (parseFloat(funding?.amount || 0)), 0))}
                 </span>
-                <span className="text-sm text-gray-700"> บาท</span>
+                <span className="text-sm text-gray-700"> บาท (Baht)</span>
               </div>
             </div>
           </div>
@@ -2731,26 +2833,26 @@ export default function PublicationRewardForm({ onNavigate }) {
         {/* =================================================================
         // BANK INFORMATION SECTION
         // ================================================================= */}
-        <SimpleCard title="ข้อมูลธนาคาร" icon={FileText}>
+        <SimpleCard title="ข้อมูลธนาคาร (Bank Information)" icon={FileText}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Bank Account Number */}
             <div id="field-bank_account">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                เลขบัญชีธนาคาร <span className="text-red-500">*</span>
+                เลขบัญชีธนาคาร (Bank Account Number) <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 name="bank_account"
                 value={formData.bank_account}
                 onChange={handleInputChange}
-                placeholder="1234567890"
+                placeholder="กรอกเลขบัญชี (Enter account number)"
                 maxLength="15"
                 inputMode="numeric"
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
                   errors.bank_account ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
-              <p className="text-xs text-gray-500 mt-1">กรอกเฉพาะตัวเลข 10-15 หลัก</p>
+              <p className="text-xs text-gray-500 mt-1">กรอกเฉพาะตัวเลข 10-15 หลัก (Enter 10-15 digits only)</p>
               {errors.bank_account && (
                 <p className="text-red-500 text-sm mt-1">{errors.bank_account}</p>
               )}
@@ -2759,14 +2861,14 @@ export default function PublicationRewardForm({ onNavigate }) {
             {/* Bank Name */}
             <div id="field-bank_name">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ชื่อธนาคาร <span className="text-red-500">*</span>
+                ชื่อธนาคาร (Bank Name) <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 name="bank_name"
                 value={formData.bank_name}
                 onChange={handleInputChange}
-                placeholder="เช่น ธนาคารกรุงเทพ"
+                placeholder="เช่น ธนาคารกรุงเทพ (e.g. Bangkok Bank)"
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
                   errors.bank_name ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -2781,7 +2883,7 @@ export default function PublicationRewardForm({ onNavigate }) {
         {/* =================================================================
         // FILE ATTACHMENTS SECTION
         // ================================================================= */}
-        <SimpleCard title="เอกสารแนบ" icon={Upload} id="file-attachments-section">
+        <SimpleCard title="เอกสารแนบ (File Attachments)" icon={Upload} id="file-attachments-section">
           <div className="space-y-6">
             {/* Document types */}
             {documentTypes && documentTypes.length > 0 ? (
@@ -2792,7 +2894,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                     return (
                       <div key={docType.id} className="border border-gray-200 rounded-lg p-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          เอกสารอื่นๆ (ถ้ามี)
+                          เอกสารอื่นๆ (Other Documents) (ถ้ามี/if any)
                         </label>
                         
                         <FileUpload
@@ -2814,10 +2916,10 @@ export default function PublicationRewardForm({ onNavigate }) {
                     return (
                       <div key={docType.id} className="border border-gray-200 rounded-lg p-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {docType.name}
+                          เอกสารเบิกจ่ายภายนอก (External Funding Documents)
                           {externalDocs.length > 0 && (
                             <span className="ml-2 text-sm text-green-600">
-                              ({externalDocs.length} ไฟล์)
+                              ({externalDocs.length} ไฟล์/files)
                             </span>
                           )}
                         </label>
@@ -2842,7 +2944,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                                     window.open(url, '_blank');
                                   }}
                                   className="text-blue-500 hover:text-blue-700"
-                                  title="ดูไฟล์"
+                                  title="ดูไฟล์ (View file)"
                                 >
                                   <Eye className="h-4 w-4" />
                                 </button>
@@ -2851,18 +2953,38 @@ export default function PublicationRewardForm({ onNavigate }) {
                           </div>
                         ) : (
                           <div className="text-center py-4 text-gray-400">
-                            <p className="text-sm">ไฟล์จะถูกเพิ่มอัตโนมัติเมื่อแนบในตารางทุนภายนอก</p>
+                            <p className="text-sm">
+                              ไฟล์จะถูกเพิ่มอัตโนมัติเมื่อแนบในตารางทุนภายนอก
+                              <br />
+                              <span className="text-xs">(Files will be added automatically when attached in external funding table)</span>
+                            </p>
                           </div>
                         )}
                       </div>
                     );
                   }
                   
-                  // Regular document types
+                  // Regular document types with English translations
+                  const getDocumentNameWithEnglish = (docName) => {
+                    const translations = {
+                      'QS WUR 1-400': 'QS WUR 1-400',
+                      'Full reprint (บทความตีพิมพ์)': 'Full reprint (บทความตีพิมพ์/Published Article)',
+                      'Scopus-ISI (หลักฐานการจัดอันดับ)': 'Scopus-ISI (หลักฐานการจัดอันดับ/Ranking Evidence)',
+                      'สำเนาบัญชีธนาคาร': 'สำเนาบัญชีธนาคาร (Bank Account Copy)',
+                      'Payment / Exchange rate': 'Payment / Exchange rate',
+                      'Page charge Invoice': 'Page charge Invoice',
+                      'Page charge Receipt': 'Page charge Receipt',
+                      'Manuscript Editor Invoice': 'Manuscript Editor Invoice',
+                      'Manuscript Receipt': 'Manuscript Receipt',
+                      'Review Response (Special issue)': 'Review Response (Special issue)'
+                    };
+                    return translations[docName] || docName;
+                  };
+                  
                   return (
-                    <div key={docType.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={docType.id} id={`file-upload-${docType.id}`} className="border border-gray-200 rounded-lg p-4 transition-all">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {docType.name}
+                        {getDocumentNameWithEnglish(docType.name)}
                         {docType.required && <span className="text-red-500 ml-1">*</span>}
                       </label>
                       
@@ -2880,7 +3002,7 @@ export default function PublicationRewardForm({ onNavigate }) {
             ) : (
               <div className="text-center py-6 text-gray-500">
                 <FileText className="mx-auto h-8 w-8 mb-2 text-gray-400" />
-                <p className="text-sm">กำลังโหลดประเภทเอกสาร...</p>
+                <p className="text-sm">กำลังโหลดประเภทเอกสาร... (Loading document types...)</p>
               </div>
             )}
           </div>
@@ -2889,12 +3011,16 @@ export default function PublicationRewardForm({ onNavigate }) {
         {/* =================================================================
         // ADDITIONAL INFORMATION SECTION
         // ================================================================= */}
-        <SimpleCard title="ข้อมูลเพิ่มเติม" icon={FileText}>
+        <SimpleCard title="ข้อมูลเพิ่มเติม (Additional Information)" icon={FileText}>
           <div className="space-y-4">
             {/* University funding */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 ได้รับการสนับสนุนทุนจากมหาวิทยาลัยหรือไม่?
+                <br />
+                <span className="text-xs font-normal text-gray-600">
+                  (Did you receive funding support from the university?)
+                </span>
               </label>
               <select
                 name="has_university_fund"
@@ -2903,10 +3029,10 @@ export default function PublicationRewardForm({ onNavigate }) {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
               >
                 <option value="" disabled={formData.has_university_fund !== ''} hidden={formData.has_university_fund !== ''}>
-                  เลือก
+                  เลือก (Select)
                 </option>
-                <option value="yes">ได้รับ</option>
-                <option value="no">ไม่ได้รับ</option>
+                <option value="yes">ได้รับ (Yes)</option>
+                <option value="no">ไม่ได้รับ (No)</option>
               </select>
             </div>
 
@@ -2914,14 +3040,14 @@ export default function PublicationRewardForm({ onNavigate }) {
             {formData.has_university_fund === 'yes' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  หมายเลขอ้างอิงทุน
+                  หมายเลขอ้างอิงทุน (Fund Reference Number)
                 </label>
                 <input
                   type="text"
                   name="university_fund_ref"
                   value={formData.university_fund_ref}
                   onChange={handleInputChange}
-                  placeholder="กรอกหมายเลขอ้างอิงทุน"
+                  placeholder="กรอกหมายเลขอ้างอิงทุน (Enter fund reference number)"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -2930,14 +3056,14 @@ export default function PublicationRewardForm({ onNavigate }) {
             {/* University ranking */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                อันดับมหาวิทยาลัย/สถาบัน (ถ้ามี)
+                อันดับมหาวิทยาลัย/สถาบัน (University/Institution Ranking) (ถ้ามี/if any)
               </label>
               <input
                 type="text"
                 name="university_ranking"
                 value={formData.university_ranking}
                 onChange={handleInputChange}
-                placeholder="เช่น QS World University Rankings #500"
+                placeholder="เช่น (e.g.) QS World University Rankings #500"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
