@@ -13,7 +13,9 @@ import {
   documentAPI, 
   publicationRewardAPI, 
   publicationFormAPI,
-  submissionUsersAPI
+  submissionUsersAPI,
+  publicationRewardRatesAPI, // เพิ่ม
+  rewardConfigAPI // เพิ่ม
 } from '../../../lib/publication_api';
 import Swal from 'sweetalert2';
 import { PDFDocument } from 'pdf-lib';
@@ -76,31 +78,126 @@ const formatBankAccount = (value) => {
   return cleaned.slice(0, 15);
 };
 
-// Get maximum fee limit based on quartile
-const getMaxFeeLimit = (quartile) => {
-  const limits = {
-    'T5': 50000,   // Top 5%
-    'T10': 50000,  // Top 10%
-    'Q1': 40000,   // Quartile 1
-    'Q2': 30000,   // Quartile 2
-    'Q3': 0,       // ไม่สามารถเบิกได้
-    'Q4': 0,       // ไม่สามารถเบิกได้
-    'TCI': 0       // ไม่สามารถเบิกได้
+// Quartile sorting order
+const getQuartileSortOrder = (quartile) => {
+  const orderMap = {
+    'T5': 1,    // Top 5%
+    'T10': 2,   // Top 10%
+    'Q1': 3,    // Quartile 1
+    'Q2': 4,    // Quartile 2
+    'Q3': 5,    // Quartile 3
+    'Q4': 6,    // Quartile 4
+    'TCI': 7,   // TCI
+    'N/A': 8    // N/A (ถ้ามี)
   };
-  return limits[quartile] || 0;
+  
+  return orderMap[quartile] || 999; // ถ้าไม่อยู่ใน map ให้ไปอยู่ท้ายสุด
 };
 
-// Check if fees are within limit
-const checkFeesLimit = (revisionFee, publicationFee, quartile) => {
-  const maxLimit = getMaxFeeLimit(quartile);
-  const total = (parseFloat(revisionFee) || 0) + (parseFloat(publicationFee) || 0);
+// Sort quartiles array
+const sortQuartiles = (quartiles) => {
+  return [...quartiles].sort((a, b) => {
+    return getQuartileSortOrder(a) - getQuartileSortOrder(b);
+  });
+};
+
+// Get maximum fee limit based on quartile
+const getMaxFeeLimit = async (quartile, year = null) => {
+  if (!quartile) return 0;
   
-  return {
-    isValid: total <= maxLimit,
-    total: total,
-    maxLimit: maxLimit,
-    remaining: maxLimit - total
-  };
+  try {
+    // หา year (พ.ศ.) จาก year_id หรือใช้ปีปัจจุบัน + 543
+    const currentYear = new Date().getFullYear() + 543;
+    const targetYear = year || currentYear.toString();
+    
+    // เรียก API เพื่อดึงวงเงินสูงสุด
+    const response = await rewardConfigAPI.lookupMaxAmount(
+      targetYear,
+      quartile
+    );
+    
+    return response.max_amount || 0;
+  } catch (error) {
+    // ถ้าไม่พบ config สำหรับ quartile นี้ ให้ return 0
+    if (error.message && error.message.includes('Configuration not found')) {
+      console.log(`No fee limit config for quartile ${quartile} in year ${year}`);
+      return 0;
+    }
+    console.error('Error fetching fee limit:', error);
+    return 0;
+  }
+};
+
+const validateFees = async (journalQuartile, revisionFee, publicationFee, currentYear) => {
+  const errors = [];
+  
+  if (journalQuartile) {
+    try {
+      // ดึงวงเงินสูงสุดจาก API
+      const maxLimit = await getMaxFeeLimit(journalQuartile, currentYear);
+      
+      // คำนวณผลรวมของค่าปรับปรุงและค่าตีพิมพ์
+      const totalFees = (parseFloat(revisionFee) || 0) + (parseFloat(publicationFee) || 0);
+      
+      if (totalFees > maxLimit) {
+        errors.push(`ค่าปรับปรุงและค่าตีพิมพ์รวมกันเกินวงเงินสูงสุด ${maxLimit.toLocaleString()} บาท`);
+      }
+    } catch (error) {
+      console.error('Error validating fees:', error);
+      errors.push('ไม่สามารถตรวจสอบวงเงินได้');
+    }
+  }
+  
+  return errors;
+};
+
+// Real-time fee validation
+const validateFeesRealtime = async (revisionFee, publicationFee, quartile, feeLimitsTotal, setFeeErrorFn) => {
+  if (!quartile || feeLimitsTotal === 0) {
+    setFeeErrorFn('');
+    return true;
+  }
+  
+  const totalFees = (parseFloat(revisionFee) || 0) + (parseFloat(publicationFee) || 0);
+  
+  if (totalFees > feeLimitsTotal) {
+    setFeeErrorFn(`ค่าปรับปรุงและค่าตีพิมพ์รวมกันเกินวงเงินสูงสุด ${feeLimitsTotal.toLocaleString()} บาท`);
+    return false;
+  }
+  
+  setFeeErrorFn('');
+  return true;
+};
+// Check if fees are within limit
+const checkFeesLimit = async (revisionFee, publicationFee, quartile) => {
+  if (!quartile) {
+    return {
+      isValid: true,
+      total: 0,
+      maxLimit: 0,
+      remaining: 0
+    };
+  }
+  
+  try {
+    const maxLimit = await getMaxFeeLimit(quartile);
+    const total = (parseFloat(revisionFee) || 0) + (parseFloat(publicationFee) || 0);
+    
+    return {
+      isValid: total <= maxLimit,
+      total: total,
+      maxLimit: maxLimit,
+      remaining: maxLimit - total
+    };
+  } catch (error) {
+    console.error('Error checking fees limit:', error);
+    return {
+      isValid: false,
+      total: 0,
+      maxLimit: 0,
+      remaining: 0
+    };
+  }
 };
 
 // Year validation
@@ -282,29 +379,26 @@ const deleteDraftFromLocal = () => {
 // =================================================================
 
 // Calculate reward based on author status and quartile
-const calculateReward = (authorStatus, quartile) => {
-  const rewardRates = {
-    'first_author': {
-      'T5': 50000,
-      'T10': 45000,
-      'Q1': 40000,
-      'Q2': 30000,
-      'Q3': 20000,
-      'Q4': 10000,
-      'TCI': 5000
-    },
-    'corresponding_author': {
-      'T5': 50000,
-      'T10': 45000,
-      'Q1': 40000,
-      'Q2': 30000,
-      'Q3': 20000,
-      'Q4': 10000,
-      'TCI': 5000
-    }
-  };
-
-  return rewardRates[authorStatus]?.[quartile] || 0;
+const calculateReward = async (authorStatus, quartile, year = null) => {
+  if (!authorStatus || !quartile) return 0;
+  
+  try {
+    // หา year (พ.ศ.) จาก year_id หรือใช้ปีปัจจุบัน + 543
+    const currentYear = new Date().getFullYear() + 543;
+    const targetYear = year || currentYear.toString();
+    
+    // เรียก API เพื่อดึงเงินรางวัล
+    const response = await publicationRewardRatesAPI.lookupRewardAmount(
+      targetYear,
+      authorStatus,
+      quartile
+    );
+    
+    return response.reward_amount || 0;
+  } catch (error) {
+    console.error('Error calculating reward:', error);
+    return 0;
+  }
 };
 
 // =================================================================
@@ -515,7 +609,13 @@ export default function PublicationRewardForm({ onNavigate }) {
   const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [mergedPdfFile, setMergedPdfFile] = useState(null);
+  const [availableAuthorStatuses, setAvailableAuthorStatuses] = useState([]);
+  const [availableQuartiles, setAvailableQuartiles] = useState([]);
+  const [quartileConfigs, setQuartileConfigs] = useState({}); // เก็บ config ของแต่ละ quartile
   const [feeError, setFeeError] = useState('');
+  const [feeLimits, setFeeLimits] = useState({
+    total: 0
+  });
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -578,6 +678,74 @@ export default function PublicationRewardForm({ onNavigate }) {
     checkAndLoadDraft();
   }, []);
 
+  // Reload quartile configs when year changes
+  useEffect(() => {
+    const loadQuartileConfigs = async () => {
+      if (formData.year_id && years.length > 0) {
+        const yearObj = years.find(y => y.year_id === formData.year_id);
+        if (yearObj) {
+          try {
+            const configResponse = await rewardConfigAPI.getConfig({ 
+              year: yearObj.year 
+            });
+            
+            if (configResponse && configResponse.data) {
+              const configMap = {};
+              configResponse.data.forEach(config => {
+                if (config.is_active) {
+                  configMap[config.journal_quartile] = {
+                    maxAmount: config.max_amount,
+                    isActive: config.is_active,
+                    description: config.condition_description
+                  };
+                }
+              });
+              setQuartileConfigs(configMap);
+            }
+          } catch (error) {
+            console.error('Error loading quartile configs:', error);
+            setQuartileConfigs({});
+          }
+        }
+      }
+    };
+    
+    loadQuartileConfigs();
+  }, [formData.year_id, years]);
+
+  // Update fee limits when quartile changes
+  useEffect(() => {
+    const updateFeeLimits = async () => {
+      if (formData.journal_quartile) {
+        try {
+          // หา year (พ.ศ.) จาก year_id
+          const yearObj = years.find(y => y.year_id === formData.year_id);
+          const targetYear = yearObj?.year || (new Date().getFullYear() + 543).toString();
+          
+          const maxLimit = await getMaxFeeLimit(formData.journal_quartile, targetYear);
+          
+          setFeeLimits({
+            total: maxLimit
+          });
+        } catch (error) {
+          // ไม่ต้อง log error ถ้าเป็นเพราะไม่พบ config
+          if (!error.message?.includes('not found')) {
+            console.error('Error updating fee limits:', error);
+          }
+          setFeeLimits({
+            total: 0
+          });
+        }
+      } else {
+        setFeeLimits({
+          total: 0
+        });
+      }
+    };
+    
+    updateFeeLimits();
+  }, [formData.journal_quartile, formData.year_id, years]);
+
   // Calculate total amount when relevant values change
   useEffect(() => {
     const externalTotal = externalFundings.reduce((sum, funding) => 
@@ -597,11 +765,23 @@ export default function PublicationRewardForm({ onNavigate }) {
 
   // Calculate reward when author status or quartile changes
   useEffect(() => {
-    if (formData.author_status && formData.journal_quartile) {
-      const reward = calculateReward(formData.author_status, formData.journal_quartile);
-      setFormData(prev => ({ ...prev, publication_reward: reward }));
-    }
-  }, [formData.author_status, formData.journal_quartile]);
+    const updateReward = async () => {
+      if (formData.author_status && formData.journal_quartile) {
+        try {
+          // หา year (พ.ศ.) จาก year_id
+          const yearObj = years.find(y => y.year_id === formData.year_id);
+          const targetYear = yearObj?.year || new Date().getFullYear().toString();
+          
+          const reward = await calculateReward(formData.author_status, formData.journal_quartile, targetYear);
+          setFormData(prev => ({ ...prev, publication_reward: reward }));
+        } catch (error) {
+          console.error('Error calculating reward:', error);
+        }
+      }
+    };
+    
+    updateReward();
+  }, [formData.author_status, formData.journal_quartile, formData.year_id, years]);
 
   // Auto-save draft periodically
   useEffect(() => {
@@ -621,53 +801,61 @@ export default function PublicationRewardForm({ onNavigate }) {
 
   // Check fees limit when quartile or fees change
   useEffect(() => {
-    if (formData.journal_quartile) {
-      const check = checkFeesLimit(
-        formData.revision_fee,
-        formData.publication_fee,
-        formData.journal_quartile
-      );
-      
-      if (!check.isValid && check.maxLimit > 0) {
-        setFeeError(`รวมค่าปรับปรุงและค่าตีพิมพ์เกินวงเงินที่กำหนด (ไม่เกิน ${formatCurrency(check.maxLimit)} บาท)`);
-      } else {
-        setFeeError('');
+    const checkFees = async () => {
+      if (formData.journal_quartile) {
+        const check = await checkFeesLimit(
+          formData.revision_fee,
+          formData.publication_fee,
+          formData.journal_quartile
+        );
+        
+        if (!check.isValid && check.maxLimit > 0) {
+          setFeeError(`รวมค่าปรับปรุงและค่าตีพิมพ์เกินวงเงินที่กำหนด (ไม่เกิน ${formatCurrency(check.maxLimit)} บาท)`);
+        } else {
+          setFeeError('');
+        }
       }
-    }
+    };
+    
+    checkFees();
   }, [formData.journal_quartile, formData.revision_fee, formData.publication_fee]);
 
   // Clear fees and external funding when quartile changes to ineligible ones
   useEffect(() => {
-    if (formData.journal_quartile) {
-      const maxLimit = getMaxFeeLimit(formData.journal_quartile);
-      
-      // If quartile doesn't allow fees
-      if (maxLimit === 0) {
-        // Clear revision and publication fees
-        setFormData(prev => ({
-          ...prev,
-          revision_fee: 0,
-          publication_fee: 0
-        }));
+    const clearFeesIfNeeded = async () => {
+      if (formData.journal_quartile) {
+        const maxLimit = await getMaxFeeLimit(formData.journal_quartile);
         
-        // Clear external fundings
-        setExternalFundings([]);
-        
-        // Clear external funding documents from otherDocuments
-        setOtherDocuments(prev => 
-          prev.filter(doc => doc.type !== 'external_funding')
-        );
-        
-        // Show notification
-        if (formData.revision_fee > 0 || formData.publication_fee > 0 || externalFundings.length > 0) {
-          Toast.fire({
-            icon: 'info',
-            title: 'Quartile นี้ไม่สามารถเบิกค่าใช้จ่ายได้',
-            text: 'ระบบได้ล้างข้อมูลค่าปรับปรุง ค่าตีพิมพ์ และทุนภายนอกแล้ว'
-          });
+        // If quartile doesn't allow fees
+        if (maxLimit === 0) {
+          // Clear revision and publication fees
+          setFormData(prev => ({
+            ...prev,
+            revision_fee: 0,
+            publication_fee: 0
+          }));
+          
+          // Clear external fundings
+          setExternalFundings([]);
+          
+          // Clear external funding documents from otherDocuments
+          setOtherDocuments(prev => 
+            prev.filter(doc => doc.type !== 'external_funding')
+          );
+          
+          // Show notification
+          if (formData.revision_fee > 0 || formData.publication_fee > 0 || externalFundings.length > 0) {
+            Toast.fire({
+              icon: 'info',
+              title: 'Quartile นี้ไม่สามารถเบิกค่าใช้จ่ายได้',
+              text: 'ระบบได้ล้างข้อมูลค่าปรับปรุง ค่าตีพิมพ์ และทุนภายนอกแล้ว'
+            });
+          }
         }
       }
-    }
+    };
+    
+    clearFeesIfNeeded();
   }, [formData.journal_quartile]);
 
   // =================================================================
@@ -800,10 +988,11 @@ export default function PublicationRewardForm({ onNavigate }) {
       console.log('Document Types:', docTypesResponse);
 
       // Handle years response
+      let currentYear = null; // เพิ่มการประกาศตัวแปร
       if (yearsResponse && yearsResponse.years) {
         console.log('Setting years:', yearsResponse.years);
         setYears(yearsResponse.years);
-        const currentYear = yearsResponse.years.find(y => y.year === '2568');
+        currentYear = yearsResponse.years.find(y => y.year === '2568'); // กำหนดค่า
         if (currentYear) {
           console.log('Found current year:', currentYear);
           setFormData(prev => ({ ...prev, year_id: currentYear.year_id }));
@@ -831,6 +1020,34 @@ export default function PublicationRewardForm({ onNavigate }) {
       if (docTypesResponse && docTypesResponse.document_types) {
         console.log('Setting document types:', docTypesResponse.document_types);
         setDocumentTypes(docTypesResponse.document_types);
+      }
+
+      // Load publication reward rates to get available author statuses and quartiles
+      try {
+        if (currentYear) {
+          const ratesResponse = await publicationRewardRatesAPI.getRatesByYear(currentYear.year);
+          
+          if (ratesResponse && ratesResponse.rates) {
+            // Filter only active rates
+            const activeRates = ratesResponse.rates.filter(rate => rate.is_active === true);
+            
+            // Extract unique author statuses (excluding 'co_author')
+            const uniqueStatuses = [...new Set(activeRates
+              .map(rate => rate.author_status)
+              .filter(status => status !== 'co_author')
+            )];
+            setAvailableAuthorStatuses(uniqueStatuses);
+            console.log('Available author statuses:', uniqueStatuses);
+            
+            // Extract unique quartiles
+            const uniqueQuartiles = [...new Set(activeRates.map(rate => rate.journal_quartile))];
+            const sortedQuartiles = sortQuartiles(uniqueQuartiles);
+            setAvailableQuartiles(sortedQuartiles);
+            console.log('Available quartiles (sorted):', sortedQuartiles);
+          }
+        }
+      } catch (ratesError) {
+        console.error('Error loading publication reward rates:', ratesError);
       }
 
     } catch (error) {
@@ -902,26 +1119,75 @@ export default function PublicationRewardForm({ onNavigate }) {
   // =================================================================
 
   // Handle form input changes
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const { name, value, type, checked } = e.target;
-    let processedValue = value;
     
-    // Apply formatting based on field name
-    if (name === 'phone_number') {
-      processedValue = formatPhoneNumber(value);
-    } else if (name === 'bank_account') {
-      processedValue = formatBankAccount(value);
-    } else if (name === 'journal_year') {
-      // Only allow 4 digits for year
-      processedValue = value.replace(/\D/g, '').slice(0, 4);
+    // สำหรับ checkbox ใช้ค่า checked
+    if (type === 'checkbox') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }));
+    } 
+    // สำหรับ author_status คำนวณ reward ใหม่
+    else if (name === 'author_status') {
+      setLoading(true);
+      try {
+        const rewardAmount = await calculateReward(value, formData.journal_quartile);
+        setFormData(prev => ({
+          ...prev,
+          author_status: value,
+          publication_reward: rewardAmount
+        }));
+      } catch (error) {
+        console.error('Error updating author status:', error);
+        Toast.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาดในการคำนวณเงินรางวัล'
+        });
+      } finally {
+        setLoading(false);
+      }
     }
-    
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : processedValue
-    }));
+    // สำหรับ journal_quartile คำนวณ reward ใหม่
+    else if (name === 'journal_quartile') {
+      setLoading(true);
+      try {
+        const rewardAmount = await calculateReward(formData.author_status, value);
+        setFormData(prev => ({
+          ...prev,
+          journal_quartile: value,
+          publication_reward: rewardAmount
+        }));
+      } catch (error) {
+        console.error('Error updating quartile:', error);
+        Toast.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาดในการคำนวณเงินรางวัล'
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
 
-    // Clear error when user starts typing
+    // สำหรับ phone_number ให้ format ตัวเลข
+    else if (name === 'phone_number') {
+      const formattedPhone = formatPhoneNumber(value);
+      setFormData(prev => ({
+        ...prev,
+        phone_number: formattedPhone
+      }));
+    }
+
+    // สำหรับ input อื่นๆ
+    else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+
+    // Clear error ถ้ามี
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -1087,7 +1353,7 @@ export default function PublicationRewardForm({ onNavigate }) {
   // =================================================================
 
   // Validate form data
-  const validateForm = () => {
+  const validateForm = async () => {
     const newErrors = {};
     
     // ข้อมูลพื้นฐาน
@@ -1132,14 +1398,18 @@ export default function PublicationRewardForm({ onNavigate }) {
     
     // ตรวจสอบวงเงินค่าปรับปรุงและค่าตีพิมพ์
     if (formData.journal_quartile) {
-      const check = checkFeesLimit(
+      // หา year (พ.ศ.) จาก year_id
+      const yearObj = years.find(y => y.year_id === formData.year_id);
+      const targetYear = yearObj?.year || (new Date().getFullYear() + 543).toString();
+      
+      const feeErrors = await validateFees(
+        formData.journal_quartile,
         formData.revision_fee,
         formData.publication_fee,
-        formData.journal_quartile
+        targetYear
       );
-      
-      if (!check.isValid && check.maxLimit > 0) {
-        newErrors.fees_limit = `ค่าปรับปรุงและค่าตีพิมพ์รวมกันเกินวงเงิน (ไม่เกิน ${formatCurrency(check.maxLimit)} บาท)`;
+      if (feeErrors.length > 0) {
+        newErrors.fees_limit = feeErrors.join(', ');
       }
     }
 
@@ -1648,9 +1918,9 @@ export default function PublicationRewardForm({ onNavigate }) {
   // Submit application
   const submitApplication = async () => {
     // Validate form first
-    if (!validateForm()) {
-      // ไม่ต้องแสดง Swal ซ้ำ เพราะ validateForm() แสดงแล้ว
-      // และไม่ต้อง scroll เพราะ validateForm จะจัดการให้
+    const isValid = await validateForm();
+
+    if (!isValid) {
       return;
     }
 
@@ -2132,7 +2402,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                 </option>
                 {years.map(year => (
                   <option key={year.year_id} value={year.year_id}>
-                    {year.year}
+                    ปีงบประมาณ {year.year}
                   </option>
                 ))}
               </select>
@@ -2157,8 +2427,14 @@ export default function PublicationRewardForm({ onNavigate }) {
                 <option value="" disabled={formData.author_status !== ''} hidden={formData.author_status !== ''}>
                   เลือกสถานะ (Select Status)
                 </option>
-                <option value="first_author">ผู้แต่งหลัก (First Author)</option>
-                <option value="corresponding_author">ผู้แต่งที่รับผิดชอบบทความ (Corresponding Author)</option>
+                {availableAuthorStatuses
+                  .filter(status => status !== 'co_author')
+                  .map(status => (
+                    <option key={status} value={status}>
+                      {status === 'first_author' ? 'ผู้แต่งหลัก (First Author)' :
+                      status === 'corresponding_author' ? 'ผู้แต่งที่รับผิดชอบบทความ (Corresponding Author)' : status}
+                    </option>
+                  ))}
               </select>
               {errors.author_status && (
                 <p className="text-red-500 text-sm mt-1">{errors.author_status}</p>
@@ -2252,13 +2528,24 @@ export default function PublicationRewardForm({ onNavigate }) {
                   <option value="" disabled={formData.journal_quartile !== ''} hidden={formData.journal_quartile !== ''}>
                     เลือกควอร์ไทล์ (Select Quartile)
                   </option>
-                  <option value="T5">Top 5%</option>
-                  <option value="T10">Top 10%</option>
-                  <option value="Q1">Quartile 1</option>
-                  <option value="Q2">Quartile 2</option>
-                  <option value="Q3">Quartile 3</option>
-                  <option value="Q4">Quartile 4</option>
-                  <option value="TCI">TCI กลุ่มที่ 1 (TCI Group 1)</option>
+                  {availableQuartiles.map(quartile => {
+                    // Check if this quartile allows fees from config
+                    const hasConfig = quartileConfigs[quartile];
+                    const allowsFees = hasConfig && hasConfig.isActive;
+                    
+                    return (
+                      <option key={quartile} value={quartile}>
+                        {quartile === 'T5' ? 'Top 5%' :
+                        quartile === 'T10' ? 'Top 10%' :
+                        quartile === 'Q1' ? 'Quartile 1' :
+                        quartile === 'Q2' ? 'Quartile 2' :
+                        quartile === 'Q3' ? 'Quartile 3' :
+                        quartile === 'Q4' ? 'Quartile 4' :
+                        quartile === 'TCI' ? 'TCI กลุ่มที่ 1 (TCI Group 1)' : quartile}
+                        {!allowsFees && ' (ไม่สามารถเบิกค่าใช้จ่าย)'}
+                      </option>
+                    );
+                  })}
                 </select>
                 {errors.journal_quartile && (
                   <p className="text-red-500 text-sm mt-1">{errors.journal_quartile}</p>
@@ -2569,55 +2856,59 @@ export default function PublicationRewardForm({ onNavigate }) {
             {/* Left side - Revision fee, Publication fee, and College total */}
             <div className="space-y-6 lg:pr-6">
               {/* Show fee limit info */}
-              {formData.journal_quartile && (
-                <div className={`p-4 rounded-lg ${
-                  getMaxFeeLimit(formData.journal_quartile) > 0 
-                    ? 'bg-blue-50 border border-blue-200' 
-                    : 'bg-gray-50 border border-gray-200'
-                }`}>
+              {formData.journal_quartile && feeLimits.total > 0 && (
+                <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
                   <p className="text-sm font-medium text-gray-700">
-                    {getMaxFeeLimit(formData.journal_quartile) > 0 ? (
-                      <>
-                        วงเงินค่าปรับปรุงและค่าตีพิมพ์รวมกันไม่เกิน (Maximum total for editing and page charge): 
-                        <span className="text-blue-700 font-bold ml-1">
-                          {formatCurrency(getMaxFeeLimit(formData.journal_quartile))} บาท (Baht)
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-red-600">
-                        Quartile นี้ไม่สามารถเบิกค่าปรับปรุงและค่าตีพิมพ์ได้
-                        <br />
-                        (This quartile is not eligible for editing fee and page charge reimbursement)
-                      </span>
-                    )}
+                    วงเงินค่าปรับปรุงและค่าตีพิมพ์รวมกันไม่เกิน (Maximum total for editing and page charge): 
+                    <span className="text-blue-700 font-bold ml-1">
+                      {formatCurrency(feeLimits.total)} บาท (Baht)
+                    </span>
+                  </p>
+                  {quartileConfigs[formData.journal_quartile]?.description && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      {quartileConfigs[formData.journal_quartile].description}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {formData.journal_quartile && feeLimits.total === 0 && (
+                <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+                  <p className="text-sm font-medium text-red-600">
+                    ควอร์ไทล์นี้ไม่สามารถเบิกค่าปรับปรุงและค่าตีพิมพ์ได้
+                    <br />
+                    (This quartile is not eligible for editing fee and page charge reimbursement)
                   </p>
                 </div>
               )}
 
               {/* Revision Fee */}
               <div id="field-fees_limit">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ค่าปรับปรุงบทความ (บาท)
-                  <br />
-                  <span className="text-xs font-normal text-gray-600">Manuscript Editing Fee (Baht)</span>
-                </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ค่าปรับปรุงบทความ (บาท)
+                    <br />
+                    <span className="text-xs font-normal text-gray-600">Manuscript Editing Fee (Baht)</span>
+                  </label>
                 <div className={`bg-gray-50 rounded-lg p-3 ${feeError ? 'border-2 border-red-500' : ''}`}>
                   <input
                     type="number"
                     value={formData.revision_fee || ''}
-                    onChange={(e) => {
-                      const maxLimit = getMaxFeeLimit(formData.journal_quartile);
-                      if (maxLimit === 0) {
+                    onChange={async (e) => {
+                      if (feeLimits.total === 0) {
                         e.preventDefault();
                         return;
                       }
-                      setFormData(prev => ({ ...prev, revision_fee: e.target.value }));
+                      const newValue = e.target.value;
+                      setFormData(prev => ({ ...prev, revision_fee: newValue }));
+                      
+                      // Validate fees in real-time
+                      await validateFeesRealtime(newValue, formData.publication_fee, formData.journal_quartile, feeLimits.total, setFeeError);
                     }}
-                    disabled={!formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0}
+                    disabled={!formData.journal_quartile || feeLimits.total === 0}
                     min="0"
                     placeholder="0"
                     className={`text-2xl font-semibold text-gray-800 w-full bg-transparent border-none focus:outline-none ${
-                      (!formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0) ? 'cursor-not-allowed opacity-50' : ''
+                      (!formData.journal_quartile || feeLimits.total === 0) ? 'cursor-not-allowed opacity-50' : ''
                     }`}
                   />
                 </div>
@@ -2634,32 +2925,35 @@ export default function PublicationRewardForm({ onNavigate }) {
                   <input
                     type="number"
                     value={formData.publication_fee || ''}
-                    onChange={(e) => {
-                      const maxLimit = getMaxFeeLimit(formData.journal_quartile);
-                      if (maxLimit === 0) {
+                    onChange={async (e) => {
+                      if (feeLimits.total === 0) {
                         e.preventDefault();
                         return;
                       }
-                      setFormData(prev => ({ ...prev, publication_fee: e.target.value }));
+                      const newValue = e.target.value;
+                      setFormData(prev => ({ ...prev, publication_fee: newValue }));
+                      
+                      // Validate fees in real-time
+                      await validateFeesRealtime(formData.revision_fee, newValue, formData.journal_quartile, feeLimits.total, setFeeError);
                     }}
-                    disabled={!formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0}
+                    disabled={!formData.journal_quartile || feeLimits.total === 0}
                     min="0"
                     placeholder="0"
                     className={`text-2xl font-semibold text-gray-800 w-full bg-transparent border-none focus:outline-none ${
-                      (!formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0) ? 'cursor-not-allowed opacity-50' : ''
+                      (!formData.journal_quartile || feeLimits.total === 0) ? 'cursor-not-allowed opacity-50' : ''
                     }`}
                   />
                 </div>
               </div>
 
               {/* Error message */}
-              {feeError && (
+              {(feeError || errors.fees) && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <p className="text-sm text-red-600 flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
-                    {feeError}
+                    {feeError || errors.fees}
                   </p>
-                  {formData.journal_quartile && getMaxFeeLimit(formData.journal_quartile) > 0 && (
+                  {formData.journal_quartile && feeLimits.total > 0 && (
                     <p className="text-xs text-red-500 mt-1">
                       ใช้ไปแล้ว (Used): {formatCurrency((parseFloat(formData.revision_fee) || 0) + (parseFloat(formData.publication_fee) || 0))} บาท (Baht)
                     </p>
@@ -2721,7 +3015,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                     </tr>
                   </thead>
                   <tbody className="bg-white">
-                    {(!formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0) ? (
+                    {(!formData.journal_quartile || feeLimits.total === 0) ? (
                       <tr>
                         <td colSpan="3" className="px-4 py-8 text-center text-gray-500">
                           <div className="text-sm">
@@ -2747,7 +3041,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                           </td>
                           <td className="border-r border-blue-200 px-3 py-2 text-sm">
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-700">{funding.fundName || funding.file?.name || 'แนบไฟล์หลักฐาน (Attach evidence)'}</span>
+                              <span className="text-gray-700">{funding.fundName || funding.file?.name || 'แนบไฟล์หลักฐาน (Attach File)'}</span>
                               <label className="cursor-pointer text-blue-500 hover:text-blue-700">
                                 <input
                                   type="file"
@@ -2801,14 +3095,14 @@ export default function PublicationRewardForm({ onNavigate }) {
                 <button
                   type="button"
                   onClick={handleAddExternalFunding}
-                  disabled={!formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0}
+                  disabled={!formData.journal_quartile || feeLimits.total === 0}
                   className={`flex items-center gap-2 px-5 py-2 rounded-full transition-colors text-sm font-medium ${
-                    !formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0
+                    !formData.journal_quartile || feeLimits.total === 0
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-green-500 text-white hover:bg-green-600'
                   }`}
                   title={
-                    !formData.journal_quartile || getMaxFeeLimit(formData.journal_quartile) === 0
+                    !formData.journal_quartile || feeLimits.total === 0
                       ? 'กรุณาเลือก Quartile ที่สามารถเบิกค่าใช้จ่ายได้ก่อน'
                       : 'เพิ่มรายการทุนภายนอก'
                   }
@@ -2969,7 +3263,7 @@ export default function PublicationRewardForm({ onNavigate }) {
                     const translations = {
                       'QS WUR 1-400': 'QS WUR 1-400',
                       'Full reprint (บทความตีพิมพ์)': 'Full reprint (บทความตีพิมพ์/Published Article)',
-                      'Scopus-ISI (หลักฐานการจัดอันดับ)': 'Scopus-ISI (หลักฐานการจัดอันดับ/Ranking Evidence)',
+                      'Scopus-ISI (หลักฐานการจัดอันดับ)': 'Scopus-ISI (หลักฐานการจัดอันดับ/Ranking)',
                       'สำเนาบัญชีธนาคาร': 'สำเนาบัญชีธนาคาร (Bank Account Copy)',
                       'Payment / Exchange rate': 'Payment / Exchange rate',
                       'Page charge Invoice': 'Page charge Invoice',

@@ -481,6 +481,83 @@ export const publicationFormAPI = {
   }
 };
 
+// เพิ่มที่ด้านบนของไฟล์ หลัง import apiClient
+// ========= เพิ่ม API สำหรับ Publication Reward Rates =========
+export const publicationRewardRatesAPI = {
+  // ดึงอัตราเงินรางวัลตามปี
+  async getRatesByYear(year) {
+    try {
+      const response = await apiClient.get(`/publication-rewards/rates?year=${year}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching reward rates:', error);
+      throw error;
+    }
+  },
+
+  // ค้นหาเงินรางวัลเฉพาะ
+  async lookupRewardAmount(year, authorStatus, quartile) {
+    try {
+      const response = await apiClient.get(`/publication-rewards/rates/lookup?year=${year}&author_status=${authorStatus}&quartile=${quartile}`);
+      return response;
+    } catch (error) {
+      console.error('Error looking up reward amount:', error);
+      throw error;
+    }
+  },
+
+  // ดึงข้อมูลทั้งหมด
+  async getAllRates() {
+    try {
+      const response = await apiClient.get('/publication-rewards/rates/all');
+      return response;
+    } catch (error) {
+      console.error('Error fetching all rates:', error);
+      throw error;
+    }
+  },
+
+  // ดึงรายการปีที่มีข้อมูล
+  async getAvailableYears() {
+    try {
+      const response = await apiClient.get('/publication-rewards/rates/years');
+      return response;
+    } catch (error) {
+      console.error('Error fetching available years:', error);
+      throw error;
+    }
+  }
+};
+
+// ========= เพิ่ม API สำหรับ Reward Config (manuscript & page charge fees) =========
+export const rewardConfigAPI = {
+  // ดึงข้อมูลการตั้งค่าเงินรางวัล
+  async getConfig(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const response = await apiClient.get(`/reward-config${queryString ? `?${queryString}` : ''}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching reward config:', error);
+      throw error;
+    }
+  },
+
+  // ค้นหาวงเงินสำหรับการคำนวณ
+  async lookupMaxAmount(year, quartile) {
+    try {
+      const response = await apiClient.get(`/reward-config/lookup?year=${year}&quartile=${quartile}`);
+      return response;
+    } catch (error) {
+      // ถ้าเป็น 404 หรือไม่พบ config ให้ return default value
+      if (error.status === 404 || (error.message && error.message.includes('not found'))) {
+        return { max_amount: 0 };
+      }
+      throw error;
+    }
+  }
+};
+
 // Export all APIs
 export default {
   submission: submissionAPI,
@@ -489,5 +566,7 @@ export default {
   file: fileAPI,
   document: documentAPI,
   publicationReward: publicationRewardAPI,
-  form: publicationFormAPI
+  form: publicationFormAPI,
+  publicationRewardRates: publicationRewardRatesAPI,
+  rewardConfig: rewardConfigAPI
 };
