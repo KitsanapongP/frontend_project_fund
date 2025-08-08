@@ -180,7 +180,13 @@ export const publicationDetailsAPI = {
         url: details.url,
         page_numbers: details.page_numbers,
         volume_issue: details.volume_issue,
+        // ตรวจสอบว่ามี fields เหล่านี้หรือไม่
         indexing: details.indexing,
+        in_isi: details.in_isi,
+        in_scopus: details.in_scopus,
+        in_web_of_science: details.in_web_of_science,
+        in_tci: details.in_tci,
+        
         
         // เงินรางวัลและการคำนวณ
         publication_reward: details.reward_amount,
@@ -193,16 +199,17 @@ export const publicationDetailsAPI = {
         author_count: details.author_count,
         is_corresponding_author: details.is_corresponding_author,
         author_status: details.author_status,
+        author_type: details.author_status, // เพิ่ม author_type (ใช้ค่าเดียวกับ author_status)
         
         // ข้อมูลธนาคาร
         bank_account: details.bank_account,
         bank_name: details.bank_name,
         phone_number: details.phone_number,
         
-        // อื่นๆ
-        university_ranking: details.university_ranking,
-        has_university_fund: details.has_university_fund,
-        university_fund_ref: details.university_fund_ref
+        // ข้อมูลอื่นๆ
+        has_university_funding: details.has_university_funding,
+        funding_references: details.funding_references,
+        university_rankings: details.university_rankings,
       });
       return response;
     } catch (error) {

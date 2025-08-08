@@ -2158,7 +2158,20 @@ export default function PublicationRewardForm({ onNavigate }) {
         url: formData.journal_url || '',
         page_numbers: formData.journal_pages || '',
         volume_issue: formData.journal_issue || '',
-        indexing: formData.article_online_db || '',
+        
+        // แก้ไข indexing ให้รวมค่าจาก checkboxes
+        indexing: [
+          formData.in_isi && 'ISI',
+          formData.in_scopus && 'Scopus',
+          formData.in_web_of_science && 'Web of Science',
+          formData.in_tci && 'TCI'
+        ].filter(Boolean).join(', '),
+        
+        // ส่ง checkboxes แยกด้วย (เผื่อ backend ต้องการ)
+        in_isi: formData.in_isi || false,
+        in_scopus: formData.in_scopus || false,
+        in_web_of_science: formData.in_web_of_science || false,
+        in_tci: formData.in_tci || false,
         
         // Reward and calculations
         reward_amount: parseFloat(formData.publication_reward) || 0,
@@ -2167,7 +2180,6 @@ export default function PublicationRewardForm({ onNavigate }) {
         external_funding_amount: parseFloat(formData.external_funding_amount) || 0,
         total_amount: parseFloat(formData.total_amount) || 0,
         
-        // Author info
         author_count: coauthors.length + 1,
         is_corresponding_author: formData.author_status === 'corresponding_author',
         author_status: formData.author_status,
@@ -2176,18 +2188,35 @@ export default function PublicationRewardForm({ onNavigate }) {
         bank_account: formData.bank_account,
         bank_name: formData.bank_name,
         bank_account_name: formData.bank_account_name || '',
+        phone_number: formData.phone_number || '',
         
-        // Additional info
+        // Additional info - ใช้ชื่อที่ตรงกับ database
+        has_university_funding: formData.has_university_fund || 'no',
+        funding_references: formData.university_fund_ref || '',
+        university_rankings: formData.university_ranking || '',
+        
+        // Other
         announce_reference_number: formData.announce_reference_number || ''
       };
 
-      console.log('Publication data to send:', publicationData);
-      console.log('Submission ID:', submissionId);
+        // Debug: ตรวจสอบข้อมูลก่อนส่ง
+        console.log('=== DEBUG BEFORE SENDING ===');
+        console.log('formData values:');
+        console.log('- has_university_fund:', formData.has_university_fund);
+        console.log('- university_fund_ref:', formData.university_fund_ref);
+        console.log('- university_ranking:', formData.university_ranking);
 
-      try {
-        await publicationDetailsAPI.add(submissionId, publicationData);
-        console.log('Publication details saved successfully');
-      } catch (error) {
+        console.log('\npublicationData values:');
+        console.log('- has_university_funding:', publicationData.has_university_funding);
+        console.log('- funding_references:', publicationData.funding_references);
+        console.log('- university_rankings:', publicationData.university_rankings);
+
+        console.log('\nFull publicationData:', JSON.stringify(publicationData, null, 2));
+
+        try {
+          await publicationDetailsAPI.add(submissionId, publicationData);
+          console.log('Publication details saved successfully');
+        } catch (error) {
         console.error('Failed to save publication details:', error);
         
         // Show detailed error
@@ -2300,7 +2329,7 @@ export default function PublicationRewardForm({ onNavigate }) {
         html: `
           <div class="text-left">
             <p><strong>รหัสคำร้อง:</strong> ${submissionId}</p>
-            <p><strong>ไฟล์ที่แนับ:</strong> ${fileCounts.summary}</p>
+            <p><strong>ไฟล์ที่แนบ:</strong> ${fileCounts.summary}</p>
             <div class="mt-2 text-sm text-gray-600">
               <ul class="list-disc list-inside">
                 ${fileCounts.main > 0 ? `<li>เอกสารหลัก: ${fileCounts.main} ไฟล์</li>` : ''}
@@ -3322,11 +3351,8 @@ export default function PublicationRewardForm({ onNavigate }) {
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
               >
-                <option value="" disabled={formData.has_university_fund !== ''} hidden={formData.has_university_fund !== ''}>
-                  เลือก (Select)
-                </option>
-                <option value="yes">ได้รับ (Yes)</option>
                 <option value="no">ไม่ได้รับ (No)</option>
+                <option value="yes">ได้รับ (Yes)</option>
               </select>
             </div>
 

@@ -8,6 +8,7 @@ import PageLayout from "../common/PageLayout";
 import StatusBadge from "./StatusBadge";
 import YearManagementTab from "./YearManagementTab";
 import FundManagementTab from "./FundManagementTab";
+import RewardConfigManager from "./RewardConfigManager";
 
 // Import modals
 import CategoryModal from "./CategoryModal";
@@ -682,6 +683,19 @@ export default function FundSettingsContent({ onNavigate }) {
               จัดการปีงบประมาณ
             </div>
           </button>
+          <button
+            onClick={() => setActiveTab('reward-config')}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'reward-config'
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Settings size={20} />
+                จัดการเงินรางวัล
+            </div>
+          </button>
         </div>
       </div>
 
@@ -716,6 +730,10 @@ export default function FundSettingsContent({ onNavigate }) {
           onSaveYear={handleSaveYear}
           onDeleteYear={handleDeleteYear}
         />
+      )}
+
+      {activeTab === 'reward-config' && (
+        <RewardConfigManager />
       )}
 
       {/* Modals */}
