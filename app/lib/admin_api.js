@@ -719,7 +719,7 @@ export const adminAPI = {
   // Get rates - ใช้ public endpoint
   async getPublicationRewardRates(year) {
     try {
-      const response = await apiClient.get('/publication-rewards/rates', { year });
+      const response = await apiClient.get('/publication-rewards/rates/admin', { year });
       return response;
     } catch (error) {
       console.error('Error fetching publication reward rates:', error);
@@ -763,7 +763,7 @@ export const adminAPI = {
   // Toggle status - Admin endpoint
   async togglePublicationRewardRateStatus(rateId) {
     try {
-      const response = await apiClient.patch(`/publication-rewards/rates/${rateId}/toggle`);
+      const response = await apiClient.post(`/publication-rewards/rates/${rateId}/toggle`);
       return response;
     } catch (error) {
       console.error('Error toggling publication reward rate status:', error);
@@ -890,30 +890,13 @@ export const adminAPI = {
     }
   },
 
-  // Toggle status - ตรวจสอบ path
-  async togglePublicationRewardRateStatus(rateId) {
-    try {
-      // ตรวจสอบว่า rateId มีค่า
-      if (!rateId) {
-        throw new Error('Rate ID is required');
-      }
-      
-      const response = await apiClient.patch(`/publication-rewards/rates/${rateId}/toggle`, {});
-      return response;
-    } catch (error) {
-      console.error('Error toggling rate status:', error);
-      throw error;
-    }
-  },
-
   async toggleRewardConfigStatus(configId) {
     try {
-      // ตรวจสอบว่า configId มีค่า
       if (!configId) {
         throw new Error('Config ID is required');
       }
-      
-      const response = await apiClient.patch(`/admin/reward-config/${configId}/toggle`, {});
+      // ไม่ต้องส่ง body และไม่ต้องใส่ /api/v1 (base มีแล้ว)
+      const response = await apiClient.post(`/admin/reward-config/${configId}/toggle`);
       return response;
     } catch (error) {
       console.error('Error toggling config status:', error);

@@ -1,7 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaPlus, FaToggleOn, FaToggleOff, FaCopy } from 'react-icons/fa';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Copy,
+  ToggleRight,
+  ToggleLeft,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Save,
+  X
+} from "lucide-react";
 import Swal from 'sweetalert2';
 import adminAPI from '../../../lib/admin_api';
+import StatusBadge from './StatusBadge';
 
 const RewardConfigManager = () => {
   const [activeSubTab, setActiveSubTab] = useState('rates');
@@ -9,15 +22,14 @@ const RewardConfigManager = () => {
   const [rewardConfigs, setRewardConfigs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedYear, setSelectedYear] = useState('2568');
-  const [years, setYears] = useState([]); // เปลี่ยนจาก hardcode เป็น array ว่าง
-  
-  // State for forms
+  const [years, setYears] = useState([]);
+
+  // ====== Modal (เดิม) ======
   const [showRateForm, setShowRateForm] = useState(false);
   const [showConfigForm, setShowConfigForm] = useState(false);
   const [editingRate, setEditingRate] = useState(null);
   const [editingConfig, setEditingConfig] = useState(null);
 
-  // Form data
   const [rateFormData, setRateFormData] = useState({
     year: '2568',
     author_status: '',
@@ -32,13 +44,15 @@ const RewardConfigManager = () => {
     condition_description: ''
   });
 
-  // Author status options
+  // ====== Sorting State ======
+  const [rateSort, setRateSort] = useState({ key: null, dir: 'asc' });
+  const [configSort, setConfigSort] = useState({ key: null, dir: 'asc' });
+
   const authorStatusOptions = [
     { value: 'first_author', label: 'First Author (ผู้นิพนธ์หลัก)' },
     { value: 'corresponding_author', label: 'Corresponding Author (ผู้นิพนธ์ติดต่อ)' },
   ];
 
-  // Quartile options with sort order
   const quartileOptions = [
     { value: 'T5', label: 'T5 (Top 5%)', order: 1 },
     { value: 'T10', label: 'T10 (Top 10%)', order: 2 },
@@ -50,49 +64,30 @@ const RewardConfigManager = () => {
     { value: 'N/A', label: 'N/A (ไม่ระบุ)', order: 8 }
   ];
 
-  // Load available years from database
+  // ====== Load Years ======
   const loadAvailableYears = async () => {
     try {
-      // ดึงปีจากทั้ง 2 tables
       const [ratesResponse, configsResponse] = await Promise.all([
         adminAPI.getPublicationRewardRatesYears().catch(() => ({ years: [] })),
         adminAPI.getRewardConfigYears().catch(() => ({ years: [] }))
       ]);
-
-      // รวมปีจากทั้ง 2 แหล่งและ unique
       const rateYears = ratesResponse.years || [];
       const configYears = configsResponse.years || [];
       const allYears = [...new Set([...rateYears, ...configYears])];
-      
-      // เรียงปีจากมากไปน้อย (ปีล่าสุดขึ้นก่อน)
       const sortedYears = allYears.sort((a, b) => b - a);
-      
-      console.log('Available years:', sortedYears);
       setYears(sortedYears);
-      
-      // ถ้ามีปีในระบบ ให้เลือกปีล่าสุด
-      if (sortedYears.length > 0) {
-        setSelectedYear(sortedYears[0]);
-      }
-    } catch (error) {
-      console.error('Error loading years:', error);
-      // ถ้าโหลดไม่ได้ ใช้ปีปัจจุบัน
+      if (sortedYears.length > 0) setSelectedYear(sortedYears[0]);
+    } catch {
       const currentYear = (new Date().getFullYear() + 543).toString();
       setYears([currentYear]);
       setSelectedYear(currentYear);
     }
   };
 
-  useEffect(() => {
-    loadAvailableYears();
-  }, []);
+  useEffect(() => { loadAvailableYears(); }, []);
+  useEffect(() => { if (selectedYear && years.length) loadData(); }, [selectedYear, activeSubTab, years]);
 
-  useEffect(() => {
-    if (selectedYear && years.length > 0) {
-      loadData();
-    }
-  }, [selectedYear, activeSubTab, years]);
-
+  // ====== Load Data ======
   const loadData = async () => {
     setLoading(true);
     try {
@@ -101,18 +96,89 @@ const RewardConfigManager = () => {
         setRewardRates(response.rates || []);
       } else {
         const response = await adminAPI.getRewardConfigs(selectedYear);
-        console.log('Config API response:', response);
-        // แก้จาก response.configs เป็น response.data
-        setRewardConfigs(response.data || []);  // ⬅️ แก้ตรงนี้
+        setRewardConfigs(response.data || []);
       }
-    } catch (error) {
-      console.error('Error loading data:', error);
+    } catch {
       Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลได้', 'error');
     }
     setLoading(false);
   };
 
-  // Toggle active status
+  // ====== Helpers ======
+  const quartileOrder = (q) => quartileOptions.find(x => x.value === q)?.order ?? 999;
+  const authorLabel = (v) => authorStatusOptions.find(s => s.value === v)?.label || v;
+
+  const toggleSort = (which, key) => {
+    if (which === 'rates') {
+      setRateSort((prev) => ({ key, dir: prev.key === key && prev.dir === 'asc' ? 'desc' : 'asc' }));
+    } else {
+      setConfigSort((prev) => ({ key, dir: prev.key === key && prev.dir === 'asc' ? 'desc' : 'asc' }));
+    }
+  };
+
+  const sortIcon = (sortState, key) => {
+    if (sortState.key !== key) return <ArrowUpDown size={14} className="inline-block ml-1 opacity-60" />;
+    return sortState.dir === 'asc'
+      ? <ArrowUp size={14} className="inline-block ml-1" />
+      : <ArrowDown size={14} className="inline-block ml-1" />;
+  };
+
+  const sortedRates = useMemo(() => {
+    const list = [...rewardRates];
+    const { key, dir } = rateSort;
+    if (!key) {
+      // default: Quartile order, then author_status asc (เดิม)
+      return list.sort((a, b) => {
+        const oa = quartileOrder(a.journal_quartile);
+        const ob = quartileOrder(b.journal_quartile);
+        if (oa !== ob) return oa - ob;
+        return a.author_status.localeCompare(b.author_status);
+      });
+    }
+    const mul = dir === 'asc' ? 1 : -1;
+    return list.sort((a, b) => {
+      if (key === 'author_status') {
+        return authorLabel(a.author_status).localeCompare(authorLabel(b.author_status)) * mul;
+      }
+      if (key === 'journal_quartile') {
+        return (quartileOrder(a.journal_quartile) - quartileOrder(b.journal_quartile)) * mul;
+      }
+      if (key === 'reward_amount') {
+        return ((+a.reward_amount || 0) - (+b.reward_amount || 0)) * mul;
+      }
+      if (key === 'is_active') {
+        return ((a.is_active ? 1 : 0) - (b.is_active ? 1 : 0)) * mul;
+      }
+      return 0;
+    });
+  }, [rewardRates, rateSort]);
+
+  const sortedConfigs = useMemo(() => {
+    const list = [...rewardConfigs];
+    const { key, dir } = configSort;
+    if (!key) {
+      // default: Quartile order (เดิม)
+      return list.sort((a, b) => quartileOrder(a.journal_quartile) - quartileOrder(b.journal_quartile));
+    }
+    const mul = dir === 'asc' ? 1 : -1;
+    return list.sort((a, b) => {
+      if (key === 'journal_quartile') {
+        return (quartileOrder(a.journal_quartile) - quartileOrder(b.journal_quartile)) * mul;
+      }
+      if (key === 'max_amount') {
+        return ((+a.max_amount || 0) - (+b.max_amount || 0)) * mul;
+      }
+      if (key === 'condition_description') {
+        return ((a.condition_description || '').localeCompare(b.condition_description || '')) * mul;
+      }
+      if (key === 'is_active') {
+        return ((a.is_active ? 1 : 0) - (b.is_active ? 1 : 0)) * mul;
+      }
+      return 0;
+    });
+  }, [rewardConfigs, configSort]);
+
+  // ====== Toggle / Delete ======
   const toggleStatus = async (id, currentStatus, type) => {
     const result = await Swal.fire({
       title: 'ยืนยันการเปลี่ยนสถานะ?',
@@ -122,23 +188,17 @@ const RewardConfigManager = () => {
       confirmButtonText: 'ยืนยัน',
       cancelButtonText: 'ยกเลิก'
     });
-
-    if (result.isConfirmed) {
-      try {
-        if (type === 'rate') {
-          await adminAPI.togglePublicationRewardRateStatus(id);
-        } else {
-          await adminAPI.toggleRewardConfigStatus(id);
-        }
-        await loadData();
-        Swal.fire('สำเร็จ', 'เปลี่ยนสถานะเรียบร้อย', 'success');
-      } catch (error) {
-        Swal.fire('Error', 'ไม่สามารถเปลี่ยนสถานะได้', 'error');
-      }
+    if (!result.isConfirmed) return;
+    try {
+      if (type === 'rate') await adminAPI.togglePublicationRewardRateStatus(id);
+      else await adminAPI.toggleRewardConfigStatus(id);
+      await loadData();
+      Swal.fire('สำเร็จ', 'เปลี่ยนสถานะเรียบร้อย', 'success');
+    } catch {
+      Swal.fire('Error', 'ไม่สามารถเปลี่ยนสถานะได้', 'error');
     }
   };
 
-  // Delete item
   const deleteItem = async (id, type) => {
     const result = await Swal.fire({
       title: 'ยืนยันการลบ?',
@@ -149,35 +209,25 @@ const RewardConfigManager = () => {
       cancelButtonText: 'ยกเลิก',
       confirmButtonColor: '#d33'
     });
-
-    if (result.isConfirmed) {
-      try {
-        if (type === 'rate') {
-          await adminAPI.deletePublicationRewardRate(id);
-        } else {
-          await adminAPI.deleteRewardConfig(id);
-        }
-        await loadData();
-        Swal.fire('สำเร็จ', 'ลบข้อมูลเรียบร้อย', 'success');
-      } catch (error) {
-        Swal.fire('Error', 'ไม่สามารถลบข้อมูลได้', 'error');
-      }
+    if (!result.isConfirmed) return;
+    try {
+      if (type === 'rate') await adminAPI.deletePublicationRewardRate(id);
+      else await adminAPI.deleteRewardConfig(id);
+      await loadData();
+      Swal.fire('สำเร็จ', 'ลบข้อมูลเรียบร้อย', 'success');
+    } catch {
+      Swal.fire('Error', 'ไม่สามารถลบข้อมูลได้', 'error');
     }
   };
 
-  // Save Rate
+  // ====== Save ======
   const saveRate = async () => {
     try {
-      // แปลง reward_amount เป็น number ก่อนส่ง
-      const dataToSend = {
-        ...rateFormData,
-        reward_amount: parseFloat(rateFormData.reward_amount)
-      };
-      
+      const payload = { ...rateFormData, reward_amount: parseFloat(rateFormData.reward_amount) };
       if (editingRate) {
-        await adminAPI.updatePublicationRewardRate(editingRate.rate_id, dataToSend);
+        await adminAPI.updatePublicationRewardRate(editingRate.rate_id, payload);
       } else {
-        await adminAPI.createPublicationRewardRate(dataToSend);
+        await adminAPI.createPublicationRewardRate({ ...payload, year: selectedYear });
       }
       setShowRateForm(false);
       setEditingRate(null);
@@ -190,23 +240,17 @@ const RewardConfigManager = () => {
       await loadData();
       Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย', 'success');
     } catch (error) {
-      Swal.fire('Error', error.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+      Swal.fire('Error', error?.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
     }
   };
 
-  // Save Config
   const saveConfig = async () => {
     try {
-      // แปลง max_amount เป็น number ก่อนส่ง
-      const dataToSend = {
-        ...configFormData,
-        max_amount: parseFloat(configFormData.max_amount)
-      };
-      
+      const payload = { ...configFormData, max_amount: parseFloat(configFormData.max_amount) };
       if (editingConfig) {
-        await adminAPI.updateRewardConfig(editingConfig.config_id, dataToSend);
+        await adminAPI.updateRewardConfig(editingConfig.config_id, payload);
       } else {
-        await adminAPI.createRewardConfig(dataToSend);
+        await adminAPI.createRewardConfig({ ...payload, year: selectedYear });
       }
       setShowConfigForm(false);
       setEditingConfig(null);
@@ -219,11 +263,11 @@ const RewardConfigManager = () => {
       await loadData();
       Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย', 'success');
     } catch (error) {
-      Swal.fire('Error', error.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+      Swal.fire('Error', error?.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
     }
   };
 
-  // Copy to new year
+  // ====== Copy to New Year ======
   const copyToNewYear = async () => {
     const { value: newYear } = await Swal.fire({
       title: 'คัดลอกข้อมูลไปยังปีใหม่',
@@ -239,68 +283,63 @@ const RewardConfigManager = () => {
       }
     });
 
-    if (newYear) {
-      try {
-        if (activeSubTab === 'rates') {
-          await adminAPI.copyPublicationRewardRates(selectedYear, newYear);
-        } else {
-          await adminAPI.copyRewardConfigs(selectedYear, newYear);
-        }
-        Swal.fire('สำเร็จ', `คัดลอกข้อมูลไปยังปี ${newYear} เรียบร้อย`, 'success');
-        
-        // Reload years และเปลี่ยนไปยังปีใหม่
-        await loadAvailableYears();
-        setSelectedYear(newYear);
-      } catch (error) {
-        Swal.fire('Error', 'ไม่สามารถคัดลอกข้อมูลได้', 'error');
+    if (!newYear) return;
+    try {
+      if (activeSubTab === 'rates') {
+        await adminAPI.copyPublicationRewardRates(selectedYear, newYear);
+      } else {
+        await adminAPI.copyRewardConfigs(selectedYear, newYear);
       }
+      Swal.fire('สำเร็จ', `คัดลอกข้อมูลไปยังปี ${newYear} เรียบร้อย`, 'success');
+      await loadAvailableYears();
+      setSelectedYear(newYear);
+    } catch {
+      Swal.fire('Error', 'ไม่สามารถคัดลอกข้อมูลได้', 'error');
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">จัดการเงินรางวัลการตีพิมพ์</h2>
-        <p className="text-gray-600 mt-2">กำหนดอัตราเงินรางวัลและวงเงินสนับสนุนค่าธรรมเนียม</p>
-      </div>
-
-      {/* Year Selector */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <label className="text-sm font-medium text-gray-700">ปีงบประมาณ:</label>
-          {years.length > 0 ? (
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {years.map(year => (
-                <option key={year} value={year}>พ.ศ. {year}</option>
-              ))}
-            </select>
-          ) : (
-            <span className="text-gray-500">กำลังโหลด...</span>
-          )}
+    <div className="bg-white rounded-lg shadow-sm p-8">
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">จัดการเงินรางวัลการตีพิมพ์</h2>
+          <p className="text-gray-600 mt-1">กำหนดอัตราเงินรางวัลและวงเงินสนับสนุนค่าธรรมเนียม</p>
         </div>
         {years.length > 0 && (
           <button
             onClick={copyToNewYear}
-            className="flex items-center px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600"
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
-            <FaCopy className="mr-2" />
+            <Copy size={16} />
             คัดลอกไปปีใหม่
           </button>
         )}
       </div>
 
-      {/* Sub Tab Navigation */}
+      {/* Year Selector */}
+      <div className="mb-5 flex items-center gap-3">
+        <label className="text-sm font-medium text-gray-700">ปีงบประมาณ:</label>
+        {years.length ? (
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            {years.map((y) => <option key={y} value={y}>พ.ศ. {y}</option>)}
+          </select>
+        ) : (
+          <span className="text-gray-500">กำลังโหลด...</span>
+        )}
+      </div>
+
+      {/* Sub Tabs */}
       <div className="border-b border-gray-200 mb-4">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex gap-6">
           <button
             onClick={() => setActiveSubTab('rates')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-2 border-b-2 text-sm ${
               activeSubTab === 'rates'
-                ? 'border-blue-500 text-blue-600'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -308,9 +347,9 @@ const RewardConfigManager = () => {
           </button>
           <button
             onClick={() => setActiveSubTab('configs')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-2 border-b-2 text-sm ${
               activeSubTab === 'configs'
-                ? 'border-blue-500 text-blue-600'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -321,307 +360,310 @@ const RewardConfigManager = () => {
 
       {/* Content */}
       {loading ? (
-        <div className="text-center py-8">
-          <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full border-t-blue-600"></div>
+        <div className="text-center py-10 text-gray-600">กำลังโหลดข้อมูล...</div>
+      ) : activeSubTab === 'rates' ? (
+        <div>
+          <div className="mb-4">
+            <button
+              onClick={() => {
+                setShowRateForm(true);
+                setEditingRate(null);
+                setRateFormData({
+                  year: selectedYear,
+                  author_status: '',
+                  journal_quartile: '',
+                  reward_amount: ''
+                });
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Plus size={16} />
+              เพิ่มอัตราใหม่
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    <button
+                      className="inline-flex items-center"
+                      onClick={() => toggleSort('rates', 'author_status')}
+                    >
+                      สถานะผู้นิพนธ์ {sortIcon(rateSort, 'author_status')}
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    <button
+                      className="inline-flex items-center"
+                      onClick={() => toggleSort('rates', 'journal_quartile')}
+                    >
+                      Quartile {sortIcon(rateSort, 'journal_quartile')}
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    <button
+                      className="inline-flex items-center"
+                      onClick={() => toggleSort('rates', 'reward_amount')}
+                    >
+                      จำนวนเงินรางวัล {sortIcon(rateSort, 'reward_amount')}
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
+                    <button
+                      className="inline-flex items-center"
+                      onClick={() => toggleSort('rates', 'is_active')}
+                    >
+                      สถานะ {sortIcon(rateSort, 'is_active')}
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
+                    จัดการ
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sortedRates.map((rate) => (
+                  <tr key={rate.rate_id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {authorLabel(rate.author_status)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {quartileOptions.find(q => q.value === rate.journal_quartile)?.label || rate.journal_quartile}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
+                      {new Intl.NumberFormat('th-TH').format(rate.reward_amount)} บาท
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <StatusBadge
+                        status={!!rate.is_active}
+                        interactive
+                        confirm={false}
+                        onChange={() => toggleStatus(rate.rate_id, rate.is_active, 'rate')}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                      <button
+                        onClick={() => {
+                          setEditingRate(rate);
+                          setRateFormData({
+                            year: rate.year,
+                            author_status: rate.author_status,
+                            journal_quartile: rate.journal_quartile,
+                            reward_amount: rate.reward_amount
+                          });
+                          setShowRateForm(true);
+                        }}
+                        className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg mr-1"
+                        title="แก้ไข"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => deleteItem(rate.rate_id, 'rate')}
+                        className="text-red-600 hover:bg-red-50 p-2 rounded-lg"
+                        title="ลบ"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
-        <>
-          {activeSubTab === 'rates' ? (
-            // Reward Rates Tab
-            <div>
-              <div className="mb-4">
-                <button
-                  onClick={() => {
-                    setShowRateForm(true);
-                    setEditingRate(null);
-                    setRateFormData({
-                      year: selectedYear,
-                      author_status: '',
-                      journal_quartile: '',
-                      reward_amount: ''
-                    });
-                  }}
-                  className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  <FaPlus className="mr-2" />
-                  เพิ่มอัตราใหม่
-                </button>
-              </div>
+        // ===== Fee Configs Tab =====
+        <div>
+          <div className="mb-4">
+            <button
+              onClick={() => {
+                setShowConfigForm(true);
+                setEditingConfig(null);
+                setConfigFormData({
+                  year: selectedYear,
+                  journal_quartile: '',
+                  max_amount: '',
+                  condition_description: ''
+                });
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Plus size={16} />
+              เพิ่มการกำหนดค่าใหม่
+            </button>
+          </div>
 
-              {/* Rates Table */}
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        สถานะผู้นิพนธ์
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Quartile
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        จำนวนเงินรางวัล
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        สถานะ
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        จัดการ
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {rewardRates
-                      .sort((a, b) => {
-                        const orderA = quartileOptions.find(q => q.value === a.journal_quartile)?.order || 999;
-                        const orderB = quartileOptions.find(q => q.value === b.journal_quartile)?.order || 999;
-                        if (orderA !== orderB) return orderA - orderB;
-                        return a.author_status.localeCompare(b.author_status);
-                      })
-                      .map((rate) => (
-                        <tr key={rate.rate_id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {authorStatusOptions.find(s => s.value === rate.author_status)?.label || rate.author_status}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {quartileOptions.find(q => q.value === rate.journal_quartile)?.label || rate.journal_quartile}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                            {new Intl.NumberFormat('th-TH').format(rate.reward_amount)} บาท
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
-                            <button
-                              onClick={() => toggleStatus(rate.rate_id, rate.is_active, 'rate')}
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                rate.is_active
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-red-100 text-red-800'
-                              }`}
-                            >
-                              {rate.is_active ? <FaToggleOn className="mr-1" /> : <FaToggleOff className="mr-1" />}
-                              {rate.is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
-                            </button>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                            <button
-                              onClick={() => {
-                                setEditingRate(rate);
-                                setRateFormData({
-                                  year: rate.year,
-                                  author_status: rate.author_status,
-                                  journal_quartile: rate.journal_quartile,
-                                  reward_amount: rate.reward_amount
-                                });
-                                setShowRateForm(true);
-                              }}
-                              className="text-indigo-600 hover:text-indigo-900 mr-3"
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              onClick={() => deleteItem(rate.rate_id, 'rate')}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <FaTrash />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : (
-            // Fee Configs Tab
-            <div>
-              <div className="mb-4">
-                <button
-                  onClick={() => {
-                    setShowConfigForm(true);
-                    setEditingConfig(null);
-                    setConfigFormData({
-                      year: selectedYear,
-                      journal_quartile: '',
-                      max_amount: '',
-                      condition_description: ''
-                    });
-                  }}
-                  className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  <FaPlus className="mr-2" />
-                  เพิ่มการกำหนดค่าใหม่
-                </button>
-              </div>
-
-              {/* Configs Table */}
-              <div className="overflow-x-auto">
-                {/* Debug: แสดงข้อมูลที่ได้มา */}
-                {console.log('Rendering configs:', rewardConfigs)}
-                {console.log('Configs length:', rewardConfigs.length)}
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Quartile
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        วงเงินสูงสุด
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        เงื่อนไข/หมายเหตุ
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        สถานะ
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        จัดการ
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {rewardConfigs
-                      .sort((a, b) => {
-                        const orderA = quartileOptions.find(q => q.value === a.journal_quartile)?.order || 999;
-                        const orderB = quartileOptions.find(q => q.value === b.journal_quartile)?.order || 999;
-                        return orderA - orderB;
-                      })
-                      .map((config) => (
-                        <tr key={config.config_id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {quartileOptions.find(q => q.value === config.journal_quartile)?.label || config.journal_quartile}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                            {config.max_amount > 0 
-                              ? `${new Intl.NumberFormat('th-TH').format(config.max_amount)} บาท`
-                              : 'ไม่สนับสนุน'
-                            }
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {config.condition_description || '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
-                            <button
-                              onClick={() => toggleStatus(config.config_id, config.is_active, 'config')}
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                config.is_active
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-red-100 text-red-800'
-                              }`}
-                            >
-                              {config.is_active ? <FaToggleOn className="mr-1" /> : <FaToggleOff className="mr-1" />}
-                              {config.is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
-                            </button>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                            <button
-                              onClick={() => {
-                                setEditingConfig(config);
-                                setConfigFormData({
-                                  year: config.year,
-                                  journal_quartile: config.journal_quartile,
-                                  max_amount: config.max_amount,
-                                  condition_description: config.condition_description || ''
-                                });
-                                setShowConfigForm(true);
-                              }}
-                              className="text-indigo-600 hover:text-indigo-900 mr-3"
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              onClick={() => deleteItem(config.config_id, 'config')}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <FaTrash />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    <button
+                      className="inline-flex items-center"
+                      onClick={() => toggleSort('configs', 'journal_quartile')}
+                    >
+                      Quartile {sortIcon(configSort, 'journal_quartile')}
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    <button
+                      className="inline-flex items-center"
+                      onClick={() => toggleSort('configs', 'max_amount')}
+                    >
+                      วงเงินสูงสุด {sortIcon(configSort, 'max_amount')}
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    <button
+                      className="inline-flex items-center"
+                      onClick={() => toggleSort('configs', 'condition_description')}
+                    >
+                      เงื่อนไข/หมายเหตุ {sortIcon(configSort, 'condition_description')}
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
+                    <button
+                      className="inline-flex items-center"
+                      onClick={() => toggleSort('configs', 'is_active')}
+                    >
+                      สถานะ {sortIcon(configSort, 'is_active')}
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
+                    จัดการ
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sortedConfigs.map((config) => (
+                  <tr key={config.config_id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {quartileOptions.find(q => q.value === config.journal_quartile)?.label || config.journal_quartile}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
+                      {config.max_amount > 0
+                        ? `${new Intl.NumberFormat('th-TH').format(config.max_amount)} บาท`
+                        : 'ไม่สนับสนุน'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {config.condition_description || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <StatusBadge
+                        status={!!config.is_active}
+                        interactive
+                        confirm={false}
+                        onChange={() => toggleStatus(config.config_id, config.is_active, 'config')}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                      <button
+                        onClick={() => {
+                          setEditingConfig(config);
+                          setConfigFormData({
+                            year: config.year,
+                            journal_quartile: config.journal_quartile,
+                            max_amount: config.max_amount,
+                            condition_description: config.condition_description || ''
+                          });
+                          setShowConfigForm(true);
+                        }}
+                        className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg mr-1"
+                        title="แก้ไข"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => deleteItem(config.config_id, 'config')}
+                        className="text-red-600 hover:bg-red-50 p-2 rounded-lg"
+                        title="ลบ"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
-      {/* Rate Form Modal */}
+      {/* ===== Rate Form Modal (เดิม) ===== */}
       {showRateForm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
-              {editingRate ? 'แก้ไขอัตราเงินรางวัล' : 'เพิ่มอัตราเงินรางวัล'}
-            </h3>
-            
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-gray-900">
+                {editingRate ? 'แก้ไขอัตราเงินรางวัล' : 'เพิ่มอัตราเงินรางวัล'}
+              </h3>
+              <button
+                onClick={() => { setShowRateForm(false); setEditingRate(null); }}
+                className="p-2 rounded-md hover:bg-gray-100"
+                title="ปิด"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  สถานะผู้นิพนธ์
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">สถานะผู้นิพนธ์</label>
                 <select
                   value={rateFormData.author_status}
-                  onChange={(e) => setRateFormData({...rateFormData, author_status: e.target.value})}
+                  onChange={(e) => setRateFormData({ ...rateFormData, author_status: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
                 >
                   <option value="">เลือกสถานะ</option>
-                  {authorStatusOptions.map(status => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
+                  {authorStatusOptions.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Journal Quartile
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Journal Quartile</label>
                 <select
                   value={rateFormData.journal_quartile}
-                  onChange={(e) => setRateFormData({...rateFormData, journal_quartile: e.target.value})}
+                  onChange={(e) => setRateFormData({ ...rateFormData, journal_quartile: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
                 >
                   <option value="">เลือก Quartile</option>
-                  {quartileOptions.map(quartile => (
-                    <option key={quartile.value} value={quartile.value}>
-                      {quartile.label}
-                    </option>
+                  {quartileOptions.map((q) => (
+                    <option key={q.value} value={q.value}>{q.label}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  จำนวนเงินรางวัล (บาท)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">จำนวนเงินรางวัล (บาท)</label>
                 <input
                   type="number"
                   value={rateFormData.reward_amount}
-                  onChange={(e) => setRateFormData({...rateFormData, reward_amount: e.target.value})}
+                  onChange={(e) => setRateFormData({ ...rateFormData, reward_amount: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min="0"
                   step="1000"
-                  required
+                  placeholder="เช่น 50000"
                 />
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end space-x-3">
+            <div className="mt-6 flex justify-end gap-3">
               <button
-                onClick={() => {
-                  setShowRateForm(false);
-                  setEditingRate(null);
-                }}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                onClick={() => { setShowRateForm(false); setEditingRate(null); }}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 ยกเลิก
               </button>
               <button
                 onClick={saveRate}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
+                <Save size={16} />
                 บันทึก
               </button>
             </div>
@@ -629,60 +671,57 @@ const RewardConfigManager = () => {
         </div>
       )}
 
-      {/* Config Form Modal */}
+      {/* ===== Config Form Modal (เดิม) ===== */}
       {showConfigForm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
-              {editingConfig ? 'แก้ไขวงเงินค่าธรรมเนียม' : 'เพิ่มวงเงินค่าธรรมเนียม'}
-            </h3>
-            
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-gray-900">
+                {editingConfig ? 'แก้ไขวงเงินค่าธรรมเนียม' : 'เพิ่มวงเงินค่าธรรมเนียม'}
+              </h3>
+              <button
+                onClick={() => { setShowConfigForm(false); setEditingConfig(null); }}
+                className="p-2 rounded-md hover:bg-gray-100"
+                title="ปิด"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Journal Quartile
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Journal Quartile</label>
                 <select
                   value={configFormData.journal_quartile}
-                  onChange={(e) => setConfigFormData({...configFormData, journal_quartile: e.target.value})}
+                  onChange={(e) => setConfigFormData({ ...configFormData, journal_quartile: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
                 >
                   <option value="">เลือก Quartile</option>
-                  {quartileOptions.map(quartile => (
-                    <option key={quartile.value} value={quartile.value}>
-                      {quartile.label}
-                    </option>
+                  {quartileOptions.map((q) => (
+                    <option key={q.value} value={q.value}>{q.label}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  วงเงินสูงสุด (บาท)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">วงเงินสูงสุด (บาท)</label>
                 <input
                   type="number"
                   value={configFormData.max_amount}
-                  onChange={(e) => setConfigFormData({...configFormData, max_amount: e.target.value})}
+                  onChange={(e) => setConfigFormData({ ...configFormData, max_amount: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min="0"
                   step="1000"
                   placeholder="0 = ไม่สนับสนุนค่าธรรมเนียม"
-                  required
                 />
-                <p className="mt-1 text-xs text-gray-500">
-                  ใส่ 0 หากไม่ต้องการสนับสนุนค่าธรรมเนียมสำหรับ Quartile นี้
-                </p>
+                <p className="mt-1 text-xs text-gray-500">ใส่ 0 หากไม่ต้องการสนับสนุนค่าธรรมเนียมสำหรับ Quartile นี้</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  เงื่อนไข/หมายเหตุ (ถ้ามี)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">เงื่อนไข/หมายเหตุ (ถ้ามี)</label>
                 <textarea
                   value={configFormData.condition_description}
-                  onChange={(e) => setConfigFormData({...configFormData, condition_description: e.target.value})}
+                  onChange={(e) => setConfigFormData({ ...configFormData, condition_description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows="3"
                   placeholder="เช่น เงื่อนไขพิเศษสำหรับ Quartile นี้"
@@ -690,20 +729,18 @@ const RewardConfigManager = () => {
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end space-x-3">
+            <div className="mt-6 flex justify-end gap-3">
               <button
-                onClick={() => {
-                  setShowConfigForm(false);
-                  setEditingConfig(null);
-                }}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                onClick={() => { setShowConfigForm(false); setEditingConfig(null); }}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 ยกเลิก
               </button>
               <button
                 onClick={saveConfig}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
+                <Save size={16} />
                 บันทึก
               </button>
             </div>
