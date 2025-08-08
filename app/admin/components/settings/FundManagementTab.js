@@ -35,7 +35,7 @@ const FundManagementTab = ({
   onDeleteBudget,
   onCopyToNewYear, // เพิ่ม prop สำหรับ copy year
 }) => {
-  // ====== Bulk select (เดิม) ======
+
   const [bulkMode, setBulkMode] = React.useState(false);
   const [selectedItems, setSelectedItems] = React.useState({
     categories: [],
@@ -429,14 +429,22 @@ const FundManagementTab = ({
                         className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors"
                         title="แก้ไขหมวดหมู่"
                       >
-                        <Edit size={16} />
+                        <Edit size={14} />
                       </button>
                       <button
                         onClick={() => confirmDeleteCategory(category)}
                         className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
                         title="ลบหมวดหมู่"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
+                      </button>
+
+                      <button
+                        onClick={() => onAddSubcategory(category)}
+                        className="text-green-700 hover:bg-green-50 p-2 rounded-lg transition-colors"
+                        title="เพิ่มทุนย่อย"
+                      >
+                        <Plus size={14} />
                       </button>
                     </div>
                   </div>
@@ -485,11 +493,8 @@ const FundManagementTab = ({
                                 )}
 
                                 <button
-                                  type="button"
-                                  className="flex items-center gap-3 cursor-pointer"
-                                  onClick={() =>
-                                    onToggleSubcategory(subcategory.subcategory_id)
-                                  }
+                                  className="flex items-center gap-2 flex-1 text-left"
+                                  onClick={() => onToggleSubcategory(subcategory.subcategory_id)}
                                 >
                                   {isExpanded ? (
                                     <ChevronDown size={18} className="text-gray-500" />
@@ -502,64 +507,74 @@ const FundManagementTab = ({
                                   <span className="text-sm text-gray-500">
                                     ({subcategory.budgets?.length || 0} งบประมาณ)
                                   </span>
+                                  <span className="text-xs text-gray-300">•</span>
+                                  <span className="hidden md:inline-flex items-center gap-1">
+                                    {(() => {
+                                      const parsedRoles = targetRolesUtils.parseTargetRoles(subcategory.target_roles);
+
+                                      // ถ้าไม่มี target_roles แสดง "-"
+                                      if (!parsedRoles || parsedRoles.length === 0) {
+                                        return "";
+                                      }
+
+                                      // แปลง roleId -> display name
+                                      const roleNames = parsedRoles.map(
+                                        (roleId) => targetRolesUtils.getRoleDisplayName(roleId) || `Role ${roleId}`
+                                      );
+
+                                      // fix สีเฉพาะบทบาท
+                                      const colorMap = {
+                                        "อาจารย์": "bg-blue-100 text-blue-800 border-blue-200",
+                                        "เจ้าหน้าที่": "bg-yellow-100 text-yellow-800 border-yellow-200",
+                                        "ผู้ดูแลระบบ": "bg-gray-100 text-gray-800 border-gray-200"
+                                      };
+                                      const fallback = "bg-gray-100 text-gray-700 border-gray-200";
+
+                                      return roleNames.map((name) => (
+                                        <span
+                                          key={name}
+                                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${colorMap[name] || fallback}`}
+                                        >
+                                          {name}
+                                        </span>
+                                      ));
+                                    })()}
+                                  </span>
                                 </button>
                               </div>
 
                               <div className="flex items-center gap-4">
                                 <StatusBadge status={subcategory.status} />
-                                <div className="flex gap-2">
+                                  <div className="flex items-center gap-2">
                                   <button
-                                    onClick={() =>
-                                      onEditSubcategory(subcategory, category)
-                                    }
+                                    onClick={() => onEditSubcategory(subcategory, category)}
                                     className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors"
                                     title="แก้ไขทุนย่อย"
                                   >
                                     <Edit size={14} />
                                   </button>
                                   <button
-                                    onClick={() =>
-                                      confirmDeleteSubcategory(subcategory, category)
-                                    }
+                                    onClick={() => confirmDeleteSubcategory(subcategory, category)}
                                     className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
                                     title="ลบทุนย่อย"
                                   >
                                     <Trash2 size={14} />
                                   </button>
+                                  {/* ปุ่มเพิ่มงบประมาณย้ายมาที่นี่ */}
+                                  <button
+                                    onClick={() => onAddBudget(subcategory, category)}
+                                    className="text-green-700 hover:bg-green-50 p-2 rounded-lg transition-colors"
+                                    title="เพิ่มงบประมาณ"
+                                  >
+                                    <Plus size={14} />
+                                  </button>
                                 </div>
                               </div>
                             </div>
 
-                            {/* Target roles */}
-                            {isExpanded && (
-                              <div className="px-6 pb-2 text-sm text-gray-600">
-                                กลุ่มเป้าหมาย:{" "}
-                                {Array.isArray(subcategory.target_roles) &&
-                                subcategory.target_roles.length > 0
-                                  ? targetRolesUtils
-                                      .mapRolesToLabelList(subcategory.target_roles)
-                                      .join(", ")
-                                  : "-"}
-                              </div>
-                            )}
-
                             {/* Budgets */}
                             {isExpanded && (
                               <div className="bg-gray-50">
-                                <div className="px-6 py-2 flex items-center justify-between">
-                                  <div className="text-sm text-gray-500">
-                                    รายการงบประมาณ
-                                  </div>
-                                  <button
-                                    onClick={() => onAddBudget(subcategory, category)}
-                                    className="text-green-700 hover:bg-green-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2"
-                                    title="เพิ่มงบประมาณ"
-                                  >
-                                    <Plus size={14} />
-                                    เพิ่มงบประมาณ
-                                  </button>
-                                </div>
-
                                 <div className="divide-y divide-gray-200">
                                   {subcategory.budgets &&
                                   subcategory.budgets.length > 0 ? (

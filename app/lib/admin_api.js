@@ -988,14 +988,14 @@ export const adminAPI = {
   },
 
   validateBudgetData(budgetData) {
-    const required = ['subcategory_id', 'allocated_amount'];
+    const required = ['subcategory_id']; 
     const missing = required.filter(field => !budgetData[field]);
     
     if (missing.length > 0) {
       throw new Error(`Missing required fields: ${missing.join(', ')}`);
     }
     
-    if (isNaN(parseFloat(budgetData.allocated_amount)) || parseFloat(budgetData.allocated_amount) <= 0) {
+    if (budgetData.allocated_amount && (isNaN(parseFloat(budgetData.allocated_amount)) || parseFloat(budgetData.allocated_amount) <= 0)) {
       throw new Error('Allocated amount must be a positive number');
     }
     
