@@ -51,7 +51,17 @@ const StatusBadge = ({
       if (!res.isConfirmed) return;
     }
 
-    await onChange(next);
+    try {
+      await onChange(next);
+    } catch (error) {
+      console.error("Error changing status:", error);
+      // แสดง error message
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: error.message || 'ไม่สามารถเปลี่ยนสถานะได้',
+      });
+    }
   };
 
   const content = (

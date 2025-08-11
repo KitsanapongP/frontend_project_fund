@@ -33,7 +33,10 @@ const FundManagementTab = ({
   onAddBudget,
   onEditBudget,
   onDeleteBudget,
-  onCopyToNewYear, // เพิ่ม prop สำหรับ copy year
+  onToggleCategoryStatus,
+  onToggleSubcategoryStatus,
+  onToggleBudgetStatus,
+  onCopyToNewYear,
 }) => {
 
   const [bulkMode, setBulkMode] = React.useState(false);
@@ -422,7 +425,12 @@ const FundManagementTab = ({
                   </div>
 
                   <div className="flex items-center gap-4">
-                    <StatusBadge status={category.status} />
+                  <StatusBadge
+                    status={category.status}
+                    interactive
+                    confirm
+                    onChange={(next) => onToggleCategoryStatus?.(category, next)}
+                  />
                     <div className="flex gap-2">
                       <button
                         onClick={() => onEditCategory(category)}
@@ -544,7 +552,12 @@ const FundManagementTab = ({
                               </div>
 
                               <div className="flex items-center gap-4">
-                                <StatusBadge status={subcategory.status} />
+                                <StatusBadge
+                                  status={subcategory.status}
+                                  interactive
+                                  confirm
+                                  onChange={(next) => onToggleSubcategoryStatus?.(subcategory, category, next)}
+                                />
                                   <div className="flex items-center gap-2">
                                   <button
                                     onClick={() => onEditSubcategory(subcategory, category)}
@@ -646,7 +659,7 @@ const FundManagementTab = ({
                                                 status={budget.status}
                                                 interactive
                                                 confirm
-                                                onChange={(next) => handleToggleBudgetStatus(budget, subcategory, next)}
+                                                onChange={(next) => onToggleBudgetStatus?.(budget, subcategory, category, next)}
                                               />
                                               <div className="flex gap-2">
                                                 <button

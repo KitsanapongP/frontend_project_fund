@@ -335,6 +335,26 @@ export default function FundSettingsContent({ onNavigate }) {
     }
   };
 
+  const handleToggleCategoryStatus = async (category, nextActive, selectedYearObj) => {
+    const newStatus = nextActive ? "active" : "disable"; // << สำคัญ: ไม่ใช่ "inactive"
+    const payload = {
+      category_name: category.category_name,
+      status: newStatus,
+      year_id: selectedYearObj?.year_id ?? category.year_id, // กันพลาด
+    };
+
+    try {
+      await adminAPI.updateCategory(category.category_id, payload);
+      setCategories(prev => prev.map(c =>
+        c.category_id === category.category_id ? { ...c, status: newStatus } : c
+      ));
+      showSuccess("เปลี่ยนสถานะหมวดหมู่เรียบร้อย");
+    } catch (e) {
+      console.error(e);
+      showError("เปลี่ยนสถานะหมวดหมู่ไม่สำเร็จ");
+    }
+  };
+
   // ==================== SUBCATEGORY MANAGEMENT HANDLERS ====================
   
   const handleAddSubcategory = (category) => {
@@ -465,7 +485,41 @@ export default function FundSettingsContent({ onNavigate }) {
     }
   };
 
-  // ==================== BUDGET MANAGEMENT HANDLERS ====================
+  const handleToggleSubcategoryStatus = async (subcategory, category, nextActive) => {
+    const newStatus = nextActive ? "active" : "disable"; // << สำคัญ: ไม่ใช่ "inactive"
+
+    // อ้างอิง SubcategoryModal: ใช้ budget ตัวแรกช่วยหา allocated_amount/remaining_budget
+    const firstBudget = subcategory.budgets?.[0] || {};
+    const payload = {
+      subcategory_name: subcategory.subcategory_name ?? "",
+      fund_condition: subcategory.fund_condition ?? "",
+      target_roles: Array.isArray(subcategory.target_roles) ? subcategory.target_roles : [],
+      allocated_amount: Number(firstBudget.allocated_amount || 0), // modal บังคับส่งตัวนี้
+      // ไม่ส่ง remaining_budget เพราะ backend คำนวณเอง
+      status: newStatus,
+    };
+
+    try {
+      await adminAPI.updateSubcategory(subcategory.subcategory_id, payload);
+      setCategories(prev => prev.map(c => {
+        if (c.category_id !== category.category_id) return c;
+        return {
+          ...c,
+          subcategories: c.subcategories.map(s =>
+            s.subcategory_id === subcategory.subcategory_id
+              ? { ...s, status: newStatus }
+              : s
+          ),
+        };
+      }));
+      showSuccess("เปลี่ยนสถานะทุนย่อยเรียบร้อย");
+    } catch (e) {
+      console.error(e);
+      showError("เปลี่ยนสถานะทุนย่อยไม่สำเร็จ");
+    }
+  };
+
+// ==================== BUDGET MANAGEMENT HANDLERS ====================
   
   const handleAddBudget = (subcategory, category) => {
     setEditingBudget(null);
@@ -579,6 +633,40 @@ export default function FundSettingsContent({ onNavigate }) {
       setLoading(false);
     }
   };
+
+  const handleToggleBudgetStatus = async (budget, subcategory, category, nextActive) => {
+    // nextActive: boolean -> เราอัปเดต state เองแบบ optimistic
+    const newStatus = nextActive ? "active" : "inactive";
+
+    try {
+      await adminAPI.toggleBudgetStatus(budget.subcategory_budget_id);
+
+      // อัปเดต state ฝั่ง UI
+      setCategories(prev => prev.map(c => {
+        if (c.category_id !== category.category_id) return c;
+        return {
+          ...c,
+          subcategories: c.subcategories.map(s => {
+            if (s.subcategory_id !== subcategory.subcategory_id) return s;
+            return {
+              ...s,
+              budgets: s.budgets.map(b =>
+                b.subcategory_budget_id === budget.subcategory_budget_id
+                  ? { ...b, status: newStatus }
+                  : b
+              ),
+            };
+          }),
+        };
+      }));
+
+      showSuccess("เปลี่ยนสถานะงบประมาณเรียบร้อย");
+    } catch (e) {
+      console.error(e);
+      showError("เปลี่ยนสถานะงบประมาณไม่สำเร็จ");
+    }
+  };
+
 
   // ==================== OTHER HANDLERS ====================
   
@@ -721,7 +809,12 @@ export default function FundSettingsContent({ onNavigate }) {
           onAddBudget={handleAddBudget}
           onEditBudget={handleEditBudget}
           onDeleteBudget={handleDeleteBudget}
-        />
+          onToggleCategoryStatus={(category, next) =>
+            handleToggleCategoryStatus(category, next, selectedYear)
+          }
+          onToggleSubcategoryStatus={handleToggleSubcategoryStatus}
+          onToggleBudgetStatus={handleToggleBudgetStatus}
+          />
       )}
       
       {activeTab === "years" && (

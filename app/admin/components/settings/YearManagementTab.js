@@ -188,7 +188,6 @@ const YearManagementTab = ({ years = [], onSaveYear, onDeleteYear }) => {
                     {new Intl.NumberFormat("th-TH").format(item.budget || 0)} บาท
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    {/* ใช้คอมโพเนนต์เดิม */}
                     <StatusBadge
                       status={item.status}
                       interactive
