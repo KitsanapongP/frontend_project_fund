@@ -19,7 +19,7 @@ const BudgetModal = ({
   useEffect(() => {
     if (editingBudget) {
       setBudgetForm({
-        allocated_amount: editingBudget.allocated_amount?.toString() || "",
+        allocated_amount: editingBudget.allocated_amount?.toString() || "", 
         max_amount_per_grant: editingBudget.max_amount_per_grant?.toString() || "",
         max_grants: editingBudget.max_grants?.toString() || "",
         fund_description: editingBudget.fund_description || "",
@@ -44,7 +44,6 @@ const BudgetModal = ({
       ...budgetForm,
       allocated_amount: parseFloat(budgetForm.allocated_amount) || 0,
       max_amount_per_grant: parseFloat(budgetForm.max_amount_per_grant) || 0,
-      // max_grants: ถ้าไม่กรอกหรือกรอก 0 ให้เป็น null (ไม่จำกัด)
       max_grants: budgetForm.max_grants && budgetForm.max_grants !== "0" && budgetForm.max_grants !== "" 
         ? parseInt(budgetForm.max_grants) 
         : null
@@ -59,6 +58,7 @@ const BudgetModal = ({
       status: "active"
     });
   };
+
 
   if (!isOpen) return null;
 

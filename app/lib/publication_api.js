@@ -180,7 +180,13 @@ export const publicationDetailsAPI = {
         url: details.url,
         page_numbers: details.page_numbers,
         volume_issue: details.volume_issue,
+        // ตรวจสอบว่ามี fields เหล่านี้หรือไม่
         indexing: details.indexing,
+        in_isi: details.in_isi,
+        in_scopus: details.in_scopus,
+        in_web_of_science: details.in_web_of_science,
+        in_tci: details.in_tci,
+        
         
         // เงินรางวัลและการคำนวณ
         publication_reward: details.reward_amount,
@@ -193,16 +199,17 @@ export const publicationDetailsAPI = {
         author_count: details.author_count,
         is_corresponding_author: details.is_corresponding_author,
         author_status: details.author_status,
+        author_type: details.author_status, // เพิ่ม author_type (ใช้ค่าเดียวกับ author_status)
         
         // ข้อมูลธนาคาร
         bank_account: details.bank_account,
         bank_name: details.bank_name,
         phone_number: details.phone_number,
         
-        // อื่นๆ
-        university_ranking: details.university_ranking,
-        has_university_fund: details.has_university_fund,
-        university_fund_ref: details.university_fund_ref
+        // ข้อมูลอื่นๆ
+        has_university_funding: details.has_university_funding,
+        funding_references: details.funding_references,
+        university_rankings: details.university_rankings,
       });
       return response;
     } catch (error) {
@@ -481,6 +488,83 @@ export const publicationFormAPI = {
   }
 };
 
+// เพิ่มที่ด้านบนของไฟล์ หลัง import apiClient
+// ========= เพิ่ม API สำหรับ Publication Reward Rates =========
+export const publicationRewardRatesAPI = {
+  // ดึงอัตราเงินรางวัลตามปี
+  async getRatesByYear(year) {
+    try {
+      const response = await apiClient.get(`/publication-rewards/rates?year=${year}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching reward rates:', error);
+      throw error;
+    }
+  },
+
+  // ค้นหาเงินรางวัลเฉพาะ
+  async lookupRewardAmount(year, authorStatus, quartile) {
+    try {
+      const response = await apiClient.get(`/publication-rewards/rates/lookup?year=${year}&author_status=${authorStatus}&quartile=${quartile}`);
+      return response;
+    } catch (error) {
+      console.error('Error looking up reward amount:', error);
+      throw error;
+    }
+  },
+
+  // ดึงข้อมูลทั้งหมด
+  async getAllRates() {
+    try {
+      const response = await apiClient.get('/publication-rewards/rates/all');
+      return response;
+    } catch (error) {
+      console.error('Error fetching all rates:', error);
+      throw error;
+    }
+  },
+
+  // ดึงรายการปีที่มีข้อมูล
+  async getAvailableYears() {
+    try {
+      const response = await apiClient.get('/publication-rewards/rates/years');
+      return response;
+    } catch (error) {
+      console.error('Error fetching available years:', error);
+      throw error;
+    }
+  }
+};
+
+// ========= เพิ่ม API สำหรับ Reward Config (manuscript & page charge fees) =========
+export const rewardConfigAPI = {
+  // ดึงข้อมูลการตั้งค่าเงินรางวัล
+  async getConfig(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const response = await apiClient.get(`/reward-config${queryString ? `?${queryString}` : ''}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching reward config:', error);
+      throw error;
+    }
+  },
+
+  // ค้นหาวงเงินสำหรับการคำนวณ
+  async lookupMaxAmount(year, quartile) {
+    try {
+      const response = await apiClient.get(`/reward-config/lookup?year=${year}&quartile=${quartile}`);
+      return response;
+    } catch (error) {
+      // ถ้าเป็น 404 หรือไม่พบ config ให้ return default value
+      if (error.status === 404 || (error.message && error.message.includes('not found'))) {
+        return { max_amount: 0 };
+      }
+      throw error;
+    }
+  }
+};
+
 // Export all APIs
 export default {
   submission: submissionAPI,
@@ -489,5 +573,7 @@ export default {
   file: fileAPI,
   document: documentAPI,
   publicationReward: publicationRewardAPI,
-  form: publicationFormAPI
+  form: publicationFormAPI,
+  publicationRewardRates: publicationRewardRatesAPI,
+  rewardConfig: rewardConfigAPI
 };

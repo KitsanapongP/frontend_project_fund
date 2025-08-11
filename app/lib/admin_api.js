@@ -703,6 +703,233 @@ export const adminAPI = {
       throw error;
     }
   },
+  
+  // ==================== PUBLICATION REWARD RATES MANAGEMENT ====================
+
+  async getPublicationRewardRatesYears() {
+    try {
+      const response = await apiClient.get('/publication-rewards/rates/years');
+      return response;
+    } catch (error) {
+      console.error('Error fetching reward rates years:', error);
+      throw error;
+    }
+  },
+
+  // Get rates - ใช้ public endpoint
+  async getPublicationRewardRates(year) {
+    try {
+      const response = await apiClient.get('/publication-rewards/rates/admin', { year });
+      return response;
+    } catch (error) {
+      console.error('Error fetching publication reward rates:', error);
+      throw error;
+    }
+  },
+
+  // Create rate - Admin endpoint
+  async createPublicationRewardRate(rateData) {
+    try {
+      const response = await apiClient.post('/publication-rewards/rates', rateData);
+      return response;
+    } catch (error) {
+      console.error('Error creating publication reward rate:', error);
+      throw error;
+    }
+  },
+
+  // Update rate - Admin endpoint
+  async updatePublicationRewardRate(rateId, rateData) {
+    try {
+      const response = await apiClient.put(`/publication-rewards/rates/${rateId}`, rateData);
+      return response;
+    } catch (error) {
+      console.error('Error updating publication reward rate:', error);
+      throw error;
+    }
+  },
+
+  // Delete rate - Admin endpoint
+  async deletePublicationRewardRate(rateId) {
+    try {
+      const response = await apiClient.delete(`/publication-rewards/rates/${rateId}`);
+      return response;
+    } catch (error) {
+      console.error('Error deleting publication reward rate:', error);
+      throw error;
+    }
+  },
+
+  // Toggle status - Admin endpoint
+  async togglePublicationRewardRateStatus(rateId) {
+    try {
+      const response = await apiClient.post(`/publication-rewards/rates/${rateId}/toggle`);
+      return response;
+    } catch (error) {
+      console.error('Error toggling publication reward rate status:', error);
+      throw error;
+    }
+  },
+
+  // Bulk update rates - Admin endpoint
+  async bulkUpdatePublicationRewardRates(updates) {
+    try {
+      const response = await apiClient.put('/publication-rewards/rates/bulk', updates);
+      return response;
+    } catch (error) {
+      console.error('Error bulk updating rates:', error);
+      throw error;
+    }
+  },
+
+  // Copy rates to new year - ยังไม่มี API นี้ใน docs แต่เราสามารถทำได้ด้วย bulk create
+  async copyPublicationRewardRates(fromYear, toYear) {
+    try {
+      // ดึงข้อมูลปีเก่า
+      const oldRates = await apiClient.get('/publication-rewards/rates', { year: fromYear });
+      
+      // สร้างข้อมูลใหม่สำหรับปีใหม่
+      const newRates = oldRates.rates.map(rate => ({
+        year: toYear,
+        author_status: rate.author_status,
+        journal_quartile: rate.journal_quartile,
+        reward_amount: rate.reward_amount
+      }));
+      
+      // สร้างทีละรายการ (หรือใช้ bulk ถ้ามี)
+      const promises = newRates.map(rate => 
+        apiClient.post('/publication-rewards/rates', rate)
+      );
+      
+      await Promise.all(promises);
+      return { success: true, message: `Copied ${newRates.length} rates to year ${toYear}` };
+    } catch (error) {
+      console.error('Error copying rates:', error);
+      throw error;
+    }
+  },
+
+  // ==================== REWARD CONFIG MANAGEMENT ====================
+
+  async getRewardConfigYears() {
+    try {
+      // ดึงข้อมูลทั้งหมดแล้วเอาปีที่ unique
+      const response = await apiClient.get('/reward-config');
+      if (response.data) {
+        const years = [...new Set(response.data.map(config => config.year))];
+        return { years: years.sort((a, b) => b - a) };
+      }
+      return { years: [] };
+    } catch (error) {
+      console.error('Error fetching reward config years:', error);
+      throw error;
+    }
+  },
+
+  async getRewardConfigs(year) {
+    try {
+      // ใช้ admin endpoint เพื่อดูทั้ง active และ inactive
+      const response = await apiClient.get('/admin/reward-config', { 
+        params: { year }
+      });
+      console.log('Admin reward configs:', response);
+      return response;
+    } catch (error) {
+      console.error('Error fetching reward configs:', error);
+      throw error;
+    }
+  },
+
+  // Lookup max amount for specific quartile (for teacher form validation)
+  async lookupMaxAmount(year, journal_quartile) {
+    try {
+      // ใช้ public endpoint (ดูเฉพาะ active)
+      const response = await apiClient.get('/reward-config/lookup', {
+        params: {
+          year,
+          journal_quartile
+        }
+      });
+      return response.max_amount || 0;
+    } catch (error) {
+      console.error('Error looking up max amount:', error);
+      return 0;
+    }
+  },
+
+  // Create config - Admin endpoint (มี dash)
+  async createRewardConfig(configData) {
+    try {
+      const response = await apiClient.post('/admin/reward-config', configData);
+      return response;
+    } catch (error) {
+      console.error('Error creating reward config:', error);
+      throw error;
+    }
+  },
+
+  // Update config - Admin endpoint (มี dash)
+  async updateRewardConfig(configId, configData) {
+    try {
+      const response = await apiClient.put(`/admin/reward-config/${configId}`, configData);
+      return response;
+    } catch (error) {
+      console.error('Error updating reward config:', error);
+      throw error;
+    }
+  },
+
+  // Delete config - Admin endpoint (มี dash)
+  async deleteRewardConfig(configId) {
+    try {
+      const response = await apiClient.delete(`/admin/reward-config/${configId}`);
+      return response;
+    } catch (error) {
+      console.error('Error deleting reward config:', error);
+      throw error;
+    }
+  },
+
+  async toggleRewardConfigStatus(configId) {
+    try {
+      if (!configId) {
+        throw new Error('Config ID is required');
+      }
+      // ไม่ต้องส่ง body และไม่ต้องใส่ /api/v1 (base มีแล้ว)
+      const response = await apiClient.post(`/admin/reward-config/${configId}/toggle`);
+      return response;
+    } catch (error) {
+      console.error('Error toggling config status:', error);
+      throw error;
+    }
+  },
+
+  // Copy configs to new year - implement ด้วยการดึงและสร้างใหม่
+  async copyRewardConfigs(fromYear, toYear) {
+    try {
+      // ดึงข้อมูลปีเก่า
+      const oldConfigs = await apiClient.get('/reward-config', { year: fromYear });
+      
+      // สร้างข้อมูลใหม่สำหรับปีใหม่
+      const newConfigs = oldConfigs.data.map(config => ({
+        year: toYear,
+        journal_quartile: config.journal_quartile,
+        max_amount: config.max_amount,
+        condition_description: config.condition_description
+      }));
+      
+      // สร้างทีละรายการ
+      const promises = newConfigs.map(config => 
+        apiClient.post('/admin/reward-config', config)
+      );
+      
+      await Promise.all(promises);
+      return { success: true, message: `Copied ${newConfigs.length} configs to year ${toYear}` };
+    } catch (error) {
+      console.error('Error copying configs:', error);
+      throw error;
+    }
+  },
 
   // ==================== VALIDATION UTILITIES ====================
   
@@ -761,14 +988,14 @@ export const adminAPI = {
   },
 
   validateBudgetData(budgetData) {
-    const required = ['subcategory_id', 'allocated_amount'];
+    const required = ['subcategory_id']; 
     const missing = required.filter(field => !budgetData[field]);
     
     if (missing.length > 0) {
       throw new Error(`Missing required fields: ${missing.join(', ')}`);
     }
     
-    if (isNaN(parseFloat(budgetData.allocated_amount)) || parseFloat(budgetData.allocated_amount) <= 0) {
+    if (budgetData.allocated_amount && (isNaN(parseFloat(budgetData.allocated_amount)) || parseFloat(budgetData.allocated_amount) <= 0)) {
       throw new Error('Allocated amount must be a positive number');
     }
     

@@ -207,9 +207,6 @@ const SubcategoryModal = ({
                   <span className="ml-2 text-sm text-gray-600">เจ้าหน้าที่</span>
                 </label>
               </div>
-              <p className="mt-2 text-xs text-gray-500">
-                * หากไม่เลือกบทบาทใด จะมีเฉพาะผู้ดูแลระบบเท่านั้นที่เห็นทุนนี้
-              </p>
             </div>
             
             <div>
