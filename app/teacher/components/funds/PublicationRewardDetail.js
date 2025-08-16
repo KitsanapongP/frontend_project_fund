@@ -41,15 +41,34 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
   const loadSubmissionDetail = async () => {
     setLoading(true);
     try {
+      // โหลด submission detail
       const response = await submissionAPI.getSubmission(submissionId);
       console.log('Submission Detail:', response);
-      setSubmission(response.submission || response);
+      
+      // ถ้า API ไม่ส่ง submission_users มา ให้โหลดแยก
+      let submissionData = response.submission || response;
+      
+      // ตรวจสอบว่ามี submission_users หรือไม่
+      if (!submissionData.submission_users || submissionData.submission_users.length === 0) {
+        try {
+          // โหลด users แยก (ถ้ามี API endpoint)
+          const usersResponse = await submissionAPI.getSubmissionUsers(submissionId);
+          if (usersResponse && usersResponse.users) {
+            submissionData.submission_users = usersResponse.users;
+          }
+        } catch (error) {
+          console.log('Could not load submission users separately');
+        }
+      }
+      
+      setSubmission(submissionData);
     } catch (error) {
       console.error('Error loading submission detail:', error);
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleBack = () => {
     if (onNavigate) {
@@ -414,6 +433,7 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
       {activeTab === 'authors' && (
         <Card title="รายชื่อผู้แต่งร่วม" icon={Users}>
           <div className="space-y-4">
+            {/* ตรวจสอบว่ามีข้อมูล submission_users หรือไม่ */}
             {submission.submission_users && submission.submission_users.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -437,39 +457,42 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {submission.submission_users.map((user, index) => (
-                      <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {user.display_order || index + 1}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <User className="h-5 w-5 text-gray-400 mr-2" />
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {user.user?.user_fname} {user.user?.user_lname}
+                    {submission.submission_users
+                      .filter(user => user.role === 'coauthor' || user.role === 'co_author')
+                      .sort((a, b) => a.display_order - b.display_order)
+                      .map((user, index) => (
+                        <tr key={user.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            {index + 1}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <User className="h-5 w-5 text-gray-400 mr-2" />
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {/* แก้ไขการแสดงชื่อให้ถูกต้อง */}
+                                  {user.User?.user_fname || user.user?.user_fname} {user.User?.user_lname || user.user?.user_lname}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.user?.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className="px-2 py-1 text-xs rounded-full bg-gray-100">
-                            {user.role === 'owner' ? 'เจ้าของผลงาน' :
-                             user.role === 'coauthor' ? 'ผู้แต่งร่วม' : user.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {user.is_primary ? (
-                            <span className="text-green-600">หลัก</span>
-                          ) : (
-                            <span className="text-gray-400">ร่วม</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {user.User?.email || user.user?.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <span className="px-2 py-1 text-xs rounded-full bg-gray-100">
+                              ผู้แต่งร่วม
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            {user.is_primary ? (
+                              <span className="text-green-600">หลัก</span>
+                            ) : (
+                              <span className="text-gray-400">ร่วม</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>

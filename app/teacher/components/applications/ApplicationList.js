@@ -66,12 +66,16 @@ export default function ApplicationList({ onNavigate }) {
   // Helper functions to extract data
   const getTitle = (submission) => {
     if (submission.submission_type === 'publication_reward') {
-      return submission.PublicationRewardDetail?.paper_title || 
-             submission.publication_reward_detail?.paper_title ||
+      // แก้จาก paper_title เป็น article_title
+      return submission.PublicationRewardDetail?.article_title || 
+            submission.publication_reward_detail?.article_title ||
              'เงินรางวัลตีพิมพ์';
     } else if (submission.submission_type === 'fund_application') {
-      return submission.FundApplicationDetail?.project_title ||
-             submission.fund_application_detail?.project_title ||
+      // แก้จาก project_title เป็น project_name_th/project_name_en
+      return submission.FundApplicationDetail?.project_name_th ||
+            submission.FundApplicationDetail?.project_name_en ||
+            submission.fund_application_detail?.project_name_th ||
+            submission.fund_application_detail?.project_name_en ||
              'ทุนวิจัย';
     }
     return 'ไม่ระบุ';
