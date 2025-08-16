@@ -23,9 +23,9 @@ import {
   FileCheck
 } from "lucide-react";
 import { submissionAPI } from "@/app/lib/teacher_api";
-import PageLayout from "../../../staff/components/common/PageLayout";
-import Card from "../../../staff/components/common/Card";
-import StatusBadge from "../../../staff/components/common/StatusBadge";
+import PageLayout from "../common/PageLayout";
+import Card from "../common/Card";
+import StatusBadge from "../common/StatusBadge";
 
 export default function PublicationRewardDetail({ submissionId, onNavigate }) {
   const [submission, setSubmission] = useState(null);
