@@ -67,16 +67,18 @@ export default function ApplicationList({ onNavigate }) {
   const getTitle = (submission) => {
     if (submission.submission_type === 'publication_reward') {
       // แก้จาก paper_title เป็น article_title
-      return submission.PublicationRewardDetail?.article_title || 
-            submission.publication_reward_detail?.article_title ||
-             'เงินรางวัลตีพิมพ์';
+      return submission.PublicationRewardDetail?.paper_title || 
+            submission.publication_reward_detail?.paper_title ||
+            'เงินรางวัลตีพิมพ์';
     } else if (submission.submission_type === 'fund_application') {
-      // แก้จาก project_title เป็น project_name_th/project_name_en
+      // แก้จาก project_title เป็น project_name_th/project_name_enz
       return submission.FundApplicationDetail?.project_name_th ||
             submission.FundApplicationDetail?.project_name_en ||
+            submission.FundApplicationDetail?.project_title ||
             submission.fund_application_detail?.project_name_th ||
             submission.fund_application_detail?.project_name_en ||
-             'ทุนวิจัย';
+            submission.fund_application_detail?.project_title ||
+            'ทุนวิจัย';
     }
     return 'ไม่ระบุ';
   };
