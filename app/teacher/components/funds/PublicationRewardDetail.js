@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { 
-  ArrowLeft, 
-  FileText, 
-  Calendar, 
-  User, 
-  BookOpen, 
-  Award, 
+  ArrowLeft,
+  FileText,
+  Calendar,
+  User,
+  BookOpen,
+  Award,
   DollarSign,
   Clock,
   CheckCircle,
@@ -21,7 +21,7 @@ import {
   Link,
   Hash,
   Building,
-  FileCheck
+  FileCheck,
 } from "lucide-react";
 import { submissionAPI, submissionUsersAPI } from "@/app/lib/teacher_api";
 import apiClient from "@/app/lib/api";
@@ -32,12 +32,12 @@ import { formatCurrency } from "@/app/utils/format";
 
 const getStatusName = (statusId) => {
   const statuses = {
-    1: 'รอพิจารณา',
-    2: 'อนุมัติ',
-    3: 'ไม่อนุมัติ',
-    4: 'ต้องแก้ไข',
+    1: "รอพิจารณา",
+    2: "อนุมัติ",
+    3: "ไม่อนุมัติ",
+    4: "ต้องแก้ไข",
   };
-  return statuses[statusId] || 'ไม่ทราบสถานะ';
+  return statuses[statusId] || "ไม่ทราบสถานะ";
 };
 
 const getStatusIcon = (statusId) => {
@@ -56,11 +56,11 @@ const getStatusIcon = (statusId) => {
 export default function PublicationRewardDetail({ submissionId, onNavigate }) {
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState("details");
 
   const getUserFullName = (user) => {
     if (!user) return "-";
-    
+
     const firstName =
       user.user_fname ||
       user.first_name ||
@@ -240,44 +240,46 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
     );
   }
 
-// Extract publication details
-const pubDetail = submission.PublicationRewardDetail ||
-                  submission.publication_reward_detail || {};
+  // Extract publication details
+  const pubDetail =
+    submission.PublicationRewardDetail ||
+    submission.publication_reward_detail ||
+    {};
 
-// Approved amounts may come from different fields depending on API version
-const toNumber = (val) =>
-  val !== undefined && val !== null ? Number(val) : null;
+  // Approved amounts may come from different fields depending on API version
+  const toNumber = (val) =>
+    val !== undefined && val !== null ? Number(val) : null;
 
-const approvedReward = toNumber(
-  pubDetail?.reward_approve_amount ??
-    pubDetail?.reward_approved_amount
-);
-const approvedRevision = toNumber(
-  pubDetail?.revision_fee_approve_amount ??
-    pubDetail?.revision_fee_approved_amount
-);
-const approvedPublication = toNumber(
-  pubDetail?.publication_fee_approve_amount ??
-    pubDetail?.publication_fee_approved_amount
-);
+  const approvedReward = toNumber(
+    pubDetail?.reward_approve_amount ?? pubDetail?.reward_approved_amount,
+  );
+  const approvedRevision = toNumber(
+    pubDetail?.revision_fee_approve_amount ??
+      pubDetail?.revision_fee_approved_amount,
+  );
+  const approvedPublication = toNumber(
+    pubDetail?.publication_fee_approve_amount ??
+      pubDetail?.publication_fee_approved_amount,
+  );
 
-const approvedTotalRaw =
-  pubDetail?.total_approve_amount ??
-  pubDetail?.approved_amount ??
-  submission.approved_amount ??
-  (approvedReward ?? 0) +
-    (approvedRevision ?? 0) +
-    (approvedPublication ?? 0);
+  const approvedTotalRaw =
+    pubDetail?.total_approve_amount ??
+    pubDetail?.approved_amount ??
+    submission.approved_amount ??
+    (approvedReward ?? 0) +
+      (approvedRevision ?? 0) +
+      (approvedPublication ?? 0);
 
-const approvedTotal = toNumber(approvedTotalRaw);
+  const approvedTotal = toNumber(approvedTotalRaw);
 
-const showApprovedColumn =
-  submission.status_id === 2 &&
-  approvedTotal !== null &&
-  !Number.isNaN(approvedTotal);
+  const showApprovedColumn =
+    submission.status_id === 2 &&
+    approvedTotal !== null &&
+    !Number.isNaN(approvedTotal);
 
-// documents may come from different property names depending on the API response
-const documents = submission.documents || submission.submission_documents || [];
+  // documents may come from different property names depending on the API response
+  const documents =
+    submission.documents || submission.submission_documents || [];
   
   return (
     <PageLayout
@@ -341,18 +343,38 @@ const documents = submission.documents || submission.submission_documents || [];
                   </span>
                 </div>
               )}
+              {submission.status_id === 2 && submission.announce_reference_number && (
+                <div className="md:col-span-3">
+                  <span className="text-gray-500">เลขอ้างอิงประกาศ:</span>
+                  <span className="ml-2 font-medium">
+                    {submission.announce_reference_number}
+                  </span>
+                </div>
+              )}
               {submission.approved_at && (
                 <div>
                   <span className="text-gray-500">วันที่อนุมัติ:</span>
                   <span className="ml-2 font-medium">
-                    {new Date(submission.approved_at).toLocaleDateString('th-TH', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
+                    {new Date(submission.approved_at).toLocaleDateString(
+                      "th-TH",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      },
+                    )}
                   </span>
                 </div>
               )}
+              {submission.status_id === 2 &&
+                pubDetail.announce_reference_number && (
+                  <div className="md:col-span-3">
+                    <span className="text-gray-500">เลขอ้างอิงประกาศ:</span>
+                    <span className="ml-2 font-medium">
+                      {pubDetail.announce_reference_number}
+                    </span>
+                  </div>
+                )}
             </div>
           </div>
           <div className="text-right">
