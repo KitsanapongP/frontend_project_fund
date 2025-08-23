@@ -87,23 +87,31 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
     return user.email || "";
   };
 
-  // Helper to get main author data
-  const getMainAuthor = () => {
-    if (!submission) return null;
-    const directAuthor = submission.User || submission.user;
-    const hasDirectData =
-      directAuthor &&
-      (directAuthor.user_id ||
-        directAuthor.user_fname ||
-        directAuthor.first_name ||
-        directAuthor.full_name ||
-        directAuthor.fullname ||
-        directAuthor.name);
-    if (hasDirectData) return directAuthor;
-    const fromList = submission.submission_users?.find(
-      (u) => u.is_primary || u.role === "owner" || u.role === "first_author"
+  // Helper to get applicant data
+  const getApplicant = () => {
+    return (
+      submission?.applicant_user ||
+      submission?.user ||
+      submission?.User ||
+      null
     );
-    return fromList?.User || fromList?.user || null;
+  };
+  // Helper to get co-authors sorted by display_order and excluding applicant
+  const getCoAuthors = () => {
+    if (!submission?.submission_users) return [];
+    const applicant = getApplicant();
+    const applicantId = applicant?.user_id || applicant?.id;
+    return submission.submission_users
+      .filter((u) => {
+        const userData = u.user || u.User;
+        const uid =
+          userData?.user_id ||
+          userData?.id ||
+          u.user_id ||
+          u.UserID;
+        return uid !== applicantId;
+      })
+      .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
   };
 
   useEffect(() => {
@@ -121,6 +129,14 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
       
        // เริ่มจากข้อมูล submission พื้นฐาน
       let submissionData = response.submission || response;
+
+      // แนบข้อมูลผู้ยื่นคำร้องจาก response หากมี
+      if (response.applicant_user) {
+        submissionData.applicant_user = response.applicant_user;
+        if (!submissionData.user && !submissionData.User) {
+          submissionData.user = response.applicant_user;
+        }
+      }
 
       // นำข้อมูล submission_users จาก response ถ้ามีมาใช้ก่อน
       if (response.submission_users && response.submission_users.length > 0) {
@@ -163,7 +179,6 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
       setLoading(false);
     }
   };
-
 
   const handleBack = () => {
     if (onNavigate) {
@@ -631,9 +646,9 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
               <div>
                 <label className="text-sm text-gray-500">สถานะผู้แต่ง</label>
                 <p className="font-medium">
-                  {pubDetail.author_type === 'first_author' ? 'ผู้แต่งหลัก' :
-                   pubDetail.author_type === 'corresponding_author' ? 'Corresponding Author' :
-                   pubDetail.author_type === 'coauthor' ? 'ผู้แต่งร่วม' : '-'}
+                  {pubDetail.author_type === 'first_author' ? 'ผู้แต่งหลัก (First Author)' :
+                   pubDetail.author_type === 'corresponding_author' ? 'ผู้แต่งที่รับผิดชอบบทความ (Corresponding Author)' :
+                   pubDetail.author_type === 'coauthor' ? 'ผู้แต่งร่วม (Co-Author)' : '-'}
                 </p>
               </div>
               <div>
@@ -657,44 +672,37 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
         </div>
       )}
 
-      {/* Authors Tab */}
-      {activeTab === 'authors' && (
-        <Card title="รายชื่อผู้แต่ง" icon={Users} collapsible={false}>
-          <div className="space-y-6">
-            {/* แสดงผู้แต่งหลัก */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">ผู้แต่งหลัก (เจ้าของผลงาน)</h4>
-              <div className="bg-blue-50 rounded-lg p-4">
-                <div className="flex items-center">
-                  <User className="h-5 w-5 text-blue-600 mr-3" />
-                  <div>
-                    <div className="font-medium text-gray-900">
-                      {getUserFullName(getMainAuthor())}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {getUserEmail(getMainAuthor())}
+        {/* Authors Tab */}
+        {activeTab === 'authors' && (
+          <Card title="รายชื่อผู้แต่ง" icon={Users} collapsible={false}>
+            <div className="space-y-6">
+              {/* Applicant */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">ผู้ยื่นคำร้อง</h4>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <User className="h-5 w-5 text-blue-600 mr-3" />
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {getUserFullName(getApplicant())}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {getUserEmail(getApplicant())}
+                      </div>
                     </div>
                   </div>
-                  <span className="ml-auto px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-                    เจ้าของผลงาน
-                  </span>
                 </div>
               </div>
-            </div>
 
-            {/* แสดงผู้แต่งร่วม */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">
-                ผู้แต่งร่วม {submission.submission_users && submission.submission_users.filter(u => u.role === 'coauthor' || u.role === 'co_author').length > 0 && 
-                `(${submission.submission_users.filter(u => u.role === 'coauthor' || u.role === 'co_author').length} คน)`}
-              </h4>
-              
-              {submission.submission_users && submission.submission_users.filter(u => u.role === 'coauthor' || u.role === 'co_author').length > 0 ? (
-                <div className="space-y-2">
-                  {submission.submission_users
-                    .filter(user => user.role === 'coauthor' || user.role === 'co_author')
-                    .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
-                    .map((submissionUser, index) => {
+              {/* Co-authors */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">
+                  รายชื่อผู้แต่งร่วม {getCoAuthors().length > 0 && `(${getCoAuthors().length} คน)`}
+                </h4>
+
+                {getCoAuthors().length > 0 ? (
+                  <div className="space-y-2">
+                    {getCoAuthors().map((submissionUser, index) => {
                       const userData = submissionUser.user || submissionUser.User;
                       
                       return (
@@ -711,21 +719,18 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
                                 {getUserEmail(userData)}
                               </div>
                             </div>
-                            <span className="ml-auto px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-                              ผู้แต่งร่วม
-                            </span>
                           </div>
                         </div>
                       );
                     })}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-8">ไม่มีข้อมูลผู้แต่งร่วม</p>
-              )}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">ไม่มีข้อมูลผู้แต่งร่วม</p>
+                )}
+              </div>
             </div>
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
 
       {activeTab === 'documents' && (
         <Card title="เอกสารแนบ" icon={FileText} collapsible={false}>
