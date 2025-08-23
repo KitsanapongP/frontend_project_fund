@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { 
-  ArrowLeft, 
-  FileText, 
-  Calendar, 
-  User, 
-  BookOpen, 
-  Award, 
+  ArrowLeft,
+  FileText,
+  Calendar,
+  User,
+  BookOpen,
+  Award,
   DollarSign,
   Clock,
   CheckCircle,
@@ -21,22 +21,23 @@ import {
   Link,
   Hash,
   Building,
-  FileCheck
+  FileCheck,
 } from "lucide-react";
 import { submissionAPI, submissionUsersAPI } from "@/app/lib/teacher_api";
 import apiClient from "@/app/lib/api";
 import PageLayout from "../common/PageLayout";
 import Card from "../common/Card";
 import StatusBadge from "../common/StatusBadge";
+import { formatCurrency } from "@/app/utils/format";
 
 const getStatusName = (statusId) => {
   const statuses = {
-    1: 'รอพิจารณา',
-    2: 'อนุมัติ',
-    3: 'ไม่อนุมัติ',
-    4: 'ต้องแก้ไข',
+    1: "รอพิจารณา",
+    2: "อนุมัติ",
+    3: "ไม่อนุมัติ",
+    4: "ต้องแก้ไข",
   };
-  return statuses[statusId] || 'ไม่ทราบสถานะ';
+  return statuses[statusId] || "ไม่ทราบสถานะ";
 };
 
 const getStatusIcon = (statusId) => {
@@ -55,11 +56,11 @@ const getStatusIcon = (statusId) => {
 export default function PublicationRewardDetail({ submissionId, onNavigate }) {
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState("details");
 
   const getUserFullName = (user) => {
     if (!user) return "-";
-    
+
     const firstName =
       user.user_fname ||
       user.first_name ||
@@ -86,23 +87,43 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
     return user.email || "";
   };
 
-  // Helper to get main author data
-  const getMainAuthor = () => {
-    if (!submission) return null;
-    const directAuthor = submission.User || submission.user;
-    const hasDirectData =
-      directAuthor &&
-      (directAuthor.user_id ||
-        directAuthor.user_fname ||
-        directAuthor.first_name ||
-        directAuthor.full_name ||
-        directAuthor.fullname ||
-        directAuthor.name);
-    if (hasDirectData) return directAuthor;
-    const fromList = submission.submission_users?.find(
-      (u) => u.is_primary || u.role === "owner" || u.role === "first_author"
+  // Helper to get applicant data
+  const getApplicant = () => {
+    const applicant =
+      submission?.applicant ||
+      submission?.applicant_user ||
+      submission?.user ||
+      submission?.User;
+
+    if (applicant) return applicant;
+
+    const applicantEntry = submission?.submission_users?.find(
+      (u) => u.is_applicant || u.IsApplicant
     );
-    return fromList?.User || fromList?.user || null;
+
+    return applicantEntry?.user || applicantEntry?.User || null;
+  };
+  // Helper to get co-authors sorted by display_order and excluding applicant
+  const getCoAuthors = () => {
+    if (!submission?.submission_users) return [];
+    const applicantId =
+      submission?.applicant_user_id ||
+      getApplicant()?.user_id ||
+      getApplicant()?.UserID ||
+      getApplicant()?.id;
+    return submission.submission_users
+      .filter((u) => {
+        const isApplicant = u.is_applicant || u.IsApplicant;
+        if (isApplicant) return false;
+        const userData = u.user || u.User;
+        const uid =
+          userData?.user_id ||
+          userData?.id ||
+          u.user_id ||
+          u.UserID;
+        return uid !== applicantId;
+      })
+      .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
   };
 
   useEffect(() => {
@@ -116,11 +137,26 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
     try {
       // โหลด submission detail
       const response = await submissionAPI.getSubmission(submissionId);
-      console.log('Submission Detail:', response);
+      //console.log('Submission Detail:', response);
+      console.log('Submission Detail:', JSON.stringify(response, null, 2));
       
        // เริ่มจากข้อมูล submission พื้นฐาน
       let submissionData = response.submission || response;
 
+      // แนบข้อมูลผู้ยื่นคำร้องจาก response หากมี
+      const applicant =
+        response.applicant ||
+        response.applicant_user ||
+        submissionData.user ||
+        submissionData.User;
+      if (applicant) {
+        submissionData.applicant = applicant;
+        submissionData.user = applicant;
+      }
+      if (response.applicant_user_id) {
+        submissionData.applicant_user_id = response.applicant_user_id;
+      }
+      
       // นำข้อมูล submission_users จาก response ถ้ามีมาใช้ก่อน
       if (response.submission_users && response.submission_users.length > 0) {
         submissionData.submission_users = response.submission_users;
@@ -162,7 +198,6 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
       setLoading(false);
     }
   };
-
 
   const handleBack = () => {
     if (onNavigate) {
@@ -239,18 +274,46 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
     );
   }
 
-// Extract publication details
-const pubDetail = submission.PublicationRewardDetail ||
-                  submission.publication_reward_detail || {};
+  // Extract publication details
+  const pubDetail =
+    submission.PublicationRewardDetail ||
+    submission.publication_reward_detail ||
+    {};
 
-// Normalize approved amount from possible field names
-const approvedAmount =
-  pubDetail.approved_amount ??
-  pubDetail.reward_approve_amount ??
-  pubDetail.total_approve_amount;
+  // Approved amounts may come from different fields depending on API version
+  const toNumber = (val) =>
+    val !== undefined && val !== null ? Number(val) : null;
 
-// documents may come from different property names depending on the API response
-const documents = submission.documents || submission.submission_documents || [];
+  const approvedReward = toNumber(
+    pubDetail?.reward_approve_amount ?? pubDetail?.reward_approved_amount,
+  );
+  const approvedRevision = toNumber(
+    pubDetail?.revision_fee_approve_amount ??
+      pubDetail?.revision_fee_approved_amount,
+  );
+  const approvedPublication = toNumber(
+    pubDetail?.publication_fee_approve_amount ??
+      pubDetail?.publication_fee_approved_amount,
+  );
+
+  const approvedTotalRaw =
+    pubDetail?.total_approve_amount ??
+    pubDetail?.approved_amount ??
+    submission.approved_amount ??
+    (approvedReward ?? 0) +
+      (approvedRevision ?? 0) +
+      (approvedPublication ?? 0);
+
+  const approvedTotal = toNumber(approvedTotalRaw);
+
+  const showApprovedColumn =
+    submission.status_id === 2 &&
+    approvedTotal !== null &&
+    !Number.isNaN(approvedTotal);
+
+  // documents may come from different property names depending on the API response
+  const documents =
+    submission.documents || submission.submission_documents || [];
   
   return (
     <PageLayout
@@ -314,29 +377,49 @@ const documents = submission.documents || submission.submission_documents || [];
                   </span>
                 </div>
               )}
+              {submission.status_id === 2 && submission.announce_reference_number && (
+                <div className="md:col-span-3">
+                  <span className="text-gray-500">เลขอ้างอิงประกาศ:</span>
+                  <span className="ml-2 font-medium">
+                    {submission.announce_reference_number}
+                  </span>
+                </div>
+              )}
               {submission.approved_at && (
                 <div>
                   <span className="text-gray-500">วันที่อนุมัติ:</span>
                   <span className="ml-2 font-medium">
-                    {new Date(submission.approved_at).toLocaleDateString('th-TH', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
+                    {new Date(submission.approved_at).toLocaleDateString(
+                      "th-TH",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      },
+                    )}
                   </span>
                 </div>
               )}
+              {submission.status_id === 2 &&
+                pubDetail.announce_reference_number && (
+                  <div className="md:col-span-3">
+                    <span className="text-gray-500">เลขอ้างอิงประกาศ:</span>
+                    <span className="ml-2 font-medium">
+                      {pubDetail.announce_reference_number}
+                    </span>
+                  </div>
+                )}
             </div>
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-blue-600">
-              ฿{(pubDetail.reward_amount || 0).toLocaleString()}
+              {formatCurrency(pubDetail.reward_amount || 0)}
             </div>
             <div className="text-sm text-gray-500">จำนวนเงินที่ขอ</div>
-            {submission.status_id === 2 && approvedAmount && (
+            {showApprovedColumn && (
               <div className="mt-2">
                 <div className="text-lg font-bold text-green-600">
-                  ฿{approvedAmount.toLocaleString()}
+                  {formatCurrency(approvedTotal)}
                 </div>
                 <div className="text-sm text-gray-500">จำนวนเงินที่อนุมัติ</div>
               </div>
@@ -395,14 +478,14 @@ const documents = submission.documents || submission.submission_documents || [];
       {activeTab === 'details' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Publication Information */}
-          <Card title="ข้อมูลบทความ" icon={BookOpen} collapsible={false}>
+          <Card title="ข้อมูลบทความ (Article Information)" icon={BookOpen} collapsible={false}>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">ชื่อบทความ</label>
+                <label className="text-sm text-gray-500">ชื่อบทความ (Article Title)</label>
                 <p className="font-medium">{pubDetail.paper_title || '-'}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">ชื่อวารสาร</label>
+                <label className="text-sm text-gray-500">ชื่อวารสาร (Journal Name)</label>
                 <p className="font-medium">{pubDetail.journal_name || '-'}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -411,12 +494,12 @@ const documents = submission.documents || submission.submission_documents || [];
                   <p className="font-medium">{pubDetail.volume_issue || '-'}</p>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-500">หน้า</label>
+                  <label className="text-sm text-gray-500">หน้า (Pages)</label>
                   <p className="font-medium">{pubDetail.page_numbers || '-'}</p>
                 </div>
               </div>
               <div>
-                <label className="text-sm text-gray-500">วันที่ตีพิมพ์</label>
+                <label className="text-sm text-gray-500">วันที่ตีพิมพ์ (Publication Date)</label>
                 <p className="font-medium">
                   {pubDetail.publication_date 
                     ? new Date(pubDetail.publication_date).toLocaleDateString('th-TH', {
@@ -428,7 +511,7 @@ const documents = submission.documents || submission.submission_documents || [];
                 </p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">DOI</label>
+                <label className="text-sm text-gray-500">DOI (Digital Object Identifier)</label>
                 <p className="font-medium">
                   {pubDetail.doi ? (
                     <a href={`https://doi.org/${pubDetail.doi}`} 
@@ -445,10 +528,10 @@ const documents = submission.documents || submission.submission_documents || [];
           </Card>
 
           {/* Journal Quality */}
-          <Card title="คุณภาพวารสาร" icon={Award} collapsible={false}>
+          <Card title="ข้อมูลวารสาร (Journal Information)" icon={Award} collapsible={false}>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">Quartile</label>
+                <label className="text-sm text-gray-500">ควอร์ไทล์ (Quartile)</label>
                 <div className="mt-1">
                   <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium
                     ${pubDetail.quartile === 'Q1' ? 'bg-green-100 text-green-800' :
@@ -465,86 +548,147 @@ const documents = submission.documents || submission.submission_documents || [];
                 <p className="font-medium text-lg">{pubDetail.impact_factor || '-'}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">การ Index</label>
+                <label className="text-sm text-gray-500">ฐานข้อมูลที่ปรากฏ (Database Indexed)</label>
                 <p className="font-medium">{pubDetail.indexing || '-'}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">ประเภทการตีพิมพ์</label>
+                <label className="text-sm text-gray-500">ประเภทการตีพิมพ์ (Publication Type)</label>
                 <p className="font-medium">{pubDetail.publication_type || 'journal'}</p>
               </div>
             </div>
           </Card>
 
           {/* Financial Information */}
-          <Card title="ข้อมูลการเงิน" icon={DollarSign} collapsible={false}>
+          <Card title="ข้อมูลการเงิน (Financial Information)" icon={DollarSign} collapsible={false}>
             <div className="space-y-4">
-              <div className="flex justify-between items-center pb-2 border-b">
-                <span className="text-gray-600">เงินรางวัลที่ขอ</span>
-                <span className="font-semibold text-lg">
-                  ฿{(pubDetail.reward_amount || 0).toLocaleString()}
-                </span>
+              {/* Column headers */}
+              <div
+                className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} pb-2 border-b text-sm text-gray-600`}
+              >
+                <div></div>
+                <div className="text-right">
+                  <div>จำนวนที่ขอ</div>
+                  <div className="text-xs text-gray-500">Requested Amount</div>
+                </div>
+                {showApprovedColumn && (
+                  <div className="text-right">
+                    <div>จำนวนที่อนุมัติ</div>
+                    <div className="text-xs text-gray-500">Approved Amount</div>
+                  </div>
+                )}
               </div>
+
+              {/* Requested reward */}
+              <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
+                <label className="block text-sm font-medium text-gray-700">
+                  เงินรางวัลที่ขอ
+                  <br />
+                  <span className="text-xs font-normal text-gray-600">Requested Reward Amount</span>
+                </label>
+                <span className="text-right font-semibold">
+                  {formatCurrency(pubDetail.reward_amount || 0)}
+                </span>
+                {showApprovedColumn && (
+                  <span className="text-right font-semibold">
+                    {approvedReward !== null ? formatCurrency(approvedReward) : "-"}
+                  </span>
+                )}
+              </div>
+
+              {/* Revision fee */}
               {pubDetail.revision_fee > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">ค่าปรับปรุง</span>
-                  <span>฿{pubDetail.revision_fee.toLocaleString()}</span>
+                <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
+                  <label className="block text-sm font-medium text-gray-700">
+                    ค่าปรับปรุงบทความ
+                    <br />
+                    <span className="text-xs font-normal text-gray-600">Manuscript Editing Fee (Baht)</span>
+                  </label>
+                  <span className="text-right">{formatCurrency(pubDetail.revision_fee)}</span>
+                  {showApprovedColumn && (
+                    <span className="text-right">
+                      {approvedRevision !== null ? formatCurrency(approvedRevision) : "-"}
+                    </span>
+                  )}
                 </div>
               )}
+
+              {/* Publication fee */}
               {pubDetail.publication_fee > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">ค่าตีพิมพ์</span>
-                  <span>฿{pubDetail.publication_fee.toLocaleString()}</span>
+                <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
+                  <label className="block text-sm font-medium text-gray-700">
+                    ค่าธรรมเนียมการตีพิมพ์
+                    <br />
+                    <span className="text-xs font-normal text-gray-600">Page Charge</span>
+                  </label>
+                  <span className="text-right">{formatCurrency(pubDetail.publication_fee)}</span>
+                  {showApprovedColumn && (
+                    <span className="text-right">
+                      {approvedPublication !== null ? formatCurrency(approvedPublication) : "-"}
+                    </span>
+                  )}
                 </div>
               )}
+
+              {/* External funding */}
               {pubDetail.external_funding_amount > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">เงินสนับสนุนจากภายนอก</span>
-                  <span className="text-red-600">
-                    -฿{pubDetail.external_funding_amount.toLocaleString()}
+                <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
+                  <label className="block text-sm font-medium text-gray-700">
+                    เงินสนับสนุนจากภายนอก
+                    <br />
+                    <span className="text-xs font-normal text-gray-600">External Funding Sources</span>
+                  </label>
+                  <span className="text-right text-red-600">
+                    {formatCurrency(-pubDetail.external_funding_amount)}
                   </span>
+                  {showApprovedColumn && <span></span>}
                 </div>
               )}
-              <div className="flex justify-between items-center pt-2 border-t">
-                <span className="font-medium">ยอดรวมสุทธิ</span>
-                <span className="font-bold text-xl text-blue-600">
-                  ฿{(pubDetail.total_amount || pubDetail.reward_amount || 0).toLocaleString()}
+
+              {/* Total */}
+              <div
+                className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center pt-2 border-t`}
+              >
+                <label className="block font-medium text-gray-700">
+                  รวมเบิกจากวิทยาลัยการคอม
+                  <br />
+                  <span className="text-xs font-normal text-gray-600">Total Reimbursement from CP-KKU</span>
+                </label>
+                <span className="text-right font-bold text-blue-600">
+                  {formatCurrency(pubDetail.total_amount || pubDetail.reward_amount || 0)}
                 </span>
-              </div>
-              {submission.status_id === 2 && approvedAmount && (
-                <div className="flex justify-between items-center pt-2 border-t bg-green-50 -mx-4 px-4 py-2">
-                  <span className="font-medium text-green-800">จำนวนที่อนุมัติ</span>
-                  <span className="font-bold text-xl text-green-600">
-                    ฿{approvedAmount.toLocaleString()}
+                {showApprovedColumn && (
+                  <span className="text-right font-bold text-green-600">
+                    {formatCurrency(approvedTotal)}
                   </span>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </Card>
 
           {/* Additional Information */}
-          <Card title="ข้อมูลเพิ่มเติม" icon={FileCheck} collapsible={false}>
+          <Card title="ข้อมูลเพิ่มเติม (Additional Information)" icon={FileCheck} collapsible={false}>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">สถานะผู้แต่ง</label>
+                <label className="text-sm text-gray-500">สถานะผู้ยื่น (Author Status)</label>
                 <p className="font-medium">
-                  {pubDetail.author_type === 'first_author' ? 'ผู้แต่งหลัก' :
-                   pubDetail.author_type === 'corresponding_author' ? 'Corresponding Author' :
-                   pubDetail.author_type === 'coauthor' ? 'ผู้แต่งร่วม' : '-'}
+                  {pubDetail.author_type === 'first_author' ? 'ผู้แต่งหลัก (First Author)' :
+                   pubDetail.author_type === 'corresponding_author' ? 'ผู้แต่งที่รับผิดชอบบทความ (Corresponding Author)' :
+                   pubDetail.author_type === 'coauthor' ? 'ผู้แต่งร่วม (Co-Author)' : '-'}
                 </p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">จำนวนผู้แต่ง</label>
+                <label className="text-sm text-gray-500">จำนวนผู้แต่ง (Number of Authors)</label>
                 <p className="font-medium">{pubDetail.author_count || 1} คน</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">ได้รับทุนสนับสนุนจากมหาวิทยาลัย</label>
+                <label className="text-sm text-gray-500">ได้รับทุนสนับสนุนจากมหาวิทยาลัย (Receive funding support from the university)</label>
                 <p className="font-medium">
                   {pubDetail.has_university_funding === 'yes' ? 'ใช่' : 'ไม่ใช่'}
                 </p>
               </div>
               {pubDetail.funding_references && (
                 <div>
-                  <label className="text-sm text-gray-500">หมายเลขอ้างอิงทุน</label>
+                  <label className="text-sm text-gray-500">หมายเลขอ้างอิงทุน (Fund Reference Number)</label>
                   <p className="font-medium">{pubDetail.funding_references}</p>
                 </div>
               )}
@@ -553,44 +697,37 @@ const documents = submission.documents || submission.submission_documents || [];
         </div>
       )}
 
-      {/* Authors Tab */}
-      {activeTab === 'authors' && (
-        <Card title="รายชื่อผู้แต่ง" icon={Users} collapsible={false}>
-          <div className="space-y-6">
-            {/* แสดงผู้แต่งหลัก */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">ผู้แต่งหลัก (เจ้าของผลงาน)</h4>
-              <div className="bg-blue-50 rounded-lg p-4">
-                <div className="flex items-center">
-                  <User className="h-5 w-5 text-blue-600 mr-3" />
-                  <div>
-                    <div className="font-medium text-gray-900">
-                      {getUserFullName(getMainAuthor())}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {getUserEmail(getMainAuthor())}
+        {/* Authors Tab */}
+        {activeTab === 'authors' && (
+          <Card title="รายชื่อผู้แต่ง" icon={Users} collapsible={false}>
+            <div className="space-y-6">
+              {/* Applicant */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">ผู้ยื่นคำร้อง</h4>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <User className="h-5 w-5 text-blue-600 mr-3" />
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {getUserFullName(getApplicant())}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {getUserEmail(getApplicant())}
+                      </div>
                     </div>
                   </div>
-                  <span className="ml-auto px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-                    เจ้าของผลงาน
-                  </span>
                 </div>
               </div>
-            </div>
 
-            {/* แสดงผู้แต่งร่วม */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">
-                ผู้แต่งร่วม {submission.submission_users && submission.submission_users.filter(u => u.role === 'coauthor' || u.role === 'co_author').length > 0 && 
-                `(${submission.submission_users.filter(u => u.role === 'coauthor' || u.role === 'co_author').length} คน)`}
-              </h4>
-              
-              {submission.submission_users && submission.submission_users.filter(u => u.role === 'coauthor' || u.role === 'co_author').length > 0 ? (
-                <div className="space-y-2">
-                  {submission.submission_users
-                    .filter(user => user.role === 'coauthor' || user.role === 'co_author')
-                    .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
-                    .map((submissionUser, index) => {
+              {/* Co-authors */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">
+                  รายชื่อผู้แต่งร่วม {getCoAuthors().length > 0 && `(${getCoAuthors().length} คน)`}
+                </h4>
+
+                {getCoAuthors().length > 0 ? (
+                  <div className="space-y-2">
+                    {getCoAuthors().map((submissionUser, index) => {
                       const userData = submissionUser.user || submissionUser.User;
                       
                       return (
@@ -607,21 +744,18 @@ const documents = submission.documents || submission.submission_documents || [];
                                 {getUserEmail(userData)}
                               </div>
                             </div>
-                            <span className="ml-auto px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-                              ผู้แต่งร่วม
-                            </span>
                           </div>
                         </div>
                       );
                     })}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-8">ไม่มีข้อมูลผู้แต่งร่วม</p>
-              )}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">ไม่มีข้อมูลผู้แต่งร่วม</p>
+                )}
+              </div>
             </div>
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
 
       {activeTab === 'documents' && (
         <Card title="เอกสารแนบ" icon={FileText} collapsible={false}>
