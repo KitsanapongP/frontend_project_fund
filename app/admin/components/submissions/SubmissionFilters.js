@@ -52,20 +52,19 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch })
       } else if (response && response.categories) {
         setCategories(response.categories);
       } else {
-        // Mock data สำหรับตอนนี้
+        // เรียกข้อมูลจากตาราง fund_categories
+        console.log('Using categories from database structure');
         setCategories([
-          { category_id: 1, category_name: 'ทุนส่งเสริมงานวิจัยและนวัตกรรม' },
-          { category_id: 2, category_name: 'ทุนอุดหนุนกิจกรรม' },
-          { category_id: 3, category_name: 'รางวัลผลงานตีพิมพ์' }
+          { category_id: 1, category_name: 'ทุนส่งเสริมการวิจัย' },
+          { category_id: 2, category_name: 'ทุนอุดหนุนกิจกรรม' }
         ]);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
-      // Fallback to mock data
+      // Fallback ตาม database structure
       setCategories([
-        { category_id: 1, category_name: 'ทุนส่งเสริมงานวิจัยและนวัตกรรม' },
-        { category_id: 2, category_name: 'ทุนอุดหนุนกิจกรรม' },
-        { category_id: 3, category_name: 'รางวัลผลงานตีพิมพ์' }
+        { category_id: 1, category_name: 'ทุนส่งเสริมการวิจัย' },
+        { category_id: 2, category_name: 'ทุนอุดหนุนกิจกรรม' }
       ]);
     }
   };
@@ -81,22 +80,26 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch })
       } else if (response && response.subcategories) {
         setSubcategories(response.subcategories);
       } else {
-        // Mock data สำหรับตอนนี้
+        // ข้อมูลจากตาราง fund_subcategories
         const mockSubcategories = {
-          1: [
-            { subcategory_id: 1, subcategory_name: 'ทุนวิจัยสำหรับอาจารย์ใหม่' },
-            { subcategory_id: 2, subcategory_name: 'ทุนวิจัยเพื่อการพัฒนาท้องถิ่น' },
-            { subcategory_id: 3, subcategory_name: 'ทุนวิจัยร่วมกับหน่วยงานภายนอก' }
+          1: [ // ทุนส่งเสริมการวิจัย
+            { subcategory_id: 1, subcategory_name: '1.1 ทุนสนับสนุนผู้เชี่ยวชาญต่างประเทศ' },
+            { subcategory_id: 2, subcategory_name: '1.2 ทุนวิจัยสถาบัน' },
+            { subcategory_id: 3, subcategory_name: '1.3 ทุนวิจัยเพื่อพัฒนางานประจำ' },
+            { subcategory_id: 4, subcategory_name: '1.4 ทุนวิจัยในชั้นเรียน' },
+            { subcategory_id: 5, subcategory_name: 'ทุนสนับสนุนงานวิจัย นวัตกรรมและสิ่งประดิษฐ์เพื่อการเรียนการสอน' },
+            { subcategory_id: 6, subcategory_name: '1.5 ทุนวิจัยความเป็นเลิศ' },
+            { subcategory_id: 7, subcategory_name: '1.10 ทุนพัฒนากลุ่มวิจัยบูรณาการ' },
+            { subcategory_id: 8, subcategory_name: 'ทุนนักวิจัยอาวุโส' },
+            { subcategory_id: 9, subcategory_name: '1.7 ทุนพัฒนาศูนย์วิจัย' },
+            { subcategory_id: 10, subcategory_name: 'ทุนฝึกอบรมนักวิจัยหลังปริญญาเอก' },
+            { subcategory_id: 11, subcategory_name: '1.6 ทุนนวัตกรรมความเป็นเลิศ' },
+            { subcategory_id: 12, subcategory_name: '1.9 ทุนสนับสนุนการได้รับทุนวิจัยภายนอก' }
           ],
-          2: [
-            { subcategory_id: 4, subcategory_name: 'ทุนประชุมวิชาการ' },
-            { subcategory_id: 5, subcategory_name: 'ทุนฝึกอบรม' },
-            { subcategory_id: 6, subcategory_name: 'ทุนพัฒนาหลักสูตร' }
-          ],
-          3: [
-            { subcategory_id: 7, subcategory_name: 'Q1 Journal' },
-            { subcategory_id: 8, subcategory_name: 'Q2 Journal' },
-            { subcategory_id: 9, subcategory_name: 'Q3-Q4 Journal' }
+          2: [ // ทุนอุดหนุนกิจกรรม
+            { subcategory_id: 13, subcategory_name: 'ทุนทำวิจัยในต่างประเทศ' },
+            { subcategory_id: 14, subcategory_name: 'เงินรางวัลการตีพิมพ์เผยแพร่ผลงานวิจัย (ผู้แต่งชื่อแรก)' },
+            { subcategory_id: 15, subcategory_name: 'เงินรางวัลการตีพิมพ์เผยแพร่ผลงานวิจัย (ผู้ประพันธ์บรรณกิจ)' }
           ]
         };
         
@@ -104,22 +107,26 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch })
       }
     } catch (error) {
       console.error('Error fetching subcategories:', error);
-      // Fallback to mock data
+      // Fallback data from database
       const mockSubcategories = {
-        1: [
-          { subcategory_id: 1, subcategory_name: 'ทุนวิจัยสำหรับอาจารย์ใหม่' },
-          { subcategory_id: 2, subcategory_name: 'ทุนวิจัยเพื่อการพัฒนาท้องถิ่น' },
-          { subcategory_id: 3, subcategory_name: 'ทุนวิจัยร่วมกับหน่วยงานภายนอก' }
+        1: [ // ทุนส่งเสริมการวิจัย
+          { subcategory_id: 1, subcategory_name: '1.1 ทุนสนับสนุนผู้เชี่ยวชาญต่างประเทศ' },
+          { subcategory_id: 2, subcategory_name: '1.2 ทุนวิจัยสถาบัน' },
+          { subcategory_id: 3, subcategory_name: '1.3 ทุนวิจัยเพื่อพัฒนางานประจำ' },
+          { subcategory_id: 4, subcategory_name: '1.4 ทุนวิจัยในชั้นเรียน' },
+          { subcategory_id: 5, subcategory_name: 'ทุนสนับสนุนงานวิจัย นวัตกรรมและสิ่งประดิษฐ์เพื่อการเรียนการสอน' },
+          { subcategory_id: 6, subcategory_name: '1.5 ทุนวิจัยความเป็นเลิศ' },
+          { subcategory_id: 7, subcategory_name: '1.10 ทุนพัฒนากลุ่มวิจัยบูรณาการ' },
+          { subcategory_id: 8, subcategory_name: 'ทุนนักวิจัยอาวุโส' },
+          { subcategory_id: 9, subcategory_name: '1.7 ทุนพัฒนาศูนย์วิจัย' },
+          { subcategory_id: 10, subcategory_name: 'ทุนฝึกอบรมนักวิจัยหลังปริญญาเอก' },
+          { subcategory_id: 11, subcategory_name: '1.6 ทุนนวัตกรรมความเป็นเลิศ' },
+          { subcategory_id: 12, subcategory_name: '1.9 ทุนสนับสนุนการได้รับทุนวิจัยภายนอก' }
         ],
-        2: [
-          { subcategory_id: 4, subcategory_name: 'ทุนประชุมวิชาการ' },
-          { subcategory_id: 5, subcategory_name: 'ทุนฝึกอบรม' },
-          { subcategory_id: 6, subcategory_name: 'ทุนพัฒนาหลักสูตร' }
-        ],
-        3: [
-          { subcategory_id: 7, subcategory_name: 'Q1 Journal' },
-          { subcategory_id: 8, subcategory_name: 'Q2 Journal' },
-          { subcategory_id: 9, subcategory_name: 'Q3-Q4 Journal' }
+        2: [ // ทุนอุดหนุนกิจกรรม
+          { subcategory_id: 13, subcategory_name: 'ทุนทำวิจัยในต่างประเทศ' },
+          { subcategory_id: 14, subcategory_name: 'เงินรางวัลการตีพิมพ์เผยแพร่ผลงานวิจัย (ผู้แต่งชื่อแรก)' },
+          { subcategory_id: 15, subcategory_name: 'เงินรางวัลการตีพิมพ์เผยแพร่ผลงานวิจัย (ผู้ประพันธ์บรรณกิจ)' }
         ]
       };
       
@@ -203,10 +210,12 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch })
             className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white"
           >
             <option value="">ทั้งหมด</option>
+            {/* สถานะตามตาราง application_status */}
             <option value="1">รอพิจารณา</option>
             <option value="2">อนุมัติ</option>
-            <option value="3">ไม่อนุมัติ</option>
-            <option value="4">ต้องแก้ไข</option>
+            <option value="3">ปฏิเสธ</option>
+            <option value="4">ต้องการข้อมูลเพิ่มเติม</option>
+            <option value="5">ร่าง</option>
           </select>
         </div>
 
@@ -272,8 +281,9 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch })
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
                 สถานะ: {filters.status === '1' ? 'รอพิจารณา' : 
                         filters.status === '2' ? 'อนุมัติ' :
-                        filters.status === '3' ? 'ไม่อนุมัติ' :
-                        filters.status === '4' ? 'ต้องแก้ไข' : filters.status}
+                        filters.status === '3' ? 'ปฏิเสธ' :
+                        filters.status === '4' ? 'ต้องการข้อมูลเพิ่มเติม' :
+                        filters.status === '5' ? 'ร่าง' : filters.status}
                 <button
                   type="button"
                   onClick={() => handleChange('status', '')}

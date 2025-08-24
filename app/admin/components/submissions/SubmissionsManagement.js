@@ -241,12 +241,13 @@ export default function SubmissionsManagement() {
       return submission.status.status_name;
     }
     
-    // Status mapping based on status_id
+    // Status mapping based on application_status table
     const statusMap = {
       1: 'รอพิจารณา',
       2: 'อนุมัติ', 
-      3: 'ไม่อนุมัติ',
-      4: 'ต้องแก้ไข'
+      3: 'ปฏิเสธ',
+      4: 'ต้องการข้อมูลเพิ่มเติม',
+      5: 'ร่าง'
     };
     
     return statusMap[submission.status_id] || 'ไม่ทราบสถานะ';
@@ -314,10 +315,11 @@ export default function SubmissionsManagement() {
   const calculateStatistics = (submissions) => {
     const stats = {
       total_submissions: submissions.length,
-      pending_count: 0,
-      approved_count: 0,
-      rejected_count: 0,
-      revision_count: 0
+      pending_count: 0,    // status_id = 1 (รอพิจารณา)
+      approved_count: 0,   // status_id = 2 (อนุมัติ)
+      rejected_count: 0,   // status_id = 3 (ปฏิเสธ)  
+      revision_count: 0    // status_id = 4 (ต้องการข้อมูลเพิ่มเติม)
+      // status_id = 5 (ร่าง) - ไม่นับในสถิติหลัก
     };
 
     submissions.forEach(submission => {
@@ -334,6 +336,7 @@ export default function SubmissionsManagement() {
         case 4:
           stats.revision_count++;
           break;
+        // case 5: draft - ไม่นับในสถิติ
       }
     });
 
