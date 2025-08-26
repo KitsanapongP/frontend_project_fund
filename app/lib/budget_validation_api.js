@@ -1,374 +1,239 @@
 // app/lib/budget_validation_api.js
-// API functions สำหรับ budget validation
+// แก้ให้ normalize response ทุกรูปแบบ (wrapper / snake_case / camelCase) -> ใช้คีย์เดียวกันใน UI
+// และแก้ checkMultipleBudgetAvailability ให้เรียกผ่าน object (ไม่พึ่ง this)
 
 import apiClient from './api';
 
+// ---- helper: normalize budget validation payload -> camelCase ที่ UI ใช้เสมอ ----
+const normalizeBudgetValidation = (raw, subcategoryIdHint = null) => {
+  const root = raw?.data && (raw.success === true || typeof raw.success === 'boolean')
+    ? raw.data
+    : raw?.data ?? raw ?? {};
+
+  const isAvailable =
+    root.is_fully_available ?? root.isFullyAvailable ?? root.isAvailable ?? false;
+
+  const availableBudgets =
+    root.available_budgets ?? root.availableBudgets ?? [];
+
+  const missingBudgets =
+    root.missing_budgets ?? root.missingBudgets ?? [];
+
+  const budgetCount =
+    root.budget_count ?? root.budgetCount ??
+    (Array.isArray(availableBudgets) ? availableBudgets.length : 0);
+
+  const expectedCount =
+    root.expected_count ?? root.expectedCount ?? 1;
+
+  const subcategoryName =
+    root.subcategory_name ?? root.subcategoryName ?? '';
+
+  const subcategoryId =
+    root.subcategory_id ?? root.subcategoryId ?? subcategoryIdHint ?? null;
+
+  return {
+    subcategoryId,
+    subcategoryName,
+    isAvailable,
+    availableBudgets,
+    missingBudgets,
+    budgetCount,
+    expectedCount,
+    // ติดธงว่าค่านี้ผ่าน normalize แล้ว
+    _normalized: true,
+  };
+};
+
 export const budgetValidationAPI = {
-  // ตรวจสอบ budget availability สำหรับ subcategory
+  // ตรวจสอบ budget availability สำหรับ subcategory เดียว
   checkBudgetAvailability: async (subcategoryId) => {
     try {
-      // สร้าง URL แบบ manual เพื่อข้าม v1
-      const baseURL = apiClient.baseURL.replace('/api/v1', '/api');
-      const url = `${baseURL}/subcategory-budgets/validate?subcategory_id=${subcategoryId}`;
-      
-      const token = apiClient.getToken();
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` })
-        }
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`);
-      }
-      
-      // แปลง response ให้ตรงกับที่ frontend คาดหวัง
-      if (data.success && data.data) {
-        return {
-          subcategory_id: data.data.subcategory_id,
-          subcategory_name: data.data.subcategory_name,
-          is_fully_available: data.data.is_fully_available,
-          available_budgets: data.data.available_budgets || [],
-          missing_budgets: data.data.missing_budgets || [],
-          budget_count: data.data.budget_count || 0,
-          expected_count: data.data.expected_count || 1
-        };
-      }
-      
-      // ถ้า response format ไม่ถูกต้อง ให้ fallback
-      throw new Error('Invalid response format');
-      
+      console.log(`[budget] check one -> subcategory: ${subcategoryId}`);
+
+      const resp = await apiClient.get(
+        `/subcategory-budgets/validate?subcategory_id=${subcategoryId}`
+      );
+
+      // รองรับทั้ง axios style ({data: {...}}) และ client ที่คืน JSON ตรง ๆ
+      const payload = resp?.data ?? resp;
+      const normalized = normalizeBudgetValidation(payload, subcategoryId);
+
+      console.log('[budget] normalized one:', normalized);
+      return normalized;
     } catch (error) {
-      console.error(`Error checking budget availability for subcategory ${subcategoryId}:`, error);
-      
-      // Fallback: ถ้า API error ให้ return mock data
-      console.warn(`API error, returning fallback data for subcategory ${subcategoryId}`);
-      return {
-        subcategory_id: subcategoryId,
-        subcategory_name: `Subcategory ${subcategoryId}`,
-        is_fully_available: true, // ถือว่าพร้อมใช้ในกรณี error
-        available_budgets: [],
-        missing_budgets: [],
-        budget_count: 1,
-        expected_count: 1
+      console.error(`[budget] error (one) subcategory ${subcategoryId}:`, error);
+
+      // Fallback แบบคอนเซอร์เวทีฟ: อย่าปักว่าพร้อม ถ้าเชื่อม API ไม่ได้
+      const fallback = {
+        subcategoryId,
+        subcategoryName: '',
+        isAvailable: false,
+        availableBudgets: [],
+        missingBudgets: [],
+        budgetCount: 0,
+        expectedCount: 1,
+        _fallback: true,
+        error: error?.message ?? String(error),
+        _normalized: true,
       };
-    }
-  },
 
-  // ตรวจสอบ budget availability สำหรับหลาย subcategories พร้อมกัน
-  checkMultipleBudgetAvailability: async (subcategoryIds) => {
-    if (!subcategoryIds || subcategoryIds.length === 0) {
-      return {};
-    }
-
-    try {
-      const promises = subcategoryIds.map(async (id) => {
-        try {
-          const result = await budgetValidationAPI.checkBudgetAvailability(id);
-          return {
-            subcategoryId: id,
-            status: 'fulfilled',
-            data: result
-          };
-        } catch (error) {
-          return {
-            subcategoryId: id,
-            status: 'rejected',
-            error: error.message
-          };
-        }
-      });
-      
-      const results = await Promise.all(promises);
-      
-      const budgetStatus = {};
-      results.forEach((result) => {
-        const subcategoryId = result.subcategoryId;
-        
-        if (result.status === 'fulfilled') {
-          const data = result.data;
-          budgetStatus[subcategoryId] = {
-            isAvailable: data.is_fully_available || false,
-            availableBudgets: data.available_budgets || [],
-            missingBudgets: data.missing_budgets || [],
-            budgetCount: data.budget_count || 0,
-            expectedCount: data.expected_count || 1,
-            subcategoryName: data.subcategory_name || ''
-          };
-        } else {
-          budgetStatus[subcategoryId] = {
-            isAvailable: false,
-            availableBudgets: [],
-            missingBudgets: [],
-            budgetCount: 0,
-            expectedCount: 1,
-            subcategoryName: '',
-            error: result.error
-          };
-        }
-      });
-      
-      return budgetStatus;
-    } catch (error) {
-      console.error('Error checking multiple budget availability:', error);
-      throw error;
+      console.warn('[budget] fallback one:', fallback);
+      return fallback;
     }
   },
 
   // ดึงรายการ quartiles ที่มี budget พร้อมใช้งาน
   getAvailableQuartiles: async (subcategoryId) => {
     try {
-      const baseURL = apiClient.baseURL.replace('/api/v1', '/api');
-      const url = `${baseURL}/subcategory-budgets/available-quartiles?subcategory_id=${subcategoryId}`;
-      
-      const token = apiClient.getToken();
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` })
-        }
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`);
-      }
-      
-      // Backend ส่งมาเป็น { success: true, available_quartiles: [...], count: n }
-      if (data.success && data.available_quartiles) {
-        return data.available_quartiles;
-      }
-      
+      console.log(`[budget] get available quartiles -> subcategory: ${subcategoryId}`);
+
+      const resp = await apiClient.get(
+        `/subcategory-budgets/available-quartiles?subcategory_id=${subcategoryId}`
+      );
+
+      // รองรับได้ทั้งหลายแบบ
+      const root = resp?.data ?? resp ?? {};
+      const arr =
+        root?.data?.available_quartiles ??
+        root?.available_quartiles ??
+        root?.quartiles ??
+        (Array.isArray(root) ? root : null);
+
+      const out = Array.isArray(arr) ? arr : [];
+      console.log('[budget] available quartiles:', out);
+      return out;
+    } catch (error) {
+      console.error(`[budget] error get quartiles subcategory ${subcategoryId}:`, error);
       return [];
-    } catch (error) {
-      console.error('Error getting available quartiles:', error);
-      return []; // Return empty array if error
     }
   },
 
-  // ดึงการ mapping ระหว่าง quartile และ budget
-  getBudgetQuartileMapping: async (subcategoryId) => {
+  // ตรวจสอบหลาย subcategories พร้อมกัน -> คืน map { [id]: NormalizedStatus }
+  checkMultipleBudgetAvailability: async function (subcategoryIds) {
+    if (!subcategoryIds || subcategoryIds.length === 0) {
+      return {};
+    }
+
+    console.log('[budget] check multiple ->', subcategoryIds);
+
     try {
-      const baseURL = apiClient.baseURL.replace('/api/v1', '/api');
-      const url = `${baseURL}/subcategory-budgets/quartile-mapping?subcategory_id=${subcategoryId}`;
-      
-      const token = apiClient.getToken();
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` })
+      const jobs = subcategoryIds.map(async (id) => {
+        try {
+          const data = await budgetValidationAPI.checkBudgetAvailability(id);
+          return { id, ok: true, data };
+        } catch (err) {
+          return { id, ok: false, err };
         }
       });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`);
+
+      const settled = await Promise.all(jobs);
+
+      const map = {};
+      for (const r of settled) {
+        if (r.ok) {
+          // r.data คือ normalized แล้ว (camelCase)
+          map[r.id] = {
+            ...r.data,
+          };
+        } else {
+          map[r.id] = {
+            subcategoryId: r.id,
+            subcategoryName: '',
+            isAvailable: false,
+            availableBudgets: [],
+            missingBudgets: [],
+            budgetCount: 0,
+            expectedCount: 1,
+            _fallback: true,
+            error: r.err?.message ?? String(r.err),
+            _normalized: true,
+          };
+        }
       }
-      
-      return data.mappings || [];
+
+      console.log('[budget] multiple result (normalized):', map);
+      return map;
     } catch (error) {
-      console.error('Error getting budget quartile mapping:', error);
-      return []; // Return empty array if error
+      console.error('[budget] error (multiple):', error);
+      // หากพังระดับกลุ่ม: คืน false ทั้งหมดแบบคอนเซอร์เวทีฟ
+      const map = {};
+      for (const id of subcategoryIds) {
+        map[id] = {
+          subcategoryId: id,
+          subcategoryName: '',
+          isAvailable: false,
+          availableBudgets: [],
+          missingBudgets: [],
+          budgetCount: 0,
+          expectedCount: 1,
+          _fallback: true,
+          error: error?.message ?? String(error),
+          _normalized: true,
+        };
+      }
+      return map;
     }
   },
-
-  // ตรวจสอบและ validate การเลือก budget
-  validateBudgetSelection: async (subcategoryId, quartileCode) => {
-    try {
-      const baseURL = apiClient.baseURL.replace('/api/v1', '/api');
-      const url = `${baseURL}/subcategory-budgets/validate-selection`;
-      
-      const token = apiClient.getToken();
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` })
-        },
-        body: JSON.stringify({
-          subcategory_id: subcategoryId,
-          quartile_code: quartileCode
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`);
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Error validating budget selection:', error);
-      // Return mock validation success if error
-      return {
-        is_valid: true,
-        subcategory_budget_id: null,
-        message: 'Validation error - falling back to allow'
-      };
-    }
-  }
 };
 
-// Helper function สำหรับตรวจสอบว่าทุนพร้อมใช้งานไหม
+// ---- UI helpers: ใช้กับ object ที่ normalize แล้ว ----
 export const isFundFullyAvailable = (subcategory, budgetStatus) => {
-  // ถ้าไม่ใช่ทุนที่ต้องตรวจสอบ budget ให้ถือว่าพร้อมใช้
-  const needsValidation = subcategory.form_type === 'publication_reward' && subcategory.has_multiple_levels;
-  if (!needsValidation) {
-    return true;
-  }
+  const needsValidation =
+    subcategory.form_type === 'publication_reward' && subcategory.has_multiple_levels;
+
+  if (!needsValidation) return true;
 
   const status = budgetStatus[subcategory.subcategory_id];
-  
   if (!status) {
-    // ถ้าไม่มีข้อมูล status ให้ถือว่าพร้อมใช้ (fallback เมื่อ API ไม่พร้อม)
-    console.warn(`No budget status for subcategory ${subcategory.subcategory_id}, assuming available`);
+    console.warn(`[budget] no status for subcategory ${subcategory.subcategory_id} -> assume available`);
     return true;
   }
-  
-  // ตรวจสอบตาม isAvailable ที่ได้จาก API
-  return status.isAvailable !== false; // ให้เป็น true ถ้าไม่ได้ระบุเป็น false ชัดเจน
+  return status.isAvailable !== false;
 };
 
-// Helper function สำหรับ format missing budget message
 export const formatMissingBudgetMessage = (subcategory, budgetStatus) => {
   const status = budgetStatus[subcategory.subcategory_id];
-  
-  if (!status || !status.missingBudgets || status.missingBudgets.length === 0) {
-    return null;
-  }
-  
+  if (!status || !status.missingBudgets || status.missingBudgets.length === 0) return null;
   return `ขาดงบประมาณ: ${status.missingBudgets.join(', ')}`;
 };
 
-// Helper function สำหรับแสดงสถานะ budget
 export const getBudgetStatusDisplay = (subcategory, budgetStatus, budgetLoading) => {
   if (budgetLoading) {
     return {
       status: 'loading',
       message: 'ตรวจสอบงบประมาณ...',
       color: 'yellow',
-      className: 'bg-yellow-100 text-yellow-800'
+      className: 'bg-yellow-100 text-yellow-800',
     };
   }
-  
-  const needsValidation = subcategory.form_type === 'publication_reward' && subcategory.has_multiple_levels;
-  
+
+  const needsValidation =
+    subcategory.form_type === 'publication_reward' && subcategory.has_multiple_levels;
+
   if (!needsValidation) {
     return {
       status: 'not_required',
       message: '',
       color: 'gray',
-      className: ''
+      className: '',
     };
   }
-  
+
   const isAvailable = isFundFullyAvailable(subcategory, budgetStatus);
-  
   if (isAvailable) {
     return {
       status: 'available',
       message: 'งบประมาณพร้อม',
       color: 'green',
-      className: 'bg-green-100 text-green-800'
-    };
-  } else {
-    return {
-      status: 'unavailable',
-      message: 'งบประมาณไม่ครบ',
-      color: 'red',
-      className: 'bg-red-100 text-red-800'
+      className: 'bg-green-100 text-green-800',
     };
   }
-};
 
-// Helper function สำหรับแปลง form data เป็น quartile code
-export const getQuartileCodeFromFormData = (formData) => {
-  // ตรวจสอบจาก journal_quartile ก่อน
-  if (formData.journal_quartile) {
-    return formData.journal_quartile; // Q1, Q2, Q3, Q4
-  }
-  
-  // ตรวจสอบจาก journal_tier
-  if (formData.journal_tier) {
-    const tierMapping = {
-      'top_5_percent': 'TOP_5_PERCENT',
-      'top_10_percent': 'TOP_10_PERCENT',
-      'tci_1': 'TCI',
-      'tci_2': 'TCI_2',
-      'tci_3': 'TCI_3'
-    };
-    return tierMapping[formData.journal_tier] || 'UNKNOWN';
-  }
-  
-  // ตรวจสอบจาก indexing
-  if (formData.in_tci) {
-    return 'TCI';
-  }
-  
-  return 'UNKNOWN';
-};
-
-// Helper function สำหรับคำนวณ subcategory_id จาก author status
-export const getSubcategoryIdFromAuthorStatus = (authorStatus, defaultSubcategoryId) => {
-  switch (authorStatus) {
-    case 'first_author':
-      return 14; // เงินรางวัลการตีพิมพ์ (กรณีเป็นผู้แต่งชื่อแรก)
-    case 'corresponding_author':
-      return 15; // เงินรางวัลการตีพิมพ์ (กรณีเป็นผู้ประพันธ์บรรณกิจ)
-    default:
-      return defaultSubcategoryId; // ใช้ค่าเดิมที่ส่งมา
-  }
-};
-
-// Helper function สำหรับสร้าง budget selection data
-export const createBudgetSelectionData = (formData, fundData) => {
-  const authorStatus = formData.author_status;
-  const quartileCode = getQuartileCodeFromFormData(formData);
-  const subcategoryId = getSubcategoryIdFromAuthorStatus(authorStatus, fundData.subcategory_id);
-  
   return {
-    category_id: fundData.category_id,
-    subcategory_id: subcategoryId,
-    quartile_code: quartileCode,
-    author_status: authorStatus,
-    fund_info: {
-      subcategory_name: fundData.subcategory_name,
-      original_subcategory_id: fundData.subcategory_id
-    }
+    status: 'unavailable',
+    message: 'งบประมาณไม่ครบ',
+    color: 'red',
+    className: 'bg-red-100 text-red-800',
   };
-};
-
-// Helper function สำหรับ validate budget selection ก่อน submit
-export const validateBudgetSelectionBeforeSubmit = async (formData, fundData) => {
-  const selectionData = createBudgetSelectionData(formData, fundData);
-  
-  try {
-    const validation = await budgetValidationAPI.validateBudgetSelection(
-      selectionData.subcategory_id,
-      selectionData.quartile_code
-    );
-    
-    return {
-      isValid: validation.is_valid || false,
-      subcategory_budget_id: validation.subcategory_budget_id || null,
-      message: validation.message || '',
-      selection_data: selectionData
-    };
-  } catch (error) {
-    return {
-      isValid: false,
-      subcategory_budget_id: null,
-      message: error.message || 'เกิดข้อผิดพลาดในการตรวจสอบงบประมาณ',
-      selection_data: selectionData
-    };
-  }
 };
