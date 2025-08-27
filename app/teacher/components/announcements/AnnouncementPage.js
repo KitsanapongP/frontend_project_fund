@@ -127,9 +127,7 @@ export default function AnnouncementPage() {
     {
       header: "ปี",
       accessor: "year_name",
-      render: (value) => (
-        <span className="text-gray-700">{value && value.trim() !== '' ? value : '-'}</span>
-      )
+      render: (value) => <span className="text-gray-700">{value || '-'}</span>
     },
     {
       header: "ประเภท",
@@ -199,9 +197,7 @@ export default function AnnouncementPage() {
     {
       header: "ปี",
       accessor: "year_name",
-      render: (value) => (
-        <span className="text-gray-700">{value && value.trim() !== '' ? value : '-'}</span>
-      )
+      render: (value) => <span className="text-gray-700">{value || '-'}</span>
     },
     {
       header: "ประเภทฟอร์ม",
