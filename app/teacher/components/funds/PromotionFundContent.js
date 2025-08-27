@@ -203,9 +203,15 @@ export default function PromotionFundContent({ onNavigate }) {
       const parentCategory = fundCategories.find(cat => 
         cat.subcategories?.some(sub => sub.subcategory_id === subcategory.subcategory_id)
       );
+      const yearObj = years.find(y => y.year === selectedYear);
+      const yearId = yearObj?.year_id;
+      console.log('Navigate to publication form:', {
+        category_id: parentCategory?.category_id,
+        year_id: yearId
+      });
       onNavigate(formConfig.route, {
         category_id: parentCategory?.category_id,
-        year: selectedYear
+        year_id: yearId
       });
     } else {
       const docUrl = subcategory.form_url || '/documents/default-fund-form.docx';
