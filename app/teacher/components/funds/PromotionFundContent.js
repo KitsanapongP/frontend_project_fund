@@ -9,7 +9,7 @@ import { targetRolesUtils } from '../../../lib/target_roles_utils';
 import { FORM_TYPE_CONFIG } from '../../../lib/form_type_config';
 
 export default function PromotionFundContent({ onNavigate }) {
-  const [selectedYear, setSelectedYear] = useState("2566");
+  const [selectedYear, setSelectedYear] = useState("2568");
   const [fundCategories, setFundCategories] = useState([]);
   const [filteredFunds, setFilteredFunds] = useState([]);
   const [years, setYears] = useState([]);
@@ -122,6 +122,7 @@ export default function PromotionFundContent({ onNavigate }) {
         if (publicationSubs.length > 1) {
           const merged = {
             ...publicationSubs[0],
+            category_id: category.category_id,  // เพิ่มบรรทัดนี้
             subcategory_name: 'เงินรางวัลการตีพิมพ์เผยแพร่ผลงานวิจัย',
             remaining_budget: publicationSubs.reduce(
               (sum, s) => sum + (s.remaining_budget || 0),
@@ -198,7 +199,13 @@ export default function PromotionFundContent({ onNavigate }) {
     const formConfig = FORM_TYPE_CONFIG[formType];
     
     if (formConfig.isOnlineForm && onNavigate) {
-      onNavigate(formConfig.route, { category_id: subcategory.category_id });
+      // ส่ง category_id จาก parent category แทน
+      const parentCategory = fundCategories.find(cat => 
+        cat.subcategories?.some(sub => sub.subcategory_id === subcategory.subcategory_id)
+      );
+      onNavigate(formConfig.route, { 
+        category_id: parentCategory?.category_id 
+      });
     } else {
       const docUrl = subcategory.form_url || '/documents/default-fund-form.docx';
       window.open(docUrl, '_blank');
