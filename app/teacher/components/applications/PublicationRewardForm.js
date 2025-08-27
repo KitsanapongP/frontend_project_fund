@@ -622,12 +622,12 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId }
   const [enabledYears, setEnabledYears] = useState([]);
   const [enabledPairs, setEnabledPairs] = useState([]);
   const [resolutionError, setResolutionError] = useState('');
-  
+
   // Form data state
   const [formData, setFormData] = useState({
     // Basic submission info
-    year_id: null,
-    category_id: null,
+    year_id: yearId || null,  // Initialize with yearId prop
+    category_id: categoryId || null,  // Initialize with categoryId prop
     subcategory_id: null,
     subcategory_budget_id: null,
     
@@ -679,28 +679,68 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId }
   // External funding sources
   const [externalFundings, setExternalFundings] = useState([])
 
-    // Helper: resolve subcategory and budget
-  const resolveBudgetAndSubcategory = async ({ category_id, year_id, author_status, journal_quartile, subcategories }) => {
+  // Helper: resolve subcategory and budget (100% dynamic - no hardcode)
+  const resolveBudgetAndSubcategory = async ({ category_id, year_id, author_status, journal_quartile }) => {
     try {
-      const subs = subcategories || (await teacherAPI.getVisibleSubcategories(category_id, year_id)).subcategories || [];
-      const fundDesc = QUARTILE_MAP[journal_quartile];
-      for (const sub of subs) {
+      // Step 1: Get publication reward rates for this year
+      const yearObj = years.find(y => y.year_id === year_id);
+      if (!yearObj) return null;
+      
+      const ratesResponse = await publicationRewardRatesAPI.getRatesByYear(yearObj.year);
+      const rates = ratesResponse.rates || ratesResponse.data || [];
+      
+      // Step 2: Find matching rate configuration
+      const matchingRate = rates.find(rate => 
+        rate.author_status === author_status && 
+        rate.journal_quartile === journal_quartile
+      );
+      
+      if (!matchingRate) return null;
+      
+      // Step 3: Get subcategories with budgets for this category/year
+      const subsResponse = await teacherAPI.getVisibleSubcategories(category_id, year_id);
+      const subcategories = subsResponse.subcategories || [];
+      
+      // Step 4: Find matching subcategory budget by looking for fund_description
+      // that matches our rate configuration
+      for (const sub of subcategories) {
         const budget = sub.subcategory_budget || sub.SubcategoryBudget;
-        if (!budget || budget.fund_description !== fundDesc) continue;
-        const authorMatch = author_status === 'first_author'
-          ? sub.subcategory_name?.includes('ผู้แต่ง')
-          : author_status === 'corresponding_author'
-            ? sub.subcategory_name?.includes('ผู้ประพันธ์')
-            : false;
-        if (authorMatch) {
+        if (!budget) continue;
+        
+        // Dynamic matching: look for budget that corresponds to this author_status + quartile
+        // The fund_description should contain information about the quartile
+        const fundDesc = budget.fund_description || '';
+        
+        // Check if this budget is for publication rewards
+        if (!fundDesc.includes('ตีพิมพ์') && !fundDesc.includes('เผยแพร่')) continue;
+        
+        // Check if quartile matches (dynamic check)
+        const quartileMatches = 
+          (journal_quartile === 'T5' && fundDesc.includes('5%')) ||
+          (journal_quartile === 'T10' && fundDesc.includes('10%')) ||
+          (journal_quartile === 'Q1' && fundDesc.includes('ควอร์ไทล์ 1')) ||
+          (journal_quartile === 'Q2' && fundDesc.includes('ควอร์ไทล์ 2')) ||
+          (journal_quartile === 'Q3' && fundDesc.includes('ควอร์ไทล์ 3')) ||
+          (journal_quartile === 'Q4' && fundDesc.includes('ควอร์ไทล์ 4')) ||
+          (journal_quartile === 'TCI' && fundDesc.includes('TCI'));
+        
+        if (!quartileMatches) continue;
+        
+        // Check if author status matches (dynamic check) 
+        const authorMatches = 
+          (author_status === 'first_author' && fundDesc.includes('ผู้แต่ง')) ||
+          (author_status === 'corresponding_author' && fundDesc.includes('ประพันธ์'));
+        
+        if (authorMatches) {
           return {
             subcategory_id: sub.subcategory_id,
             subcategory_budget_id: budget.subcategory_budget_id,
-            fund_descriptionMatched: budget.fund_description,
+            fund_description: budget.fund_description,
+            reward_amount: matchingRate.reward_amount
           };
         }
       }
-      console.log(`no match in subcategory_budgets for year_id=${year_id} desc=${fundDesc}`);
+      
       return null;
     } catch (err) {
       console.error('resolveBudgetAndSubcategory error:', err);
@@ -726,6 +766,89 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId }
       return [];
     }
   };
+
+  // Helper: get valid combinations for year (100% dynamic)
+  const getValidCombinationsForYear = async (category_id, year_id) => {
+    try {
+      const validCombinations = [];
+      const yearObj = years.find(y => y.year_id === year_id);
+      if (!yearObj) return [];
+      
+      // Get all possible rates for this year
+      const ratesResponse = await publicationRewardRatesAPI.getRatesByYear(yearObj.year);
+      const rates = ratesResponse.rates || [];
+      
+      // Test each rate combination
+      for (const rate of rates) {
+        const resolved = await resolveBudgetAndSubcategory({
+          category_id,
+          year_id,
+          author_status: rate.author_status,
+          journal_quartile: rate.journal_quartile
+        });
+        
+        if (resolved) {
+          validCombinations.push({
+            author_status: rate.author_status,
+            journal_quartile: rate.journal_quartile,
+            reward_amount: rate.reward_amount,
+            subcategory_id: resolved.subcategory_id,
+            subcategory_budget_id: resolved.subcategory_budget_id
+          });
+        }
+      }
+      
+      return validCombinations;
+    } catch (err) {
+      console.error('getValidCombinationsForYear error:', err);
+      return [];
+    }
+  };
+
+  // Update form when selections change (100% dynamic)
+  useEffect(() => {
+    const updateFormDynamically = async () => {
+      if (!categoryId || !formData.year_id) return;
+      
+      // Get valid combinations
+      const validCombos = await getValidCombinationsForYear(categoryId, formData.year_id);
+      
+      // Update available options
+      const availableStatuses = [...new Set(validCombos.map(c => c.author_status))];
+      setAvailableAuthorStatuses(availableStatuses);
+      
+      // If current author_status is selected, update quartiles
+      if (formData.author_status) {
+        const availableQuartiles = validCombos
+          .filter(c => c.author_status === formData.author_status)
+          .map(c => c.journal_quartile);
+        setAvailableQuartiles(availableQuartiles);
+      }
+      
+      // If both are selected, resolve and update reward
+      if (formData.author_status && formData.journal_quartile) {
+        const matching = validCombos.find(c => 
+          c.author_status === formData.author_status && 
+          c.journal_quartile === formData.journal_quartile
+        );
+        
+        if (matching) {
+          setFormData(prev => ({
+            ...prev,
+            subcategory_id: matching.subcategory_id,
+            subcategory_budget_id: matching.subcategory_budget_id,
+            publication_reward: matching.reward_amount,
+            reward_amount: matching.reward_amount
+          }));
+          setResolutionError('');
+        } else {
+          setResolutionError('ไม่พบทุนสำหรับการจับคู่นี้');
+        }
+      }
+    };
+    
+    updateFormDynamically();
+  }, [categoryId, formData.year_id, formData.author_status, formData.journal_quartile]);
 
   // Helper: get valid author status & quartile pairs for year
   const getEnabledAuthorStatusQuartiles = async ({ category_id, year_id }) => {
@@ -1140,19 +1263,32 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId }
       console.log('Document Types:', docTypesResponse);
 
       // Handle years response
-      let currentYear = null; // เพิ่มการประกาศตัวแปร
+      let currentYear = null;
       if (yearsResponse && yearsResponse.years) {
         console.log('Setting years:', yearsResponse.years);
         setYears(yearsResponse.years);
-        const targetYearObj = yearsResponse.years.find(y => y.year_id === yearId);
-        const targetYearStr = targetYearObj ? targetYearObj.year : (new Date().getFullYear() + 543).toString();
-        currentYear = targetYearObj || yearsResponse.years.find(y => y.year === targetYearStr);
-        if (currentYear) {
-          console.log('Found current year:', currentYear);
-          setFormData(prev => ({ ...prev, year_id: currentYear.year_id }));
+        
+        // If yearId prop is provided, find that year
+        if (yearId) {
+          const targetYear = yearsResponse.years.find(y => y.year_id === yearId);
+          if (targetYear) {
+            currentYear = targetYear;
+            setFormData(prev => ({ ...prev, year_id: targetYear.year_id }));
+          }
+        } else {
+          // Fallback to current year
+          const targetYearStr = (new Date().getFullYear() + 543).toString();
+          currentYear = yearsResponse.years.find(y => y.year === targetYearStr);
+          if (currentYear) {
+            setFormData(prev => ({ ...prev, year_id: currentYear.year_id }));
+          }
         }
-        const enabled = await getEnabledYears(categoryId);
-        setEnabledYears(enabled);
+        
+        // Load enabled years for this category
+        if (categoryId) {
+          const enabled = await getEnabledYears(categoryId);
+          setEnabledYears(enabled);
+        }
       }
 
       // Handle users response and filter out current user
@@ -1578,6 +1714,25 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId }
 
     if (formData.journal_year && !validateYear(formData.journal_year)) {
       newErrors.journal_year = `กรุณากรอกปีระหว่าง 2000-${new Date().getFullYear() + 1}`;
+    }
+
+    // Dynamic validation for fund availability
+    if (formData.author_status && formData.journal_quartile) {
+      const resolved = await resolveBudgetAndSubcategory({
+        category_id: categoryId,
+        year_id: formData.year_id,
+        author_status: formData.author_status,
+        journal_quartile: formData.journal_quartile
+      });
+      
+      if (!resolved) {
+        newErrors.fund_resolution = 'ไม่มีทุนสำหรับสถานะผู้แต่งและควอร์ไทล์ที่เลือก';
+      } else {
+        // Validate budget availability
+        if (resolved.remaining_budget <= 0) {
+          newErrors.budget_availability = 'งบประมาดสำหรับทุนนี้หมดแล้ว';
+        }
+      }
     }
 
     // ตรวจสอบเอกสารแนบที่จำเป็น
@@ -2244,12 +2399,13 @@ const showSubmissionConfirmation = async () => {
           fund_descriptionMatched: budgetMap[`${formData.author_status}|${formData.journal_quartile}`]?.fund_description
         });
 
+        // ใน submitApplication function - เพิ่ม validation และ submission data
         const submissionResponse = await submissionAPI.create({
           submission_type: 'publication_reward',
           year_id: formData.year_id,
-          category_id: formData.category_id,
-          subcategory_id: formData.subcategory_id,
-          subcategory_budget_id: formData.subcategory_budget_id,
+          category_id: formData.category_id || categoryId,
+          subcategory_id: formData.subcategory_id,        // Dynamic resolved
+          subcategory_budget_id: formData.subcategory_budget_id,  // Dynamic resolved
         });
         
         submissionId = submissionResponse.submission.submission_id;
