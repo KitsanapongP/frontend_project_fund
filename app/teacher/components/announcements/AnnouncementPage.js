@@ -126,7 +126,7 @@ export default function AnnouncementPage() {
     },
     {
       header: "ปี",
-      accessor: "year_name",
+      accessor: "year",
       render: (value) => <span className="text-gray-700">{value || '-'}</span>
     },
     {
@@ -196,7 +196,7 @@ export default function AnnouncementPage() {
     },
     {
       header: "ปี",
-      accessor: "year_name",
+      accessor: "year",
       render: (value) => <span className="text-gray-700">{value || '-'}</span>
     },
     {
