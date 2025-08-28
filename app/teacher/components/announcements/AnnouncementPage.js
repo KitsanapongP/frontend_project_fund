@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { FileText, Eye, Download, Bell, BookOpen } from "lucide-react";
-import { announcementAPI, fundFormAPI } from "../../../lib/api";
+import apiClient, { announcementAPI, fundFormAPI } from "../../../lib/api";
 import DataTable from "../../../admin/components/common/DataTable";
 
 export default function AnnouncementPage() {
@@ -20,50 +20,14 @@ export default function AnnouncementPage() {
   const loadAnnouncements = async () => {
     try {
       setLoadingAnnouncements(true);
-      // ชั่วคราวใช้ข้อมูล mock แทน เพราะ backend ยังไม่พร้อม
-      console.log('Announcements API not ready yet, using mock data');
-      
-      // Mock data สำหรับทดสอบ
-      const mockAnnouncements = [
-        {
-          announcement_id: 1,
-          title: 'ประกาศเปิดรับสมัครทุนส่งเสริมการวิจัย ประจำปี 2568',
-          file_name: 'ประกาศทุนวิจัย2568.pdf',
-          description: 'กองทุนส่งเสริมการวิจัยและนวัตกรรม เปิดรับสมัครทุนส่งเสริมการวิจัย ประจำปี 2568',
-          announcement_type: 'research_fund',
-          priority: 'high',
-          status: 'active'
-        },
-        {
-          announcement_id: 2,
-          title: 'แนวทางการเขียนข้อเสนอโครงการวิจัย',
-          file_name: 'แนวทางการเขียนข้อเสนอโครงการ.pdf',
-          description: 'เอกสารแนวทางและข้อแนะนำสำหรับการเขียนข้อเสนอโครงการวิจัย',
-          announcement_type: 'research_fund',
-          priority: 'normal',
-          status: 'active'
-        },
-        {
-          announcement_id: 3,
-          title: 'ประกาศเปิดรับสมัครทุนอุดหนุนกิจกรรม ไตรมาส 1/2568',
-          file_name: 'ประกาศทุนกิจกรรมไตรมาส1-2568.pdf',
-          description: 'เปิดรับสมัครทุนอุดหนุนกิจกรรมประจำไตรมาส 1 ประจำปี 2568',
-          announcement_type: 'promotion_fund',
-          priority: 'normal',
-          status: 'active'
-        }
-      ];
-      
-      setAnnouncements(mockAnnouncements);
-      
-      // เมื่อ backend พร้อมแล้วให้ uncomment บรรทัดนี้
-      // const response = await announcementAPI.getAnnouncements({ active_only: true });
-      // if (response.success) {
-      //   setAnnouncements(response.data || []);
-      // }
+      const response = await announcementAPI.getAnnouncements({ active_only: true });
+      if (response.success) {
+        setAnnouncements(response.data || []);
+      } else {
+        setAnnouncements([]);
+      }
     } catch (error) {
       console.error('Error loading announcements:', error);
-      // ใช้ mock data เมื่อเกิด error
       setAnnouncements([]);
     } finally {
       setLoadingAnnouncements(false);
@@ -88,19 +52,29 @@ export default function AnnouncementPage() {
     }
   };
 
-  const handleViewFile = (id, type) => {
-    if (type === 'announcement') {
-      announcementAPI.viewAnnouncementFile(id);
-    } else {
-      fundFormAPI.viewFundForm(id);
-    }
+  const handleViewFile = (filePath) => {
+    if (!filePath) return;
+    const baseUrl = apiClient.baseURL.replace(/\/?api\/v1$/, '');
+    const url = new URL(filePath, baseUrl).href;
+    window.open(url, '_blank');
   };
 
-  const handleDownloadFile = (id, type) => {
-    if (type === 'announcement') {
-      announcementAPI.downloadAnnouncementFile(id);
-    } else {
-      fundFormAPI.downloadFundForm(id);
+  const handleDownloadFile = async (filePath) => {
+    if (!filePath) return;
+    const baseUrl = apiClient.baseURL.replace(/\/?api\/v1$/, '');
+    const url = new URL(filePath, baseUrl).href;
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filePath.split('/').pop() || 'file';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    } catch (error) {
+      console.error('Download failed:', error);
     }
   };
 
@@ -161,7 +135,12 @@ export default function AnnouncementPage() {
       )
     },
     {
-      header: "ประเภท",
+      header: "ปี",
+      accessor: "year",
+      render: (_, row) => <span className="text-gray-700">{row.year || '-'}</span>
+    },
+    {
+      header: "หมวดหมู่กองทุน",
       accessor: "announcement_type",
       render: (value) => (
         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getAnnouncementTypeColor(value)}`}>
@@ -169,21 +148,24 @@ export default function AnnouncementPage() {
         </span>
       )
     },
-    {
-      header: "ความสำคัญ",
-      accessor: "priority",
-      render: (value) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(value)}`}>
-          {getPriorityName(value)}
-        </span>
-      )
-    },
+    // {
+    //   header: "ความสำคัญ",
+    //   accessor: "priority",
+    //   render: (value) => (
+    //     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(value)}`}>
+    //       {getPriorityName(value)}
+    //     </span>
+    //   )
+    // },
     {
       header: "รายละเอียด",
       accessor: "description",
       render: (value) => (
-        <span className="text-gray-700">
-          {value ? (value.length > 50 ? value.substring(0, 50) + '...' : value) : '-'}
+        <span
+          className="text-gray-700 whitespace-pre-wrap break-words max-h-24 overflow-auto"
+          title={value || "-"}
+        >
+          {value || "-"}
         </span>
       )
     },
@@ -193,7 +175,7 @@ export default function AnnouncementPage() {
       render: (_, row) => (
         <div className="flex gap-2">
           <button
-            onClick={() => handleViewFile(row.announcement_id, 'announcement')}
+            onClick={() => handleViewFile(row.file_path)}
             className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
             title="ดูไฟล์"
           >
@@ -201,7 +183,7 @@ export default function AnnouncementPage() {
             ดู
           </button>
           <button
-            onClick={() => handleDownloadFile(row.announcement_id, 'announcement')}
+            onClick={() => handleDownloadFile(row.file_path)}
             className="inline-flex items-center gap-1 px-3 py-1 text-sm text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
             title="ดาวน์โหลดไฟล์"
           >
@@ -224,6 +206,11 @@ export default function AnnouncementPage() {
           <div className="text-sm text-gray-500">{row.title}</div>
         </div>
       )
+    },
+    {
+      header: "ปี",
+      accessor: "year",
+      render: (_, row) => <span className="text-gray-700">{row.year || '-'}</span>
     },
     {
       header: "ประเภทฟอร์ม",
@@ -268,8 +255,11 @@ export default function AnnouncementPage() {
       header: "รายละเอียด",
       accessor: "description",
       render: (value) => (
-        <span className="text-gray-700">
-          {value ? (value.length > 50 ? value.substring(0, 50) + '...' : value) : '-'}
+        <span
+          className="text-gray-700 whitespace-pre-wrap break-words max-h-24 overflow-auto"
+          title={value || "-"}
+        >
+          {value || "-"}
         </span>
       )
     },
@@ -279,7 +269,7 @@ export default function AnnouncementPage() {
       render: (_, row) => (
         <div className="flex gap-2">
           <button
-            onClick={() => handleViewFile(row.form_id, 'form')}
+            onClick={() => handleViewFile(row.file_path)}
             className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
             title="ดูไฟล์"
           >
@@ -287,7 +277,7 @@ export default function AnnouncementPage() {
             ดู
           </button>
           <button
-            onClick={() => handleDownloadFile(row.form_id, 'form')}
+            onClick={() => handleDownloadFile(row.file_path)}
             className="inline-flex items-center gap-1 px-3 py-1 text-sm text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
             title="ดาวน์โหลดไฟล์"
           >
