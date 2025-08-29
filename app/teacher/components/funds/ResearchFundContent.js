@@ -181,11 +181,13 @@ export default function ResearchFundContent({ onNavigate }) {
   };
 
   const handleViewForm = (subcategory) => {
+    const subcategoryId = subcategory.subcategory_id || subcategory.subcategorie_id;
+    const subcategoryName = subcategory.subcategory_name || subcategory.subcategorie_name;
 
-    if (onNavigate) {
+    if (onNavigate && subcategoryId) {
       onNavigate('generic-fund-application', {
-        subcategory_id: subcategory.subcategory_id,
-        subcategory_name: subcategory.subcategory_name
+        subcategory_id: subcategoryId,
+        subcategory_name: subcategoryName
       });
     }
   };
