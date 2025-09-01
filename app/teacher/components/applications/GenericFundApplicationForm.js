@@ -9,7 +9,6 @@ import { authAPI, systemAPI } from '../../../lib/api';
 
 // เพิ่ม apiClient สำหรับเรียก API โดยตรง
 import apiClient from '../../../lib/api';
-import apiClient, { authAPI } from '../../../lib/api';
 import { submissionAPI, documentAPI } from '../../../lib/teacher_api';
 
 // =================================================================
