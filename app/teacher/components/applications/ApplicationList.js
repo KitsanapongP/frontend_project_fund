@@ -52,7 +52,7 @@ export default function ApplicationList({ onNavigate }) {
             application_number: sub.submission_number,
             project_title: getTitle(sub),
             category_name: getCategoryName(sub),
-            subcategory_name: getSubmissionTypeName(sub.submission_type),
+            subcategory_name: getSubcategoryName(sub),
             requested_amount: getAmount(sub),
             // API returns lowercase keys; keep PascalCase fallback for backward compatibility
             status: sub.status?.status_name || sub.Status?.status_name || getStatusName(sub.status_id),
@@ -80,23 +80,14 @@ export default function ApplicationList({ onNavigate }) {
   // Helper functions to extract data
   const getTitle = (submission) => {
     if (submission.submission_type === 'publication_reward') {
-      // Check both article_title and paper_title for compatibility
-      return submission.PublicationRewardDetail?.article_title ||
-            submission.publication_reward_detail?.article_title ||
-            submission.PublicationRewardDetail?.paper_title ||
-            submission.publication_reward_detail?.paper_title ||
-            'เงินรางวัลตีพิมพ์';
-    } else if (submission.submission_type === 'fund_application') {
-      // Prefer project_name fields but fall back to project_title
-      return submission.FundApplicationDetail?.project_name_th ||
-            submission.FundApplicationDetail?.project_name_en ||
-            submission.FundApplicationDetail?.project_title ||
-            submission.fund_application_detail?.project_name_th ||
-            submission.fund_application_detail?.project_name_en ||
-            submission.fund_application_detail?.project_title ||
-            'ทุนวิจัย';
+      return (
+        submission.publication_reward_detail?.paper_title ||
+        submission.PublicationRewardDetail?.paper_title ||
+        '−'
+      );
     }
-    return 'ไม่ระบุ';
+    // For non-publication types, show dash as title should not be displayed
+    return '−';
   };
 
   const getAmount = (submission) => {
@@ -111,22 +102,35 @@ export default function ApplicationList({ onNavigate }) {
   };
 
   const getCategoryName = (submission) => {
+    if (submission.category_name) {
+      return submission.category_name;
+    }
+    if (submission.submission_type === 'publication_reward') {
+      return 'เงินรางวัลการตีพิมพ์';
+    }
+
     return (
-      submission.category_name ||
+      submission.fund_application_detail?.subcategory?.category?.category_name ||
+      submission.FundApplicationDetail?.Subcategory?.Category?.CategoryName ||
       submission.category?.category_name ||
       submission.Category?.CategoryName ||
-      submission.FundApplicationDetail?.Subcategory?.Category?.CategoryName ||
-      submission.fund_application_detail?.subcategory?.category?.category_name ||
       null
     );
   };
+  
+  const getSubcategoryName = (submission) => {
+    if (submission.submission_type === 'publication_reward') {
+      return '-';
+    }
 
-  const getSubmissionTypeName = (type) => {
-    const typeMap = {
-      'publication_reward': 'เงินรางวัลตีพิมพ์',
-      'fund_application': 'ทุนวิจัย'
-    };
-    return typeMap[type] || type;
+    return (
+      submission.subcategory_name ||
+      submission.subcategory?.subcategory_name ||
+      submission.Subcategory?.SubcategoryName ||
+      submission.fund_application_detail?.subcategory?.subcategory_name ||
+      submission.FundApplicationDetail?.Subcategory?.SubcategoryName ||
+      '-'
+    );
   };
 
   const getStatusName = (statusId) => {
@@ -190,7 +194,8 @@ export default function ApplicationList({ onNavigate }) {
     {
       header: "ชื่อทุน",
       accessor: "subcategory_name",
-      className: "text-sm"
+      className: "text-sm",
+      render: (value) => (value === null || value === undefined || value === '' ? '-' : value)
     },
     {
       header: "ชื่อโครงการ/บทความ",
