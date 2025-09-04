@@ -123,14 +123,7 @@ export default function ApplicationList({ onNavigate }) {
       return '-';
     }
 
-    return (
-      submission.subcategory_name ||
-      submission.subcategory?.subcategory_name ||
-      submission.Subcategory?.SubcategoryName ||
-      submission.fund_application_detail?.subcategory?.subcategory_name ||
-      submission.FundApplicationDetail?.Subcategory?.SubcategoryName ||
-      '-'
-    );
+    return submission.subcategory_name ?? '-';
   };
 
   const getStatusName = (statusId) => {
