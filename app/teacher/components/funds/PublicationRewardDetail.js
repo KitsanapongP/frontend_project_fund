@@ -314,6 +314,7 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
   // documents may come from different property names depending on the API response
   const documents =
     submission.documents || submission.submission_documents || [];
+  const applicant = getApplicant();
   
   return (
     <PageLayout
@@ -433,6 +434,27 @@ export default function PublicationRewardDetail({ submissionId, onNavigate }) {
               </div>
             )}
           </div>
+        </div>
+      </Card>
+
+      {/* Applicant Info */}
+      <Card
+        title="ข้อมูลผู้ยื่นคำร้อง (Applicant Details)"
+        icon={User}
+        collapsible={false}
+        className="mb-6"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm text-gray-500">ชื่อผู้ยื่นคำร้อง (Applicant)</label>
+            <p className="font-medium">{getUserFullName(applicant)}</p>
+          </div>
+          {getUserEmail(applicant) && (
+            <div>
+              <label className="text-sm text-gray-500">อีเมล (Email)</label>
+              <p className="font-medium">{getUserEmail(applicant)}</p>
+            </div>
+          )}
         </div>
       </Card>
 
