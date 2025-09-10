@@ -32,7 +32,7 @@ import { formatCurrency } from "@/app/utils/format";
 
 const getStatusName = (statusId) => {
   const statuses = {
-    1: "รอพิจารณา",
+    1: "อยู่ระหว่างการพิจารณา",
     2: "อนุมัติ",
     3: "ไม่อนุมัติ",
     4: "ต้องแก้ไข",

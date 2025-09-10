@@ -2192,14 +2192,51 @@ const showSubmissionConfirmation = async () => {
         });
       }
 
-      // ไม่ต้องเพิ่ม merged PDF ถ้าไม่จำเป็น หรือเช็คก่อนว่าซ้ำหรือไม่
-      if (mergedPdfFile && !processedFiles.has(mergedPdfFile.name)) {
+      // --- Ensure merged PDF is included reliably ---
+      const collectPdfSources = () => {
+        const pdfs = [];
+        // 1) จากเอกสารหลัก
+        Object.values(uploadedFiles).forEach(f => {
+          if (f && f.type === 'application/pdf') pdfs.push(f);
+        });
+        // 2) จากเอกสารอื่น ๆ
+        if (otherDocuments?.length) {
+          otherDocuments.forEach(d => {
+            const f = d.file || d;
+            if (f?.type === 'application/pdf') pdfs.push(f);
+          });
+        }
+        // 3) จากทุนภายนอก
+        if (externalFundingFiles?.length) {
+          externalFundingFiles.forEach(d => {
+            if (d.file?.type === 'application/pdf') pdfs.push(d.file);
+          });
+        }
+        return pdfs;
+      };
+
+      let mergedForUpload = mergedPdfFile;
+
+      // fallback: ถ้า state ยังไม่มี ให้รวม/เลือกใหม่ตรงนี้เลย
+      if (!mergedForUpload) {
+        const pdfs = collectPdfSources();
+        if (pdfs.length > 1) {
+          const blob = await mergePDFs(pdfs);
+          mergedForUpload = new File([blob], 'merged_documents.pdf', { type: 'application/pdf' });
+        } else if (pdfs.length === 1) {
+          mergedForUpload = pdfs[0]; // กรณีมีไฟล์เดียว ใช้อันเดียว
+        }
+      }
+
+      if (mergedForUpload && !processedFiles.has(mergedForUpload.name)) {
         allFiles.push({
-          file: mergedPdfFile,
-          document_type_id: 1,
+          file: mergedForUpload,
+          document_type_id: 11, // แนบเป็น "เอกสารอื่น ๆ" เพื่อลดการชนกับชนิดหลัก
           description: 'เอกสารรวม (Merged PDF)'
         });
+        processedFiles.add(mergedForUpload.name);
       }
+
 
       console.log(`Total files to upload: ${allFiles.length}`);
 
@@ -3601,7 +3638,7 @@ const showSubmissionConfirmation = async () => {
         // ================================================================= */}
         <SimpleCard title="ข้อมูลเพิ่มเติม (Additional Information)" icon={FileText}>
           <div className="space-y-4">
-            {/* University funding */}
+            {/* University funding — checkbox under question; inline field when checked */}
             <label className="block text-sm font-medium text-gray-700 mb-2">
               ได้รับการสนับสนุนทุนจากมหาวิทยาลัยหรือไม่?
               <br />
@@ -3610,48 +3647,44 @@ const showSubmissionConfirmation = async () => {
               </span>
             </label>
 
-            {/* ปุ่มชิดซ้าย: เอา justify-between ออก → ใช้ justify-start + gap */}
-            <div className="flex items-center justify-start gap-4 rounded-lg border border-gray-200 p-4">
-              {/* ปุ่มสวิตช์อยู่ซ้ายสุด */}
-              <label className="relative inline-flex items-center cursor-pointer select-none">
+            <div className="flex flex-wrap items-center gap-4 rounded-lg border border-gray-200 p-4">
+              {/* Checkbox */}
+              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
+                  className="h-5 w-5 accent-blue-600"
                   checked={formData.has_university_fund === 'yes'}
                   onChange={(e) =>
                     setFormData(prev => ({
                       ...prev,
-                      has_university_fund: e.target.checked ? 'yes' : 'no'
+                      has_university_fund: e.target.checked ? 'yes' : 'no',
+                      // ถ้ายกเลิกติ๊กให้ล้างค่า:
+                      university_fund_ref: e.target.checked ? (prev.university_fund_ref || '') : ''
                     }))
                   }
-                  className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-200 rounded-full transition-colors peer-checked:bg-blue-600"></div>
-                <div className="absolute left-0.5 top-0.5 h-5 w-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+                <span className="text-sm text-gray-700">
+                  {formData.has_university_fund === 'yes' ? 'ได้รับ (Yes)' : 'ไม่ได้รับ (No)'}
+                </span>
               </label>
 
-              {/* ข้อความสถานะชิดขวาของปุ่ม */}
-              <span className="text-sm text-gray-700">
-                {formData.has_university_fund === 'yes' ? 'ได้รับ (Yes)' : 'ไม่ได้รับ (No)'}
-              </span>
+              {/* Inline field (same row; จะห่อบรรทัดเมื่อจอแคบ) */}
+              {formData.has_university_fund === 'yes' && (
+                <div className="flex items-center gap-2 flex-1 min-w-[260px]">
+                  <input
+                    id="university_fund_ref"
+                    type="text"
+                    name="university_fund_ref"
+                    value={formData.university_fund_ref}
+                    onChange={handleInputChange}
+                    placeholder="กรอกหมายเลขอ้างอิงทุน (Enter fund reference number)"
+                    className="w-full min-w-0 px-4 py-2 rounded-lg border border-gray-300
+                              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                              placeholder:text-gray-400"
+                  />
+                </div>
+              )}
             </div>
-
-
-            {/* University fund reference */}
-            {formData.has_university_fund === 'yes' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  หมายเลขอ้างอิงทุน (Fund Reference Number)
-                </label>
-                <input
-                  type="text"
-                  name="university_fund_ref"
-                  value={formData.university_fund_ref}
-                  onChange={handleInputChange}
-                  placeholder="กรอกหมายเลขอ้างอิงทุน (Enter fund reference number)"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            )}
 
             {/* University ranking */}
             <div>
