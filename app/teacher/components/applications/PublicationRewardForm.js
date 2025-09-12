@@ -603,11 +603,10 @@ const FileUpload = ({ onFileSelect, accept, multiple = false, error, label }) =>
 // MAIN COMPONENT START
 // =================================================================
 
-export default function PublicationRewardForm({ onNavigate, categoryId, yearId }) {
+export default function PublicationRewardForm({ onNavigate, categoryId, yearId, readOnly = false }) {
   // =================================================================
   // STATE DECLARATIONS
   // =================================================================
-  
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
@@ -683,6 +682,34 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId }
 
   // External funding sources
   const [externalFundings, setExternalFundings] = useState([])
+
+  const [isReadOnly, setIsReadOnly] = useState(false);
+
+  useEffect(() => {
+    let ro = false;
+
+    // 1) รับจาก prop
+    if (readOnly === true) ro = true;
+
+    // 2) รับจาก URL query
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      const roq = (sp.get('readonly') || '').toLowerCase();
+      const mode = (sp.get('mode') || '').toLowerCase();
+      if (['1', 'true', 'yes'].includes(roq)) ro = true;
+      if (['view', 'detail', 'details', 'readonly'].includes(mode)) ro = true;
+
+      // 3) รับจาก sessionStorage (fallback ที่เราตั้งจากหน้ารายการ)
+      try {
+        const s = window.sessionStorage.getItem('fund_form_readonly');
+        if (s === '1') ro = true;
+        // เคลียร์เพื่อไม่ให้ติดไปหน้าอื่น
+        window.sessionStorage.removeItem('fund_form_readonly');
+      } catch {}
+    }
+
+    setIsReadOnly(ro);
+  }, [readOnly]);
 
   // Helper: resolve subcategory and budget via backend resolver
   const resolveBudgetAndSubcategory = async ({ category_id, year_id, author_status, journal_quartile }) => {
@@ -2700,6 +2727,12 @@ const showSubmissionConfirmation = async () => {
       ]}
     >
       <form className="space-y-6">
+      {isReadOnly && (
+        <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
+          ขณะนี้เป็นโหมด <strong>อ่านอย่างเดียว</strong> — ไม่สามารถแก้ไขหรือส่งคำร้องได้
+        </div>
+      )}
+      <fieldset disabled={isReadOnly} aria-disabled={isReadOnly} className="space-y-6">
         {/* =================================================================
         // BASIC INFORMATION SECTION
         // ================================================================= */}
@@ -3780,6 +3813,7 @@ const showSubmissionConfirmation = async () => {
             </div>
           </div>
         </div>
+      </fieldset>
       </form>
     </PageLayout>
   );
