@@ -19,6 +19,7 @@ import {
 } from '../../../lib/publication_api';
 import Swal from 'sweetalert2';
 import { PDFDocument } from 'pdf-lib';
+import { notificationsAPI } from '../../../lib/notifications_api';
 
 // =================================================================
 // CONFIGURATION & CONSTANTS
@@ -296,31 +297,38 @@ const getDocumentTypeName = (documentTypeId) => {
   return typeMap[documentTypeId] || `เอกสารประเภท ${documentTypeId}`;
 };
 
-// PDF merging utility
+// PDF merging utility (robust)
 const mergePDFs = async (pdfFiles) => {
-  try {
-    const mergedPdf = await PDFDocument.create();
-    
-    for (const file of pdfFiles) {
-      if (file.type === 'application/pdf') {
-        const pdfBytes = await file.arrayBuffer();
-        // เพิ่ม option ignoreEncryption: true เพื่อข้ามการเข้ารหัส
-        const pdf = await PDFDocument.load(pdfBytes, { 
-          ignoreEncryption: true 
-        });
-        const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-        pages.forEach((page) => mergedPdf.addPage(page));
-      }
+  const merged = await PDFDocument.create();
+  const skipped = [];
+
+  for (const f of pdfFiles) {
+    if (!f) continue;
+    try {
+      const bytes = await f.arrayBuffer();
+      const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
+      const pages = await merged.copyPages(src, src.getPageIndices());
+      pages.forEach(p => merged.addPage(p));
+    } catch (e) {
+      console.warn('mergePDFs: skip file', f?.name, e);
+      skipped.push(f?.name || 'unknown.pdf');
+      // ข้ามไฟล์ที่เสียแทนที่จะล้มทั้งกระบวนการ
+      continue;
     }
-    
-    const mergedPdfBytes = await mergedPdf.save();
-    const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-    return new File([blob], 'merged_documents.pdf', { type: 'application/pdf' });
-  } catch (error) {
-    console.error('Error merging PDFs:', error);
-    throw error;
   }
+
+  // ไม่มีหน้าสำหรับรวมเลย -> โยน error เพื่อให้ fallback เป็น “ส่งไฟล์แยก”
+  if (merged.getPageCount() === 0) {
+    const err = new Error('No PDF pages to merge');
+    err.skipped = skipped;
+    throw err;
+  }
+
+  const mergedBytes = await merged.save();
+  const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+  return { blob, skipped }; // << คืน Blob + รายชื่อไฟล์ที่ถูกข้าม
 };
+
 
 // =================================================================
 // DRAFT MANAGEMENT FUNCTIONS
@@ -1875,31 +1883,34 @@ const showSubmissionConfirmation = async () => {
       
       if (pdfFiles.length > 0) {
         if (pdfFiles.length > 1) {
-          // Merge multiple PDFs
-          mergedPdfBlob = await mergePDFs(pdfFiles);
-          const mergedFile = new File([mergedPdfBlob], 'merged_documents.pdf', { type: 'application/pdf' });
+          // Merge multiple PDFs (robust)
+          const { blob, skipped } = await mergePDFs(pdfFiles);
+          const mergedFile = new File([blob], 'merged_documents.pdf', { type: 'application/pdf' });
           setMergedPdfFile(mergedFile);
+          mergedPdfUrl = URL.createObjectURL(blob);
+          if (skipped?.length) {
+            Toast.fire({ icon: 'warning', title: 'ข้ามไฟล์ PDF บางไฟล์', text: skipped.join(', ') });
+          }
         } else {
           // Use single PDF
-          mergedPdfBlob = pdfFiles[0];
-          setMergedPdfFile(pdfFiles[0]);
+          const one = pdfFiles[0];
+          setMergedPdfFile(one);
+          mergedPdfUrl = URL.createObjectURL(one);
         }
-        mergedPdfUrl = URL.createObjectURL(mergedPdfBlob);
       }
-
       Swal.close();
-    } catch (error) {
-      console.error('Error creating merged PDF:', error);
-      Swal.close();
-      setMergedPdfFile(null);
-      Swal.fire({
-        icon: 'error',
-        title: 'ไม่สามารถรวมไฟล์ PDF ได้',
-        text: 'กรุณาตรวจสอบไฟล์และลองใหม่อีกครั้ง',
-        confirmButtonColor: '#3085d6'
-      });
-      return false;
-    }
+      } catch (error) {
+        console.error('Error creating merged PDF:', error);
+        Swal.close();
+        setMergedPdfFile(null);
+        // อย่าหยุด flow — ส่งไฟล์แยกแทน
+        Toast.fire({
+          icon: 'warning',
+          title: 'ไม่สามารถรวมไฟล์ PDF',
+          text: 'ระบบจะส่งไฟล์แยกแทน'
+        });
+        // ไม่ return false; ให้ไปต่อได้
+      }
 
     const summaryHTML = `
       <div class="text-left space-y-4">
@@ -2601,6 +2612,12 @@ const showSubmissionConfirmation = async () => {
       });
 
       await submissionAPI.submitSubmission(submissionId);
+
+      try {
+        await notificationsAPI.notifySubmissionSubmitted(submissionId);
+      } catch (e) {
+        console.warn('notifySubmissionSubmitted failed:', e);
+      }
 
       // Delete draft from localStorage
       deleteDraftFromLocal();
@@ -3640,10 +3657,10 @@ const showSubmissionConfirmation = async () => {
           <div className="space-y-4">
             {/* University funding — checkbox under question; inline field when checked */}
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              ได้รับการสนับสนุนทุนจากมหาวิทยาลัยหรือไม่?
+              ได้รับการสนับสนุนทุนจากมหาวิทยาลัยขอนแก่นหรือไม่?
               <br />
               <span className="text-xs font-normal text-gray-600">
-                (Did you receive funding support from the university?)
+                (Did you receive funding support from the Khon Kaen University?)
               </span>
             </label>
 
