@@ -456,8 +456,8 @@ export default function SubmissionsManagement() {
   // ---------- List View ----------
   return (
     <PageLayout
-      title="จัดการคำร้องขอทุน"
-      subtitle="บันทึกข้อมูลการอนุมัติทุนและจัดการคำร้องทั้งหมด"
+      title="รายการการขอทุน"
+      subtitle="บันทึกข้อมูลคำร้องขอทุนและจัดการคำร้องทั้งหมด"
       icon={FileText}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/admin" },

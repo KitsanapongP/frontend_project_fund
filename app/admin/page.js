@@ -36,16 +36,15 @@ function AdminPageContent() {
       case 'promotion-fund':
         return <PromotionFundContent onNavigate={handleNavigate} />;
       case 'applications-list':
-        return <UnderDevelopmentContent currentPage={currentPage} />;
+        return <SubmissionsManagement currentPage={handleNavigate} />;
       case 'fund-settings':
         return <FundSettingsContent currentPage={handleNavigate} />;
       case 'approval-records':
-        return <SubmissionsManagement currentPage={handleNavigate} />;
-      default:
         return <UnderDevelopmentContent currentPage={currentPage} />;
       case 'publications-import':
         return <AdminPublicationsImport currentPage={handleNavigate} />;
-
+      default:
+        return <UnderDevelopmentContent currentPage={currentPage} />;
     }
   };
 
