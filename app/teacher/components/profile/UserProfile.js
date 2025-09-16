@@ -74,6 +74,22 @@ export default function ProfileContent({ onNavigate }) {
     loadInnovations();
   }, []);
 
+  // helpers
+  const parseDate = (value) => {
+    if (!value) return null;
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
+  const formatThaiDate = (value) => {
+    const d = parseDate(value);
+    if (!d) return "-";
+    return d.toLocaleDateString("th-TH", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
   const loadProfileData = async () => {
     try {
       setLoading(true);
@@ -218,8 +234,10 @@ export default function ProfileContent({ onNavigate }) {
       case "innovation_type":
         return item.innovation_type?.toLowerCase() || "";
       case "registered_date":
-      default:
-        return item.registered_date || "";
+      default: {
+        const d = parseDate(item.registered_date);
+        return d ? d.getTime() : 0; // numeric for correct asc/desc sorting
+      }
     }
   };
 
@@ -563,7 +581,7 @@ export default function ProfileContent({ onNavigate }) {
                           </span>
                         </td>
                         <td className="px-4 py-2 text-center">
-                          {inv.registered_date || "-"}
+                          {formatThaiDate(inv.registered_date)}
                         </td>
                       </tr>
                     ))}
