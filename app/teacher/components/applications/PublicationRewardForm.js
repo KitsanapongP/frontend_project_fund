@@ -20,6 +20,7 @@ import {
 import Swal from 'sweetalert2';
 import { PDFDocument } from 'pdf-lib';
 import { notificationsAPI } from '../../../lib/notifications_api';
+import { systemConfigAPI } from '../../../lib/system_config_api';
 
 // =================================================================
 // CONFIGURATION & CONSTANTS
@@ -685,6 +686,10 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
 
   const [isReadOnly, setIsReadOnly] = useState(false);
 
+  const [announcementLock, setAnnouncementLock] = useState({
+    main_annoucement: null,
+    reward_announcement: null,
+  });
   useEffect(() => {
     let ro = false;
 
@@ -1147,6 +1152,28 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         publicationFormAPI.getUsers(),
         publicationFormAPI.getDocumentTypes()
       ]);
+
+      // === Lock current system_config to the submission time ===
+      try {
+        // หลังจากเรียก systemConfigAPI.getWindow()
+        const rawWindow = await systemConfigAPI.getWindow();
+        const root = rawWindow?.data ?? rawWindow; // รองรับทั้ง 2 รูปแบบ (admin vs window)
+
+        // อ่าน announcement_id ที่ถูกต้องจาก system_config
+        setAnnouncementLock({
+          main_annoucement: root?.config_id ?? null,
+          reward_announcement: root?.config_id ?? null,
+        });
+
+        // (แนะนำ) debug ดูค่าที่ล็อกได้
+        console.log('announcementLock =', {
+          main_annoucement: root?.main_annoucement,
+          reward_announcement: root?.reward_announcement,
+        });
+      } catch (e) {
+        console.warn('Cannot fetch system-config window; main_annoucement/reward_announcement will be null', e);
+        setAnnouncementLock({ main_annoucement: null, reward_announcement: null });
+      }
 
       console.log('Raw API responses:');
       console.log('Years:', yearsResponse);
@@ -2446,8 +2473,10 @@ const showSubmissionConfirmation = async () => {
         funding_references: formData.university_fund_ref || '',
         university_rankings: formData.university_ranking || '',
         
-        // Required empty fields
-        announce_reference_number: ''
+        // Announcement info
+        announce_reference_number: '',
+        main_annoucement: announcementLock.main_annoucement,
+        reward_announcement: announcementLock.reward_announcement,
       };
 
       console.log('=== Sending Publication Data ===');
