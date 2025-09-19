@@ -197,7 +197,7 @@ const SystemConfigSettings = () => {
                 type="text"
                 value={form.current_year}
                 onChange={(e) => setForm((f) => ({ ...f, current_year: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                 placeholder="เช่น 2568"
               />
             </div>
@@ -207,7 +207,7 @@ const SystemConfigSettings = () => {
                 type="datetime-local"
                 value={form.start_date}
                 onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500"
               />
             </div>
             <div>
@@ -216,14 +216,14 @@ const SystemConfigSettings = () => {
                 type="datetime-local"
                 value={form.end_date}
                 onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500"
               />
             </div>
           </div>
 
           {/* สถานะ + ช่วงเวลา (เอา "ปีงบประมาณในระบบ" ออกตามคำขอ) */}
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 border rounded-lg">
+            <div className="p-4 border border-gray-300 rounded-lg">
               <div className="text-sm text-gray-500 flex items-center gap-2 mb-1">
                 <Clock size={14} /> สถานะการเปิดรับ
               </div>
@@ -241,11 +241,11 @@ const SystemConfigSettings = () => {
               </div>
             </div>
 
-            <div className="p-4 border rounded-lg">
+            <div className="p-4 border border-gray-300 rounded-lg">
               <div className="text-sm text-gray-500 flex items-center gap-2 mb-1">
                 <Calendar size={14} /> ช่วงเวลาที่ตั้งค่า
               </div>
-              <div className="text-base text-gray-800">{windowText}</div>
+              <div className="text-base text-gray-700">{windowText}</div>
             </div>
           </div>
         </>
