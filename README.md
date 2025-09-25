@@ -1,21 +1,37 @@
-## Publication summary API
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-The `POST /api/publication-summary` endpoint can generate a PDF document from the official DOCX template by invoking LibreOffice in headless mode. The API performs an automatic lookup for the LibreOffice CLI (`soffice`) using the current `PATH`, a set of common installation locations, and the optional environment variables listed below.
+## Getting Started
 
-### Environment variables
+First, run the development server:
 
-| Variable | Description |
-| --- | --- |
-| `LIBREOFFICE_PATH` | Optional hint that points either to the `soffice` executable or to its containing directory. Multiple paths can be provided using the platform delimiter (`:` on Linux/macOS, `;` on Windows). |
-| `PUBLICATION_SUMMARY_FALLBACK_FORMAT` | Optional override for the behavior when LibreOffice is unavailable. Defaults to returning the patched DOCX response; set to `error` to keep the previous 503 error response instead. |
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-If LibreOffice cannot be located the API now returns the patched DOCX document so that callers can still download the official template. Configure `LIBREOFFICE_PATH` on platforms where LibreOffice is installed outside of the default locations (for example, a custom Windows install directory), or set `PUBLICATION_SUMMARY_FALLBACK_FORMAT=error` to surface an explicit error instead.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### Local testing
+You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
-1. Install [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/).
-2. Ensure the `soffice` binary is available on the system `PATH` or export `LIBREOFFICE_PATH` before starting the Next.js server.
-3. Run the dev server with `npm run dev` (or `yarn dev`).
-4. Issue a POST request with the placeholders payload to `/api/publication-summary`.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-When LibreOffice is present the endpoint returns a PDF response (`Content-Type: application/pdf`). When LibreOffice is missing and the fallback is disabled, callers receive a structured JSON error without the route crashing.
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# frontend_project_plan
