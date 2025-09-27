@@ -99,6 +99,17 @@ async setAnnouncement(slot, announcement_id) {
   return apiClient.patch(`/admin/system-config/announcements/${slot}`, { announcement_id });
 },
 
+async getCurrentDeptHead() {
+  return apiClient.get("/system-config/dept-head/current");
+},
+async listDeptHeadHistory(params = {}) {
+  return apiClient.get("/admin/system-config/dept-head/history", { params });
+},
+async assignDeptHead(payload) {
+  // { head_user_id, effective_from?, note? }
+  return apiClient.post("/admin/system-config/dept-head/assign", payload);
+},
+
 // ช็อตคัต
 async setMainAnnouncement(id)       { return this.setAnnouncement("main", id ?? null); },
 async setRewardAnnouncement(id)     { return this.setAnnouncement("reward", id ?? null); },
