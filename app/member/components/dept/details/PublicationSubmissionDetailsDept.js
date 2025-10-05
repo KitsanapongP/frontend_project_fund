@@ -1013,6 +1013,13 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
   const approve = async (headComment) => {
     const body = headComment ? { head_comment: headComment, comment: headComment } : {};
     await deptHeadAPI.recommendSubmission(submission.submission_id, body);
+    
+    // แจ้งผู้ยื่น + แจ้งแอดมิน (เฉพาะกรณีเห็นควร)
+    try {
+      await notificationsAPI.notifyDeptHeadRecommended(submission.submission_id, { comment: headComment || '' });
+    } catch (e) {
+      console.warn('[Dept-Pub] notifyDeptHeadRecommended failed:', e);
+    }
 
     // reload details หลังบันทึก
     const res = await deptHeadAPI.getSubmissionDetails(submission.submission_id);
@@ -1033,6 +1040,16 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
     }
     await deptHeadAPI.rejectSubmission(submission.submission_id, payload);
 
+    // แจ้งผู้ยื่นเท่านั้น (ไม่แจ้งแอดมิน)
+    try {
+      await notificationsAPI.notifyDeptHeadNotRecommended(submission.submission_id, {
+        reason: String(reason || '').trim(),
+        comment: headComment || '',
+      });
+    } catch (e) {
+      console.warn('[Dept-Pub] notifyDeptHeadNotRecommended failed:', e);
+    }
+    
     // reload details หลังบันทึก
     const res = await deptHeadAPI.getSubmissionDetails(submission.submission_id);
     const data = res?.submission || res || {};

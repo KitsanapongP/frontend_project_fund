@@ -14,6 +14,7 @@ import Card from '../../common/Card';
 import StatusBadge from '../../common/StatusBadge';
 import deptHeadAPI from '@/app/lib/dept_head_api';
 import apiClient from '@/app/lib/api';
+import { notificationsAPI } from '@/app/lib/notifications_api';
 import { toast } from 'react-hot-toast';
 import { useStatusMap } from '@/app/hooks/useStatusMap';
 import { PDFDocument } from 'pdf-lib';
@@ -668,6 +669,12 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
   const approve = async (headComment) => {
     const body = headComment ? { head_comment: headComment, comment: headComment } : {};
     await deptHeadAPI.recommendSubmission(submission.submission_id, body);
+    // แจ้งเตือนตาม flow ใหม่ (เห็นควร → แจ้งผู้ยื่น + แจ้งแอดมิน)
+    try {
+      await notificationsAPI.notifyDeptHeadRecommended(submission.submission_id, { comment: headComment || '' });
+    } catch (e) {
+      console.warn('[Dept] notifyDeptHeadRecommended failed:', e);
+    }
     // refresh
     const res = await deptHeadAPI.getSubmissionDetails(submission.submission_id);
     let data = res?.submission || res;
@@ -687,6 +694,15 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
       payload.comment = headComment; // เผื่อระบบเดิมอ่านจาก comment
     }
     await deptHeadAPI.rejectSubmission(submission.submission_id, payload);
+    // แจ้งเตือนตาม flow ใหม่ (ไม่เห็นควร → แจ้งผู้ยื่นเท่านั้น)
+    try {
+      await notificationsAPI.notifyDeptHeadNotRecommended(submission.submission_id, {
+        reason: String(reason || '').trim(),
+        comment: headComment || '',
+      });
+    } catch (e) {
+      console.warn('[Dept] notifyDeptHeadNotRecommended failed:', e);
+    }
     // refresh
     const res = await deptHeadAPI.getSubmissionDetails(submission.submission_id);
     let data = res?.submission || res;
