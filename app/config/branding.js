@@ -12,8 +12,8 @@ export const BRANDING = Object.freeze({
 
   /** Text that appears under the title for each experience. */
   subtitles: {
-    admin: "กองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์ - Admin",
-    member: "กองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์ - Member",
+    admin: "กองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์",
+    member: "กองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์",
   },
 
   /**
