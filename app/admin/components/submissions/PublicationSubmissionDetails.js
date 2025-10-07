@@ -1836,13 +1836,13 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
           {submission?.status_id === 2 && (
             <div className="mt-2">
               <div className="text-lg font-bold text-green-600">
-                {formatCurrency(
-                  pubDetail?.total_approve_amount ??
-                    (Number(pubDetail?.reward_approve_amount || 0) +
-                    Number(pubDetail?.revision_fee_approve_amount || 0) +
-                    Number(pubDetail?.publication_fee_approve_amount || 0))
-                )}
-              </div>
+                  {formatCurrency(
+                    pubDetail?.total_approve_amount ??
+                      (Number(pubDetail?.reward_approve_amount || 0) +
+                        Number(pubDetail?.revision_fee_approve_amount || 0) +
+                        Number(pubDetail?.publication_fee_approve_amount || 0))
+                  )}฿
+                </div>
               <div className="text-sm text-gray-500">จำนวนเงินที่อนุมัติ</div>
             </div>
           )}
@@ -2013,8 +2013,8 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
             </div>
           </Card>
           
-          {/* Request Information */}
-          <Card title="ข้อมูลการเงิน (Request Information)" icon={DollarSign} collapsible={false}>
+          {/* Financial Information */}
+          <Card title="ข้อมูลการเงิน (Financial Information)" icon={DollarSign} collapsible={false}>
             <div className="space-y-4">
               <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} pb-2 border-b text-sm text-gray-600`}>
                 <div></div>
@@ -2100,16 +2100,16 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
                   <span className="text-xs font-normal text-gray-600">Total Requested to CP-KKU</span>
                 </label>
                 <span className="text-right font-bold text-blue-600">
-                  ฿{formatCurrency(pubDetail.total_amount || pubDetail.reward_amount || 0)}
+                  {formatCurrency(pubDetail.total_amount || pubDetail.reward_amount || 0)}฿
                 </span>
                 {submission?.status_id === 2 && (
                   <span className="text-right font-bold text-green-600">
-                    ฿{formatCurrency(
+                    {formatCurrency(
                       pubDetail?.total_approve_amount ??
                         (Number(pubDetail?.reward_approve_amount || 0) +
                           Number(pubDetail?.revision_fee_approve_amount || 0) +
                           Number(pubDetail?.publication_fee_approve_amount || 0))
-                    )}
+                    )}฿
                   </span>
                 )}
               </div>
