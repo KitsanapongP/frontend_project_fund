@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Eye, Download, Gift } from "lucide-react";
+import { Search, Eye, Download, Gift, RefreshCcw } from "lucide-react";
 import { submissionAPI, teacherAPI } from "@/app/lib/member_api";
 import { systemAPI } from "@/app/lib/api";
 import { systemConfigAPI } from "@/app/lib/system_config_api";
@@ -96,6 +96,10 @@ export default function ReceivedFundsList({ onNavigate }) {
     } finally {
       setYearsLoading(false);
     }
+  };
+
+  const handleRefresh = () => {
+    loadFunds();
   };
 
   const findYearIdByLabel = (label) => {
@@ -375,7 +379,20 @@ export default function ReceivedFundsList({ onNavigate }) {
         { label: "ทุนที่เคยได้รับ" },
       ]}
     >
-      <Card title="รายการทุนที่ได้รับ" collapsible={false} headerClassName="bg-gray-50">
+      <Card title="รายการทุนที่ได้รับ" 
+      collapsible={false} 
+      headerClassName="bg-white"
+      action={
+          <button 
+            onClick={handleRefresh}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition disabled:opacity-60"
+            disabled={loading}
+          >
+	          <RefreshCcw className={`w-4 h-4 ${loading ?? "animate-spin"}`} />
+            {loading ? 'กำลังโหลด...' : 'รีเฟรช'}
+          </button>
+        }
+      >
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1">
             <div className="relative">

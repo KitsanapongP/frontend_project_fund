@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Eye, Download, FileText, ClipboardList, Plus } from "lucide-react";
+import { Search, Eye, Download, FileText, ClipboardList, Plus, RefreshCcw } from "lucide-react";
 import { submissionAPI, teacherAPI } from "@/app/lib/member_api";
 import { systemAPI } from "@/app/lib/api";
 import { systemConfigAPI } from "@/app/lib/system_config_api";
@@ -509,13 +509,6 @@ export default function ApplicationList({ onNavigate }) {
       actions={
         <div className="flex gap-2">
           <button 
-            onClick={handleRefresh}
-            className="btn btn-secondary"
-            disabled={loading}
-          >
-            {loading ? 'กำลังโหลด...' : 'รีเฟรช'}
-          </button>
-          <button 
             onClick={handleCreateNew}
             className="btn btn-primary"
           >
@@ -532,7 +525,17 @@ export default function ApplicationList({ onNavigate }) {
       <Card 
         title="รายการคำร้อง" 
         collapsible={false}
-        headerClassName="bg-gray-50"
+        headerClassName="bg-white"
+        action={
+          <button 
+            onClick={handleRefresh}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition disabled:opacity-60"
+            disabled={loading}
+          >
+	          <RefreshCcw className={`w-4 h-4 ${loading ?? "animate-spin"}`} />
+            {loading ? 'กำลังโหลด...' : 'รีเฟรช'}
+          </button>
+        }
       >
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
