@@ -196,89 +196,137 @@ export default function FundSettingsContent({ onNavigate }) {
     setError(null);
     try {
       const data = await adminAPI.getCategoriesWithDetails(selectedYear.year_id);
-      console.log('[FundSettings] Loaded categories payload:', data);
       const sortedCategories = [...data].sort((a, b) => {
         const orderA = resolveOrder(a, a.category_id || 0);
         const orderB = resolveOrder(b, b.category_id || 0);
         return orderA - orderB;
       });
 
-      const normalizeBudgetRecords = (rawBudgets) => {
-        if (!rawBudgets) return [];
+      const normalizeBudgetRecords = (...rawSources) => {
+        if (!rawSources || rawSources.length === 0) return [];
 
         const results = [];
         const seenIds = new Set();
-        const seenObjects = typeof WeakSet === 'function' ? new WeakSet() : null;
+        const seenBudgetObjects = typeof WeakSet === 'function' ? new WeakSet() : null;
+        const seenContainers = typeof WeakSet === 'function' ? new WeakSet() : null;
 
         const addBudget = (budget, fallbackScope) => {
           if (!budget || typeof budget !== 'object') return;
 
-          if (seenObjects) {
-            if (seenObjects.has(budget)) return;
-            seenObjects.add(budget);
+          if (seenBudgetObjects) {
+            if (seenBudgetObjects.has(budget)) return;
+            seenBudgetObjects.add(budget);
           }
 
-          const budgetId = budget.subcategory_budget_id ?? budget.budget_id ?? `${fallbackScope || 'unknown'}-${
-            budget.level || budget.fund_description || results.length
-          }`;
+          const resolvedScope = String(budget.record_scope || fallbackScope || '').toLowerCase();
+          const budgetId =
+            budget.subcategory_budget_id ??
+            budget.budget_id ??
+            `${resolvedScope || 'unknown'}-${
+              budget.level || budget.fund_description || budget.max_amount_per_grant || results.length
+            }`;
+
           if (seenIds.has(budgetId)) return;
 
           seenIds.add(budgetId);
           results.push({
             ...budget,
-            record_scope: String(budget.record_scope || fallbackScope || '')
-              .trim()
-              .toLowerCase(),
+            record_scope: resolvedScope,
           });
         };
 
-        if (Array.isArray(rawBudgets)) {
-          console.log('[FundSettings] Normalizing direct budget array:', rawBudgets);
-          rawBudgets.forEach((budget) => addBudget(budget));
-          return results;
-        }
+        const isBudgetRecord = (value) => {
+          if (!value || typeof value !== 'object') return false;
+          const keys = [
+            'subcategory_budget_id',
+            'budget_id',
+            'max_amount_per_grant',
+            'max_amount_per_year',
+            'max_grants',
+            'fund_description',
+            'allocated_amount',
+            'remaining_budget',
+            'record_scope',
+          ];
+          return keys.some((key) => value[key] !== undefined && value[key] !== null);
+        };
 
-        if (Array.isArray(rawBudgets?.budgets)) {
-          console.log('[FundSettings] Found budgets.budgets array:', rawBudgets.budgets);
-          rawBudgets.budgets.forEach((budget) => addBudget(budget));
-        }
+        const processSource = (source, fallbackScope) => {
+          if (source === null || source === undefined) return;
 
-        const overallCandidates = [
-          rawBudgets.overall,
-          rawBudgets.overall_budget,
-          rawBudgets.overallBudget,
-        ];
-
-        overallCandidates.forEach((budget) => {
-          if (budget) {
-            console.log('[FundSettings] Found overall budget candidate:', budget);
+          if (Array.isArray(source)) {
+            source.forEach((item) => processSource(item, fallbackScope));
+            return;
           }
-          addBudget(budget, 'overall');
-        });
 
-        const ruleCandidates = [
-          rawBudgets.rules,
-          rawBudgets.rule_budgets,
-          rawBudgets.ruleBudgets,
-        ];
+          if (typeof source !== 'object') return;
 
-        ruleCandidates.forEach((group) => {
-          if (Array.isArray(group)) {
-            console.log('[FundSettings] Found rule budget candidates:', group);
-            group.forEach((budget) => addBudget(budget, 'rule'));
+          if (isBudgetRecord(source)) {
+            addBudget(source, fallbackScope);
+            return;
           }
-        });
 
-        if (results.length === 0) {
-          console.log('[FundSettings] Falling back to object value scan for budgets:', rawBudgets);
-          Object.values(rawBudgets).forEach((value) => {
-            if (Array.isArray(value)) {
-              value.forEach((item) => addBudget(item));
-            } else if (value && typeof value === 'object') {
-              addBudget(value);
+          if (seenContainers) {
+            if (seenContainers.has(source)) return;
+            seenContainers.add(source);
+          }
+
+          const scopedCandidates = [
+            ['overall', 'overall'],
+            ['overall_budget', 'overall'],
+            ['overallBudget', 'overall'],
+            ['overall_rule', 'overall'],
+            ['overallRule', 'overall'],
+          ];
+          scopedCandidates.forEach(([key, scope]) => {
+            if (source[key] !== undefined) {
+              processSource(source[key], scope);
             }
           });
-        }
+
+          const ruleCandidates = [
+            'rules',
+            'rule_budgets',
+            'ruleBudgets',
+            'rulesBudget',
+            'ruleBudget',
+            'budget_rules',
+          ];
+          ruleCandidates.forEach((key) => {
+            if (source[key] !== undefined) {
+              processSource(source[key], 'rule');
+            }
+          });
+
+          const genericCollections = [
+            'budgets',
+            'budget_list',
+            'budgetList',
+            'rawBudgetSource',
+            'raw_budget_source',
+            'budget_records',
+            'budgetRecords',
+            'budget_items',
+            'budgetItems',
+            'records',
+            'items',
+            'data',
+            'list',
+            'entries',
+          ];
+          genericCollections.forEach((key) => {
+            if (source[key] !== undefined) {
+              processSource(source[key], fallbackScope);
+            }
+          });
+
+          Object.values(source).forEach((value) => {
+            if (value === source) return;
+            processSource(value, fallbackScope);
+          });
+        };
+
+        rawSources.forEach((source) => processSource(source));
 
         return results;
       };
@@ -295,22 +343,13 @@ export default function FundSettingsContent({ onNavigate }) {
           .map((subcategory, subIndex) => {
             const displayNumber = `${categoryNumber}.${subIndex + 1}`;
 
-            const rawBudgetSource =
-              subcategory.budgets ||
-              subcategory.subcategory_budgets ||
-              subcategory.budget_policies ||
-              subcategory.budgetPolicies ||
-              subcategory.budget_configs ||
-              subcategory.budgetConfigs ||
-              subcategory.budget;
-
-            console.log('[FundSettings] Raw budget source for subcategory:', {
-              subcategoryId: subcategory.subcategory_id,
-              subcategoryName: subcategory.subcategory_name,
-              rawBudgetSource,
-            });
-
-            const budgets = normalizeBudgetRecords(rawBudgetSource)
+            const budgets = normalizeBudgetRecords(
+              subcategory.budgets,
+              subcategory.rawBudgetSource,
+              subcategory.raw_budget_source,
+              subcategory.budget_records,
+              subcategory.budgetRecords
+            )
               .map((budget) => ({
                 ...budget,
                 record_scope: String(budget.record_scope || '').toLowerCase(),
@@ -331,12 +370,6 @@ export default function FundSettingsContent({ onNavigate }) {
                 ...budget,
                 order_index: `${displayNumber}.${budgetIndex + 1}`,
               }));
-
-            console.log('[FundSettings] Normalized budgets for subcategory:', {
-              subcategoryId: subcategory.subcategory_id,
-              subcategoryName: subcategory.subcategory_name,
-              budgets,
-            });
 
             return {
               ...subcategory,
@@ -612,81 +645,109 @@ export default function FundSettingsContent({ onNavigate }) {
   };
 
 
-  const handleSubcategorySave = async (subcategoryData) => {
+  const handleSubcategorySave = async ({ subcategory, overallPolicy }) => {
     setLoading(true);
     try {
-      // Validate data - ไม่ต้องบังคับ allocated_amount
-      const dataWithCategory = { 
-        ...subcategoryData, 
-        category_id: selectedCategoryForSub.category_id 
+      const categoryId = selectedCategoryForSub?.category_id;
+      if (!categoryId) {
+        throw new Error('ไม่พบหมวดหมู่ที่ต้องการบันทึก');
+      }
+
+      const normalizedSubcategory = {
+        subcategory_name: (subcategory?.subcategory_name || '').trim(),
+        fund_condition: subcategory?.fund_condition || '',
+        target_roles: Array.isArray(subcategory?.target_roles)
+          ? subcategory.target_roles.map((role) => role?.toString?.() ?? '').filter(Boolean)
+          : [],
+        status: subcategory?.status || 'active',
       };
-      
-      // ไม่ต้อง validate allocated_amount
-      if (!dataWithCategory.subcategory_name) {
+
+      if (!normalizedSubcategory.subcategory_name) {
         throw new Error('กรุณากรอกชื่อทุนย่อย');
       }
-      
+
+      let activeSubcategoryId = editingSubcategory?.subcategory_id || null;
+      const existingOverallBudget = editingSubcategory?.budgets?.find(
+        (budget) => String(budget.record_scope || '').toLowerCase() === 'overall'
+      );
+
       if (editingSubcategory) {
-        // Update existing subcategory - ไม่ส่ง allocated_amount
-        const updateData = {
-          subcategory_name: subcategoryData.subcategory_name,
-          fund_condition: subcategoryData.fund_condition || '',
-          target_roles: subcategoryData.target_roles || [],
-          status: editingSubcategory.status || 'active'
-        };
-        
-        await adminAPI.updateSubcategory(editingSubcategory.subcategory_id, updateData);
-        
-        // อัพเดท state
-        setCategories(prev => prev.map(cat => {
-          if (cat.category_id === selectedCategoryForSub.category_id) {
-            return {
-              ...cat,
-              subcategories: cat.subcategories.map(sub => 
-                sub.subcategory_id === editingSubcategory.subcategory_id
-                  ? { ...sub, ...updateData, update_at: new Date().toISOString() }
-                  : sub
-              )
-            };
-          }
-          return cat;
-        }));
-        
-        showSuccess("อัปเดตทุนย่อยเรียบร้อยแล้ว");
-        
+        await adminAPI.updateSubcategory(editingSubcategory.subcategory_id, normalizedSubcategory);
       } else {
-        // Add new subcategory - ไม่ส่ง allocated_amount
         const createData = {
-          category_id: selectedCategoryForSub.category_id,
-          subcategory_name: subcategoryData.subcategory_name,
-          fund_condition: subcategoryData.fund_condition || '',
-          target_roles: subcategoryData.target_roles || [],
-          status: 'active'
+          category_id: categoryId,
+          ...normalizedSubcategory,
         };
-        
+
         const response = await adminAPI.createSubcategory(createData);
-        
-        if (response.subcategory) {
-          const newSubcategory = {
-            ...response.subcategory,
-            target_roles: subcategoryData.target_roles || [],
-            budgets: [] // เริ่มต้นด้วย budget ว่าง
-          };
-          
-          setCategories(prev => prev.map(cat => 
-            cat.category_id === selectedCategoryForSub.category_id
-              ? { ...cat, subcategories: [...(cat.subcategories || []), newSubcategory] }
-              : cat
-          ));
-          
-          showSuccess("สร้างทุนย่อยเรียบร้อยแล้ว กรุณาเพิ่มงบประมาณเพื่อกำหนดจำนวนเงิน");
+        activeSubcategoryId = response?.subcategory?.subcategory_id || null;
+
+        if (!activeSubcategoryId) {
+          throw new Error('ไม่สามารถสร้างทุนย่อยใหม่ได้');
         }
       }
-      
+
+      const toFloat = (value) => {
+        if (value === '' || value === null || value === undefined) return null;
+        const parsed = Number(value);
+        return Number.isNaN(parsed) ? null : parsed;
+      };
+
+      const toInt = (value) => {
+        if (value === '' || value === null || value === undefined) return null;
+        const parsed = parseInt(value, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+      };
+
+      if (overallPolicy && activeSubcategoryId) {
+        const payload = {
+          record_scope: 'overall',
+          allocated_amount: toFloat(overallPolicy.allocated_amount) ?? 0,
+          max_amount_per_year: toFloat(overallPolicy.max_amount_per_year),
+          max_grants: toInt(overallPolicy.max_grants),
+          max_amount_per_grant: toFloat(overallPolicy.max_amount_per_grant),
+          status: overallPolicy.status || 'active',
+        };
+
+        if (overallPolicy.fund_description) {
+          payload.fund_description = overallPolicy.fund_description;
+        }
+
+        if (overallPolicy.comment) {
+          payload.comment = overallPolicy.comment;
+        }
+
+        const validationData = {
+          ...payload,
+          subcategory_id: activeSubcategoryId,
+        };
+
+        adminAPI.validateBudgetData(validationData);
+
+        if (overallPolicy.subcategory_budget_id) {
+          await adminAPI.updateBudget(overallPolicy.subcategory_budget_id, payload);
+        } else {
+          await adminAPI.createBudget({
+            ...payload,
+            subcategory_id: activeSubcategoryId,
+          });
+        }
+      } else if (!overallPolicy && existingOverallBudget) {
+        await adminAPI.deleteBudget(existingOverallBudget.subcategory_budget_id);
+      }
+
+      await loadCategories();
+
       setSubcategoryModalOpen(false);
       setEditingSubcategory(null);
       setSelectedCategoryForSub(null);
-      
+
+      if (editingSubcategory) {
+        showSuccess('อัปเดตทุนย่อยเรียบร้อยแล้ว');
+      } else {
+        showSuccess('สร้างทุนย่อยเรียบร้อยแล้ว');
+      }
+
     } catch (error) {
       console.error("Error saving subcategory:", error);
       showError(`เกิดข้อผิดพลาด: ${error.message}`);
@@ -780,70 +841,47 @@ export default function FundSettingsContent({ onNavigate }) {
 
     const toFloat = (value) => {
       if (value === '' || value === null || value === undefined) return null;
-      const parsed = Number(String(value).replace(/,/g, ''));
+      const parsed = Number(value);
       return Number.isNaN(parsed) ? null : parsed;
     };
 
     const toInt = (value) => {
       if (value === '' || value === null || value === undefined) return null;
-      const parsed = parseInt(String(value).trim(), 10);
+      const parsed = parseInt(value, 10);
       return Number.isNaN(parsed) ? null : parsed;
-    };
-
-    const sanitizeText = (value) => {
-      if (value === undefined || value === null) return undefined;
-      if (typeof value !== 'string') {
-        return value;
-      }
-      const trimmed = value.trim();
-      return trimmed === '' ? null : trimmed;
     };
 
     const scope = (budgetFormValues.record_scope || 'rule').toLowerCase();
 
     const payload = {
       record_scope: scope,
-      status: budgetFormValues.status || 'active',
     };
 
-    const description = sanitizeText(budgetFormValues.fund_description);
-    if (description !== undefined) {
-      payload.fund_description = description;
+    if (budgetFormValues.status) {
+      payload.status = budgetFormValues.status;
     }
 
-    const comment = sanitizeText(budgetFormValues.comment);
-    if (comment !== undefined) {
-      payload.comment = comment;
+    if (budgetFormValues.fund_description) {
+      payload.fund_description = budgetFormValues.fund_description;
+    }
+
+    if (budgetFormValues.comment) {
+      payload.comment = budgetFormValues.comment;
     }
 
     if (scope === 'overall') {
       const allocated = toFloat(budgetFormValues.allocated_amount);
       payload.allocated_amount = allocated ?? 0;
-
-      const yearlyCap = toFloat(budgetFormValues.max_amount_per_year);
-      payload.max_amount_per_year = yearlyCap && yearlyCap > 0 ? yearlyCap : null;
-
-      const perGrant = toFloat(budgetFormValues.max_amount_per_grant);
-      payload.max_amount_per_grant = perGrant && perGrant > 0 ? perGrant : null;
-
-      const grants = toInt(budgetFormValues.max_grants);
-      payload.max_grants = grants && grants > 0 ? grants : null;
+      payload.max_amount_per_year = toFloat(budgetFormValues.max_amount_per_year);
+      payload.max_grants = toInt(budgetFormValues.max_grants);
+      payload.max_amount_per_grant = toFloat(budgetFormValues.max_amount_per_grant);
     } else {
-      payload.allocated_amount = null;
+      payload.allocated_amount = 0;
       payload.max_amount_per_year = null;
       payload.max_grants = null;
-
-      const perGrant = toFloat(budgetFormValues.max_amount_per_grant);
-      if (!perGrant || perGrant <= 0) {
-        showError('กรุณาระบุวงเงินต่อครั้งที่มากกว่า 0 บาท');
-        return;
-      }
-
-      payload.max_amount_per_grant = perGrant;
-
-      const level = sanitizeText(budgetFormValues.level);
-      if (level !== undefined) {
-        payload.level = level;
+      payload.max_amount_per_grant = toFloat(budgetFormValues.max_amount_per_grant);
+      if (budgetFormValues.level) {
+        payload.level = budgetFormValues.level;
       }
     }
 
@@ -864,17 +902,6 @@ export default function FundSettingsContent({ onNavigate }) {
           subcategory_id: selectedSubcategoryForBudget.subcategory_id,
         });
       }
-
-      console.log('[FundSettings] Saved budget payload:', {
-        scope,
-        payload,
-        editingBudget,
-        validationData,
-        subcategory: {
-          id: selectedSubcategoryForBudget.subcategory_id,
-          name: selectedSubcategoryForBudget.subcategory_name,
-        },
-      });
 
       await loadCategories();
 
