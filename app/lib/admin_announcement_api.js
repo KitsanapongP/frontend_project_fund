@@ -45,21 +45,21 @@ export const adminAnnouncementAPI = {
   // ───────── Fund Forms ─────────
   async update(id, body = {}) {
     if (id == null || id === "" || Number.isNaN(Number(id))) {
-      throw new Error("form id is required");
+      throw new Error("announcement id is required");
     }
     const payload = { ...body };
     if (payload.display_order != null) {
       payload.display_order = Number(payload.display_order); // สำคัญ: บังคับเป็น number
     }
     try {
-      return await apiClient.put(`/fund-forms/${encodeURIComponent(id)}`, payload);
+      return await apiClient.put(`/announcements/${encodeURIComponent(id)}`, payload);
     } catch (err) {
       // โยนข้อความจาก backend ออกมาให้เห็นชัด ตอน dev
       const msg =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
         err?.message ||
-        "Update fund form failed";
+        "Update announcement failed";
       throw new Error(msg);
     }
   },
