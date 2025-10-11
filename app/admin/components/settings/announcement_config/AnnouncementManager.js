@@ -210,6 +210,7 @@ export default function AnnouncementManager() {
   const [fOverId, setFOverId] = useState(null);
   const [fOrderDirty, setFOrderDirty] = useState(false);
   const [fBaselineOrder, setFBaselineOrder] = useState([]);
+  const [downloadingIds, setDownloadingIds] = useState(new Set());
 
   /** ===== State: Years ===== */
   const [years, setYears] = useState([]);
@@ -513,71 +514,59 @@ export default function AnnouncementManager() {
   }
 
   async function handleDownloadFile(row, entity) {
-    const meta = getFileAccessMeta(row, entity);
-    console.log("[AnnouncementManager] handleDownloadFile", {
-      ...meta,
-      rowSnapshot: row,
-    });
+      const meta = getFileAccessMeta(row, entity);
+      console.log("[AnnouncementManager] handleDownloadFile", {
+        ...meta,
+        rowSnapshot: row,
+      });
 
-    const { downloadEndpoint, directURL, fallbackFileName } = meta;
-    const downloadFileName = sanitizeDownloadFileName(fallbackFileName);
-
-    if (!downloadEndpoint && !directURL) {
-      toast("error", "ไม่พบไฟล์สำหรับดาวน์โหลด");
-      return;
-    }
-
-    try {
-      if (!downloadEndpoint && directURL) {
-        const tempLink = document.createElement("a");
-        tempLink.href = directURL;
-        tempLink.target = "_blank";
-        tempLink.rel = "noopener";
-        tempLink.download = downloadFileName;
-        document.body.appendChild(tempLink);
-        tempLink.click();
-        document.body.removeChild(tempLink);
+      // 1. ตรวจสอบว่าไฟล์นี้กำลังถูกดาวน์โหลดอยู่หรือไม่
+      if (downloadingIds.has(meta.id)) {
+        console.log(`[AnnouncementManager] Download for ID ${meta.id} already in progress.`);
         return;
       }
 
-      const blob = await fetchFileBlob(downloadEndpoint, {
-        requiresAuth: true,
-      });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = downloadFileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
-    } catch (error) {
-      console.error("[AnnouncementManager] Failed to download file", {
-        meta,
-        error,
-        errorMessage: error?.message,
-        errorStack: error?.stack,
-      });
+      const { downloadEndpoint, directURL, fallbackFileName } = meta;
+      const downloadFileName = sanitizeDownloadFileName(fallbackFileName);
 
-      if (directURL) {
-        console.warn("[AnnouncementManager] Falling back to direct download", {
-          directURL,
+      if (!downloadEndpoint) { // เราจะใช้ downloadEndpoint เป็นหลัก
+        toast("error", "ไม่พบไฟล์สำหรับดาวน์โหลด");
+        return;
+      }
+
+      try {
+        // 2. เพิ่ม ID เข้าไปใน state เพื่อเริ่มสถานะ "กำลังดาวน์โหลด"
+        setDownloadingIds(prev => new Set(prev).add(meta.id));
+
+        const blob = await fetchFileBlob(downloadEndpoint, {
+          requiresAuth: true,
         });
-        const tempLink = document.createElement("a");
-        tempLink.href = directURL;
-        tempLink.target = "_blank";
-        tempLink.rel = "noopener";
-        tempLink.download = downloadFileName;
-        document.body.appendChild(tempLink);
-        tempLink.click();
-        document.body.removeChild(tempLink);
-        return;
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = downloadFileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+
+      } catch (error) {
+        console.error("[AnnouncementManager] Failed to download file", {
+          meta,
+          error,
+          errorMessage: error?.message,
+          errorStack: error?.stack,
+        });
+        toast("error", "ดาวน์โหลดไม่สำเร็จ");
+      } finally {
+          // 4. ไม่ว่าจะสำเร็จหรือล้มเหลว ให้เอา ID ออกจาก state เสมอ
+          setDownloadingIds(prev => {
+              const next = new Set(prev);
+              next.delete(meta.id);
+              return next;
+          });
       }
-
-      toast("error", "ดาวน์โหลดไม่สำเร็จ");
-    }
   }
-
-  /** ===== Forms (Announcement) ===== */
+    /** ===== Forms (Announcement) ===== */
   function blankAnnouncementForm() {
     return {
       title: "",
@@ -1156,14 +1145,16 @@ export default function AnnouncementManager() {
                         </div>
                       </td>
                       <td className="px-3 py-2">
-                        <div className="flex flex-row justify-end gap-2 flex-nowrap [&>button]:whitespace-nowrap">
-                          <button
-                            onClick={() => handleDownloadFile(row, "announcement")}
-                            className="text-green-600 hover:bg-green-50 p-2 rounded-lg inline-flex items-center gap-1"
-                            title="ดาวน์โหลดไฟล์"
-                          >
-                            <Download size={16} /> ดาวน์โหลด
-                          </button>
+                          <div className="flex flex-row justify-end gap-2 flex-nowrap [&>button]:whitespace-nowrap">
+                              <button
+                                  onClick={() => handleDownloadFile(row, "announcement")}
+                                  disabled={downloadingIds.has(id)} // เพิ่มบรรทัดนี้
+                                  className="text-green-600 hover:bg-green-50 p-2 rounded-lg inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-wait" // เพิ่ม class
+                                  title="ดาวน์โหลดไฟล์"
+                              >
+                                  <Download size={16} />
+                                  {downloadingIds.has(id) ? "กำลังโหลด..." : "ดาวน์โหลด"}
+                              </button>
                           <button
                             onClick={() => openAEdit(row)}
                             className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg inline-flex items-center gap-1"
@@ -1298,11 +1289,13 @@ export default function AnnouncementManager() {
                       <td className="px-3 py-2">
                         <div className="flex flex-row justify-end gap-2 flex-nowrap [&>button]:whitespace-nowrap">
                           <button
-                            onClick={() => handleDownloadFile(row, "fundForm")}
-                            className="text-green-600 hover:bg-green-50 p-2 rounded-lg inline-flex items-center gap-1"
-                            title="ดาวน์โหลดไฟล์"
+                              onClick={() => handleDownloadFile(row, "fundForm")}
+                              disabled={downloadingIds.has(id)} // เพิ่มบรรทัดนี้
+                              className="text-green-600 hover:bg-green-50 p-2 rounded-lg inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-wait" // เพิ่ม class
+                              title="ดาวน์โหลดไฟล์"
                           >
-                            <Download size={16} /> ดาวน์โหลด
+                              <Download size={16} />
+                              {downloadingIds.has(id) ? "กำลังโหลด..." : "ดาวน์โหลด"} {/* เปลี่ยนข้อความ */}
                           </button>
                           <button
                             onClick={() => openFEdit(row)}
