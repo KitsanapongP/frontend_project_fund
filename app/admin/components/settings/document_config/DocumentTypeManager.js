@@ -422,7 +422,7 @@ const DocumentTypeManager = () => {
       <SettingsSectionCard
         icon={FileStack}
         iconSize={20}
-        title="จัดการประเภทเอกสาร"
+        title="ตั้งค่าเอกสารแนบทุน"
         description="เพิ่ม แก้ไข หรือกำหนดเงื่อนไขของไฟล์ที่ต้องใช้ในแบบฟอร์มต่างๆ"
         actions={
           <>
