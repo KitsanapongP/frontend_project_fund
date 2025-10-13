@@ -29,7 +29,7 @@ const TAB_ITEMS = [
   { id: "reward-config", label: "จัดการเงินรางวัล", icon: Settings },
   { id: "system", label: "ตั้งค่าระบบ", icon: PencilLine },
   { id: "announcements", label: "ประกาศ/ไฟล์", icon: FileText },
-  { id: "document-types", label: "จัดการเอกสาร", icon: FileStack },
+  { id: "document-types", label: "ตั้งค่าเอกสารแนบทุน", icon: FileStack },
 ];
 
 // SweetAlert2 configuration
