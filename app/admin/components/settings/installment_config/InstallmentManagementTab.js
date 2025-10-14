@@ -103,6 +103,7 @@ const initialFormState = {
 const InstallmentManagementTab = ({ years = [] }) => {
   const [selectedYearId, setSelectedYearId] = useState(null);
   const [currentYearValue, setCurrentYearValue] = useState(null);
+  const [currentYearLoaded, setCurrentYearLoaded] = useState(false);
   const [defaultYearApplied, setDefaultYearApplied] = useState(false);
 
   const [periods, setPeriods] = useState([]);
@@ -159,6 +160,10 @@ const InstallmentManagementTab = ({ years = [] }) => {
         if (!ignore) {
           console.warn("ไม่สามารถอ่านปีปัจจุบันจาก system config:", err);
         }
+      } finally {
+        if (!ignore) {
+          setCurrentYearLoaded(true);
+        }
       }
     };
 
@@ -171,6 +176,7 @@ const InstallmentManagementTab = ({ years = [] }) => {
 
   useEffect(() => {
     if (!yearOptions.length) return;
+    if (!currentYearLoaded) return;
 
     if (selectedYearId != null) {
       if (!defaultYearApplied) {
@@ -229,7 +235,13 @@ const InstallmentManagementTab = ({ years = [] }) => {
       setSelectedYearId(candidate.id);
       setDefaultYearApplied(true);
     }
-  }, [yearOptions, currentYearValue, selectedYearId, defaultYearApplied]);
+  }, [
+    yearOptions,
+    currentYearValue,
+    selectedYearId,
+    defaultYearApplied,
+    currentYearLoaded,
+  ]);
 
   useEffect(() => {
     setPage(0);
@@ -717,20 +729,20 @@ const InstallmentManagementTab = ({ years = [] }) => {
             <button
               type="button"
               onClick={loadPeriods}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+              className="inline-flex items-center gap-2 rounded-lg border border-green-200 px-4 py-2 text-sm font-medium text-green-600 transition hover:bg-green-50"
             >
               <RefreshCcw size={16} />
-              โหลดข้อมูลใหม่
+              รีเฟรช
             </button>
             <button
               type="button"
               onClick={handleCopyPeriods}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-4 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-50 disabled:opacity-60"
               disabled={copying}
               title={copyDisabledReason || undefined}
             >
               <Copy size={16} />
-              {copying ? "กำลังคัดลอก..." : "คัดลอกงวดไปยังปีอื่น"}
+              {copying ? "กำลังคัดลอก..." : "คัดลอกไปยังปีอื่น"}
             </button>
             <button
               type="button"
@@ -752,7 +764,6 @@ const InstallmentManagementTab = ({ years = [] }) => {
               onChange={handleYearChange}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             >
-              <option value="">-- เลือกปีงบประมาณ --</option>
               {yearOptions.map((option) => (
                 <option key={option.id ?? option.label} value={option.id ?? ""}>
                   {option.label}
@@ -769,8 +780,8 @@ const InstallmentManagementTab = ({ years = [] }) => {
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">เลขงวด</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">วันตัดงวด</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">ชื่อ/คำอธิบาย</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">สถานะ</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">หมายเหตุ</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">สถานะ</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">การจัดการ</th>
               </tr>
             </thead>
@@ -787,6 +798,7 @@ const InstallmentManagementTab = ({ years = [] }) => {
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">งวดที่ {period.installment_number ?? "-"}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{toThaiDate(period.cutoff_date)}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{period.name || "-"}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 whitespace-pre-line">{period.remark || "-"}</td> 
                     <td className="px-4 py-3 text-center">
                       <StatusBadge
                         status={period.status}
@@ -797,22 +809,21 @@ const InstallmentManagementTab = ({ years = [] }) => {
                         className="text-xs"
                       />
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 whitespace-pre-line">{period.remark || "-"}</td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-2">
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1 text-xs text-gray-700 transition-colors hover:bg-gray-100"
+                          className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
                           onClick={() => openEditForm(period)}
                         >
-                          <Edit size={14} /> แก้ไข
+                          <Edit size={16} /> แก้ไข
                         </button>
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 rounded-md border border-red-300 px-3 py-1 text-xs text-red-600 transition-colors hover:bg-red-50"
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50"
                           onClick={() => handleDelete(period)}
                         >
-                          <Trash2 size={14} /> ลบ
+                          <Trash2 size={16} /> ลบ
                         </button>
                       </div>
                     </td>
