@@ -724,10 +724,16 @@ export default function SubmissionsManagement() {
           pickFirst(
             detailPayload?.approved_amount,
             detailPayload?.total_approved_amount,
+            detailPayload?.total_approve_amount,
             detailPayload?.FundApplicationDetail?.approved_amount,
             detailPayload?.PublicationRewardDetail?.approved_amount,
+            detailPayload?.PublicationRewardDetail?.total_approve_amount,
             submissionObj?.approved_amount,
-            row?.approved_amount
+            submissionObj?.total_approved_amount,
+            submissionObj?.total_approve_amount,
+            row?.approved_amount,
+            row?.total_approved_amount,
+            row?.total_approve_amount
           )
         ) ?? undefined;
 
@@ -763,8 +769,55 @@ export default function SubmissionsManagement() {
           detailPayload?.submitted_at
         )
       );
+      const timestampSources = [
+        submissionObj,
+        detailPayload,
+        detailPayload?.FundApplicationDetail,
+        detailPayload?.PublicationRewardDetail,
+        row,
+      ];
+
+      const readTimestamp = (fieldNames) => {
+        for (const source of timestampSources) {
+          if (!source || typeof source !== 'object') continue;
+          for (const field of fieldNames) {
+            const value = source[field];
+            if (value !== undefined && value !== null && value !== '') {
+              return value;
+            }
+          }
+        }
+        return undefined;
+      };
+
+      const adminApprovedRaw = readTimestamp([
+        'admin_approved_at',
+        'adminApprovedAt',
+      ]);
+      const approvedRaw = readTimestamp([
+        'approved_at',
+        'approvedAt',
+      ]);
+      const approvalDateRaw = readTimestamp([
+        'approval_date',
+        'approvalDate',
+        'approved_date',
+        'approvedDate',
+        'approve_date',
+        'approveDate',
+      ]);
+      const headApprovedRaw = readTimestamp([
+        'head_approved_at',
+        'headApprovedAt',
+      ]);
+
       const approvedAt = formatDateTime(
-        pickFirst(row?.approved_at, submissionObj?.approved_at, detailPayload?.approved_at)
+        pickFirst(
+          adminApprovedRaw,
+          approvedRaw,
+          approvalDateRaw,
+          headApprovedRaw
+        )
       );
 
       const adminComment =
