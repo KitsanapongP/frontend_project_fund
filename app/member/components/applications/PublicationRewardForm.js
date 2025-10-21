@@ -4320,6 +4320,20 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
   };
 
   // Handle file uploads
+  const getFileSignature = useCallback((entry) => {
+    if (!entry) {
+      return null;
+    }
+
+    const fileObject = entry instanceof File ? entry : entry.file instanceof File ? entry.file : null;
+    if (!fileObject) {
+      return null;
+    }
+
+    const { name = '', size = 0, lastModified = 0, type = '' } = fileObject;
+    return [name, size, lastModified || '', type].join('::');
+  }, []);
+
   const handleFileUpload = (documentTypeId, files) => {
     console.log('handleFileUpload called with:', { documentTypeId, files });
 
@@ -4356,7 +4370,28 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
 
     if (documentTypeId === 'other') {
       console.log('Adding other documents:', files);
-      setOtherDocuments((prev) => [...prev, ...files]);
+      const incoming = Array.from(files || []).filter(Boolean);
+      if (incoming.length === 0) {
+        return;
+      }
+
+      setOtherDocuments((prev) => {
+        const previous = Array.isArray(prev) ? [...prev] : [];
+        const seen = new Set(previous.map((item) => getFileSignature(item)).filter(Boolean));
+        let changed = false;
+
+        incoming.forEach((item) => {
+          const signature = getFileSignature(item);
+          if (!signature || seen.has(signature)) {
+            return;
+          }
+          seen.add(signature);
+          previous.push(item);
+          changed = true;
+        });
+
+        return changed ? previous : prev;
+      });
       return;
     }
 
@@ -4781,7 +4816,20 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
       article_online_date: stringify(formData.article_online_date),
     };
 
+    const resolvedYearId = (() => {
+      const value = formData.year_id;
+      if (value === null || value === undefined || value === '') {
+        return null;
+      }
+      const numeric = Number(value);
+      if (Number.isFinite(numeric)) {
+        return numeric;
+      }
+      return null;
+    })();
+
     const payload = {
+      year_id: resolvedYearId,
       formData: normalizedFormData,
       applicant: currentUser
         ? {
