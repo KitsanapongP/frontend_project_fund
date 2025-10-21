@@ -14,9 +14,11 @@ import systemConfigAPI from '../../../lib/system_config_api';
 import { useStatusMap } from '@/app/hooks/useStatusMap';
 import SubmissionExportModal from './SubmissionExportModal';
 import { downloadXlsx } from '@/app/admin/utils/xlsxExporter';
+import apiClient from '@/app/lib/api';
 
 // ----------- CONFIG -----------
 const PAGE_SIZE  = 10;        // how many rows to show at a time
+const FETCH_PAGE_LIMIT = 1000; // how many records to request from the API per page when aggregating
 
 const EXPORT_COLUMNS = [
   { key: 'submissionNumber', header: 'เลขที่คำร้อง', width: 18 },
@@ -27,6 +29,7 @@ const EXPORT_COLUMNS = [
   { key: 'subcategoryName', header: 'ประเภททุน', width: 22 },
   { key: 'fundDescription', header: 'รายละเอียดทุน', width: 26 },
   { key: 'title', header: 'ชื่อโครงการ/บทความ', width: 40 },
+  { key: 'paperTitle', header: 'Paper Title', width: 40 },
   { key: 'applicantName', header: 'ชื่อผู้ยื่น', width: 26 },
   { key: 'applicantEmail', header: 'อีเมลผู้ยื่น', width: 28 },
   { key: 'coAuthors', header: 'รายชื่อผู้ร่วม', width: 36 },
@@ -40,8 +43,13 @@ const EXPORT_COLUMNS = [
   { key: 'adminComment', header: 'หมายเหตุผู้ดูแล', width: 30 },
   { key: 'deptComment', header: 'หมายเหตุหัวหน้าสาขา', width: 30 },
   { key: 'announcementRef', header: 'เลขประกาศ/อ้างอิง', width: 24 },
-  { key: 'journalInfo', header: 'วารสาร / แหล่งตีพิมพ์', width: 32 },
+  { key: 'journalName', header: 'วารสาร / แหล่งตีพิมพ์', width: 28 },
+  { key: 'journalVolumeIssue', header: 'Volume/Issue', width: 18 },
+  { key: 'journalPages', header: 'page_numbers', width: 18 },
+  { key: 'journalIndexing', header: 'ฐานข้อมูล Indexing', width: 22 },
+  { key: 'journalQuartile', header: 'Quartile', width: 14 },
   { key: 'publicationDate', header: 'วันที่เผยแพร่', width: 20 },
+  { key: 'mergedSubmissionPdf', header: 'Merge submissions PDF', width: 42 },
 ];
 
 const pickFirst = (...values) => {
@@ -65,6 +73,74 @@ const formatDateTime = (value) => {
   if (Number.isNaN(date.getTime())) return '';
   const pad = (n) => String(Math.abs(Math.trunc(n))).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const resolveFileURL = (filePath) => {
+  if (!filePath) return '';
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+  const base = apiClient.baseURL.replace(/\/?api\/v1$/, '');
+  try {
+    return new URL(filePath, base).href;
+  } catch {
+    return filePath;
+  }
+};
+
+const extractMergedDocumentMeta = (source) => {
+  if (!source || typeof source !== 'object') return null;
+  const doc = source.merged_document || source.mergedDocument || source.MergedDocument;
+  if (!doc || typeof doc !== 'object') return null;
+
+  const file = doc.file || doc.File;
+  const filePath = pickFirst(
+    doc.file_path,
+    doc.stored_path,
+    doc.StoredPath,
+    doc.relative_path,
+    doc.RelativePath,
+    doc.path,
+    doc.url,
+    doc.FilePath,
+    doc.File?.stored_path,
+    doc.File?.file_path,
+    doc.File?.path,
+    file?.stored_path,
+    file?.StoredPath,
+    file?.file_path,
+    file?.path,
+    file?.url,
+  );
+
+  if (!filePath) return null;
+
+  const displayName = pickFirst(
+    doc.display_name,
+    doc.DisplayName,
+    doc.original_name,
+    doc.OriginalName,
+    doc.file_name,
+    doc.FileName,
+    file?.original_name,
+    file?.OriginalName,
+    file?.file_name,
+    file?.FileName,
+  );
+
+  return {
+    filePath,
+    displayName: displayName || 'merged_document.pdf',
+  };
+};
+
+const getMergedDocumentExportValue = (...sources) => {
+  for (const source of sources) {
+    const meta = extractMergedDocumentMeta(source);
+    if (meta) {
+      const url = resolveFileURL(meta.filePath);
+      return url;
+    }
+  }
+  return '';
 };
 
 const normalizeYearValue = (value) => {
@@ -213,25 +289,68 @@ export default function SubmissionsManagement() {
       const aggregate = [];
 
       while (!done) {
-         const params = {
-           page,
-           limit: 500,               // ← NEW: ลดปัญหาหน้าเหลื่อม/ซ้ำ
-           year_id: yearId || '',
-           sort_by: 'created_at',
-           sort_order: 'desc',
-         };
+        const params = {
+          page,
+          limit: FETCH_PAGE_LIMIT,   // ↑ increase backend page size to reduce missing records
+          year_id: yearId || '',
+          sort_by: 'created_at',
+          sort_order: 'desc',
+        };
         console.log('[FetchAll] /admin/submissions params:', params);
 
         const res = await submissionsListingAPI.getAdminSubmissions(params);
         if (reqId !== latestReq.current) return; // race protection
 
         const chunk = res?.submissions || res?.data || [];
-        aggregate.push(...chunk);
+        const normalizedChunk = Array.isArray(chunk)
+          ? chunk.map((item) => {
+              if (item && typeof item === 'object') {
+                if (item.merged_document && !item.mergedDocument) {
+                  item.mergedDocument = item.merged_document;
+                } else if (item.mergedDocument && !item.merged_document) {
+                  item.merged_document = item.mergedDocument;
+                }
+              }
+              return item;
+            })
+          : [];
+        aggregate.push(...normalizedChunk);
 
-        // stop if last page or no pagination info
-        const totalPages = res?.pagination?.total_pages || 0;
-        if (!chunk.length || totalPages <= page || !totalPages) done = true;
-        page += 1;
+        // stop if we've clearly reached the last page or exhausted available records
+        const paginationRaw = res?.pagination || {};
+        const totalPages = paginationRaw.total_pages ?? paginationRaw.totalPages ?? 0;
+        const totalItems =
+          paginationRaw.total_items ??
+          paginationRaw.total ??
+          paginationRaw.total_count ??
+          paginationRaw.totalCount ??
+          0;
+        const hasNext =
+          typeof paginationRaw.has_next === 'boolean'
+            ? paginationRaw.has_next
+            : typeof paginationRaw.hasNext === 'boolean'
+            ? paginationRaw.hasNext
+            : typeof paginationRaw.has_more === 'boolean'
+            ? paginationRaw.has_more
+            : null;
+        const chunkLength = normalizedChunk.length;
+        const pageLimit = params.limit ?? FETCH_PAGE_LIMIT;
+        const currentPage = paginationRaw.current_page ?? paginationRaw.currentPage ?? page;
+
+        const reachedTotalPages = totalPages ? currentPage >= totalPages : false;
+        const reachedTotalItems = totalItems ? aggregate.length >= totalItems : false;
+        const shouldContinue =
+          chunkLength > 0 &&
+          hasNext !== false &&
+          !reachedTotalPages &&
+          !reachedTotalItems &&
+          (hasNext === true || totalPages || totalItems || chunkLength >= pageLimit);
+
+        if (shouldContinue) {
+          page += 1;
+        } else {
+          done = true;
+        }
 
         // safety cap
         if (aggregate.length > 10000) done = true;
@@ -719,10 +838,16 @@ export default function SubmissionsManagement() {
           pickFirst(
             detailPayload?.approved_amount,
             detailPayload?.total_approved_amount,
+            detailPayload?.total_approve_amount,
             detailPayload?.FundApplicationDetail?.approved_amount,
             detailPayload?.PublicationRewardDetail?.approved_amount,
+            detailPayload?.PublicationRewardDetail?.total_approve_amount,
             submissionObj?.approved_amount,
-            row?.approved_amount
+            submissionObj?.total_approved_amount,
+            submissionObj?.total_approve_amount,
+            row?.approved_amount,
+            row?.total_approved_amount,
+            row?.total_approve_amount
           )
         ) ?? undefined;
 
@@ -758,8 +883,55 @@ export default function SubmissionsManagement() {
           detailPayload?.submitted_at
         )
       );
+      const timestampSources = [
+        submissionObj,
+        detailPayload,
+        detailPayload?.FundApplicationDetail,
+        detailPayload?.PublicationRewardDetail,
+        row,
+      ];
+
+      const readTimestamp = (fieldNames) => {
+        for (const source of timestampSources) {
+          if (!source || typeof source !== 'object') continue;
+          for (const field of fieldNames) {
+            const value = source[field];
+            if (value !== undefined && value !== null && value !== '') {
+              return value;
+            }
+          }
+        }
+        return undefined;
+      };
+
+      const adminApprovedRaw = readTimestamp([
+        'admin_approved_at',
+        'adminApprovedAt',
+      ]);
+      const approvedRaw = readTimestamp([
+        'approved_at',
+        'approvedAt',
+      ]);
+      const approvalDateRaw = readTimestamp([
+        'approval_date',
+        'approvalDate',
+        'approved_date',
+        'approvedDate',
+        'approve_date',
+        'approveDate',
+      ]);
+      const headApprovedRaw = readTimestamp([
+        'head_approved_at',
+        'headApprovedAt',
+      ]);
+
       const approvedAt = formatDateTime(
-        pickFirst(row?.approved_at, submissionObj?.approved_at, detailPayload?.approved_at)
+        pickFirst(
+          adminApprovedRaw,
+          approvedRaw,
+          approvalDateRaw,
+          headApprovedRaw
+        )
       );
 
       const adminComment =
@@ -792,29 +964,46 @@ export default function SubmissionsManagement() {
       const publicationDetail =
         detailPayload?.PublicationRewardDetail || detailPayload?.publication || detailPayload;
 
-      const journalParts = [];
+      const paperTitle =
+        pickFirst(
+          publicationDetail?.paper_title,
+          detailPayload?.paper_title,
+          detailPayload?.FundApplicationDetail?.paper_title,
+          detailPayload?.PublicationRewardDetail?.paper_title,
+          row?.PublicationRewardDetail?.paper_title,
+          submissionObj?.paper_title,
+          title
+        ) || '';
+
       const journalName = pickFirst(
         publicationDetail?.journal_name,
         publicationDetail?.journal,
         publicationDetail?.journal_title
       );
-      if (journalName) journalParts.push(journalName);
       const volume = pickFirst(publicationDetail?.volume, publicationDetail?.volume_no);
-      if (volume) journalParts.push(`Vol. ${volume}`);
       const issue = pickFirst(publicationDetail?.issue, publicationDetail?.issue_no);
-      if (issue) journalParts.push(`No. ${issue}`);
+      const volumeIssue = pickFirst(
+        publicationDetail?.volume_issue,
+        volume || issue ? [volume, issue].filter(Boolean).join('/') : null
+      );
+      const pageStart = pickFirst(
+        publicationDetail?.page_start,
+        publicationDetail?.pageStart,
+        detailPayload?.page_start
+      );
+      const pageEnd = pickFirst(
+        publicationDetail?.page_end,
+        publicationDetail?.pageEnd,
+        detailPayload?.page_end
+      );
       const pages = pickFirst(
+        publicationDetail?.page_numbers,
         publicationDetail?.page_range,
         publicationDetail?.pages,
-        publicationDetail?.page_start && publicationDetail?.page_end
-          ? `${publicationDetail.page_start}-${publicationDetail.page_end}`
-          : null
+        pageStart || pageEnd ? [pageStart, pageEnd].filter(Boolean).join('-') : null
       );
-      if (pages) journalParts.push(`pp. ${pages}`);
       const indexing = pickFirst(publicationDetail?.indexing, publicationDetail?.database);
-      if (indexing) journalParts.push(indexing);
       const quartile = pickFirst(publicationDetail?.quartile, publicationDetail?.quartile_level);
-      if (quartile) journalParts.push(`Quartile ${quartile}`);
 
       const publicationRawDate = pickFirst(
         publicationDetail?.publication_date,
@@ -882,6 +1071,8 @@ export default function SubmissionsManagement() {
         fiscalYearLabel = String(yearIdCandidate);
       }
 
+      const mergedPdfValue = getMergedDocumentExportValue(row, submissionObj, detailPayload);
+
       return {
         submissionNumber: row?.submission_number || submissionObj?.submission_number || '',
         submissionId: row?.submission_id || submissionObj?.submission_id || row?.id || '',
@@ -891,6 +1082,7 @@ export default function SubmissionsManagement() {
         subcategoryName,
         fundDescription,
         title,
+        paperTitle,
         applicantName,
         applicantEmail,
         coAuthors,
@@ -904,8 +1096,13 @@ export default function SubmissionsManagement() {
         adminComment,
         deptComment,
         announcementRef,
-        journalInfo: journalParts.join(' | '),
+        journalName: journalName || '',
+        journalVolumeIssue: volumeIssue || '',
+        journalPages: pages || '',
+        journalIndexing: indexing || '',
+        journalQuartile: quartile || '',
         publicationDate,
+        mergedSubmissionPdf: mergedPdfValue,
       };
     },
     [
