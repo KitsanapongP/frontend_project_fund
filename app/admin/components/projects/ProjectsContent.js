@@ -99,7 +99,7 @@ function ProjectsTable({ projects, onEdit, onDelete }) {
         <thead className="bg-gray-50">
           <tr>
             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">ชื่อโครงการ</th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">ประเภท</th>
+            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">ประเภทโครงการ</th>
             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">วันที่จัด</th>
             <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">งบประมาณ</th>
             <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">ผู้เข้าร่วม</th>
@@ -118,25 +118,29 @@ function ProjectsTable({ projects, onEdit, onDelete }) {
                   {project.project_name}
                 </div>
                 <div
-                  className="text-xs text-gray-500 flex items-center gap-1 mt-1 max-w-xs truncate"
+                  className="text-xs text-gray-500 flex items-center gap-1 mt-1 max-w-xs min-w-0"
                   title={
                     project.budget_plan?.name_th ||
                     project.budget_plan?.name_en ||
                     "-"
                   }
                 >
-                  <Wallet size={14} className="text-gray-400" />
-                  {project.budget_plan?.name_th || project.budget_plan?.name_en || "-"}
+                  <Wallet size={14} className="text-gray-400 shrink-0" />
+                  <span className="truncate">
+                    {project.budget_plan?.name_th || project.budget_plan?.name_en || "-"}
+                  </span>
                 </div>
               </td>
               <td className="px-4 py-3">
-                <span
-                  className="inline-flex items-center gap-1 text-gray-700 max-w-[180px] truncate"
+                <div
+                  className="flex items-center gap-1 text-gray-700 max-w-[250px] min-w-0"
                   title={project.type?.name_th || project.type?.name_en || "-"}
                 >
-                  <Layers size={15} className="text-blue-500" />
-                  {project.type?.name_th || project.type?.name_en || "-"}
-                </span>
+                  <Layers size={15} className="text-blue-500 shrink-0" />
+                  <span className="truncate">
+                    {project.type?.name_th || project.type?.name_en || "-"}
+                  </span>
+                </div>
               </td>
               <td className="px-4 py-3">
                 <span className="inline-flex items-center gap-1">
@@ -158,7 +162,7 @@ function ProjectsTable({ projects, onEdit, onDelete }) {
               <td className="px-4 py-3">
                 {project.notes ? (
                   <span
-                    className="text-gray-600 line-clamp-2 max-w-[220px]"
+                    className="text-gray-600 max-w-[220px] truncate block"
                     title={project.notes}
                   >
                     {project.notes}
