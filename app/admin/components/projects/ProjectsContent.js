@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Briefcase,
   Layers,
@@ -12,6 +12,9 @@ import {
   CalendarDays,
   Users,
   FileText,
+  Paperclip,
+  GripVertical,
+  Save,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import PageLayout from "@/app/admin/components/common/PageLayout";
@@ -29,6 +32,12 @@ const Toast = Swal.mixin({
   },
 });
 
+const normalizeText = (value) =>
+  (value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+
 const initialProjectForm = {
   project_name: "",
   type_id: "",
@@ -37,20 +46,17 @@ const initialProjectForm = {
   budget_amount: "",
   participants: "",
   notes: "",
+  attachment: null,
 };
 
 const initialTypeForm = {
   name_th: "",
   name_en: "",
-  display_order: "",
-  is_active: true,
 };
 
 const initialPlanForm = {
   name_th: "",
   name_en: "",
-  display_order: "",
-  is_active: true,
 };
 
 function formatCurrency(value) {
@@ -173,11 +179,33 @@ function ProjectForm({
   plans,
   onClose,
   onChange,
+  onFileChange,
+  onClearAttachment,
   onSubmit,
   saving,
   isEditing,
+  fileInputKey,
+  attachmentFile,
+  existingAttachment,
 }) {
   if (!open) return null;
+
+  const disableTypeSelect = types.length === 0;
+  const disablePlanSelect = plans.length === 0;
+  const selectedTypeInactive =
+    isEditing &&
+    formData.type_id &&
+    types.some(
+      (type) =>
+        type.type_id === Number(formData.type_id) && type.is_active === false
+    );
+  const selectedPlanInactive =
+    isEditing &&
+    formData.plan_id &&
+    plans.some(
+      (plan) =>
+        plan.plan_id === Number(formData.plan_id) && plan.is_active === false
+    );
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
@@ -224,15 +252,31 @@ function ProjectForm({
             value={formData.type_id}
             onChange={onChange}
             required
-            className="w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+            disabled={disableTypeSelect}
+            className={`w-full rounded-md border focus:border-blue-500 focus:ring-blue-500 px-3 py-2 ${
+              disableTypeSelect
+                ? "bg-gray-100 cursor-not-allowed border-gray-200"
+                : "border-gray-300"
+            }`}
           >
             <option value="">-- เลือกประเภท --</option>
             {types.map((type) => (
               <option key={type.type_id} value={type.type_id}>
                 {type.name_th || type.name_en}
+                {type.is_active ? "" : " (ปิดใช้งาน)"}
               </option>
             ))}
           </select>
+          {disableTypeSelect ? (
+            <p className="mt-2 text-xs text-red-500">
+              ไม่มีประเภทโครงการที่เปิดใช้งาน กรุณาเปิดใช้งานก่อนบันทึกโครงการ
+            </p>
+          ) : null}
+          {selectedTypeInactive ? (
+            <p className="mt-2 text-xs text-amber-500">
+              ประเภทที่เลือกถูกปิดใช้งานอยู่ หากต้องการเปลี่ยนกรุณาเลือกประเภทที่เปิดใช้งาน
+            </p>
+          ) : null}
         </div>
 
         <div>
@@ -258,15 +302,31 @@ function ProjectForm({
             value={formData.plan_id}
             onChange={onChange}
             required
-            className="w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+            disabled={disablePlanSelect}
+            className={`w-full rounded-md border focus:border-blue-500 focus:ring-blue-500 px-3 py-2 ${
+              disablePlanSelect
+                ? "bg-gray-100 cursor-not-allowed border-gray-200"
+                : "border-gray-300"
+            }`}
           >
             <option value="">-- เลือกแผนงบประมาณ --</option>
             {plans.map((plan) => (
               <option key={plan.plan_id} value={plan.plan_id}>
                 {plan.name_th || plan.name_en}
+                {plan.is_active ? "" : " (ปิดใช้งาน)"}
               </option>
             ))}
           </select>
+          {disablePlanSelect ? (
+            <p className="mt-2 text-xs text-red-500">
+              ไม่มีแผนงบประมาณที่เปิดใช้งาน กรุณาเปิดใช้งานก่อนบันทึกโครงการ
+            </p>
+          ) : null}
+          {selectedPlanInactive ? (
+            <p className="mt-2 text-xs text-amber-500">
+              แผนงบประมาณที่เลือกถูกปิดใช้งานอยู่ หากต้องการเปลี่ยนกรุณาเลือกแผนที่เปิดใช้งาน
+            </p>
+          ) : null}
         </div>
 
         <div>
@@ -299,6 +359,51 @@ function ProjectForm({
             className="w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
             placeholder="เช่น 120"
           />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            ไฟล์แนบโครงการ (สูงสุด 1 ไฟล์)
+          </label>
+          <input
+            key={fileInputKey}
+            type="file"
+            name="attachment"
+            onChange={onFileChange}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+            disabled={saving}
+            className="block w-full rounded-md border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-600 hover:file:bg-blue-100 disabled:cursor-not-allowed"
+          />
+          {attachmentFile ? (
+            <div className="mt-3 flex items-center justify-between rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+              <span className="flex items-center gap-2">
+                <Paperclip size={16} />
+                {attachmentFile.name}
+              </span>
+              <button
+                type="button"
+                onClick={onClearAttachment}
+                disabled={saving}
+                className="text-xs font-medium text-blue-600 hover:text-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                ล้างไฟล์
+              </button>
+            </div>
+          ) : existingAttachment ? (
+            <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <Paperclip size={16} className="text-gray-400" />
+                <span>
+                  ไฟล์ที่บันทึกล่าสุด: {existingAttachment.original_name || existingAttachment.stored_path}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                การเลือกไฟล์ใหม่จะทับไฟล์เดิมโดยอัตโนมัติ
+              </p>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-gray-400">ยังไม่ได้เลือกไฟล์แนบ</p>
+          )}
         </div>
 
         <div className="md:col-span-2">
@@ -357,10 +462,30 @@ function ConfigList({
   onCancel,
   editingItem,
   onEdit,
+  onToggleActive,
   saving,
   emptyText,
   disableDeleteNotice,
+  draggingId,
+  dragOverId,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  orderDirty,
+  onPersistOrder,
+  savingOrder,
+  toggleLoadingIds,
+  isReordering,
 }) {
+  const highlightInputs = Boolean(editingItem);
+  const inputBaseClass =
+    "w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2 transition";
+  const highlightClass = highlightInputs
+    ? "border-blue-400 bg-blue-50 ring-2 ring-blue-200"
+    : "";
+  const editingItemId =
+    editingItem?.type_id ?? editingItem?.plan_id ?? editingItem?.id ?? null;
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -371,6 +496,33 @@ function ConfigList({
           </h3>
           <p className="text-sm text-gray-500">{description}</p>
         </div>
+        {onPersistOrder && (
+          <div className="flex items-center gap-3">
+            {orderDirty && !savingOrder ? (
+              <span className="text-xs text-amber-600">
+                มีการเปลี่ยนลำดับที่ยังไม่บันทึก
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={onPersistOrder}
+              disabled={!orderDirty || savingOrder || items.length === 0}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-blue-200 bg-white text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {savingOrder ? (
+                <>
+                  <RefreshCcw size={16} className="animate-spin" />
+                  กำลังบันทึก...
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  บันทึกลำดับ
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -384,7 +536,7 @@ function ConfigList({
             value={form.name_th}
             onChange={onFormChange}
             required
-            className="w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+            className={`${inputBaseClass} ${highlightClass}`}
             placeholder="ระบุชื่อภาษาไทย"
           />
         </div>
@@ -397,46 +549,18 @@ function ConfigList({
             name="name_en"
             value={form.name_en}
             onChange={onFormChange}
-            className="w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+            className={`${inputBaseClass} ${highlightClass}`}
             placeholder="ระบุชื่อภาษาอังกฤษ (ถ้ามี)"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            ลำดับแสดงผล
-          </label>
-          <input
-            type="number"
-            name="display_order"
-            value={form.display_order}
-            min="1"
-            onChange={onFormChange}
-            className="w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-            placeholder="เช่น 1"
-          />
-        </div>
-        <div className="flex items-center gap-2 mt-6">
-          <input
-            type="checkbox"
-            id={`${title}-is-active`}
-            name="is_active"
-            checked={form.is_active}
-            onChange={(event) => {
-              onFormChange({
-                target: {
-                  name: "is_active",
-                  value: event.target.checked,
-                  type: "checkbox",
-                  checked: event.target.checked,
-                },
-              });
-            }}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <label htmlFor={`${title}-is-active`} className="text-sm text-gray-700">
-            ใช้งานอยู่
-          </label>
-        </div>
+        {editingItem ? (
+          <div className="md:col-span-4 flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+            <Pencil size={16} className="text-blue-500" />
+            <span>
+              กำลังแก้ไข: {editingItem.name_th || editingItem.name_en || `ID ${editingItemId}`}
+            </span>
+          </div>
+        ) : null}
         <div className="md:col-span-4 flex justify-end gap-3">
           {editingItem && (
             <button
@@ -479,32 +603,108 @@ function ConfigList({
             {emptyText}
           </div>
         ) : (
-          items.map((item) => (
-            <div
-              key={item.id || item.type_id || item.plan_id}
-              className="flex flex-wrap items-center justify-between gap-3 border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors"
-            >
-              <div>
-                <div className="text-sm font-semibold text-gray-900">
-                  {item.name_th || "-"}
-                  <span className="text-xs text-gray-400 ml-2">ID: {item.type_id ?? item.plan_id}</span>
+          items.map((item, index) => {
+            const itemId = item.type_id ?? item.plan_id ?? item.id ?? index;
+            const isDragging = draggingId === itemId;
+            const isDragOver = dragOverId === itemId && draggingId !== itemId;
+            const isEditingItem = editingItemId === itemId;
+            const isToggleLoading = toggleLoadingIds?.has?.(itemId);
+            const toggleDisabled =
+              !onToggleActive || isReordering || isToggleLoading;
+
+            return (
+              <div
+                key={itemId}
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = "move";
+                  try {
+                    event.dataTransfer.setData("text/plain", String(itemId));
+                  } catch (error) {
+                    // ignore
+                  }
+                  onDragStart?.(event, item);
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  onDragOver?.(event, item);
+                }}
+                onDragEnd={(event) => onDragEnd?.(event)}
+                onDrop={(event) => event.preventDefault()}
+                className={`flex flex-wrap items-center justify-between gap-3 border rounded-lg px-4 py-3 transition-colors bg-white ${
+                  isDragging ? "ring-2 ring-blue-300 bg-blue-50" : "border-gray-200"
+                } ${isDragOver ? "ring-2 ring-blue-200" : ""} ${
+                  isEditingItem ? "border-blue-300" : ""
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-[220px]">
+                  <div
+                    className="flex items-center gap-2 text-gray-400 select-none cursor-grab"
+                    title="ลากเพื่อจัดลำดับ"
+                  >
+                    <GripVertical size={18} />
+                    <span className="text-xs text-gray-500">#{index + 1}</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">
+                      {item.name_th || "-"}
+                      <span className="text-xs text-gray-400 ml-2">
+                        ID: {item.type_id ?? item.plan_id ?? "-"}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {item.name_en || "ไม่มีชื่อภาษาอังกฤษ"}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500">{item.name_en || "ไม่มีชื่อภาษาอังกฤษ"}</div>
+                <div className="flex items-center gap-4 flex-wrap justify-end text-sm text-gray-500">
+                  <span className="text-xs text-gray-500">ลำดับ: {index + 1}</span>
+                  {onToggleActive && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onToggleActive(item)}
+                        disabled={toggleDisabled}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          item.is_active ? "bg-emerald-500" : "bg-gray-300"
+                        } ${
+                          toggleDisabled
+                            ? "opacity-50 cursor-not-allowed"
+                            : "cursor-pointer"
+                        }`}
+                        title={item.is_active ? "ปิดการใช้งาน" : "เปิดการใช้งาน"}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                            item.is_active ? "translate-x-5" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                      <span
+                        className={`text-sm ${
+                          item.is_active ? "text-emerald-600" : "text-gray-400"
+                        }`}
+                      >
+                        {item.is_active ? "เปิด" : "ปิด"}
+                      </span>
+                      {isToggleLoading ? (
+                        <RefreshCcw
+                          size={16}
+                          className="animate-spin text-blue-500"
+                        />
+                      ) : null}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => onEdit(item)}
+                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    <Pencil size={14} /> แก้ไข
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-4 text-xs text-gray-500">
-                <span>ลำดับ: {item.display_order || "-"}</span>
-                <span className={item.is_active ? "text-emerald-600" : "text-gray-400"}>
-                  {item.is_active ? "ใช้งานอยู่" : "ปิดใช้งาน"}
-                </span>
-                <button
-                  onClick={() => onEdit(item)}
-                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                >
-                  <Pencil size={14} /> แก้ไข
-                </button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
@@ -522,15 +722,46 @@ export default function ProjectsContent() {
   const [projectTypes, setProjectTypes] = useState([]);
   const [budgetPlans, setBudgetPlans] = useState([]);
 
-  const [projectForm, setProjectForm] = useState(initialProjectForm);
+  const [projectForm, setProjectForm] = useState(() => ({
+    ...initialProjectForm,
+  }));
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [projectFileKey, setProjectFileKey] = useState(0);
 
   const [typeForm, setTypeForm] = useState(initialTypeForm);
   const [editingType, setEditingType] = useState(null);
 
   const [planForm, setPlanForm] = useState(initialPlanForm);
   const [editingPlan, setEditingPlan] = useState(null);
+
+  const typeDragIdRef = useRef(null);
+  const planDragIdRef = useRef(null);
+
+  const [typeDragId, setTypeDragId] = useState(null);
+  const [typeDragOverId, setTypeDragOverId] = useState(null);
+  const [planDragId, setPlanDragId] = useState(null);
+  const [planDragOverId, setPlanDragOverId] = useState(null);
+  const [typeOrderDirty, setTypeOrderDirty] = useState(false);
+  const [planOrderDirty, setPlanOrderDirty] = useState(false);
+  const [savingTypeOrder, setSavingTypeOrder] = useState(false);
+  const [savingPlanOrder, setSavingPlanOrder] = useState(false);
+  const [typeToggleLoading, setTypeToggleLoading] = useState(() => new Set());
+  const [planToggleLoading, setPlanToggleLoading] = useState(() => new Set());
+
+  const projectTypeOptions = useMemo(() => {
+    const selectedTypeId = editingProject?.type_id;
+    return projectTypes.filter((type) =>
+      type.is_active || type.type_id === selectedTypeId
+    );
+  }, [projectTypes, editingProject]);
+
+  const budgetPlanOptions = useMemo(() => {
+    const selectedPlanId = editingProject?.plan_id;
+    return budgetPlans.filter((plan) =>
+      plan.is_active || plan.plan_id === selectedPlanId
+    );
+  }, [budgetPlans, editingProject]);
 
   useEffect(() => {
     loadAll();
@@ -547,6 +778,16 @@ export default function ProjectsContent() {
       setProjects(projectList);
       setProjectTypes(typeList);
       setBudgetPlans(planList);
+      setTypeOrderDirty(false);
+      setPlanOrderDirty(false);
+      setTypeDragId(null);
+      setTypeDragOverId(null);
+      setPlanDragId(null);
+      setPlanDragOverId(null);
+      typeDragIdRef.current = null;
+      planDragIdRef.current = null;
+      setTypeToggleLoading(new Set());
+      setPlanToggleLoading(new Set());
     } catch (error) {
       console.error(error);
       Toast.fire({ icon: "error", title: "ไม่สามารถโหลดข้อมูลได้" });
@@ -556,9 +797,10 @@ export default function ProjectsContent() {
   };
 
   const resetProjectForm = () => {
-    setProjectForm(initialProjectForm);
+    setProjectForm({ ...initialProjectForm });
     setEditingProject(null);
     setShowProjectForm(false);
+    setProjectFileKey((key) => key + 1);
   };
 
   const handleProjectChange = (event) => {
@@ -569,6 +811,22 @@ export default function ProjectsContent() {
     }));
   };
 
+  const handleProjectFileChange = (event) => {
+    const file = event.target?.files?.[0] ?? null;
+    setProjectForm((prev) => ({
+      ...prev,
+      attachment: file,
+    }));
+  };
+
+  const handleClearProjectAttachment = () => {
+    setProjectForm((prev) => ({
+      ...prev,
+      attachment: null,
+    }));
+    setProjectFileKey((key) => key + 1);
+  };
+
   const handleSubmitProject = async (event) => {
     event.preventDefault();
     if (!projectForm.project_name || !projectForm.type_id || !projectForm.plan_id || !projectForm.event_date) {
@@ -576,40 +834,77 @@ export default function ProjectsContent() {
       return;
     }
 
-    const payload = {
-      project_name: projectForm.project_name.trim(),
-      type_id: Number(projectForm.type_id),
-      event_date: projectForm.event_date,
-      plan_id: Number(projectForm.plan_id),
-      budget_amount: Number(projectForm.budget_amount) || 0,
-      participants: projectForm.participants ? Number(projectForm.participants) : 0,
-      notes: projectForm.notes ? projectForm.notes.trim() : "",
-    };
+    const normalizedProjectName = normalizeText(projectForm.project_name);
+    const projectId = editingProject?.project_id ?? null;
+    const duplicateProject = projects.some(
+      (project) =>
+        normalizeText(project.project_name) === normalizedProjectName &&
+        (project.project_id ?? null) !== projectId
+    );
 
-    if (Number.isNaN(payload.type_id) || Number.isNaN(payload.plan_id)) {
+    if (duplicateProject) {
+      Toast.fire({ icon: "warning", title: "ชื่อโครงการซ้ำกัน" });
+      return;
+    }
+
+    if (!editingProject && !projectForm.attachment) {
+      Toast.fire({ icon: "warning", title: "กรุณาเลือกไฟล์แนบ" });
+      return;
+    }
+
+    const typeId = Number(projectForm.type_id);
+    const planId = Number(projectForm.plan_id);
+    const participantsValue = projectForm.participants
+      ? Number(projectForm.participants)
+      : 0;
+    const budgetValue = Number(projectForm.budget_amount) || 0;
+
+    if (Number.isNaN(typeId) || Number.isNaN(planId)) {
       Toast.fire({ icon: "warning", title: "การเลือกประเภทหรือแผนงบประมาณไม่ถูกต้อง" });
       return;
     }
 
-    if (payload.participants < 0) {
+    if (budgetValue < 0) {
+      Toast.fire({ icon: "warning", title: "งบประมาณต้องมากกว่าหรือเท่ากับ 0" });
+      return;
+    }
+
+    if (participantsValue < 0) {
       Toast.fire({ icon: "warning", title: "จำนวนผู้เข้าร่วมต้องมากกว่าหรือเท่ากับ 0" });
       return;
+    }
+
+    const formPayload = new FormData();
+    formPayload.append("project_name", projectForm.project_name.trim());
+    formPayload.append("type_id", typeId.toString());
+    formPayload.append("event_date", projectForm.event_date);
+    formPayload.append("plan_id", planId.toString());
+    formPayload.append("budget_amount", budgetValue.toString());
+    formPayload.append("participants", participantsValue.toString());
+    formPayload.append("notes", projectForm.notes ? projectForm.notes.trim() : "");
+
+    if (projectForm.attachment) {
+      formPayload.append("attachment", projectForm.attachment);
     }
 
     try {
       setSavingProject(true);
       if (editingProject) {
-        await adminAPI.updateProject(editingProject.project_id, payload);
+        await adminAPI.updateProject(editingProject.project_id, formPayload);
         Toast.fire({ icon: "success", title: "อัปเดตข้อมูลโครงการเรียบร้อย" });
       } else {
-        await adminAPI.createProject(payload);
+        await adminAPI.createProject(formPayload);
         Toast.fire({ icon: "success", title: "บันทึกโครงการใหม่เรียบร้อย" });
       }
       await loadAll();
       resetProjectForm();
     } catch (error) {
-      console.error(error);
-      Toast.fire({ icon: "error", title: error.message || "บันทึกข้อมูลไม่สำเร็จ" });
+      if (error?.status === 409) {
+        Toast.fire({ icon: "warning", title: "ชื่อโครงการซ้ำกัน" });
+      } else {
+        console.error(error);
+        Toast.fire({ icon: "error", title: error.message || "บันทึกข้อมูลไม่สำเร็จ" });
+      }
     } finally {
       setSavingProject(false);
     }
@@ -625,7 +920,9 @@ export default function ProjectsContent() {
       budget_amount: project.budget_amount?.toString() || "",
       participants: project.participants?.toString() || "",
       notes: project.notes || "",
+      attachment: null,
     });
+    setProjectFileKey((key) => key + 1);
     setShowProjectForm(true);
   };
 
@@ -677,11 +974,22 @@ export default function ProjectsContent() {
       return;
     }
 
+    const normalizedThaiName = normalizeText(typeForm.name_th);
+    const editingId = editingType?.type_id ?? null;
+    const duplicateType = projectTypes.some(
+      (item) =>
+        normalizeText(item.name_th) === normalizedThaiName &&
+        (item.type_id ?? null) !== editingId
+    );
+
+    if (duplicateType) {
+      Toast.fire({ icon: "warning", title: "ชื่อประเภทโครงการซ้ำกัน" });
+      return;
+    }
+
     const payload = {
       name_th: typeForm.name_th.trim(),
       name_en: typeForm.name_en.trim(),
-      display_order: typeForm.display_order ? Number(typeForm.display_order) : undefined,
-      is_active: !!typeForm.is_active,
     };
 
     try {
@@ -697,8 +1005,12 @@ export default function ProjectsContent() {
       setTypeForm(initialTypeForm);
       setEditingType(null);
     } catch (error) {
-      console.error(error);
-      Toast.fire({ icon: "error", title: error.message || "บันทึกประเภทไม่สำเร็จ" });
+      if (error?.status === 409) {
+        Toast.fire({ icon: "warning", title: "ชื่อประเภทโครงการซ้ำกัน" });
+      } else {
+        console.error(error);
+        Toast.fire({ icon: "error", title: error.message || "บันทึกประเภทไม่สำเร็จ" });
+      }
     } finally {
       setSavingType(false);
     }
@@ -711,11 +1023,22 @@ export default function ProjectsContent() {
       return;
     }
 
+    const normalizedThaiName = normalizeText(planForm.name_th);
+    const editingId = editingPlan?.plan_id ?? null;
+    const duplicatePlan = budgetPlans.some(
+      (item) =>
+        normalizeText(item.name_th) === normalizedThaiName &&
+        (item.plan_id ?? null) !== editingId
+    );
+
+    if (duplicatePlan) {
+      Toast.fire({ icon: "warning", title: "ชื่อแผนงบประมาณซ้ำกัน" });
+      return;
+    }
+
     const payload = {
       name_th: planForm.name_th.trim(),
       name_en: planForm.name_en.trim(),
-      display_order: planForm.display_order ? Number(planForm.display_order) : undefined,
-      is_active: !!planForm.is_active,
     };
 
     try {
@@ -731,10 +1054,218 @@ export default function ProjectsContent() {
       setPlanForm(initialPlanForm);
       setEditingPlan(null);
     } catch (error) {
-      console.error(error);
-      Toast.fire({ icon: "error", title: error.message || "บันทึกแผนงบประมาณไม่สำเร็จ" });
+      if (error?.status === 409) {
+        Toast.fire({ icon: "warning", title: "ชื่อแผนงบประมาณซ้ำกัน" });
+      } else {
+        console.error(error);
+        Toast.fire({ icon: "error", title: error.message || "บันทึกแผนงบประมาณไม่สำเร็จ" });
+      }
     } finally {
       setSavingPlan(false);
+    }
+  };
+
+  const updateToggleLoadingSet = (setter, id, shouldAdd) => {
+    setter((prev) => {
+      const next = new Set(prev);
+      if (shouldAdd) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const handleTypeDragStart = (_event, item) => {
+    const id = item.type_id ?? item.id;
+    typeDragIdRef.current = id;
+    setTypeDragId(id);
+  };
+
+  const handleTypeDragOver = (_event, item) => {
+    const overId = item.type_id ?? item.id;
+    setTypeDragOverId(overId);
+    const draggingId = typeDragIdRef.current;
+    if (!draggingId || draggingId === overId) {
+      return;
+    }
+
+    setProjectTypes((prev) => {
+      const updated = [...prev];
+      const fromIndex = updated.findIndex(
+        (entry) => (entry.type_id ?? entry.id) === draggingId
+      );
+      const toIndex = updated.findIndex(
+        (entry) => (entry.type_id ?? entry.id) === overId
+      );
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+        return prev;
+      }
+
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return updated.map((entry, index) => ({
+        ...entry,
+        display_order: index + 1,
+      }));
+    });
+
+    setTypeOrderDirty(true);
+  };
+
+  const handleTypeDragEnd = () => {
+    typeDragIdRef.current = null;
+    setTypeDragId(null);
+    setTypeDragOverId(null);
+  };
+
+  const handlePlanDragStart = (_event, item) => {
+    const id = item.plan_id ?? item.id;
+    planDragIdRef.current = id;
+    setPlanDragId(id);
+  };
+
+  const handlePlanDragOver = (_event, item) => {
+    const overId = item.plan_id ?? item.id;
+    setPlanDragOverId(overId);
+    const draggingId = planDragIdRef.current;
+    if (!draggingId || draggingId === overId) {
+      return;
+    }
+
+    setBudgetPlans((prev) => {
+      const updated = [...prev];
+      const fromIndex = updated.findIndex(
+        (entry) => (entry.plan_id ?? entry.id) === draggingId
+      );
+      const toIndex = updated.findIndex(
+        (entry) => (entry.plan_id ?? entry.id) === overId
+      );
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+        return prev;
+      }
+
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return updated.map((entry, index) => ({
+        ...entry,
+        display_order: index + 1,
+      }));
+    });
+
+    setPlanOrderDirty(true);
+  };
+
+  const handlePlanDragEnd = () => {
+    planDragIdRef.current = null;
+    setPlanDragId(null);
+    setPlanDragOverId(null);
+  };
+
+  const persistTypeOrder = async () => {
+    if (!projectTypes.length) {
+      Toast.fire({ icon: "info", title: "ไม่มีข้อมูลให้บันทึกลำดับ" });
+      return;
+    }
+    try {
+      setSavingTypeOrder(true);
+      const orderPayload = projectTypes.map((item) => item.type_id);
+      await adminAPI.reorderProjectTypes(orderPayload);
+      setProjectTypes((prev) =>
+        prev.map((entry, index) => ({
+          ...entry,
+          display_order: index + 1,
+        }))
+      );
+      setTypeOrderDirty(false);
+      Toast.fire({ icon: "success", title: "บันทึกลำดับประเภทโครงการแล้ว" });
+    } catch (error) {
+      console.error(error);
+      Toast.fire({ icon: "error", title: error.message || "บันทึกลำดับประเภทไม่สำเร็จ" });
+    } finally {
+      setSavingTypeOrder(false);
+      handleTypeDragEnd();
+    }
+  };
+
+  const persistPlanOrder = async () => {
+    if (!budgetPlans.length) {
+      Toast.fire({ icon: "info", title: "ไม่มีข้อมูลให้บันทึกลำดับ" });
+      return;
+    }
+    try {
+      setSavingPlanOrder(true);
+      const orderPayload = budgetPlans.map((item) => item.plan_id);
+      await adminAPI.reorderProjectBudgetPlans(orderPayload);
+      setBudgetPlans((prev) =>
+        prev.map((entry, index) => ({
+          ...entry,
+          display_order: index + 1,
+        }))
+      );
+      setPlanOrderDirty(false);
+      Toast.fire({ icon: "success", title: "บันทึกลำดับแผนงบประมาณแล้ว" });
+    } catch (error) {
+      console.error(error);
+      Toast.fire({ icon: "error", title: error.message || "บันทึกลำดับแผนงบประมาณไม่สำเร็จ" });
+    } finally {
+      setSavingPlanOrder(false);
+      handlePlanDragEnd();
+    }
+  };
+
+  const handleToggleTypeActive = async (item) => {
+    const id = item.type_id ?? item.id;
+    const nextStatus = !item.is_active;
+    updateToggleLoadingSet(setTypeToggleLoading, id, true);
+    try {
+      await adminAPI.updateProjectType(id, { is_active: nextStatus });
+      setProjectTypes((prev) =>
+        prev.map((entry) =>
+          (entry.type_id ?? entry.id) === id
+            ? { ...entry, is_active: nextStatus }
+            : entry
+        )
+      );
+      Toast.fire({
+        icon: "success",
+        title: nextStatus
+          ? "เปิดใช้งานประเภทโครงการแล้ว"
+          : "ปิดใช้งานประเภทโครงการแล้ว",
+      });
+    } catch (error) {
+      console.error(error);
+      Toast.fire({ icon: "error", title: error.message || "เปลี่ยนสถานะไม่สำเร็จ" });
+    } finally {
+      updateToggleLoadingSet(setTypeToggleLoading, id, false);
+    }
+  };
+
+  const handleTogglePlanActive = async (item) => {
+    const id = item.plan_id ?? item.id;
+    const nextStatus = !item.is_active;
+    updateToggleLoadingSet(setPlanToggleLoading, id, true);
+    try {
+      await adminAPI.updateProjectBudgetPlan(id, { is_active: nextStatus });
+      setBudgetPlans((prev) =>
+        prev.map((entry) =>
+          (entry.plan_id ?? entry.id) === id
+            ? { ...entry, is_active: nextStatus }
+            : entry
+        )
+      );
+      Toast.fire({
+        icon: "success",
+        title: nextStatus
+          ? "เปิดใช้งานแผนงบประมาณแล้ว"
+          : "ปิดใช้งานแผนงบประมาณแล้ว",
+      });
+    } catch (error) {
+      console.error(error);
+      Toast.fire({ icon: "error", title: error.message || "เปลี่ยนสถานะไม่สำเร็จ" });
+    } finally {
+      updateToggleLoadingSet(setPlanToggleLoading, id, false);
     }
   };
 
@@ -783,7 +1314,8 @@ export default function ProjectsContent() {
                   onClick={() => {
                     setShowProjectForm(true);
                     setEditingProject(null);
-                    setProjectForm(initialProjectForm);
+                    setProjectForm({ ...initialProjectForm });
+                    setProjectFileKey((key) => key + 1);
                   }}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
                 >
@@ -795,13 +1327,18 @@ export default function ProjectsContent() {
               <ProjectForm
                 open={showProjectForm}
                 formData={projectForm}
-                types={projectTypes}
-                plans={budgetPlans}
+                types={projectTypeOptions}
+                plans={budgetPlanOptions}
                 onClose={resetProjectForm}
                 onChange={handleProjectChange}
+                onFileChange={handleProjectFileChange}
+                onClearAttachment={handleClearProjectAttachment}
                 onSubmit={handleSubmitProject}
                 saving={savingProject}
                 isEditing={!!editingProject}
+                fileInputKey={projectFileKey}
+                attachmentFile={projectForm.attachment}
+                existingAttachment={editingProject?.attachments?.[0] || null}
               />
 
               <ProjectsTable
@@ -813,36 +1350,45 @@ export default function ProjectsContent() {
           )}
 
           {activeTab === "types" && (
-            <ConfigList
-              title="ประเภทโครงการ"
-              description="สร้างและแก้ไขชื่อประเภท โดยรหัสจะเรียงต่อเนื่องอัตโนมัติ"
-              icon={Layers}
-              items={projectTypes}
-              form={typeForm}
-              onFormChange={handleTypeFormChange}
-              onSubmit={submitTypeForm}
-              onCancel={() => {
-                setTypeForm(initialTypeForm);
-                setEditingType(null);
-              }}
-              editingItem={editingType}
-              onEdit={(item) => {
-                setEditingType(item);
-                setTypeForm({
-                  name_th: item.name_th || "",
-                  name_en: item.name_en || "",
-                  display_order: item.display_order?.toString() || "",
-                  is_active: !!item.is_active,
-                });
-              }}
-              saving={savingType}
-              emptyText="ยังไม่มีประเภทโครงการ"
-              disableDeleteNotice
-            />
-          )}
+          <ConfigList
+            title="ประเภทโครงการ"
+            description="สร้างและแก้ไขชื่อประเภท โดยรหัสจะเรียงต่อเนื่องอัตโนมัติ"
+            icon={Layers}
+            items={projectTypes}
+            form={typeForm}
+            onFormChange={handleTypeFormChange}
+            onSubmit={submitTypeForm}
+            onCancel={() => {
+              setTypeForm(initialTypeForm);
+              setEditingType(null);
+            }}
+            editingItem={editingType}
+            onEdit={(item) => {
+              setEditingType(item);
+              setTypeForm({
+                name_th: item.name_th || "",
+                name_en: item.name_en || "",
+              });
+            }}
+            onToggleActive={handleToggleTypeActive}
+            saving={savingType}
+            emptyText="ยังไม่มีประเภทโครงการ"
+            disableDeleteNotice
+            draggingId={typeDragId}
+            dragOverId={typeDragOverId}
+            onDragStart={handleTypeDragStart}
+            onDragOver={handleTypeDragOver}
+            onDragEnd={handleTypeDragEnd}
+            orderDirty={typeOrderDirty}
+            onPersistOrder={persistTypeOrder}
+            savingOrder={savingTypeOrder}
+            toggleLoadingIds={typeToggleLoading}
+            isReordering={typeDragId !== null}
+          />
+        )}
 
-          {activeTab === "plans" && (
-            <ConfigList
+        {activeTab === "plans" && (
+          <ConfigList
               title="แผนงบประมาณ"
               description="กำหนดแผนงบประมาณสำหรับอ้างอิงในการบันทึกโครงการ"
               icon={Wallet}
@@ -850,25 +1396,34 @@ export default function ProjectsContent() {
               form={planForm}
               onFormChange={handlePlanFormChange}
               onSubmit={submitPlanForm}
-              onCancel={() => {
-                setPlanForm(initialPlanForm);
-                setEditingPlan(null);
-              }}
-              editingItem={editingPlan}
-              onEdit={(item) => {
-                setEditingPlan(item);
-                setPlanForm({
-                  name_th: item.name_th || "",
-                  name_en: item.name_en || "",
-                  display_order: item.display_order?.toString() || "",
-                  is_active: !!item.is_active,
-                });
-              }}
-              saving={savingPlan}
-              emptyText="ยังไม่มีแผนงบประมาณ"
-              disableDeleteNotice
-            />
-          )}
+            onCancel={() => {
+              setPlanForm(initialPlanForm);
+              setEditingPlan(null);
+            }}
+            editingItem={editingPlan}
+            onEdit={(item) => {
+              setEditingPlan(item);
+              setPlanForm({
+                name_th: item.name_th || "",
+                name_en: item.name_en || "",
+              });
+            }}
+            onToggleActive={handleTogglePlanActive}
+            saving={savingPlan}
+            emptyText="ยังไม่มีแผนงบประมาณ"
+            disableDeleteNotice
+            draggingId={planDragId}
+            dragOverId={planDragOverId}
+            onDragStart={handlePlanDragStart}
+            onDragOver={handlePlanDragOver}
+            onDragEnd={handlePlanDragEnd}
+            orderDirty={planOrderDirty}
+            onPersistOrder={persistPlanOrder}
+            savingOrder={savingPlanOrder}
+            toggleLoadingIds={planToggleLoading}
+            isReordering={planDragId !== null}
+          />
+        )}
         </div>
       </div>
     </PageLayout>
