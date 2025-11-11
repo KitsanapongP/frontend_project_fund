@@ -459,17 +459,14 @@ function ProjectForm({
             <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
               <div className="flex flex-wrap items-center gap-2">
                 <Paperclip size={16} className="text-gray-400" />
-                <span className="truncate">
-                  ไฟล์ที่บันทึกล่าสุด: {existingAttachment.original_name || existingAttachment.stored_path}
-                </span>
                 <a
                   href={buildAttachmentUrl(existingAttachment)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ml-auto inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                  className="truncate text-blue-600 hover:underline"
+                  title={existingAttachment.original_name || existingAttachment.stored_path}
                 >
-                  <FileText size={14} />
-                  เปิดไฟล์
+                  ไฟล์ที่บันทึกล่าสุด: {existingAttachment.original_name || existingAttachment.stored_path}
                 </a>
               </div>
               <p className="mt-1 text-xs text-gray-400">
