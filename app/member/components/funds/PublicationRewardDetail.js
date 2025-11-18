@@ -924,7 +924,10 @@ export default function PublicationRewardDetail({
     pubDetail?.announce_reference_number ??
     submission.announce_reference_number ??
     null;
-  
+
+  const originLabel = originPage === 'received-funds' ? 'ทุนที่เคยได้รับ' : 'คำร้องของฉัน';
+
+
   return (
     <PageLayout
       title={`เงินรางวัลตีพิมพ์ #${submission.submission_number}`}

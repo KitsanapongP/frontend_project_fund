@@ -859,7 +859,8 @@ export default function FundApplicationDetail({
   const submittedAt = submission.submitted_at || submission.created_at;
   const announceReference =
     submission.announce_reference_number || detail.announce_reference_number;
-
+  const originLabel = originPage === "received-funds" ? "ทุนที่เคยได้รับ" : "คำร้องของฉัน";
+  
   return (
     <PageLayout
       title={`คำร้องขอทุน #${submission.submission_number}`}
