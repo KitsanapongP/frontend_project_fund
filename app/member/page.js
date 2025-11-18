@@ -104,9 +104,21 @@ export function MemberPageContent({ initialPage = 'profile' }) {
           />
         );
       case 'publication-reward-detail':
-        return <PublicationRewardDetail submissionId={selectedFundData?.submissionId} onNavigate={handleNavigate} />;
+        return (
+          <PublicationRewardDetail
+            submissionId={selectedFundData?.submissionId}
+            originPage={selectedFundData?.originPage}
+            onNavigate={handleNavigate}
+          />
+        );
       case 'fund-application-detail':
-        return <FundApplicationDetail submissionId={selectedFundData?.submissionId} onNavigate={handleNavigate} />;
+        return (
+          <FundApplicationDetail
+            submissionId={selectedFundData?.submissionId}
+            originPage={selectedFundData?.originPage}
+            onNavigate={handleNavigate}
+          />
+        );
       case 'announcements':
         return <AnnouncementPage />;
       case 'notifications':
@@ -129,9 +141,10 @@ export function MemberPageContent({ initialPage = 'profile' }) {
       'applications': 'คำร้องของฉัน',
       'received-funds': 'ทุนที่เคยได้รับ',
       'application-form': 'ยื่นคำร้องใหม่',
-      'publication-reward-form': 'รางวัลตีพิมพ์',
-      'generic-fund-application': 'ยื่นขอทุน',
+      'publication-reward-form': 'แบบฟอร์มขอทุนเงินรางวัลตีพิมพ์',
+      'generic-fund-application': 'แบบฟอร์มยื่นขอทุน',
       'fund-application-detail': 'รายละเอียดคำร้องขอทุน',
+      'publication-reward-detail': 'รายละเอียดคำร้องขอทุนเงินรางวัลตีพิมพ์',
       'announcements': 'ประกาศกองทุนวิจัยและนวัตกรรม',
       'notifications': 'การแจ้งเตือน',
       'projects': 'โครงการ',
@@ -146,7 +159,6 @@ export function MemberPageContent({ initialPage = 'profile' }) {
         isOpen={isOpen}
         setIsOpen={setIsOpen}
         currentPageTitle={getPageTitle()}
-        onNavigate={handleNavigate}
         Navigation={({ closeMenu }) => (
           <Navigation
             currentPage={currentPage}
