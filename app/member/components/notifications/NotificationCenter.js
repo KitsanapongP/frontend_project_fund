@@ -311,7 +311,7 @@ export default function NotificationCenter() {
                           </span>
                           {notification.related_submission_id && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-700 ring-1 ring-sky-100">
-                              อ้างอิ #{notification.related_submission_id}
+                              อ้างอิง #{notification.related_submission_id}
                             </span>
                           )}
                         </div>
