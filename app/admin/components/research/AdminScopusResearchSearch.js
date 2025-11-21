@@ -395,7 +395,7 @@ export default function AdminScopusResearchSearch() {
   return (
     <PageLayout
       title="ค้นหางานวิจัย"
-      subtitle="ดูรายชื่อผู้ใช้ที่เชื่อมโยง Scopus และเปิดรายละเอียดผลงานแบบเดียวกับหน้าจัดการคำร้อง"
+      subtitle="ดูรายชื่อผู้ใช้ที่เชื่อมโยงกับ Scopus และดูรายละเอียดผลงาน"
       icon={UserSearch}
     >
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-[1.15fr,1.85fr]">
