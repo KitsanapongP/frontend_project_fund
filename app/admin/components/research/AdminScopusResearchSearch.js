@@ -2,9 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, BarChart3, ExternalLink, FileText, Loader2, Search, UserSearch } from "lucide-react";
+import { AlertCircle, BarChart3, Download, ExternalLink, FileText, Loader2, Search, UserSearch } from "lucide-react";
 import PageLayout from "../common/PageLayout";
 import { publicationsAPI, usersAPI } from "../../../lib/api";
+import { toast } from "react-hot-toast";
+import { downloadXlsx } from "@/app/admin/utils/xlsxExporter";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
@@ -16,6 +18,19 @@ const ReactApexChart = dynamic(() => import("react-apexcharts"), {
 const PUB_PAGE_SIZE = 10;
 const USER_PAGE_SIZE = 20;
 const CITATION_RECENT_START_YEAR = 2020;
+const EXPORT_COLUMNS = [
+  { key: "rowNumber", header: "ลำดับ", width: 8 },
+  { key: "title", header: "ชื่อเรื่อง", width: 60 },
+  { key: "venue", header: "แหล่งเผยแพร่", width: 36 },
+  { key: "citedBy", header: "Cited by", width: 12 },
+  { key: "year", header: "ปี", width: 10 },
+  { key: "scopusId", header: "Scopus ID", width: 16 },
+  { key: "eid", header: "EID", width: 22 },
+  { key: "doiUrl", header: "DOI/URL", width: 32 },
+  { key: "scopusUrl", header: "Scopus URL", width: 32 },
+  { key: "openAccess", header: "Open Access", width: 14 },
+  { key: "keywords", header: "Keywords", width: 40 },
+];
 
 export default function AdminScopusResearchSearch() {
   const [scopusUsers, setScopusUsers] = useState([]);
@@ -40,6 +55,7 @@ export default function AdminScopusResearchSearch() {
 
   const [activeTab, setActiveTab] = useState("publications");
   const [userSearch, setUserSearch] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const loadUsers = useCallback(
     async (offset = 0) => {
@@ -227,12 +243,98 @@ export default function AdminScopusResearchSearch() {
     });
   }, [scopusUsers, userSearch]);
 
+  const buildExportRows = useCallback((items, startOffset = 0) => {
+    if (!Array.isArray(items) || items.length === 0) return [];
+    return items.map((pub, index) => {
+      const rowNumber = startOffset + index + 1;
+      const citedByValue =
+        pub.cited_by !== undefined && pub.cited_by !== null ? pub.cited_by : "";
+      const openAccessFlag =
+        pub.open_access ?? pub.is_open_access ?? pub.openaccess ?? pub.openAccess;
+      const keywords = Array.isArray(pub.keywords)
+        ? pub.keywords.join("; ")
+        : pub.keywords || "";
+
+      return {
+        rowNumber,
+        title: pub.title || "",
+        venue: pub.venue || pub.publication_name || "",
+        citedBy: citedByValue,
+        year: pub.publication_year || pub.coverDate || "",
+        scopusId: pub.scopus_id || pub.scopusID || "",
+        eid: pub.eid || "",
+        doiUrl: pub.doi || pub.doi_url || pub.url || "",
+        scopusUrl: pub.scopus_url || "",
+        openAccess:
+          openAccessFlag === undefined || openAccessFlag === null
+            ? ""
+            : openAccessFlag
+            ? "Yes"
+            : "No",
+        keywords,
+      };
+    });
+  }, []);
+
+  const hasExportableData = useMemo(() => (pubMeta?.total || 0) > 0, [pubMeta?.total]);
+
   const axisLabelFormatter = (value) => {
     if (typeof value !== "number" || Number.isNaN(value)) {
       return value;
     }
     return formatNumber(value);
   };
+
+  const handleExport = useCallback(async () => {
+    if (!selectedUserId || !hasExportableData) return;
+    setExporting(true);
+    try {
+      const query = pubQuery.trim();
+      const limit = pubMeta?.limit || PUB_PAGE_SIZE;
+      let offset = 0;
+      let total = pubMeta?.total || 0;
+      const allRows = [];
+
+      while (offset === 0 || offset < total) {
+        const params = { limit, offset, sort: "year", direction: "desc" };
+        if (query) {
+          params.q = query;
+        }
+
+        const res = await publicationsAPI.getScopusPublicationsForUser(selectedUserId, params);
+        const items = Array.isArray(res?.data) ? res.data : [];
+        const paging = res?.paging || {};
+        total = paging.total ?? total;
+        const pageLimit = paging.limit || limit;
+
+        allRows.push(...buildExportRows(items, offset));
+
+        if (items.length < pageLimit) {
+          break;
+        }
+        offset += pageLimit;
+      }
+
+      if (allRows.length === 0) {
+        toast.error("ไม่พบข้อมูลงานวิจัยสำหรับส่งออก");
+        return;
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
+      const userRef = selectedUser?.scopus_id || selectedUser?.scopusID || selectedUserId;
+      const filename = `scopus_publications_${userRef}_${timestamp}.xlsx`;
+      downloadXlsx(EXPORT_COLUMNS, allRows, {
+        sheetName: "Scopus Publications",
+        filename,
+      });
+      toast.success(`ส่งออก ${allRows.length} รายการเรียบร้อยแล้ว`);
+    } catch (error) {
+      console.error("Export publications error", error);
+      toast.error("ไม่สามารถส่งออกไฟล์ได้");
+    } finally {
+      setExporting(false);
+    }
+  }, [buildExportRows, hasExportableData, pubMeta?.limit, pubMeta?.total, pubQuery, selectedUser, selectedUserId]);
 
   const chartOptions = {
     chart: {
@@ -591,6 +693,14 @@ export default function AdminScopusResearchSearch() {
                     className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {pubLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}ค้นหาเอกสาร
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    disabled={!selectedUserId || exporting || !hasExportableData}
+                    className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}ส่งออก Excel
                   </button>
                 </div>
               </div>
