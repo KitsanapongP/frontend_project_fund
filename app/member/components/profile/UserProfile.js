@@ -1655,19 +1655,6 @@ export default function ProfileContent() {
                 </div>
               )}
             </section>
-
-            <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-gray-900">สรุปงบประมาณ</h2>
-              <div className="mt-4">
-                <BudgetSummary
-                  budget={{
-                    total: teacherData.stats.totalBudgetReceived,
-                    thisYear: teacherData.stats.usedBudget,
-                    remaining: teacherData.stats.remainingBudget,
-                  }}
-                />
-              </div>
-            </section>
           </div>
         </div>
       </div>
