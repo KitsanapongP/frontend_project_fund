@@ -11,9 +11,8 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
-  ExternalLink,
   UserCircle,
-  AlertCircle,
+  Download,
 } from "lucide-react";
 
 import profileAPI from "@/app/lib/profile_api";
@@ -21,6 +20,8 @@ import memberAPI from "@/app/lib/member_api";
 import BudgetSummary from "@/app/member/components/dashboard/BudgetSummary";
 import { useStatusMap } from "@/app/hooks/useStatusMap";
 import PageLayout from "../common/PageLayout";
+import { toast } from "react-hot-toast";
+import { downloadXlsx } from "@/app/admin/utils/xlsxExporter";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
@@ -65,6 +66,37 @@ const createDefaultScopusStats = () => ({
   totals: { documents: null, citations: null },
   meta: { has_scopus_id: true, has_author_record: true },
 });
+
+const EXPORT_COLUMNS = [
+  { key: "rowNumber", header: "ลำดับ", width: 8 },
+  { key: "scopusId", header: "scopus_id", width: 14 },
+  { key: "scopusLink", header: "scopus_link", width: 30 },
+  { key: "title", header: "title", width: 60 },
+  { key: "abstract", header: "abstract", width: 60 },
+  { key: "aggregationType", header: "aggregation_type", width: 18 },
+  { key: "sourceId", header: "source_id", width: 18 },
+  { key: "publicationName", header: "publication_name", width: 36 },
+  { key: "issn", header: "issn", width: 18 },
+  { key: "eissn", header: "eissn", width: 18 },
+  { key: "isbn", header: "isbn", width: 18 },
+  { key: "volume", header: "volume", width: 12 },
+  { key: "issue", header: "issue", width: 12 },
+  { key: "pageRange", header: "page_range", width: 16 },
+  { key: "articleNumber", header: "article_number", width: 18 },
+  { key: "coverDate", header: "cover_date", width: 18 },
+  { key: "doi", header: "doi", width: 22 },
+  { key: "citedBy", header: "citedby_count", width: 12 },
+  { key: "authkeywords", header: "authkeywords", width: 28 },
+  { key: "fundSponsor", header: "fund_sponsor", width: 28 },
+  { key: "citeScoreStatus", header: "cite_score_status", width: 18 },
+  { key: "citeScoreRank", header: "cite_score_rank", width: 14 },
+  { key: "citeScorePercentile", header: "cite_score_percentile", width: 16 },
+  { key: "citeScoreQuartile", header: "cite_score_quartile", width: 16 },
+  { key: "year", header: "publication_year", width: 12 },
+  { key: "eid", header: "eid", width: 22 },
+  { key: "scopusUrl", header: "scopus_url", width: 32 },
+  { key: "doiUrl", header: "doi_url", width: 32 },
+];
 
 const CITATION_RECENT_START_YEAR = 2020;
 
@@ -462,6 +494,7 @@ export default function ProfileContent() {
   const [sortDirection, setSortDirection] = useState("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [exporting, setExporting] = useState(false);
 
   const [innovations, setInnovations] = useState([]);
   const [innovLoading, setInnovLoading] = useState(true);
@@ -606,6 +639,64 @@ export default function ProfileContent() {
     if (!Number.isFinite(num)) return null;
     return formatNumber(num);
   };
+
+  const buildExportRows = useCallback((items, startOffset = 0) => {
+    if (!Array.isArray(items) || items.length === 0) return [];
+    const formatCoverDate = (value) => {
+      if (!value) return "";
+      const date = value instanceof Date ? value : new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toISOString().split("T")[0];
+    };
+    return items.map((pub, index) => {
+      const rowNumber = startOffset + index + 1;
+      const citedByValue =
+        pub.cited_by !== undefined && pub.cited_by !== null ? pub.cited_by : "";
+      const keywords = Array.isArray(pub.keywords)
+        ? pub.keywords.join("; ")
+        : pub.keywords || pub.authkeywords || "";
+      const coverDate = pub.cover_date || pub.coverDate || null;
+      const coverYear = (() => {
+        if (!coverDate) return "";
+        const date = coverDate instanceof Date ? coverDate : new Date(coverDate);
+        return Number.isNaN(date.getTime()) ? "" : date.getFullYear();
+      })();
+
+      return {
+        rowNumber,
+        scopusId: pub.scopus_id || pub.scopusID || "",
+        scopusLink: pub.scopus_url || pub.scopus_link || "",
+        title: pub.title || "",
+        abstract: pub.abstract || "",
+        aggregationType: pub.aggregation_type || "",
+        sourceId: pub.source_id || "",
+        publicationName: pub.publication_name || pub.venue || "",
+        issn: pub.issn || "",
+        eissn: pub.eissn || "",
+        isbn: pub.isbn || "",
+        volume: pub.volume || "",
+        issue: pub.issue || "",
+        pageRange: pub.page_range || "",
+        articleNumber: pub.article_number || "",
+        coverDate: formatCoverDate(coverDate),
+        doi: pub.doi || "",
+        citedBy: citedByValue,
+        authkeywords: keywords,
+        fundSponsor: pub.fund_sponsor || "",
+        citeScoreStatus:
+          pub.cite_score_status ?? pub.scopus_source_metrics?.cite_score_status ?? "",
+        citeScoreRank: pub.cite_score_rank ?? pub.scopus_source_metrics?.cite_score_rank ?? "",
+        citeScorePercentile:
+          pub.cite_score_percentile ?? pub.scopus_source_metrics?.cite_score_percentile ?? "",
+        citeScoreQuartile:
+          (pub.cite_score_quartile || pub.scopus_source_metrics?.cite_score_quartile || "")?.toUpperCase(),
+        year: pub.publication_year || coverYear,
+        eid: pub.eid || "",
+        scopusUrl: pub.scopus_url || "",
+        doiUrl: pub.doi || pub.doi_url || pub.url || "",
+      };
+    });
+  }, []);
   const loadProfileData = async () => {
     try {
       setLoading(true);
@@ -1090,6 +1181,67 @@ export default function ProfileContent() {
     [matchesYearRange, scopusPublications],
   );
 
+  const handleExportScopus = useCallback(async () => {
+    if (activeSource !== "scopus") return;
+    setExporting(true);
+    try {
+      const limit = 200;
+      let offset = 0;
+      let total;
+      const allRows = [];
+
+      while (true) {
+        const params = { limit, offset, sort: sortField, direction: sortDirection };
+        if (searchTerm.trim()) {
+          params.q = searchTerm.trim();
+        }
+
+        const res = await memberAPI.getUserScopusPublications(params);
+        const items = Array.isArray(res?.data || res?.items) ? res.data || res.items : [];
+        const paging = res?.meta || res?.paging || {};
+        total = paging.total ?? total;
+        const pageLimit = paging.limit || limit;
+
+        const filteredItems = items.filter((pub) => matchesYearRange(pub));
+        allRows.push(...buildExportRows(filteredItems, allRows.length));
+
+        if (items.length < pageLimit) {
+          break;
+        }
+        offset += pageLimit;
+
+        if (total !== undefined && offset >= total) {
+          break;
+        }
+      }
+
+      if (allRows.length === 0) {
+        toast.error("ไม่พบข้อมูลงานวิจัยสำหรับส่งออก");
+        return;
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
+      const filename = `my_scopus_publications_${timestamp}.xlsx`;
+      downloadXlsx(EXPORT_COLUMNS, allRows, {
+        sheetName: "Scopus Publications",
+        filename,
+      });
+      toast.success(`ส่งออก ${allRows.length} รายการเรียบร้อยแล้ว`);
+    } catch (error) {
+      console.error("Export Scopus publications error", error);
+      toast.error("ไม่สามารถส่งออกไฟล์ได้");
+    } finally {
+      setExporting(false);
+    }
+  }, [
+    activeSource,
+    buildExportRows,
+    matchesYearRange,
+    searchTerm,
+    sortDirection,
+    sortField,
+  ]);
+
   const scopusTrend = useMemo(
     () => (Array.isArray(scopusStats?.trend) ? scopusStats.trend : []),
     [scopusStats],
@@ -1158,6 +1310,11 @@ export default function ProfileContent() {
     totalRecords === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
   const endRecord =
     totalRecords === 0 ? 0 : Math.min(currentPage * rowsPerPage, totalRecords);
+  const canExportScopus =
+    isScopusActive &&
+    !scopusLoading &&
+    !scopusUnavailable &&
+    filteredScopusPublications.length > 0;
 
   const handleInnovSort = (field) => {
     if (innovSortField === field) {
@@ -1393,9 +1550,26 @@ export default function ProfileContent() {
               {activeTab === "publications" ? (
                 <div className="space-y-6">
                   <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex flex-col gap-2">
                       <h3 className="text-base font-semibold text-gray-900 lg:text-lg">รายการผลงานตีพิมพ์</h3>
-                      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                      <p className="text-sm text-gray-600">
+                        ค้นหาและกรองรายการผลงานตามปีที่เผยแพร่
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-start gap-2 text-sm lg:items-end">
+                      <div className="flex flex-wrap items-center justify-end gap-2 text-gray-600">
+                        {isScopusActive ? (
+                          <button
+                            type="button"
+                            onClick={handleExportScopus}
+                            className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
+                            disabled={!canExportScopus || exporting}
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            <span>{exporting ? "กำลังส่งออก..." : "ส่งออก Scopus"}</span>
+                          </button>
+                        ) : null}
                         <span>แหล่งข้อมูล:</span>
                         <div className="inline-flex rounded-full border border-gray-200 bg-gray-50 p-0.5">
                           {[{ value: "scopus", label: "Scopus" }, { value: "scholar", label: "Google Scholar" }].map(
@@ -1425,11 +1599,12 @@ export default function ProfileContent() {
                         ) : null}
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-3">
-                      <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 lg:w-auto">
-                        <input
-                          type="text"
-                          value={searchTerm}
+                  </div>
+                  <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-3">
+                    <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 lg:w-auto">
+                      <input
+                        type="text"
+                        value={searchTerm}
                           onChange={(e) => {
                             setSearchTerm(e.target.value);
                             setCurrentPage(1);
@@ -1601,11 +1776,11 @@ export default function ProfileContent() {
                                 </th>
                               ) : null}
                               <th
-                              className="w-20 cursor-pointer px-4 py-2 text-center font-medium text-gray-700"
-                              onClick={() => handleSort("year")}
-                            >
-                              ปี
-                              {sortField === "year" ? (
+                                className="w-20 cursor-pointer px-4 py-2 text-center font-medium text-gray-700"
+                                onClick={() => handleSort("year")}
+                              >
+                                ปี
+                                {sortField === "year" ? (
                                   sortDirection === "asc" ? (
                                     <ArrowUp className="ml-1 inline" size={14} />
                                   ) : (
@@ -1613,15 +1788,12 @@ export default function ProfileContent() {
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                  className="ml-1 inline text-gray-400"
-                                  size={14}
-                                />
-                              )}
-                            </th>
-                            <th className="w-32 px-4 py-2 text-left font-medium text-gray-700">
-                              DOI
-                            </th>
-                          </tr>
+                                    className="ml-1 inline text-gray-400"
+                                    size={14}
+                                  />
+                                )}
+                              </th>
+                            </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-200">
                             {tablePublications.map((pub, index) => {
@@ -1632,28 +1804,20 @@ export default function ProfileContent() {
                                   : null;
                               const yearValue = getPublicationYear(pub) || "-";
                               const key = `${pub.id || pub.eid || index}-${activeSource}`;
-                              const scopusLink =
-                                pub.scopus_documents?.scopus_link ||
-                                pub.scopus_link ||
-                                pub.scopus_url ||
-                                pub.url;
-                              const doiLink =
-                                pub.scopus_documents?.doi || pub.doi || pub.url || "";
                               const subtypeDescription =
                                 pub.scopus_documents?.subtype_description ||
                                 pub.subtype_description ||
                                 pub.subtypeDescription;
                               const shouldShowCiteScore = subtypeDescription === "Article";
-                              const titleHref = isScopusActive ? scopusLink : pub.url;
                               return (
                                 <tr key={key} className="hover:bg-gray-50">
                                   <td className="px-4 py-2 text-center text-gray-700">
                                     {rowNumber}
                                   </td>
                                   <td className="max-w-xs px-4 py-2 lg:max-w-md">
-                                    {titleHref ? (
+                                    {pub.url ? (
                                       <a
-                                        href={titleHref}
+                                        href={pub.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="block truncate text-blue-600 hover:underline"
@@ -1715,22 +1879,6 @@ export default function ProfileContent() {
                                     </td>
                                   ) : null}
                                   <td className="px-4 py-2 text-center">{yearValue || "-"}</td>
-                                  <td className="px-4 py-2">
-                                    <div className="flex flex-wrap gap-2 text-xs">
-                                      {doiLink ? (
-                                        <a
-                                          href={doiLink}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1 rounded-full border border-slate-300 px-2 py-1 text-slate-700 transition hover:border-slate-900 hover:text-slate-900"
-                                        >
-                                          DOI <ExternalLink size={14} />
-                                        </a>
-                                      ) : (
-                                        <span className="text-gray-400">-</span>
-                                      )}
-                                    </div>
-                                  </td>
                             </tr>
                           );
                         })}
@@ -1763,23 +1911,11 @@ export default function ProfileContent() {
                     )}
                   </div>
                   {isScopusActive ? (
-                    <>
-                      <ScopusTrendCard
-                        scopusStats={scopusStatsForDisplay}
-                        scopusLoading={scopusStatsLoading}
-                        formatNumber={formatNumber}
-                      />
-                      <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                        <AlertCircle className="mt-0.5 h-4 w-4" />
-                        <div>
-                          <p className="font-semibold">หมายเหตุเกี่ยวกับ Percentile และ Quartile</p>
-                          <p className="text-[13px] leading-relaxed text-amber-800/90">
-                            ค่า Percentile และ Quartile จะอ้างอิงปีที่บทความตีพิมพ์ และอาจไม่ถูกต้อง 100% กรุณาตรวจสอบข้อมูลเพิ่มเติม
-                            หากต้องใช้ในการตัดสินใจหรือรายงานสำคัญ
-                          </p>
-                        </div>
-                      </div>
-                    </>
+                    <ScopusTrendCard
+                      scopusStats={scopusStatsForDisplay}
+                      scopusLoading={scopusStatsLoading}
+                      formatNumber={formatNumber}
+                    />
                   ) : (
                     <ScholarCitationsCard
                       metrics={citationMetrics}
