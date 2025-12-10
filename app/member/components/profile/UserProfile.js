@@ -11,7 +11,9 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  ExternalLink,
   UserCircle,
+  AlertCircle,
 } from "lucide-react";
 
 import profileAPI from "@/app/lib/profile_api";
@@ -1599,11 +1601,11 @@ export default function ProfileContent() {
                                 </th>
                               ) : null}
                               <th
-                                className="w-20 cursor-pointer px-4 py-2 text-center font-medium text-gray-700"
-                                onClick={() => handleSort("year")}
-                              >
-                                ปี
-                                {sortField === "year" ? (
+                              className="w-20 cursor-pointer px-4 py-2 text-center font-medium text-gray-700"
+                              onClick={() => handleSort("year")}
+                            >
+                              ปี
+                              {sortField === "year" ? (
                                   sortDirection === "asc" ? (
                                     <ArrowUp className="ml-1 inline" size={14} />
                                   ) : (
@@ -1611,12 +1613,15 @@ export default function ProfileContent() {
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                    className="ml-1 inline text-gray-400"
-                                    size={14}
-                                  />
-                                )}
-                              </th>
-                            </tr>
+                                  className="ml-1 inline text-gray-400"
+                                  size={14}
+                                />
+                              )}
+                            </th>
+                            <th className="w-32 px-4 py-2 text-left font-medium text-gray-700">
+                              DOI
+                            </th>
+                          </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-200">
                             {tablePublications.map((pub, index) => {
@@ -1627,20 +1632,28 @@ export default function ProfileContent() {
                                   : null;
                               const yearValue = getPublicationYear(pub) || "-";
                               const key = `${pub.id || pub.eid || index}-${activeSource}`;
+                              const scopusLink =
+                                pub.scopus_documents?.scopus_link ||
+                                pub.scopus_link ||
+                                pub.scopus_url ||
+                                pub.url;
+                              const doiLink =
+                                pub.scopus_documents?.doi || pub.doi || pub.url || "";
                               const subtypeDescription =
                                 pub.scopus_documents?.subtype_description ||
                                 pub.subtype_description ||
                                 pub.subtypeDescription;
                               const shouldShowCiteScore = subtypeDescription === "Article";
+                              const titleHref = isScopusActive ? scopusLink : pub.url;
                               return (
                                 <tr key={key} className="hover:bg-gray-50">
                                   <td className="px-4 py-2 text-center text-gray-700">
                                     {rowNumber}
                                   </td>
                                   <td className="max-w-xs px-4 py-2 lg:max-w-md">
-                                    {pub.url ? (
+                                    {titleHref ? (
                                       <a
-                                        href={pub.url}
+                                        href={titleHref}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="block truncate text-blue-600 hover:underline"
@@ -1702,6 +1715,22 @@ export default function ProfileContent() {
                                     </td>
                                   ) : null}
                                   <td className="px-4 py-2 text-center">{yearValue || "-"}</td>
+                                  <td className="px-4 py-2">
+                                    <div className="flex flex-wrap gap-2 text-xs">
+                                      {doiLink ? (
+                                        <a
+                                          href={doiLink}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 rounded-full border border-slate-300 px-2 py-1 text-slate-700 transition hover:border-slate-900 hover:text-slate-900"
+                                        >
+                                          DOI <ExternalLink size={14} />
+                                        </a>
+                                      ) : (
+                                        <span className="text-gray-400">-</span>
+                                      )}
+                                    </div>
+                                  </td>
                             </tr>
                           );
                         })}
@@ -1734,11 +1763,23 @@ export default function ProfileContent() {
                     )}
                   </div>
                   {isScopusActive ? (
-                    <ScopusTrendCard
-                      scopusStats={scopusStatsForDisplay}
-                      scopusLoading={scopusStatsLoading}
-                      formatNumber={formatNumber}
-                    />
+                    <>
+                      <ScopusTrendCard
+                        scopusStats={scopusStatsForDisplay}
+                        scopusLoading={scopusStatsLoading}
+                        formatNumber={formatNumber}
+                      />
+                      <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        <AlertCircle className="mt-0.5 h-4 w-4" />
+                        <div>
+                          <p className="font-semibold">หมายเหตุเกี่ยวกับ Percentile และ Quartile</p>
+                          <p className="text-[13px] leading-relaxed text-amber-800/90">
+                            ค่า Percentile และ Quartile จะอ้างอิงปีที่บทความตีพิมพ์ และอาจไม่ถูกต้อง 100% กรุณาตรวจสอบข้อมูลเพิ่มเติม
+                            หากต้องใช้ในการตัดสินใจหรือรายงานสำคัญ
+                          </p>
+                        </div>
+                      </div>
+                    </>
                   ) : (
                     <ScholarCitationsCard
                       metrics={citationMetrics}
