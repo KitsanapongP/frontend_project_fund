@@ -1502,7 +1502,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
           submissionLimitWarningRef.current = true;
           await Swal.fire({
             icon: 'warning',
-            title: 'เกินจำนวนครั้งที่กำหนด',
+            title: 'จำนวนรายการเกินกำหนด',
             text: buildSubmissionLimitWarning(normalized.maxSubmissionsPerYear),
             confirmButtonText: 'รับทราบ',
           });
@@ -3042,7 +3042,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
             const warningMessages = [];
             const userRemainingGrants = normalizedPolicy?.user_remaining?.grants;
             if (userRemainingGrants === 0) {
-              warningMessages.push('คุณใช้สิทธิ์จำนวนครั้งครบตามโควตาประจำปีแล้ว');
+              warningMessages.push('คุณใช้สิทธิ์จำนวนรายการครบตามโควตาประจำปีแล้ว');
             }
             const userRemainingAmount = normalizedPolicy?.user_remaining?.amount;
             if (userRemainingAmount !== null && userRemainingAmount !== undefined && userRemainingAmount <= 0) {
@@ -6246,7 +6246,7 @@ const showSubmissionConfirmation = async () => {
 
     const result = await Swal.fire({
       icon: 'warning',
-      title: 'เกินจำนวนครั้งที่กำหนด',
+      title: 'จำนวนรายการเกินกำหนด',
       text: buildSubmissionLimitWarning(usage.maxSubmissionsPerYear),
       showCancelButton: true,
       confirmButtonText: 'ยืนยันส่งคำร้อง',

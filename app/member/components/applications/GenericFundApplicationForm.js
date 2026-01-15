@@ -1558,7 +1558,7 @@ export default function GenericFundApplicationForm({
           submissionLimitWarningRef.current = true;
           Swal.fire({
             icon: 'warning',
-            title: 'เกินจำนวนครั้งที่กำหนด',
+            title: 'จำนวนรายการเกินกำหนด',
             text: buildSubmissionLimitWarning(normalized.maxSubmissionsPerYear),
             confirmButtonText: 'รับทราบ',
           });
@@ -3064,7 +3064,7 @@ export default function GenericFundApplicationForm({
 
     const result = await Swal.fire({
       icon: 'warning',
-      title: 'เกินจำนวนครั้งที่กำหนด',
+      title: 'จำนวนรายการเกินกำหนด',
       text: buildSubmissionLimitWarning(usage.maxSubmissionsPerYear),
       showCancelButton: true,
       confirmButtonText: 'ยืนยันส่งคำร้อง',
