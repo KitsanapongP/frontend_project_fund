@@ -1648,12 +1648,14 @@ export default function ProfileContent() {
                             ยังไม่มีข้อมูลจาก Scopus สำหรับผู้ใช้นี้
                           </span>
                         ) : null}
-                        <span className="text-xs text-gray-500">
-                          เนื่องจากมีข้อจำกัดเรื่องการใช้บริการฐานข้อมูล ข้อมูลผลงานจะถูกปรับปรุงทุกวันที่ 1 ของเดือน
-                        </span>
                       </div>
                     </div>
                   </div>
+                  {isScopusActive ? (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      เนื่องจากมีข้อจำกัดเรื่องการใช้บริการฐานข้อมูล ข้อมูลผลงานจะถูกปรับปรุงทุกวันที่ 1 ของเดือน
+                    </div>
+                  ) : null}
                   <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-3">
                     <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 lg:w-auto">
                       <input
