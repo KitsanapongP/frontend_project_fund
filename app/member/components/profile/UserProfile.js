@@ -290,6 +290,9 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
             </div>
           )
         ) : null}
+        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          เนื่องจากมีข้อจำกัดเรื่องการใช้บริการฐานข้อมูล ข้อมูลผลงานจะถูกปรับปรุงทุกวันที่ 1 ของเดือน
+        </div>
       </div>
     );
   }
@@ -303,6 +306,9 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
         {scopusUnavailable
           ? "ยังไม่มีข้อมูลจาก Scopus สำหรับผู้ใช้นี้"
           : "ยังไม่มีข้อมูลแนวโน้มจาก Scopus สำหรับสร้างกราฟ"}
+      </div>
+      <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-800">
+        เนื่องจากมีข้อจำกัดเรื่องการใช้บริการฐานข้อมูล ข้อมูลผลงานจะถูกปรับปรุงทุกวันที่ 1 ของเดือน
       </div>
     </div>
   );
@@ -1651,11 +1657,6 @@ export default function ProfileContent() {
                       </div>
                     </div>
                   </div>
-                  {isScopusActive ? (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                      เนื่องจากมีข้อจำกัดเรื่องการใช้บริการฐานข้อมูล ข้อมูลผลงานจะถูกปรับปรุงทุกวันที่ 1 ของเดือน
-                    </div>
-                  ) : null}
                   <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-3">
                     <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 lg:w-auto">
                       <input
