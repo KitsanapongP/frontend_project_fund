@@ -1648,6 +1648,9 @@ export default function ProfileContent() {
                             ยังไม่มีข้อมูลจาก Scopus สำหรับผู้ใช้นี้
                           </span>
                         ) : null}
+                        <span className="text-xs text-gray-500">
+                          เนื่องจากมีข้อจำกัดเรื่องการใช้บริการฐานข้อมูล ข้อมูลผลงานจะถูกปรับปรุงทุกวันที่ 1 ของเดือน
+                        </span>
                       </div>
                     </div>
                   </div>
