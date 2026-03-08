@@ -72,10 +72,12 @@ export default function HomePage() {
     if (isAuthenticated && user) {
       setRedirecting(true);
       redirectBasedOnRole(user);
-    } else {
-      setRedirecting(false);
+      return;
     }
-  }, [isAuthenticated, user, isLoading]);
+
+    setRedirecting(true);
+    router.replace("/login");
+  }, [isAuthenticated, user, isLoading, router]);
 
   const redirectBasedOnRole = (userData) => {
     const userRoleRaw = userData.role_id ?? userData.role;
@@ -179,6 +181,7 @@ export default function HomePage() {
     </div>
   );
 }
+
 
 
 
