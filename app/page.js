@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useMemo } from "react";
 import { HiMenu } from "react-icons/hi";
 import { RxCross2 } from "react-icons/rx";
-import { BRANDING } from "../../config/branding";
+import { BRANDING } from "../config/branding";
 
 export default function PublicHeader({
   isOpen,
