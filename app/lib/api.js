@@ -19,6 +19,10 @@ class APIClient {
     this.failedQueue = [];
   }
 
+  getBackendBaseURL() {
+    return this.baseURL.replace(/\/api\/v1\/?$/, '');
+  }
+
   // ==================== TOKEN MANAGEMENT ====================
   
   // Get stored access token (try new key first, fallback to old)
@@ -149,6 +153,7 @@ class APIClient {
       const response = await fetch(`${this.baseURL}/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ refresh_token: refreshToken }),
       });
 
@@ -209,6 +214,7 @@ class APIClient {
 
     // Default options
     const config = {
+      credentials: 'include',
       headers,
       ...options,
     };
@@ -435,6 +441,7 @@ class APIClient {
       const response = await fetch(url, {
         method: 'GET',
         headers,
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -555,19 +562,53 @@ export const authAPI = {
   },
 
   async logout() {
+    apiClient.clearAuth();
+
+    if (typeof window !== 'undefined') {
+      window.location.href = `${apiClient.getBackendBaseURL()}/api/auth/logout`;
+      return;
+    }
+
     try {
       // Call logout endpoint to invalidate session
       await apiClient.post('/logout');
     } catch (error) {
       // Even if logout API fails, clear local storage
       console.warn('Logout endpoint error:', error);
-    } finally {
-      apiClient.clearAuth();
     }
   },
 
   async getProfile() {
     return apiClient.get('/profile');
+  },
+
+  async getProfileIfAuthenticated() {
+    const token = apiClient.getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${apiClient.baseURL}/profile`, {
+      method: 'GET',
+      headers,
+      credentials: 'include',
+    });
+
+    if (response.status === 401) {
+      return null;
+    }
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new APIError(data.error || 'Unable to load profile', response.status, data.code);
+    }
+
+    return data;
+  },
+
+  getSSOLoginURL() {
+    return `${apiClient.getBackendBaseURL()}/api/auth/sso/login`;
   },
 
   async changePassword(currentPassword, newPassword, confirmPassword) {
@@ -732,6 +773,7 @@ export const documentsAPI = {
       // For file downloads, we might need to handle this differently
       // This is a simplified version - you might need to use a different approach
       fetch(url, {
+        credentials: 'include',
         headers: { Authorization: `Bearer ${token}` }
       }).then(response => response.blob())
         .then(blob => {
@@ -806,6 +848,7 @@ export const announcementAPI = {
     
     if (token) {
       fetch(url, {
+        credentials: 'include',
         headers: { Authorization: `Bearer ${token}` }
       }).then(response => {
         if (response.ok) {
@@ -858,6 +901,7 @@ export const fundFormAPI = {
     
     if (token) {
       fetch(url, {
+        credentials: 'include',
         headers: { Authorization: `Bearer ${token}` }
       }).then(response => {
         if (response.ok) {

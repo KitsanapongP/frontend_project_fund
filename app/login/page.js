@@ -17,7 +17,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { passwordAPI, APIError, NetworkError } from '../lib/api';
+import { authAPI, passwordAPI, APIError, NetworkError } from '../lib/api';
 
 export default function LoginPage() {
   const { login, isLoading, error, clearError, isAuthenticated, user } = useAuth();
@@ -127,7 +127,12 @@ export default function LoginPage() {
     }
   };
 
-  const handleSSOLogin = () => {};
+  const handleSSOLogin = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.location.href = authAPI.getSSOLoginURL();
+  };
 
   const handleModeChange = (nextMode) => {
     if (nextMode === 'forgot') {
@@ -257,6 +262,21 @@ export default function LoginPage() {
         return 'กองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์';
     }
   }, [mode]);
+
+  const ssoErrorMessage = useMemo(() => {
+    const ssoError = searchParams?.get('error');
+    if (!ssoError) {
+      return '';
+    }
+
+    const messageMap = {
+      sso_missing_code: 'ไม่พบรหัสยืนยันจาก KKU SSO กรุณาลองใหม่อีกครั้ง',
+      sso_failed: 'เข้าสู่ระบบผ่าน KKU SSO ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+      sso_not_configured: 'ระบบยังไม่ได้ตั้งค่า KKU SSO สำหรับสภาพแวดล้อมนี้',
+    };
+
+    return messageMap[ssoError] || 'เกิดข้อผิดพลาดจาก KKU SSO';
+  }, [searchParams]);
 
   useEffect(() => {
     const tokenParam = searchParams?.get('token');
@@ -414,6 +434,17 @@ export default function LoginPage() {
                 </div>
               )}
 
+              {ssoErrorMessage && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                    <div className="ml-3">
+                      <p className="text-sm text-red-800">{ssoErrorMessage}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={isLoading}
@@ -448,7 +479,7 @@ export default function LoginPage() {
                   onClick={handleSSOLogin}
                 >
                   <KeyRound className="w-5 h-5" />
-                  Sign In with KKU Email
+                  Login with KKU SSO
                 </button>
               </div>
             </form>

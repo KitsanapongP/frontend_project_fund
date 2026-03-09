@@ -51,6 +51,12 @@ NEXT_PUBLIC_API_URL=https://api.example.com/api/v1
 BACKEND_URL=https://api.example.com
 ```
 
+For KKU SSONext login, `NEXT_PUBLIC_API_URL` must point to the backend that exposes:
+
+- `GET /api/auth/sso/login`
+- `GET /api/auth/sso/callback`
+- `GET /api/auth/logout`
+
 Add any other secrets the application expects. Never commit real credentials to Git.
 
 ## 4. Build and Run (Production)

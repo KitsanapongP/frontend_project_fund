@@ -119,80 +119,77 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-    // ตรวจสอบ authentication ตอนเริ่มต้น
-    useEffect(() => {
+  // ตรวจสอบ authentication ตอนเริ่มต้น
+  useEffect(() => {
     const initAuth = async () => {
-        try {
-        // ตรวจสอบ token ใน localStorage
+      try {
         const token = localStorage.getItem('auth_token');
         const userData = localStorage.getItem('user_data');
-        
+
         if (token && userData) {
-            try {
-            // ตรวจสอบ JWT token
+          try {
             const payload = JSON.parse(atob(token.split('.')[1]));
             const currentTime = Date.now() / 1000;
-            
+
             if (payload.exp > currentTime) {
-                // Token ยังไม่หมดอายุ
-                const user = JSON.parse(userData);
-                
-                // Set authentication state (ลบการเรียก authAPI.setAuth)
-                // authAPI.setAuth(token, user); // ลบบรรทัดนี้
-                
-                dispatch({
+              const user = JSON.parse(userData);
+              dispatch({
                 type: AUTH_ACTIONS.INIT_AUTH,
                 payload: {
-                    user,
-                    token,
-                    isAuthenticated: true,
+                  user,
+                  token,
+                  isAuthenticated: true,
                 },
-                });
-                
-                return;
-            } else {
-                console.warn('Token expired');
+              });
+              return;
             }
-            } catch (error) {
+          } catch (error) {
             console.error('Invalid token format:', error);
-            }
+          }
         }
-        
-        // ไม่มี token หรือ token หมดอายุ
+
         localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-        // authAPI.clearAuth(); // ลบบรรทัดนี้
-        
-        dispatch({
+
+        const profile = await authAPI.getProfileIfAuthenticated();
+        if (profile?.user) {
+          localStorage.setItem('user_data', JSON.stringify(profile.user));
+          dispatch({
             type: AUTH_ACTIONS.INIT_AUTH,
             payload: {
+              user: profile.user,
+              token: null,
+              isAuthenticated: true,
+            },
+          });
+          return;
+        }
+
+        localStorage.removeItem('user_data');
+        dispatch({
+          type: AUTH_ACTIONS.INIT_AUTH,
+          payload: {
             user: null,
             token: null,
             isAuthenticated: false,
-            },
+          },
         });
-        
-        } catch (error) {
+      } catch (error) {
         console.error('Auth initialization error:', error);
-        
-        // กรณีเกิดข้อผิดพลาด ให้ clear auth
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
-        // authAPI.clearAuth(); // ลบบรรทัดนี้
-        
         dispatch({
-            type: AUTH_ACTIONS.INIT_AUTH,
-            payload: {
+          type: AUTH_ACTIONS.INIT_AUTH,
+          payload: {
             user: null,
             token: null,
             isAuthenticated: false,
-            },
+          },
         });
-        }
+      }
     };
 
     initAuth();
-    }, []);
+  }, []);
 
     // Login function
     const login = async (email, password) => {
@@ -320,12 +317,10 @@ export function AuthProvider({ children }) {
 
   // Update user profile
   const updateUser = (updatedUser) => {
-    const currentToken = authAPI.getToken();
+    const currentToken = localStorage.getItem('auth_token');
     
     // อัพเดท localStorage
     localStorage.setItem('user_data', JSON.stringify(updatedUser));
-    
-    authAPI.setAuth(currentToken, updatedUser);
     
     dispatch({
       type: AUTH_ACTIONS.SET_USER,
