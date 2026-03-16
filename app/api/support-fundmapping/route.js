@@ -4,19 +4,20 @@ import { cookies, headers as nextHeaders } from "next/headers";
 export const dynamic = "force-dynamic";
 
 function resolveBackendTarget() {
-  const backendURL = process.env["BACKEND_URL"];
   const publicAPIURL = process.env["NEXT_PUBLIC_API_URL"];
-  const raw = (backendURL || publicAPIURL || "https://fs.computing.kku.ac.th/api/v1").trim();
+  const raw = (publicAPIURL || "").trim();
 
   let base = "https://fs.computing.kku.ac.th";
   let basePath = "/api/v1";
 
-  try {
-    const parsed = new URL(raw);
-    base = `${parsed.protocol}//${parsed.host}`;
-    basePath = parsed.pathname || "/api/v1";
-  } catch {
-    // keep defaults
+  if (raw) {
+    try {
+      const parsed = new URL(raw);
+      base = `${parsed.protocol}//${parsed.host}`;
+      basePath = parsed.pathname || "/api/v1";
+    } catch {
+      // keep defaults
+    }
   }
 
   return {
@@ -58,7 +59,8 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
 }
 
 export async function GET() {
-  const { base, basePath } = resolveBackendTarget();
+  const configuredTarget = resolveBackendTarget();
+  const { base, basePath } = configuredTarget;
   const headers = await buildForwardHeaders();
   const primaryURL = joinURL(joinURL(base, basePath || ""), "/support-fundmapping");
   const fallbackURL = joinURL(base, "/support-fundmapping");
