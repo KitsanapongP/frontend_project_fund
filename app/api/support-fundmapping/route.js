@@ -13,7 +13,17 @@ function resolveBackendTarget() {
   if (raw) {
     try {
       const parsed = new URL(raw);
-      base = `${parsed.protocol}//${parsed.host}`;
+      const isDefaultHttpsPort = parsed.protocol === "https:" && parsed.port === "443";
+      const isDefaultHttpPort = parsed.protocol === "http:" && parsed.port === "80";
+      const shouldDropKnownWrongPort =
+        parsed.hostname === "fs.computing.kku.ac.th" && parsed.port === "8080";
+
+      const normalizedPort =
+        parsed.port && !isDefaultHttpsPort && !isDefaultHttpPort && !shouldDropKnownWrongPort
+          ? `:${parsed.port}`
+          : "";
+
+      base = `${parsed.protocol}//${parsed.hostname}${normalizedPort}`;
       basePath = parsed.pathname || "/api/v1";
     } catch {
       // keep defaults

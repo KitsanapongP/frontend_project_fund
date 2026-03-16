@@ -1,3 +1,5 @@
+import apiClient from "./api";
+
 const normalizePayload = (payload) => {
   if (Array.isArray(payload)) {
     return {
@@ -31,27 +33,13 @@ const normalizePayload = (payload) => {
 };
 
 export async function getSupportFundMappings() {
-  const response = await fetch("/api/support-fundmapping", {
-    method: "GET",
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-    },
-  });
-
-  let payload = {};
   try {
-    payload = await response.json();
+    const payload = await apiClient.get("/support-fundmapping");
+    return normalizePayload(payload);
   } catch (error) {
-    payload = {};
-  }
-
-  if (!response.ok) {
-    const message = typeof payload?.error === "string"
-      ? payload.error
+    const message = typeof error?.message === "string" && error.message.trim()
+      ? error.message
       : "ไม่สามารถดึงข้อมูลจับคู่นักวิจัยได้";
     throw new Error(message);
   }
-
-  return normalizePayload(payload);
 }
