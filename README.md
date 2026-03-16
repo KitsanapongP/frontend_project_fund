@@ -49,6 +49,10 @@ Define at least the following variables (values will depend on your backend depl
 ```bash
 NEXT_PUBLIC_API_URL=https://api.example.com/api/v1
 BACKEND_URL=https://api.example.com
+
+# Only when running the custom HTTPS server script
+HTTPS_KEY_PATH=/absolute/path/to/your.key.pem
+HTTPS_CERT_PATH=/absolute/path/to/your.cert.pem
 ```
 
 For KKU SSONext login, `NEXT_PUBLIC_API_URL` must point to the backend that exposes:
@@ -74,6 +78,14 @@ npm run start
 ```
 
 Run the start command inside a process manager (PM2, systemd, etc.) when deploying permanently.
+
+If your server terminates TLS inside Node.js (instead of using Nginx/Apache), run:
+
+```bash
+node server-https.js
+```
+
+Do not commit certificate files or private keys to Git.
 
 ## 5. Optional: Development Mode
 

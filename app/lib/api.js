@@ -1,11 +1,20 @@
 // app/lib/api.js - Updated API Client Service for Backend Communication
 class APIClient {
   constructor() {
-    this.baseURL =
-      process.env.NEXT_PUBLIC_API_URL ||
-      (typeof window !== 'undefined'
-        ? `${window.location.protocol}//${window.location.hostname}:8080/api/v1`
-        : 'http://10.198.110.27:8080/api/v1');
+    const DOMAIN_API = 'https://fs.computing.kku.ac.th/api/v1';
+    const envURL = process.env.NEXT_PUBLIC_API_URL;
+
+    if (envURL && typeof envURL === 'string' && envURL.trim()) {
+      this.baseURL = envURL.trim().replace(/\/$/, '');
+    } else if (typeof window !== 'undefined') {
+      const host = window.location.hostname.toLowerCase();
+      this.baseURL =
+        host === 'fs.computing.kku.ac.th'
+          ? DOMAIN_API
+          : `${window.location.origin.replace(/\/$/, '')}/api/v1`;
+    } else {
+      this.baseURL = DOMAIN_API;
+    }
     this.accessTokenKey = 'access_token';
     this.refreshTokenKey = 'refresh_token';
     this.userKey = 'user_data';
