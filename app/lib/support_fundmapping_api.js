@@ -1,15 +1,3 @@
-const resolveBaseURL = () => {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
-
-  if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:8080/api/v1`;
-  }
-
-  return "http://10.198.110.27:8080/api/v1";
-};
-
 const normalizePayload = (payload) => {
   if (Array.isArray(payload)) {
     return {
@@ -43,8 +31,7 @@ const normalizePayload = (payload) => {
 };
 
 export async function getSupportFundMappings() {
-  const baseURL = resolveBaseURL();
-  const response = await fetch(`${baseURL}/support-fundmapping`, {
+  const response = await fetch("/api/support-fundmapping", {
     method: "GET",
     credentials: "include",
     headers: {
