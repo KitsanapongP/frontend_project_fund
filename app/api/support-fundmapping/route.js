@@ -3,20 +3,26 @@ import { cookies, headers as nextHeaders } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.BACKEND_URL ||
-  "http://127.0.0.1:8080/api/v1";
+function resolveBackendTarget() {
+  const backendURL = process.env["BACKEND_URL"];
+  const publicAPIURL = process.env["NEXT_PUBLIC_API_URL"];
+  const raw = (backendURL || publicAPIURL || "https://fs.computing.kku.ac.th/api/v1").trim();
 
-let API_BASE = "http://127.0.0.1:8080";
-let API_BASE_PATH = "/api/v1";
+  let base = "https://fs.computing.kku.ac.th";
+  let basePath = "/api/v1";
 
-try {
-  const parsed = new URL(API_URL);
-  API_BASE = `${parsed.protocol}//${parsed.host}`;
-  API_BASE_PATH = parsed.pathname || "/api/v1";
-} catch {
-  // keep defaults
+  try {
+    const parsed = new URL(raw);
+    base = `${parsed.protocol}//${parsed.host}`;
+    basePath = parsed.pathname || "/api/v1";
+  } catch {
+    // keep defaults
+  }
+
+  return {
+    base,
+    basePath,
+  };
 }
 
 const joinURL = (base, path) =>
@@ -52,9 +58,10 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
 }
 
 export async function GET() {
+  const { base, basePath } = resolveBackendTarget();
   const headers = await buildForwardHeaders();
-  const primaryURL = joinURL(joinURL(API_BASE, API_BASE_PATH || ""), "/support-fundmapping");
-  const fallbackURL = joinURL(API_BASE, "/support-fundmapping");
+  const primaryURL = joinURL(joinURL(base, basePath || ""), "/support-fundmapping");
+  const fallbackURL = joinURL(base, "/support-fundmapping");
 
   try {
     let response = await fetchWithTimeout(primaryURL, { headers, cache: "no-store" });
