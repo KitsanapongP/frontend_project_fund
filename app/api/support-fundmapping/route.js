@@ -26,15 +26,6 @@ function resolveBackendTarget() {
   };
 }
 
-function resolveRequestOrigin(headers) {
-  const forwardedProto = headers.get("x-forwarded-proto");
-  const forwardedHost = headers.get("x-forwarded-host");
-  const host = forwardedHost || headers.get("host");
-
-  if (!host) return null;
-  return `${forwardedProto || "https"}://${host}`;
-}
-
 const joinURL = (base, path) =>
   `${base.replace(/\/+$/, "")}/${String(path || "").replace(/^\/+/, "")}`;
 
@@ -68,12 +59,8 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
 }
 
 export async function GET() {
-  const incomingHeaders = await nextHeaders();
-  const runtimeOrigin = resolveRequestOrigin(incomingHeaders);
   const configuredTarget = resolveBackendTarget();
-
-  const base = runtimeOrigin || configuredTarget.base;
-  const basePath = runtimeOrigin ? "/api/v1" : configuredTarget.basePath;
+  const { base, basePath } = configuredTarget;
 
   const headers = await buildForwardHeaders();
   const primaryURL = joinURL(joinURL(base, basePath || ""), "/support-fundmapping");
