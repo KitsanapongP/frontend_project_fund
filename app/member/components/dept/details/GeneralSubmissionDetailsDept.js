@@ -54,7 +54,7 @@ const buildDeptHeadDisplayName = (user) => {
   const firstName = user.user_fname || user.first_name || '';
   const lastName = user.user_lname || user.last_name || '';
 
-return [firstName, lastName]
+  return [firstName, lastName]
     .map((part) => String(part || '').trim())
     .filter(Boolean)
     .join(' ')
@@ -148,7 +148,10 @@ const deriveRequestedSummary = (pubDetail = {}, submission = {}) => {
 
   const fallbackTotals = [
     parseAmount(pubDetail?.total_amount),
+    parseAmount(pubDetail?.requested_amount),
     parseAmount(submission?.total_amount),
+    parseAmount(submission?.fund_application_detail?.requested_amount),
+    parseAmount(submission?.FundApplicationDetail?.requested_amount),
     parseAmount(submission?.requested_amount),
   ];
 
@@ -185,18 +188,18 @@ const deriveRequestedSummary = (pubDetail = {}, submission = {}) => {
 const deriveApprovedSummary = (pubDetail = {}, submission = {}, requestedSummary) => {
   const rewardRaw = parseAmount(
     pubDetail?.reward_approve_amount ??
-      pubDetail?.reward_approved_amount ??
-      submission?.reward_approve_amount
+    pubDetail?.reward_approved_amount ??
+    submission?.reward_approve_amount
   );
   const revisionRaw = parseAmount(
     pubDetail?.revision_fee_approve_amount ??
-      pubDetail?.revision_fee_approved_amount ??
-      submission?.revision_fee_approve_amount
+    pubDetail?.revision_fee_approved_amount ??
+    submission?.revision_fee_approve_amount
   );
   const publicationRaw = parseAmount(
     pubDetail?.publication_fee_approve_amount ??
-      pubDetail?.publication_fee_approved_amount ??
-      submission?.publication_fee_approve_amount
+    pubDetail?.publication_fee_approved_amount ??
+    submission?.publication_fee_approve_amount
   );
 
   const hasBreakdown =
@@ -843,9 +846,9 @@ function DeptDecisionPanel({
 }) {
   const [comment, setComment] = useState(
     submission?.head_comment ??
-      submission?.department_head_comment ??
-      submission?.dept_head_comment ??
-      ''
+    submission?.department_head_comment ??
+    submission?.dept_head_comment ??
+    ''
   );
   const [headSignature, setHeadSignature] = useState(
     submission?.head_signature ?? ''
@@ -925,24 +928,24 @@ function DeptDecisionPanel({
     const html = `
       <div style="text-align:left;font-size:14px;line-height:1.6;">
         ${trimmedAnnounce
-          ? `<div style="margin-bottom:0.75rem;">
+        ? `<div style="margin-bottom:0.75rem;">
               <div style="font-weight:500;margin-bottom:.25rem;">หมายเลขอ้างอิงประกาศผลการพิจารณา</div>
               <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;">${escapeHtml(trimmedAnnounce)}</div>
             </div>`
-          : ''}
+        : ''}
         <div style="margin-bottom:0.75rem;">
             <div style="font-weight:500;margin-bottom:.25rem;">ลายเซ็นหัวหน้าสาขา</div>
             ${trimmedSignature
-              ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;\">${escapeHtml(trimmedSignature)}</div>`
-              : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่ระบุลายเซ็น)</div>`
-            }
+        ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;\">${escapeHtml(trimmedSignature)}</div>`
+        : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่ระบุลายเซ็น)</div>`
+      }
         </div>
         <div>
           <div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
           ${trimmedComment
-            ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;\">${escapeHtml(trimmedComment)}</div>`
-            : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่มีหมายเหตุ)</div>`
-          }
+        ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;\">${escapeHtml(trimmedComment)}</div>`
+        : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่มีหมายเหตุ)</div>`
+      }
         </div>
       </div>
     `;
@@ -1017,22 +1020,22 @@ function DeptDecisionPanel({
           <div style="margin-bottom:0.75rem;">
             <div style="font-weight:500;margin-bottom:.25rem;">ลายเซ็นหัวหน้าสาขา</div>
             ${trimmedSignature
-              ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;\">${escapeHtml(trimmedSignature)}</div>`
-              : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่ระบุลายเซ็น)</div>`
-            }
+          ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;\">${escapeHtml(trimmedSignature)}</div>`
+          : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่ระบุลายเซ็น)</div>`
+        }
           </div>
           ${trimmedAnnounce
-            ? `<div style="margin-bottom:0.75rem;">
+          ? `<div style="margin-bottom:0.75rem;">
                 <div style="font-weight:500;margin-bottom:.25rem;">หมายเลขอ้างอิงประกาศผลการพิจารณา</div>
                 <div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;\">${escapeHtml(trimmedAnnounce)}</div>
               </div>`
-            : ''}
+          : ''}
           <div>
             <div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
             ${trimmedComment
-              ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;\">${escapeHtml(trimmedComment)}</div>`
-              : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่มีหมายเหตุ)</div>`
-            }
+          ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;\">${escapeHtml(trimmedComment)}</div>`
+          : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่มีหมายเหตุ)</div>`
+        }
           </div>
           <p style="font-size:12px;color:#6b7280;margin-top:.75rem;">
             ระบบจะบันทึกเหตุผลและเปลี่ยนสถานะคำร้องเป็น “ไม่อนุมัติ”
@@ -1096,22 +1099,22 @@ function DeptDecisionPanel({
       html: `
         <div style="text-align:left;font-size:14px;line-height:1.6;display:grid;row-gap:.6rem;">
           ${trimmedAnnounce
-            ? `<div>
+          ? `<div>
                 <div style="font-weight:500;margin-bottom:.25rem;">หมายเลขอ้างอิงประกาศผลการพิจารณา</div>
                 <div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;\">${escapeHtml(trimmedAnnounce)}</div>
               </div>`
-            : ''}
+          : ''}
           <div>
             <div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
             ${trimmedComment
-              ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${escapeHtml(trimmedComment)}</div>`
-              : `<div style="font-size:12px;color:#6b7280;">(ไม่มีหมายเหตุ)</div>`}
+          ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${escapeHtml(trimmedComment)}</div>`
+          : `<div style="font-size:12px;color:#6b7280;">(ไม่มีหมายเหตุ)</div>`}
           </div>
           <div>
             <div style="font-weight:500;margin-bottom:.25rem;">ลายเซ็นหัวหน้าสาขา</div>
             ${trimmedSignature
-              ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;">${escapeHtml(trimmedSignature)}</div>`
-              : `<div style="font-size:12px;color:#6b7280;">(ไม่ระบุลายเซ็น)</div>`}
+          ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;">${escapeHtml(trimmedSignature)}</div>`
+          : `<div style="font-size:12px;color:#6b7280;">(ไม่ระบุลายเซ็น)</div>`}
           </div>
         </div>
       `,
@@ -1329,7 +1332,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
   const [selectedAction, setSelectedAction] = useState('approve');
   const [decisionPending, setDecisionPending] = useState(false);
 
-  
+
   // โหลดรายละเอียดสดหลังดำเนินการ
   async function reloadDetails() {
     const res = await deptHeadAPI.getSubmissionDetails(submission.submission_id);
@@ -1751,7 +1754,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               ? d.document_type_name.trim()
               : null) ??
             (typeof d?.DocumentType?.document_type_name === 'string' &&
-            d.DocumentType.document_type_name.trim()
+              d.DocumentType.document_type_name.trim()
               ? d.DocumentType.document_type_name.trim()
               : null) ??
             (docTypeId != null ? typeMap[String(docTypeId)] : null) ??
@@ -1837,18 +1840,18 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
     Number.isFinite(Number(approvedTotalDisplay));
 
   // --- helpers for showing requested rows (0 should still show if shared cap or approved exists) ---
-  const reqRevision    = requestedSummary.revision ?? 0;
+  const reqRevision = requestedSummary.revision ?? 0;
   const reqPublication = requestedSummary.publication ?? 0;
 
   // shared cap ถือว่ามี ก็ต่อเมื่อดึงมาได้เป็นตัวเลข > 0 เท่านั้น (ถ้า null/0 = ไม่มี)
   const hasSharedCap = typeof feeCap === 'number' && feeCap > 0;
 
   // มีตัวเลขฝั่งอนุมัติแล้วหรือยัง
-  const hasRevisionApproved    = pubDetail?.revision_fee_approve_amount != null;
+  const hasRevisionApproved = pubDetail?.revision_fee_approve_amount != null;
   const hasPublicationApproved = pubDetail?.publication_fee_approve_amount != null;
 
   // จะโชว์ row เมื่อ: มี shared cap หรือ requested > 0 หรือมี approved amount
-  const showRevisionRequestedRow    = hasSharedCap || reqRevision > 0 || hasRevisionApproved;
+  const showRevisionRequestedRow = hasSharedCap || reqRevision > 0 || hasRevisionApproved;
   const showPublicationRequestedRow = hasSharedCap || reqPublication > 0 || hasPublicationApproved;
 
   function getFileURL(filePath) {
@@ -1912,7 +1915,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
       const blob = await resp.blob();
       const blobUrl = URL.createObjectURL(blob);
       if (win) win.location = blobUrl; else window.open(blobUrl, '_blank', 'noopener,noreferrer');
-      setTimeout(() => { try { URL.revokeObjectURL(blobUrl); } catch {} }, 60000);
+      setTimeout(() => { try { URL.revokeObjectURL(blobUrl); } catch { } }, 60000);
     };
 
     try {
@@ -2417,7 +2420,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
   ]);
 
   const displaySubName = fundNames?.subcategory || getSubcategoryName(submission, pubDetail);
-  
+
   if (loading) {
     return (
       <PageLayout
@@ -2477,167 +2480,167 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
       ]}
     >
 
-    {/* Status Summary */}
-    <Card
-      icon={getColoredStatusIcon(getCodeById(submission?.status_id) || submission?.status?.status_code)}
-      collapsible={false}
-      headerClassName="items-center"
-      className="mb-6"
-      title={
-        <div className="flex items-center gap-2">
-          <span>สถานะคำร้อง (Submission Status)</span>
-          <StatusBadge
-            statusId={submission?.status_id}
-            fallbackLabel={submission?.status?.status_name}
-          />
-        </div>
-      }
-    >
-      <div className="flex justify-between items-start">
-        <div>
-          <div className="flex flex-col gap-3 mt-4 text-sm">
-            {/* ชื่อทุน — ทำให้ตัวหนา */}
-            <div className="flex flex-wrap items-start gap-2">
-              <span className="text-gray-500 shrink-0 min-w-[80px]">ชื่อทุน:</span>
-              <span className="font-bold text-gray-700 break-words flex-1">
-                {displaySubName}
-              </span>
-            </div>
-
-            {/* ผู้ขอทุน */}
-            <div className="flex flex-wrap items-start gap-2">
-              <span className="text-gray-500 shrink-0 min-w-[80px]">ผู้ขอทุน:</span>
-              <span className="font-bold text-gray-700 break-words flex-1">
-                {getUserFullName(getApplicant())}
-              </span>
-            </div>
-            
-            {/* Info grid: วันที่ต่าง ๆ และเลขอ้างอิงประกาศ */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 mt-2">
-              <div className="flex items-start gap-2">
-                <span className="text-gray-500 shrink-0">เลขที่คำร้อง:</span>
-                <span className="font-medium break-all">{submission.submission_number || '-'}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-gray-500 shrink-0">รอบการพิจารณา:</span>
-                <span className="font-medium">
-                  {installmentLoading ? 'กำลังโหลด...' : installmentLabel}
+      {/* Status Summary */}
+      <Card
+        icon={getColoredStatusIcon(getCodeById(submission?.status_id) || submission?.status?.status_code)}
+        collapsible={false}
+        headerClassName="items-center"
+        className="mb-6"
+        title={
+          <div className="flex items-center gap-2">
+            <span>สถานะคำร้อง (Submission Status)</span>
+            <StatusBadge
+              statusId={submission?.status_id}
+              fallbackLabel={submission?.status?.status_name}
+            />
+          </div>
+        }
+      >
+        <div className="flex justify-between items-start">
+          <div>
+            <div className="flex flex-col gap-3 mt-4 text-sm">
+              {/* ชื่อทุน — ทำให้ตัวหนา */}
+              <div className="flex flex-wrap items-start gap-2">
+                <span className="text-gray-500 shrink-0 min-w-[80px]">ชื่อทุน:</span>
+                <span className="font-bold text-gray-700 break-words flex-1">
+                  {displaySubName}
                 </span>
               </div>
-              {/* วันที่สร้างคำร้อง (ถ้ามี) */}
-              {submission.created_at && (
-                <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">วันที่สร้างคำร้อง:</span>
-                  <span className="font-medium">{formatDate(submission.created_at)}</span>
-                </div>
-              )}
 
-              {/* วันที่ส่งคำร้อง */}
-              {submittedAt && (
-                <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">วันที่ส่งคำร้อง:</span>
-                  <span className="font-medium">{formatDate(submittedAt)}</span>
-                </div>
-              )}
-
-
-              {/* วันที่อนุมัติ */}
-              {approvedAt && (
-                <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">วันที่อนุมัติ:</span>
-                  <span className="font-medium">{formatDate(approvedAt)}</span>
-                </div>
-              )}
-
-              <div className="flex items-start gap-2">
-                <span className="text-gray-500 shrink-0">เบอร์ติดต่อ:</span>
-                <span className="font-medium break-words">{contactPhone || '-'}</span>
+              {/* ผู้ขอทุน */}
+              <div className="flex flex-wrap items-start gap-2">
+                <span className="text-gray-500 shrink-0 min-w-[80px]">ผู้ขอทุน:</span>
+                <span className="font-bold text-gray-700 break-words flex-1">
+                  {getUserFullName(getApplicant())}
+                </span>
               </div>
 
-
-              <div className="flex items-start gap-2 md:col-span-2 lg:col-span-3">
-                <span className="text-gray-500 shrink-0">ข้อมูลธนาคาร:</span>
-                <div className="flex flex-col text-sm font-medium text-gray-700">
-                  <span>
-                    เลขที่บัญชี: <span className="font-semibold">{bankAccount || '-'}</span>
-                  </span>
-                  <span>
-                    ชื่อบัญชี: <span className="font-semibold">{bankAccountName || '-'}</span>
-                  </span>
-                  <span>
-                    ธนาคาร: <span className="font-semibold">{bankName || '-'}</span>
-                  </span>
-                </div>
-              </div>
-
-
-              {/* หมายเลขอ้างอิงประกาศ */}
-              <div className="flex items-start gap-2">
-                <span className="text-gray-500 shrink-0">หมายเลขอ้างอิงประกาศผลการพิจารณา:</span>
-                <span className="font-medium break-all">{announcementReferenceDisplay}</span>
-              </div>
-
-              {/* ประกาศหลักเกณฑ์ (Main Announcement) */}
-              {(mainAnn || pubDetail?.main_annoucement) && (
+              {/* Info grid: วันที่ต่าง ๆ และเลขอ้างอิงประกาศ */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 mt-2">
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">ประกาศหลักเกณฑ์:</span>
-                  {mainAnn?.file_path ? (
-                    <a
-                      href={getFileURL(mainAnn.file_path)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
-                      title={mainAnn?.title || mainAnn?.file_name || 'เปิดไฟล์ประกาศ'}
-                    >
-                      {mainAnn?.title || mainAnn?.file_name || `#${pubDetail?.main_annoucement}`}
-                    </a>
-                  ) : (
-                    <span className="text-gray-400">-</span>
-                  )}
+                  <span className="text-gray-500 shrink-0">เลขที่คำร้อง:</span>
+                  <span className="font-medium break-all">{submission.submission_number || '-'}</span>
                 </div>
-              )}
-
-              {/* ประกาศเงินรางวัล (Reward Announcement) */}
-              {(rewardAnn || pubDetail?.reward_announcement) && (
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">ประกาศเงินรางวัล:</span>
-                  {rewardAnn?.file_path ? (
-                    <a
-                      href={getFileURL(rewardAnn.file_path)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
-                      title={rewardAnn?.title || rewardAnn?.file_name || 'เปิดไฟล์ประกาศ'}
-                    >
-                      {rewardAnn?.title || rewardAnn?.file_name || `#${pubDetail?.reward_announcement}`}
-                    </a>
-                  ) : (
-                    <span className="text-gray-400">-</span>
-                  )}
+                  <span className="text-gray-500 shrink-0">รอบการพิจารณา:</span>
+                  <span className="font-medium">
+                    {installmentLoading ? 'กำลังโหลด...' : installmentLabel}
+                  </span>
                 </div>
-              )}
+                {/* วันที่สร้างคำร้อง (ถ้ามี) */}
+                {submission.created_at && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-500 shrink-0">วันที่สร้างคำร้อง:</span>
+                    <span className="font-medium">{formatDate(submission.created_at)}</span>
+                  </div>
+                )}
+
+                {/* วันที่ส่งคำร้อง */}
+                {submittedAt && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-500 shrink-0">วันที่ส่งคำร้อง:</span>
+                    <span className="font-medium">{formatDate(submittedAt)}</span>
+                  </div>
+                )}
+
+
+                {/* วันที่อนุมัติ */}
+                {approvedAt && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-500 shrink-0">วันที่อนุมัติ:</span>
+                    <span className="font-medium">{formatDate(approvedAt)}</span>
+                  </div>
+                )}
+
+                <div className="flex items-start gap-2">
+                  <span className="text-gray-500 shrink-0">เบอร์ติดต่อ:</span>
+                  <span className="font-medium break-words">{contactPhone || '-'}</span>
+                </div>
+
+
+                <div className="flex items-start gap-2 md:col-span-2 lg:col-span-3">
+                  <span className="text-gray-500 shrink-0">ข้อมูลธนาคาร:</span>
+                  <div className="flex flex-col text-sm font-medium text-gray-700">
+                    <span>
+                      เลขที่บัญชี: <span className="font-semibold">{bankAccount || '-'}</span>
+                    </span>
+                    <span>
+                      ชื่อบัญชี: <span className="font-semibold">{bankAccountName || '-'}</span>
+                    </span>
+                    <span>
+                      ธนาคาร: <span className="font-semibold">{bankName || '-'}</span>
+                    </span>
+                  </div>
+                </div>
+
+
+                {/* หมายเลขอ้างอิงประกาศ */}
+                <div className="flex items-start gap-2">
+                  <span className="text-gray-500 shrink-0">หมายเลขอ้างอิงประกาศผลการพิจารณา:</span>
+                  <span className="font-medium break-all">{announcementReferenceDisplay}</span>
+                </div>
+
+                {/* ประกาศหลักเกณฑ์ (Main Announcement) */}
+                {(mainAnn || pubDetail?.main_annoucement) && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-500 shrink-0">ประกาศหลักเกณฑ์:</span>
+                    {mainAnn?.file_path ? (
+                      <a
+                        href={getFileURL(mainAnn.file_path)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
+                        title={mainAnn?.title || mainAnn?.file_name || 'เปิดไฟล์ประกาศ'}
+                      >
+                        {mainAnn?.title || mainAnn?.file_name || `#${pubDetail?.main_annoucement}`}
+                      </a>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </div>
+                )}
+
+                {/* ประกาศเงินรางวัล (Reward Announcement) */}
+                {(rewardAnn || pubDetail?.reward_announcement) && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-500 shrink-0">ประกาศเงินรางวัล:</span>
+                    {rewardAnn?.file_path ? (
+                      <a
+                        href={getFileURL(rewardAnn.file_path)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
+                        title={rewardAnn?.title || rewardAnn?.file_name || 'เปิดไฟล์ประกาศ'}
+                      >
+                        {rewardAnn?.title || rewardAnn?.file_name || `#${pubDetail?.reward_announcement}`}
+                      </a>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Amounts (คอลัมน์ขวา) */}
-        <div className="text-right">
-          <div className="text-2xl font-bold text-blue-600">
-            {formatCurrency(requestedTotal || 0)}
-          </div>
-          <div className="text-sm text-gray-500">จำนวนเงินที่ขอ</div>
-
-          {submission?.status_id === 2 && approvedTotalDisplay != null && (
-            <div className="mt-2">
-              <div className="text-lg font-bold text-green-600">
-                {formatCurrency(approvedTotalDisplay || 0)}
-              </div>
-              <div className="text-sm text-gray-500">จำนวนเงินที่อนุมัติ</div>
+          {/* Amounts (คอลัมน์ขวา) */}
+          <div className="text-right">
+            <div className="text-2xl font-bold text-blue-600">
+              {formatCurrency(requestedTotal || 0)}
             </div>
-          )}
+            <div className="text-sm text-gray-500">จำนวนเงินที่ขอ</div>
+
+            {submission?.status_id === 2 && approvedTotalDisplay != null && (
+              <div className="mt-2">
+                <div className="text-lg font-bold text-green-600">
+                  {formatCurrency(approvedTotalDisplay || 0)}
+                </div>
+                <div className="text-sm text-gray-500">จำนวนเงินที่อนุมัติ</div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </Card>
+      </Card>
 
 
       {/* Tabs */}
@@ -2645,31 +2648,28 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('details')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'details'
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'details'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
+              }`}
           >
             รายละเอียดบทความ
           </button>
           <button
             onClick={() => setActiveTab('authors')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'authors'
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'authors'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
+              }`}
           >
             ผู้แต่งร่วม
           </button>
           <button
             onClick={() => setActiveTab('documents')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'documents'
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'documents'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
+              }`}
           >
             เอกสารแนบ
           </button>
@@ -2770,10 +2770,10 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                   {pubDetail.author_type === 'first_author'
                     ? 'ผู้แต่งหลัก'
                     : pubDetail.author_type === 'corresponding_author'
-                    ? 'Corresponding Author'
-                    : pubDetail.author_type === 'coauthor'
-                    ? 'ผู้แต่งร่วม'
-                    : pubDetail.author_type || '-'}
+                      ? 'Corresponding Author'
+                      : pubDetail.author_type === 'coauthor'
+                        ? 'ผู้แต่งร่วม'
+                        : pubDetail.author_type || '-'}
                 </p>
               </div>
 
@@ -2801,7 +2801,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               )}
             </div>
           </Card>
-          
+
           {/* Request Information */}
           <Card title="ข้อมูลการเงิน (Request Information)" icon={DollarSign} collapsible={false}>
             <div className="space-y-4">
@@ -3007,12 +3007,12 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                                   href="#"
                                   onClick={(e) => { e.preventDefault(); handleView(doc); }}
                                   className="font-medium text-blue-600 hover:underline truncate cursor-pointer"
-                                title={`เปิดดู: ${fileName}`}
-                              >
-                                {fileName}
-                              </a>
-                            ) : (
-                              <span
+                                  title={`เปิดดู: ${fileName}`}
+                                >
+                                  {fileName}
+                                </a>
+                              ) : (
+                                <span
                                   className="font-medium text-gray-400 truncate"
                                   title={fileName}
                                 >
