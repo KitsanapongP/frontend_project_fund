@@ -451,7 +451,7 @@ export default function AnnouncementPage() {
 
   const getApiBaseURL = () => {
     const baseUrl = apiClient.baseURL || '';
-    return baseUrl.replace(/\/?api\/v\d+$/, '');
+    return baseUrl.replace(/\/$/, '');
   };
 
   const resolveFileURL = (filePath) => {
@@ -474,6 +474,14 @@ export default function AnnouncementPage() {
     return `${base}/announcements/${encodeURIComponent(id)}/download`;
   };
 
+  const getAnnouncementViewURL = (row) => {
+    const id = extractAnnouncementId(row);
+    if (!id) return null;
+    const base = getApiBaseURL();
+    if (!base) return null;
+    return `${base}/announcements/${encodeURIComponent(id)}/view`;
+  };
+
   const getFundFormId = (item) => {
     if (!item || typeof item !== 'object') return null;
     const candidates = [item.fund_form_id, item.form_id, item.id, item.FormID];
@@ -493,16 +501,104 @@ export default function AnnouncementPage() {
     return `${base}/fund-forms/${encodeURIComponent(id)}/download`;
   };
 
+  const getFundFormViewURL = (row) => {
+    const id = getFundFormId(row);
+    if (!id) return null;
+    const base = getApiBaseURL();
+    if (!base) return null;
+    return `${base}/fund-forms/${encodeURIComponent(id)}/view`;
+  };
+
   const getDownloadFileName = (filePath) => {
     const rawName = typeof filePath === 'string' ? filePath.split(/[/\\]/).pop() : '';
     if (!rawName) return 'file';
     return rawName.replace(/[\\/:*?"<>|]/g, '_');
   };
 
-  const handleViewFile = (filePath) => {
-    const url = resolveFileURL(filePath);
-    if (!url) return;
-    window.open(url, '_blank');
+  const getFileExtension = (value) => {
+    if (!value || typeof value !== 'string') return '';
+
+    const fromPath = value.split(/[?#]/)[0].split(/[/\\]/).pop() || '';
+    const parts = fromPath.split('.');
+    if (parts.length < 2) return '';
+    return parts.pop().toLowerCase();
+  };
+
+  const VIEWABLE_FILE_EXTENSIONS = new Set([
+    'pdf',
+    'png',
+    'jpg',
+    'jpeg',
+    'gif',
+    'webp',
+    'bmp',
+    'svg',
+    'txt',
+  ]);
+
+  const handleViewFile = async (row, entity = 'announcement') => {
+    const filePath = row?.file_path ?? row;
+    const fallbackUrl = resolveFileURL(filePath);
+    const apiViewUrl =
+      entity === 'announcement'
+        ? getAnnouncementViewURL(row)
+        : getFundFormViewURL(row);
+
+    const extension = getFileExtension(row?.file_name || filePath);
+    const canOpenInline = VIEWABLE_FILE_EXTENSIONS.has(extension);
+
+    if (!canOpenInline) {
+      await handleDownloadFile(row, entity);
+      return;
+    }
+
+    try {
+      const headers = new Headers();
+      const token = typeof apiClient.getToken === 'function' ? apiClient.getToken() : null;
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+
+      let response = null;
+
+      if (apiViewUrl) {
+        const apiResponse = await fetch(apiViewUrl, {
+          method: 'GET',
+          headers,
+          credentials: 'include',
+        });
+
+        if (apiResponse.ok) {
+          response = apiResponse;
+        } else if (!fallbackUrl || fallbackUrl === apiViewUrl) {
+          throw new Error(
+            `API view failed with status ${apiResponse.status} ${apiResponse.statusText}`
+          );
+        }
+      }
+
+      if (!response && fallbackUrl) {
+        const fallbackResponse = await fetch(fallbackUrl, { method: 'GET' });
+        if (!fallbackResponse.ok) {
+          throw new Error(
+            `Fallback view failed with status ${fallbackResponse.status} ${fallbackResponse.statusText}`
+          );
+        }
+        response = fallbackResponse;
+      }
+
+      if (!response) {
+        return;
+      }
+
+      const blob = await response.blob();
+      const objectURL = URL.createObjectURL(blob);
+      window.open(objectURL, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(objectURL), 60000);
+    } catch (error) {
+      console.error('View failed, switching to download:', error);
+      await handleDownloadFile(row, entity);
+    }
   };
 
   const handleDownloadFile = async (row, entity = 'announcement') => {
@@ -941,7 +1037,7 @@ export default function AnnouncementPage() {
       render: (_, row) => (
         <div className="flex gap-2">
           <button
-            onClick={() => handleViewFile(row.file_path)}
+            onClick={() => handleViewFile(row, 'announcement')}
             className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
             title="ดูไฟล์"
           >
@@ -1035,7 +1131,7 @@ export default function AnnouncementPage() {
       render: (_, row) => (
         <div className="flex gap-2">
           <button
-            onClick={() => handleViewFile(row.file_path)}
+            onClick={() => handleViewFile(row, 'fundForm')}
             className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
             title="ดูไฟล์"
           >
