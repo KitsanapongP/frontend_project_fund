@@ -1067,10 +1067,24 @@ export const publicationsAPI = {
     return apiClient.get('/admin/user-publications/import/scholar/runs', params);
   },
   async searchScopusPublications(params = {}) {
-    return apiClient.get('/admin/publications/scopus', params);
+    try {
+      return await apiClient.get('/publications/scopus', params);
+    } catch (error) {
+      if (error instanceof APIError && error.status === 404) {
+        return apiClient.get('/admin/publications/scopus', params);
+      }
+      throw error;
+    }
   },
   async searchScopusPublicationsByUser(params = {}) {
-    return apiClient.get('/admin/publications/scopus/by-user', params);
+    try {
+      return await apiClient.get('/publications/scopus/by-user', params);
+    } catch (error) {
+      if (error instanceof APIError && error.status === 404) {
+        return apiClient.get('/admin/publications/scopus/by-user', params);
+      }
+      throw error;
+    }
   },
   async getScopusPublicationsForUser(userId, params = {}) {
     const payload = { ...params, user_id: userId };

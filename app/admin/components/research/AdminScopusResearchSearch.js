@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, Download, ExternalLink, Loader2, Search } from "lucide-react";
 import PageLayout from "../common/PageLayout";
-import { publicationsAPI } from "../../../lib/api";
+import { APIError, publicationsAPI, usersAPI } from "../../../lib/api";
+import { useAuth } from "@/app/contexts/AuthContext";
 import { toast } from "react-hot-toast";
 import { downloadXlsx } from "@/app/admin/utils/xlsxExporter";
 
@@ -59,6 +60,7 @@ const BY_USER_DETAILS_COLUMNS = [
 ];
 
 export default function AdminScopusResearchSearch() {
+  const { user, hasPermission } = useAuth();
   const [pubQuery, setPubQuery] = useState("");
   const [publications, setPublications] = useState([]);
   const [pubMeta, setPubMeta] = useState({ total: 0, limit: PUB_PAGE_SIZE, offset: 0 });
@@ -254,8 +256,218 @@ export default function AdminScopusResearchSearch() {
   }, []);
 
   const hasExportableData = useMemo(() => (pubMeta?.total || 0) > 0, [pubMeta?.total]);
+  const roleRaw = user?.role_id ?? user?.role;
+  const isAdmin = Number(roleRaw) === 3 || String(roleRaw || "").toLowerCase() === "admin";
+  const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
+  const canExport = hasPermissionSnapshot
+    ? hasPermission("scopus.publications.export") || hasPermission("report.export")
+    : isAdmin;
+  const canExportByUser = hasPermissionSnapshot
+    ? hasPermission("scopus.publications.export_by_user")
+    : isAdmin;
+
+  const downloadByUserWorkbook = useCallback((detailRows) => {
+    if (!Array.isArray(detailRows) || detailRows.length === 0) {
+      toast.error("ไม่พบข้อมูลงานวิจัยสำหรับส่งออก");
+      return false;
+    }
+
+    const summaryMap = new Map();
+    const yearSet = new Set();
+
+    detailRows.forEach((row) => {
+      const key = row._userKey;
+      const docKey = row._docKey;
+      if (!key || !docKey) return;
+
+      if (!summaryMap.has(key)) {
+        summaryMap.set(key, {
+          userId: row.userId,
+          userName: row.userName,
+          userEmail: row.userEmail,
+          userScopusId: row.userScopusId,
+          documents: new Set(),
+          years: new Map(),
+        });
+      }
+
+      const summary = summaryMap.get(key);
+      if (!summary.documents.has(docKey)) {
+        summary.documents.add(docKey);
+        const yearKey = Number(row.year);
+        if (Number.isFinite(yearKey) && yearKey > 0) {
+          yearSet.add(yearKey);
+          summary.years.set(yearKey, (summary.years.get(yearKey) || 0) + 1);
+        }
+      }
+    });
+
+    const years = Array.from(yearSet).sort((a, b) => a - b);
+    const summaryColumns = [
+      { key: "rowNumber", header: "ลำดับ", width: 8 },
+      { key: "userId", header: "user_id", width: 10 },
+      { key: "userName", header: "user_name", width: 30 },
+      { key: "userEmail", header: "user_email", width: 32 },
+      { key: "userScopusId", header: "user_scopus_id", width: 16 },
+      { key: "totalPublications", header: "total_publications", width: 16 },
+      ...years.map((year) => ({ key: `year_${year}`, header: `${year}`, width: 10 })),
+    ];
+
+    const summaryRows = Array.from(summaryMap.values())
+      .sort((a, b) => {
+        const nameA = (a.userName || "").toLowerCase();
+        const nameB = (b.userName || "").toLowerCase();
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return Number(a.userId || 0) - Number(b.userId || 0);
+      })
+      .map((entry, idx) => {
+        const row = {
+          rowNumber: idx + 1,
+          userId: entry.userId,
+          userName: entry.userName,
+          userEmail: entry.userEmail,
+          userScopusId: entry.userScopusId,
+          totalPublications: entry.documents.size,
+        };
+
+        years.forEach((year) => {
+          row[`year_${year}`] = entry.years.get(year) || 0;
+        });
+
+        return row;
+      });
+
+    const cleanedDetailRows = detailRows.map(({ _userKey, _docKey, ...rest }) => rest);
+    const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
+    const filename = `scopus_publications_by_user_${timestamp}.xlsx`;
+
+    downloadXlsx(BY_USER_DETAILS_COLUMNS, cleanedDetailRows, {
+      filename,
+      sheets: [
+        {
+          name: "Summary",
+          columns: summaryColumns,
+          rows: summaryRows,
+        },
+        {
+          name: "Details",
+          columns: BY_USER_DETAILS_COLUMNS,
+          rows: cleanedDetailRows,
+        },
+      ],
+    });
+
+    toast.success(`ส่งออกสำเร็จ ${summaryRows.length} ผู้ใช้ / ${cleanedDetailRows.length} รายการผลงาน`);
+    return true;
+  }, []);
+
+  const exportByUserViaUserFallback = useCallback(async (scope = exportScope) => {
+    const query = scope === "all" ? "" : pubQuery.trim();
+    const users = [];
+    const userPageLimit = 200;
+    let userOffset = 0;
+
+    while (true) {
+      const res = await usersAPI.listScopusUsers({ limit: userPageLimit, offset: userOffset });
+      const items = Array.isArray(res?.data) ? res.data : [];
+      const paging = res?.paging || {};
+      users.push(...items);
+
+      const pageLimit = paging.limit || userPageLimit;
+      const total = paging.total;
+      if (items.length < pageLimit) {
+        break;
+      }
+      userOffset += pageLimit;
+      if (total !== undefined && userOffset >= total) {
+        break;
+      }
+    }
+
+    const normalizedQuery = query.toLowerCase();
+    const filteredUsers = normalizedQuery
+      ? users.filter((userItem) => {
+          const name = String(userItem?.name || userItem?.user_name || "").toLowerCase();
+          const email = String(userItem?.email || userItem?.user_email || "").toLowerCase();
+          const scopusId = String(userItem?.scopus_author_id || userItem?.scopus_id || "").toLowerCase();
+          return (
+            name.includes(normalizedQuery) ||
+            email.includes(normalizedQuery) ||
+            scopusId.includes(normalizedQuery)
+          );
+        })
+      : users;
+
+    const detailRows = [];
+    for (const userItem of filteredUsers) {
+      const userId = userItem?.user_id || userItem?.userId;
+      if (!userId) continue;
+
+      const userName = userItem?.name || userItem?.user_name || "";
+      const userEmail = userItem?.email || userItem?.user_email || "";
+      const userScopusId = userItem?.scopus_author_id || userItem?.scopus_id || "";
+
+      const pubLimit = 200;
+      let pubOffset = 0;
+
+      while (true) {
+        const params = { limit: pubLimit, offset: pubOffset, sort: "year", direction: "desc" };
+        if (query) {
+          params.q = query;
+        }
+
+        const pubRes = await publicationsAPI.getScopusPublicationsForUser(userId, params);
+        const pubItems = Array.isArray(pubRes?.data) ? pubRes.data : [];
+        const pubPaging = pubRes?.paging || {};
+        const pageLimit = pubPaging.limit || pubLimit;
+        const total = pubPaging.total;
+
+        pubItems.forEach((item) => {
+          const coverDate = item?.cover_date ? new Date(item.cover_date) : null;
+          const yearValue =
+            item?.publication_year ||
+            (coverDate && !Number.isNaN(coverDate.getTime()) ? coverDate.getFullYear() : "");
+          detailRows.push({
+            rowNumber: detailRows.length + 1,
+            userId,
+            userName,
+            userEmail,
+            userScopusId,
+            year: yearValue,
+            eid: item?.eid || "",
+            scopusId: item?.scopus_id || "",
+            title: item?.title || "",
+            publicationName: item?.publication_name || item?.venue || "",
+            doi: item?.doi || "",
+            citedBy: item?.cited_by ?? "",
+            citeScoreQuartile: (item?.cite_score_quartile || "")?.toUpperCase(),
+            citeScorePercentile: item?.cite_score_percentile ?? "",
+            citeScoreStatus: item?.cite_score_status || "",
+            documentId: item?.id || item?.document_id || item?.scopus_id || item?.eid || "",
+            _userKey: `${userId}`,
+            _docKey: item?.eid || item?.id || item?.document_id || item?.scopus_id || "",
+          });
+        });
+
+        if (pubItems.length < pageLimit) {
+          break;
+        }
+        pubOffset += pageLimit;
+        if (total !== undefined && pubOffset >= total) {
+          break;
+        }
+      }
+    }
+
+    return downloadByUserWorkbook(detailRows);
+  }, [downloadByUserWorkbook, exportScope, pubQuery]);
 
   const handleExport = useCallback(async (scope = exportScope) => {
+    if (!canExport) {
+      toast.error("คุณไม่มีสิทธิ์ส่งออกข้อมูล");
+      return;
+    }
     if (scope !== "all" && !hasExportableData) return;
     setExporting(true);
     try {
@@ -307,9 +519,13 @@ export default function AdminScopusResearchSearch() {
     } finally {
       setExporting(false);
     }
-  }, [buildExportRows, exportScope, hasExportableData, pubMeta?.limit, pubMeta?.total, pubQuery]);
+  }, [buildExportRows, canExport, exportScope, hasExportableData, pubMeta?.limit, pubMeta?.total, pubQuery]);
 
   const handleExportByUser = useCallback(async (scope = exportScope) => {
+    if (!canExportByUser) {
+      toast.error("คุณไม่มีสิทธิ์ส่งออกรายผู้ใช้");
+      return;
+    }
     setExportingByUser(true);
     try {
       const query = scope === "all" ? "" : pubQuery.trim();
@@ -368,108 +584,23 @@ export default function AdminScopusResearchSearch() {
         }
       }
 
-      if (detailRows.length === 0) {
-        toast.error("ไม่พบข้อมูลงานวิจัยสำหรับส่งออก");
-        return;
-      }
-
-      const summaryMap = new Map();
-      const yearSet = new Set();
-
-      detailRows.forEach((row) => {
-        const key = row._userKey;
-        const docKey = row._docKey;
-        if (!key || !docKey) return;
-
-        if (!summaryMap.has(key)) {
-          summaryMap.set(key, {
-            userId: row.userId,
-            userName: row.userName,
-            userEmail: row.userEmail,
-            userScopusId: row.userScopusId,
-            documents: new Set(),
-            years: new Map(),
-          });
-        }
-
-        const summary = summaryMap.get(key);
-        if (!summary.documents.has(docKey)) {
-          summary.documents.add(docKey);
-          const yearKey = Number(row.year);
-          if (Number.isFinite(yearKey) && yearKey > 0) {
-            yearSet.add(yearKey);
-            summary.years.set(yearKey, (summary.years.get(yearKey) || 0) + 1);
-          }
-        }
-      });
-
-      const years = Array.from(yearSet).sort((a, b) => a - b);
-      const summaryColumns = [
-        { key: "rowNumber", header: "ลำดับ", width: 8 },
-        { key: "userId", header: "user_id", width: 10 },
-        { key: "userName", header: "user_name", width: 30 },
-        { key: "userEmail", header: "user_email", width: 32 },
-        { key: "userScopusId", header: "user_scopus_id", width: 16 },
-        { key: "totalPublications", header: "total_publications", width: 16 },
-        ...years.map((year) => ({ key: `year_${year}`, header: `${year}`, width: 10 })),
-      ];
-
-      const summaryRows = Array.from(summaryMap.values())
-        .sort((a, b) => {
-          const nameA = (a.userName || "").toLowerCase();
-          const nameB = (b.userName || "").toLowerCase();
-          if (nameA < nameB) return -1;
-          if (nameA > nameB) return 1;
-          return Number(a.userId || 0) - Number(b.userId || 0);
-        })
-        .map((entry, idx) => {
-          const row = {
-            rowNumber: idx + 1,
-            userId: entry.userId,
-            userName: entry.userName,
-            userEmail: entry.userEmail,
-            userScopusId: entry.userScopusId,
-            totalPublications: entry.documents.size,
-          };
-
-          years.forEach((year) => {
-            row[`year_${year}`] = entry.years.get(year) || 0;
-          });
-
-          return row;
-        });
-
-      const cleanedDetailRows = detailRows.map(({ _userKey, _docKey, ...rest }) => rest);
-
-      const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
-      const filename = `scopus_publications_by_user_${timestamp}.xlsx`;
-
-      downloadXlsx(BY_USER_DETAILS_COLUMNS, cleanedDetailRows, {
-        filename,
-        sheets: [
-          {
-            name: "Summary",
-            columns: summaryColumns,
-            rows: summaryRows,
-          },
-          {
-            name: "Details",
-            columns: BY_USER_DETAILS_COLUMNS,
-            rows: cleanedDetailRows,
-          },
-        ],
-      });
-
-      toast.success(
-        `ส่งออกสำเร็จ ${summaryRows.length} ผู้ใช้ / ${cleanedDetailRows.length} รายการผลงาน`
-      );
+      downloadByUserWorkbook(detailRows);
     } catch (error) {
-      console.error("Export publications by user error", error);
-      toast.error("ไม่สามารถส่งออกไฟล์ได้");
+      if (error instanceof APIError && error.status === 404) {
+        try {
+          await exportByUserViaUserFallback(scope);
+        } catch (fallbackError) {
+          console.error("Export publications by user fallback error", fallbackError);
+          toast.error("ระบบ API ยังไม่พร้อมสำหรับการส่งออกรายผู้ใช้");
+        }
+      } else {
+        console.error("Export publications by user error", error);
+        toast.error("ไม่สามารถส่งออกไฟล์ได้");
+      }
     } finally {
       setExportingByUser(false);
     }
-  }, [exportScope, pubQuery]);
+  }, [canExportByUser, downloadByUserWorkbook, exportByUserViaUserFallback, exportScope, pubQuery]);
 
   return (
     <PageLayout
@@ -524,7 +655,7 @@ export default function AdminScopusResearchSearch() {
             <button
               type="button"
               onClick={() => handleExport(exportScope)}
-              disabled={exporting || (exportScope !== "all" && !hasExportableData)}
+              disabled={!canExport || exporting || (exportScope !== "all" && !hasExportableData)}
               className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}ส่งออก Excel
@@ -532,7 +663,7 @@ export default function AdminScopusResearchSearch() {
             <button
               type="button"
               onClick={() => handleExportByUser(exportScope)}
-              disabled={exportingByUser || (exportScope !== "all" && !hasExportableData)}
+              disabled={!canExportByUser || exportingByUser || (exportScope !== "all" && !hasExportableData)}
               className="inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {exportingByUser ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}ส่งออกรายผู้ใช้

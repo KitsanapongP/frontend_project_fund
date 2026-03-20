@@ -132,7 +132,18 @@ export function AuthProvider({ children }) {
             const currentTime = Date.now() / 1000;
 
             if (payload.exp > currentTime) {
-              const user = JSON.parse(userData);
+              let user = JSON.parse(userData);
+
+              try {
+                const profile = await authAPI.getProfileIfAuthenticated();
+                if (profile?.user) {
+                  user = profile.user;
+                  localStorage.setItem('user_data', JSON.stringify(user));
+                }
+              } catch (profileError) {
+                console.warn('Failed to sync profile on init, using cached user_data', profileError);
+              }
+
               dispatch({
                 type: AUTH_ACTIONS.INIT_AUTH,
                 payload: {
@@ -352,6 +363,32 @@ export function AuthProvider({ children }) {
     return roles.some(role => hasRole(role));
   };
 
+  const getPermissionSet = () => {
+    const rawPermissions = state.user?.permissions;
+    if (!Array.isArray(rawPermissions)) return new Set();
+    return new Set(
+      rawPermissions
+        .map((perm) => String(perm || '').trim().toLowerCase())
+        .filter(Boolean)
+    );
+  };
+
+  const hasPermission = (permissionCode) => {
+    if (!permissionCode) return false;
+    const permissionSet = getPermissionSet();
+    return permissionSet.has(String(permissionCode).trim().toLowerCase());
+  };
+
+  const hasAnyPermission = (permissionCodes = []) => {
+    if (!Array.isArray(permissionCodes) || permissionCodes.length === 0) {
+      return false;
+    }
+    const permissionSet = getPermissionSet();
+    return permissionCodes.some((code) =>
+      permissionSet.has(String(code || '').trim().toLowerCase())
+    );
+  };
+
   // Get user display name
   const getUserDisplayName = () => {
     if (!state.user) return '';
@@ -407,6 +444,8 @@ export function AuthProvider({ children }) {
     // Utilities
     hasRole,
     hasAnyRole,
+    hasPermission,
+    hasAnyPermission,
     getUserDisplayName,
     getUserRoleDisplay,
   };
