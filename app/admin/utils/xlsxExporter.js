@@ -43,6 +43,13 @@ const xmlEscape = (value) => {
 
 const HYPERLINK_STYLE_INDEX = 1;
 
+const sanitizeSheetName = (value, fallback = 'Sheet') => {
+  const raw = String(value || fallback).trim();
+  const normalized = raw.replace(/[\\/*?:\[\]]/g, ' ').replace(/\s+/g, ' ').trim();
+  const finalName = normalized || fallback;
+  return finalName.slice(0, 31);
+};
+
 const buildSheetXml = (columns, rows) => {
   const lines = [];
   const hyperlinks = [];
@@ -129,16 +136,25 @@ const buildSheetRelsXml = (hyperlinks) => {
   return lines.join('\n');
 };
 
-const buildContentTypesXml = () => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+const buildContentTypesXml = (sheetCount) => {
+  const sheetOverrides = [];
+  for (let i = 1; i <= sheetCount; i += 1) {
+    sheetOverrides.push(
+      `  <Override PartName="/xl/worksheets/sheet${i}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+    );
+  }
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+${sheetOverrides.join('\n')}
   <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
   <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
   <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
 </Types>`;
+};
 
 const buildRelsXml = () => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -147,18 +163,38 @@ const buildRelsXml = () => `<?xml version="1.0" encoding="UTF-8" standalone="yes
   <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
 </Relationships>`;
 
-const buildWorkbookXml = (sheetName) => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+const buildWorkbookXml = (sheetNames) => {
+  const sheets = sheetNames
+    .map(
+      (name, idx) =>
+        `    <sheet name="${xmlEscape(sanitizeSheetName(name, `Sheet ${idx + 1}`))}" sheetId="${idx + 1}" r:id="rId${idx + 1}"/>`
+    )
+    .join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
-    <sheet name="${xmlEscape(sheetName)}" sheetId="1" r:id="rId1"/>
+${sheets}
   </sheets>
 </workbook>`;
+};
 
-const buildWorkbookRelsXml = () => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+const buildWorkbookRelsXml = (sheetCount) => {
+  const relations = [];
+  for (let i = 1; i <= sheetCount; i += 1) {
+    relations.push(
+      `  <Relationship Id="rId${i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i}.xml"/>`
+    );
+  }
+  relations.push(
+    `  <Relationship Id="rId${sheetCount + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`
+  );
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+${relations.join('\n')}
 </Relationships>`;
+};
 
 const buildStylesXml = () => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -203,7 +239,13 @@ const buildStylesXml = () => `<?xml version="1.0" encoding="UTF-8" standalone="y
   </cellStyles>
 </styleSheet>`;
 
-const buildAppXml = () => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+const buildAppXml = (sheetNames) => {
+  const names = sheetNames.map((name) => sanitizeSheetName(name));
+  const titleParts = names
+    .map((name) => `      <vt:lpstr>${xmlEscape(name)}</vt:lpstr>`)
+    .join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
   <Application>Fund Management Export</Application>
   <DocSecurity>0</DocSecurity>
@@ -214,13 +256,13 @@ const buildAppXml = () => `<?xml version="1.0" encoding="UTF-8" standalone="yes"
         <vt:lpstr>Worksheets</vt:lpstr>
       </vt:variant>
       <vt:variant>
-        <vt:i4>1</vt:i4>
+        <vt:i4>${names.length}</vt:i4>
       </vt:variant>
     </vt:vector>
   </HeadingPairs>
   <TitlesOfParts>
-    <vt:vector size="1" baseType="lpstr">
-      <vt:lpstr>Submissions</vt:lpstr>
+    <vt:vector size="${names.length}" baseType="lpstr">
+${titleParts}
     </vt:vector>
   </TitlesOfParts>
   <Company></Company>
@@ -229,6 +271,7 @@ const buildAppXml = () => `<?xml version="1.0" encoding="UTF-8" standalone="yes"
   <HyperlinksChanged>false</HyperlinksChanged>
   <AppVersion>16.0300</AppVersion>
 </Properties>`;
+};
 
 const buildCoreXml = () => {
   const now = new Date().toISOString();
@@ -245,25 +288,46 @@ const buildCoreXml = () => {
 </cp:coreProperties>`;
 };
 
-const fileEntries = (columns, rows, sheetName) => {
-  const { xml: sheetXml, hyperlinks } = buildSheetXml(columns, rows);
+const fileEntries = (sheets) => {
+  const normalizedSheets = sheets.map((sheet, idx) => ({
+    name: sanitizeSheetName(sheet?.name, `Sheet ${idx + 1}`),
+    columns: Array.isArray(sheet?.columns) ? sheet.columns : [],
+    rows: Array.isArray(sheet?.rows) ? sheet.rows : [],
+  }));
+
+  const sheetEntries = normalizedSheets.map((sheet, idx) => {
+    const sheetIndex = idx + 1;
+    const sheetPath = `xl/worksheets/sheet${sheetIndex}.xml`;
+    const { xml, hyperlinks } = buildSheetXml(sheet.columns, sheet.rows);
+    return {
+      name: sheet.name,
+      sheetPath,
+      sheetRelsPath: `xl/worksheets/_rels/sheet${sheetIndex}.xml.rels`,
+      xml,
+      hyperlinks,
+    };
+  });
+
+  const sheetNames = sheetEntries.map((sheet) => sheet.name);
   const entries = [
-    { path: '[Content_Types].xml', content: buildContentTypesXml() },
+    { path: '[Content_Types].xml', content: buildContentTypesXml(sheetEntries.length) },
     { path: '_rels/.rels', content: buildRelsXml() },
-    { path: 'docProps/app.xml', content: buildAppXml() },
+    { path: 'docProps/app.xml', content: buildAppXml(sheetNames) },
     { path: 'docProps/core.xml', content: buildCoreXml() },
-    { path: 'xl/workbook.xml', content: buildWorkbookXml(sheetName) },
-    { path: 'xl/_rels/workbook.xml.rels', content: buildWorkbookRelsXml() },
+    { path: 'xl/workbook.xml', content: buildWorkbookXml(sheetNames) },
+    { path: 'xl/_rels/workbook.xml.rels', content: buildWorkbookRelsXml(sheetEntries.length) },
     { path: 'xl/styles.xml', content: buildStylesXml() },
-    { path: 'xl/worksheets/sheet1.xml', content: sheetXml },
   ];
 
-  if (hyperlinks.length) {
-    entries.push({
-      path: 'xl/worksheets/_rels/sheet1.xml.rels',
-      content: buildSheetRelsXml(hyperlinks),
-    });
-  }
+  sheetEntries.forEach((sheet) => {
+    entries.push({ path: sheet.sheetPath, content: sheet.xml });
+    if (sheet.hyperlinks.length) {
+      entries.push({
+        path: sheet.sheetRelsPath,
+        content: buildSheetRelsXml(sheet.hyperlinks),
+      });
+    }
+  });
 
   return entries;
 };
@@ -312,8 +376,33 @@ const encodeFile = (path, content) => {
   return { data, nameBytes, localHeader, centralHeader, size, crc };
 };
 
-export const buildXlsxBinary = (columns, rows, sheetName = 'Submissions') => {
-  const files = fileEntries(columns, rows, sheetName).map((entry) => ({
+const normalizeSheetsInput = (columns, rows, sheetName, sheets) => {
+  if (Array.isArray(sheets) && sheets.length > 0) {
+    return sheets.map((sheet, idx) => ({
+      name: sheet?.name || `Sheet ${idx + 1}`,
+      columns: Array.isArray(sheet?.columns) ? sheet.columns : [],
+      rows: Array.isArray(sheet?.rows) ? sheet.rows : [],
+    }));
+  }
+
+  return [
+    {
+      name: sheetName || 'Submissions',
+      columns: Array.isArray(columns) ? columns : [],
+      rows: Array.isArray(rows) ? rows : [],
+    },
+  ];
+};
+
+export const buildXlsxBinary = (columns, rows, sheetNameOrOptions = 'Submissions') => {
+  const options =
+    sheetNameOrOptions && typeof sheetNameOrOptions === 'object'
+      ? sheetNameOrOptions
+      : { sheetName: sheetNameOrOptions };
+  const sheetName = options.sheetName || 'Submissions';
+  const sheets = normalizeSheetsInput(columns, rows, sheetName, options.sheets);
+
+  const files = fileEntries(sheets).map((entry) => ({
     path: entry.path,
     ...encodeFile(entry.path, entry.content),
   }));
@@ -366,8 +455,12 @@ export const buildXlsxBinary = (columns, rows, sheetName = 'Submissions') => {
   return output;
 };
 
-export const downloadXlsx = (columns, rows, { sheetName = 'Submissions', filename = 'export.xlsx' } = {}) => {
-  const binary = buildXlsxBinary(columns, rows, sheetName);
+export const downloadXlsx = (
+  columns,
+  rows,
+  { sheetName = 'Submissions', filename = 'export.xlsx', sheets } = {}
+) => {
+  const binary = buildXlsxBinary(columns, rows, { sheetName, sheets });
   const blob = new Blob([binary], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });

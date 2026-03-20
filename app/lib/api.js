@@ -1069,6 +1069,9 @@ export const publicationsAPI = {
   async searchScopusPublications(params = {}) {
     return apiClient.get('/admin/publications/scopus', params);
   },
+  async searchScopusPublicationsByUser(params = {}) {
+    return apiClient.get('/admin/publications/scopus/by-user', params);
+  },
   async getScopusPublicationsForUser(userId, params = {}) {
     const payload = { ...params, user_id: userId };
     return apiClient.get('/teacher/user-publications/scopus', payload);

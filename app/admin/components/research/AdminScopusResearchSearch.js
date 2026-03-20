@@ -39,6 +39,25 @@ const EXPORT_COLUMNS = [
   { key: "doiUrl", header: "doi_url", width: 32 },
 ];
 
+const BY_USER_DETAILS_COLUMNS = [
+  { key: "rowNumber", header: "ลำดับ", width: 8 },
+  { key: "userId", header: "user_id", width: 10 },
+  { key: "userName", header: "user_name", width: 30 },
+  { key: "userEmail", header: "user_email", width: 32 },
+  { key: "userScopusId", header: "user_scopus_id", width: 16 },
+  { key: "year", header: "publication_year", width: 12 },
+  { key: "eid", header: "eid", width: 22 },
+  { key: "scopusId", header: "scopus_id", width: 14 },
+  { key: "title", header: "title", width: 56 },
+  { key: "publicationName", header: "publication_name", width: 34 },
+  { key: "doi", header: "doi", width: 24 },
+  { key: "citedBy", header: "citedby_count", width: 14 },
+  { key: "citeScoreQuartile", header: "cite_score_quartile", width: 16 },
+  { key: "citeScorePercentile", header: "cite_score_percentile", width: 18 },
+  { key: "citeScoreStatus", header: "cite_score_status", width: 18 },
+  { key: "documentId", header: "document_id", width: 14 },
+];
+
 export default function AdminScopusResearchSearch() {
   const [pubQuery, setPubQuery] = useState("");
   const [publications, setPublications] = useState([]);
@@ -46,6 +65,7 @@ export default function AdminScopusResearchSearch() {
   const [pubLoading, setPubLoading] = useState(false);
   const [pubError, setPubError] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [exportingByUser, setExportingByUser] = useState(false);
   const [exportScope, setExportScope] = useState("filtered");
 
   const fetchPublications = useCallback(
@@ -289,6 +309,168 @@ export default function AdminScopusResearchSearch() {
     }
   }, [buildExportRows, exportScope, hasExportableData, pubMeta?.limit, pubMeta?.total, pubQuery]);
 
+  const handleExportByUser = useCallback(async (scope = exportScope) => {
+    setExportingByUser(true);
+    try {
+      const query = scope === "all" ? "" : pubQuery.trim();
+      const limit = 200;
+      let offset = 0;
+      let total;
+      const detailRows = [];
+
+      while (true) {
+        const params = { limit, offset, sort: "year", direction: "desc" };
+        if (scope !== "all" && query) {
+          params.q = query;
+        }
+
+        const res = await publicationsAPI.searchScopusPublicationsByUser(params);
+        const items = Array.isArray(res?.data) ? res.data : [];
+        const paging = res?.paging || {};
+        total = paging.total ?? total;
+        const pageLimit = paging.limit || limit;
+
+        items.forEach((item) => {
+          const coverDate = item?.cover_date ? new Date(item.cover_date) : null;
+          const yearValue =
+            item?.publication_year ||
+            (coverDate && !Number.isNaN(coverDate.getTime()) ? coverDate.getFullYear() : "");
+
+          detailRows.push({
+            rowNumber: detailRows.length + 1,
+            userId: item?.user_id || "",
+            userName: item?.user_name || "",
+            userEmail: item?.user_email || "",
+            userScopusId: item?.user_scopus_id || "",
+            year: yearValue,
+            eid: item?.eid || "",
+            scopusId: item?.scopus_id || "",
+            title: item?.title || "",
+            publicationName: item?.publication_name || "",
+            doi: item?.doi || "",
+            citedBy: item?.cited_by ?? "",
+            citeScoreQuartile: (item?.cite_score_quartile || "")?.toUpperCase(),
+            citeScorePercentile: item?.cite_score_percentile ?? "",
+            citeScoreStatus: item?.cite_score_status || "",
+            documentId: item?.document_id || "",
+            _userKey: `${item?.user_id || ""}`,
+            _docKey: item?.eid || item?.document_id || "",
+          });
+        });
+
+        if (items.length < pageLimit) {
+          break;
+        }
+        offset += pageLimit;
+
+        if (total !== undefined && offset >= total) {
+          break;
+        }
+      }
+
+      if (detailRows.length === 0) {
+        toast.error("ไม่พบข้อมูลงานวิจัยสำหรับส่งออก");
+        return;
+      }
+
+      const summaryMap = new Map();
+      const yearSet = new Set();
+
+      detailRows.forEach((row) => {
+        const key = row._userKey;
+        const docKey = row._docKey;
+        if (!key || !docKey) return;
+
+        if (!summaryMap.has(key)) {
+          summaryMap.set(key, {
+            userId: row.userId,
+            userName: row.userName,
+            userEmail: row.userEmail,
+            userScopusId: row.userScopusId,
+            documents: new Set(),
+            years: new Map(),
+          });
+        }
+
+        const summary = summaryMap.get(key);
+        if (!summary.documents.has(docKey)) {
+          summary.documents.add(docKey);
+          const yearKey = Number(row.year);
+          if (Number.isFinite(yearKey) && yearKey > 0) {
+            yearSet.add(yearKey);
+            summary.years.set(yearKey, (summary.years.get(yearKey) || 0) + 1);
+          }
+        }
+      });
+
+      const years = Array.from(yearSet).sort((a, b) => a - b);
+      const summaryColumns = [
+        { key: "rowNumber", header: "ลำดับ", width: 8 },
+        { key: "userId", header: "user_id", width: 10 },
+        { key: "userName", header: "user_name", width: 30 },
+        { key: "userEmail", header: "user_email", width: 32 },
+        { key: "userScopusId", header: "user_scopus_id", width: 16 },
+        { key: "totalPublications", header: "total_publications", width: 16 },
+        ...years.map((year) => ({ key: `year_${year}`, header: `${year}`, width: 10 })),
+      ];
+
+      const summaryRows = Array.from(summaryMap.values())
+        .sort((a, b) => {
+          const nameA = (a.userName || "").toLowerCase();
+          const nameB = (b.userName || "").toLowerCase();
+          if (nameA < nameB) return -1;
+          if (nameA > nameB) return 1;
+          return Number(a.userId || 0) - Number(b.userId || 0);
+        })
+        .map((entry, idx) => {
+          const row = {
+            rowNumber: idx + 1,
+            userId: entry.userId,
+            userName: entry.userName,
+            userEmail: entry.userEmail,
+            userScopusId: entry.userScopusId,
+            totalPublications: entry.documents.size,
+          };
+
+          years.forEach((year) => {
+            row[`year_${year}`] = entry.years.get(year) || 0;
+          });
+
+          return row;
+        });
+
+      const cleanedDetailRows = detailRows.map(({ _userKey, _docKey, ...rest }) => rest);
+
+      const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
+      const filename = `scopus_publications_by_user_${timestamp}.xlsx`;
+
+      downloadXlsx(BY_USER_DETAILS_COLUMNS, cleanedDetailRows, {
+        filename,
+        sheets: [
+          {
+            name: "Summary",
+            columns: summaryColumns,
+            rows: summaryRows,
+          },
+          {
+            name: "Details",
+            columns: BY_USER_DETAILS_COLUMNS,
+            rows: cleanedDetailRows,
+          },
+        ],
+      });
+
+      toast.success(
+        `ส่งออกสำเร็จ ${summaryRows.length} ผู้ใช้ / ${cleanedDetailRows.length} รายการผลงาน`
+      );
+    } catch (error) {
+      console.error("Export publications by user error", error);
+      toast.error("ไม่สามารถส่งออกไฟล์ได้");
+    } finally {
+      setExportingByUser(false);
+    }
+  }, [exportScope, pubQuery]);
+
   return (
     <PageLayout
       title="ค้นหางานวิจัย"
@@ -346,6 +528,14 @@ export default function AdminScopusResearchSearch() {
               className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}ส่งออก Excel
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExportByUser(exportScope)}
+              disabled={exportingByUser || (exportScope !== "all" && !hasExportableData)}
+              className="inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {exportingByUser ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}ส่งออกรายผู้ใช้
             </button>
           </div>
         </div>
