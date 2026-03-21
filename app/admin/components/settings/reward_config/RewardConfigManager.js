@@ -610,39 +610,39 @@ const RewardConfigManager = () => {
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
                     <button
-                      className="inline-flex items-center justify-center gap-1 hover:text-blue-600"
+                      className="inline-flex items-center justify-start gap-1 hover:text-blue-600"
                       onClick={() => toggleSort('rates', 'author_status')}
                     >
                       สถานะผู้ประพันธ์ {sortIcon(rateSort, 'author_status')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
                     <button
-                      className="inline-flex items-center justify-center gap-1 hover:text-blue-600"
+                      className="inline-flex items-center justify-start gap-1 hover:text-blue-600"
                       onClick={() => toggleSort('rates', 'journal_quartile')}
                     >
                       Quartile {sortIcon(rateSort, 'journal_quartile')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
                     <button
-                      className="inline-flex items-center justify-center gap-1 hover:text-blue-600"
+                      className="inline-flex items-center justify-start gap-1 hover:text-blue-600"
                       onClick={() => toggleSort('rates', 'reward_amount')}
                     >
                       จำนวนเงินรางวัล {sortIcon(rateSort, 'reward_amount')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
                     <button
-                      className="inline-flex items-center gap-1 justify-center hover:text-blue-600"
+                      className="inline-flex items-center gap-1 justify-start hover:text-blue-600"
                       onClick={() => toggleSort('rates', 'is_active')}
                     >
                       สถานะ {sortIcon(rateSort, 'is_active')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">จัดการ</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
@@ -655,16 +655,16 @@ const RewardConfigManager = () => {
                 ) : (
                   sortedRates.map((rate) => (
                     <tr key={rate.rate_id}>
-                      <td className="px-3 py-3 text-center text-sm font-medium text-gray-900 whitespace-nowrap">
+                      <td className="px-3 py-3 text-left text-sm font-medium text-gray-900 whitespace-nowrap">
                         {authorLabel(rate.author_status)}
                       </td>
-                      <td className="px-3 py-3 text-center text-sm text-gray-700 whitespace-nowrap">
+                      <td className="px-3 py-3 text-left text-sm text-gray-700 whitespace-nowrap">
                         {quartileOptions.find(q => q.value === rate.journal_quartile)?.label || rate.journal_quartile}
                       </td>
-                      <td className="px-3 py-3 text-center text-sm font-semibold text-gray-900 whitespace-nowrap">
+                      <td className="px-3 py-3 text-left text-sm font-semibold text-gray-900 whitespace-nowrap">
                         {new Intl.NumberFormat('th-TH').format(rate.reward_amount)} บาท
                       </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-center">
+                      <td className="px-3 py-3 whitespace-nowrap text-left">
                         <StatusBadge
                           status={!!rate.is_active}
                           interactive
@@ -672,7 +672,7 @@ const RewardConfigManager = () => {
                           onChange={() => toggleStatus(rate.rate_id, rate.is_active, 'rate')}
                         />
                       </td>
-                      <td className="flex justify-center gap-2 px-3 py-3 whitespace-nowrap text-sm font-medium">
+                      <td className="flex justify-start gap-2 px-3 py-3 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => {
                             setEditingRate(rate);
@@ -730,39 +730,39 @@ const RewardConfigManager = () => {
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
                     <button
-                      className="inline-flex items-center justify-center gap-1 hover:text-blue-600"
+                      className="inline-flex items-center justify-start gap-1 hover:text-blue-600"
                       onClick={() => toggleSort('configs', 'journal_quartile')}
                     >
                       Quartile {sortIcon(configSort, 'journal_quartile')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
                     <button
-                      className="inline-flex items-center justify-center gap-1 hover:text-blue-600"
+                      className="inline-flex items-center justify-start gap-1 hover:text-blue-600"
                       onClick={() => toggleSort('configs', 'max_amount')}
                     >
                       วงเงินสูงสุด {sortIcon(configSort, 'max_amount')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
                     <button
-                      className="inline-flex items-center justify-center gap-1 hover:text-blue-600"
+                      className="inline-flex items-center justify-start gap-1 hover:text-blue-600"
                       onClick={() => toggleSort('configs', 'condition_description')}
                     >
                       เงื่อนไข/หมายเหตุ {sortIcon(configSort, 'condition_description')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
                     <button
-                      className="inline-flex items-center gap-1 justify-center hover:text-blue-600"
+                      className="inline-flex items-center gap-1 justify-start hover:text-blue-600"
                       onClick={() => toggleSort('configs', 'is_active')}
                     >
                       สถานะ {sortIcon(configSort, 'is_active')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">จัดการ</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
@@ -775,18 +775,18 @@ const RewardConfigManager = () => {
                 ) : (
                   sortedConfigs.map((config) => (
                     <tr key={config.config_id}>
-                      <td className="px-4 py-3 text-center text-sm font-medium text-gray-900 whitespace-nowrap">
+                      <td className="px-4 py-3 text-left text-sm font-medium text-gray-900 whitespace-nowrap">
                         {quartileOptions.find(q => q.value === config.journal_quartile)?.label || config.journal_quartile}
                       </td>
-                      <td className="px-4 py-3 text-center text-sm font-semibold text-gray-900 whitespace-nowrap">
+                      <td className="px-4 py-3 text-left text-sm font-semibold text-gray-900 whitespace-nowrap">
                         {config.max_amount > 0
                           ? `${new Intl.NumberFormat('th-TH').format(config.max_amount)} บาท`
                           : 'ไม่สนับสนุน'}
                       </td>
-                      <td className="px-4 py-3 text-center text-sm text-gray-700">
+                      <td className="px-4 py-3 text-left text-sm text-gray-700">
                         {config.condition_description || '-'}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <td className="px-4 py-3 whitespace-nowrap text-left">
                         <StatusBadge
                           status={!!config.is_active}
                           interactive
@@ -794,7 +794,7 @@ const RewardConfigManager = () => {
                           onChange={() => toggleStatus(config.config_id, config.is_active, 'config')}
                         />
                       </td>
-                      <td className="flex justify-center gap-2 px-3 py-3 whitespace-nowrap text-sm font-medium">
+                      <td className="flex justify-start gap-2 px-3 py-3 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => {
                             setEditingConfig(config);
