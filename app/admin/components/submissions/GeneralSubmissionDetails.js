@@ -1197,8 +1197,11 @@ function FundApprovalPanel({
 /* =========================
  * Request Information (left card)
  * ========================= */
-function RequestInfoCard({ submission, detail }) {
+function RequestInfoCard({ submission, detail, fundName }) {
   const subName =
+    fundName ||
+    submission?.fund_name ||
+    detail?.fund_name ||
     submission?.Subcategory?.subcategory_name ||
     detail?.Subcategory?.subcategory_name ||
     submission?.subcategory_name ||
@@ -1904,24 +1907,30 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
   const contactPhone =
     submission?.contact_phone ||
     submission?.details?.data?.contact_phone ||
+    applicant?.phone_number ||
+    applicant?.phone ||
+    applicant?.mobile ||
     detail?.contact_phone ||
     '';
 
   const bankAccount =
     submission?.bank_account ||
     submission?.details?.data?.bank_account ||
+    applicant?.bank_account ||
     detail?.bank_account ||
     '';
 
   const bankName =
     submission?.bank_name ||
     submission?.details?.data?.bank_name ||
+    applicant?.bank_name ||
     detail?.bank_name ||
     '';
 
   const bankAccountName =
     submission?.bank_account_name ||
     submission?.details?.data?.bank_account_name ||
+    applicant?.bank_account_name ||
     detail?.bank_account_name ||
     '';
 
@@ -2541,7 +2550,7 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <RequestInfoCard submission={submission} detail={detail} />
+        <RequestInfoCard submission={submission} detail={detail} fundName={fundName} />
         <FundApprovalPanel
           submission={submission}
           fundDetail={detail}

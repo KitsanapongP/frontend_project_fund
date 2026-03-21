@@ -87,6 +87,16 @@ export const adminAPI = {
   async getCategories(yearId = null) {
     try {
       const params = yearId ? { year_id: yearId } : {};
+      try {
+        const response = await apiClient.get('/categories', params);
+        return response.categories || [];
+      } catch (error) {
+        const status = Number(error?.status || 0);
+        if (status !== 404 && status !== 405) {
+          throw error;
+        }
+      }
+
       const endpoint = isExecutiveRole() ? '/executive/categories' : '/admin/categories';
       const response = await apiClient.get(endpoint, params);
       return response.categories || [];
@@ -186,6 +196,16 @@ export const adminAPI = {
       if (categoryId) params.category_id = categoryId;
       if (yearId) params.year_id = yearId;
       
+      try {
+        const response = await apiClient.get('/subcategories', params);
+        return response;
+      } catch (error) {
+        const status = Number(error?.status || 0);
+        if (status !== 404 && status !== 405) {
+          throw error;
+        }
+      }
+
       const endpoint = isExecutiveRole() ? '/executive/subcategories' : '/admin/subcategories';
       const response = await apiClient.get(endpoint, params);
 
@@ -207,6 +227,16 @@ export const adminAPI = {
 
       if (yearId) {
         params.year_id = yearId;
+      }
+
+      try {
+        const response = await apiClient.get('/subcategories', params);
+        return response.subcategories || [];
+      } catch (error) {
+        const status = Number(error?.status || 0);
+        if (status !== 404 && status !== 405) {
+          throw error;
+        }
       }
 
       const endpoint = isExecutiveRole() ? '/executive/subcategories' : '/admin/subcategories';
@@ -656,8 +686,7 @@ export const adminAPI = {
   // Get system statistics
   async getSystemStats(params = {}) {
     try {
-      const endpoint = isExecutiveRole() ? '/executive/dashboard/stats' : '/admin/dashboard/stats';
-      const response = await apiClient.get(endpoint, params);
+      const response = await apiClient.get('/dashboard/stats', params);
       return response;
     } catch (error) {
       console.error('Error fetching system stats:', error);
@@ -681,10 +710,25 @@ export const adminAPI = {
   // Search funds
   async searchFunds(searchTerm, params = {}) {
     try {
-      const [categoriesResponse, subcategoriesResponse] = await Promise.all([
-        apiClient.get(isExecutiveRole() ? '/executive/categories' : '/admin/categories', params),
-        apiClient.get(isExecutiveRole() ? '/executive/subcategories' : '/admin/subcategories', params)
-      ]);
+      let categoriesResponse;
+      let subcategoriesResponse;
+
+      try {
+        [categoriesResponse, subcategoriesResponse] = await Promise.all([
+          apiClient.get('/categories', params),
+          apiClient.get('/subcategories', params)
+        ]);
+      } catch (error) {
+        const status = Number(error?.status || 0);
+        if (status !== 404 && status !== 405) {
+          throw error;
+        }
+
+        [categoriesResponse, subcategoriesResponse] = await Promise.all([
+          apiClient.get(isExecutiveRole() ? '/executive/categories' : '/admin/categories', params),
+          apiClient.get(isExecutiveRole() ? '/executive/subcategories' : '/admin/subcategories', params)
+        ]);
+      }
       
       return {
         categories: categoriesResponse.categories || [],

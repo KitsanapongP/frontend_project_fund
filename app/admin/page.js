@@ -21,6 +21,7 @@ import AdminScopusResearchSearch from "./components/research/AdminScopusResearch
 import ApprovalRecords from "./components/approves/ApprovalRecords";
 import AdminNotificationCenter from "./components/notifications/NotificationCenter";
 import AdminImportExportPage from "./components/import-export/AdminImportExportPage";
+import AdminAccessControlPage from "./components/access-control/AdminAccessControlPage";
 import GenericFundApplicationForm from "../member/components/applications/GenericFundApplicationForm";
 import PublicationRewardForm from "../member/components/applications/PublicationRewardForm";
 
@@ -30,12 +31,27 @@ const IMPORT_TAB_MAP = {
   'kku-people-scraper': 'kku-profile',
 };
 
+const PAGE_PERMISSION_BY_ID = {
+  dashboard: "ui.page.admin.dashboard.view",
+  "research-fund": "ui.page.admin.research_fund.view",
+  "promotion-fund": "ui.page.admin.promotion_fund.view",
+  "applications-list": "ui.page.admin.applications.view",
+  "scopus-research-search": "ui.page.admin.scopus.view",
+  "fund-settings": "ui.page.admin.fund_settings.view",
+  projects: "ui.page.admin.projects.view",
+  "approval-records": "ui.page.admin.approval_records.view",
+  "import-export": "ui.page.admin.import_export.view",
+  "academic-imports": "ui.page.admin.academic_imports.view",
+  "access-control": "ui.page.admin.access_control.view",
+};
+
 function AdminPageContent({ initialPage = 'dashboard', basePath = '/admin' }) {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const rawRole = user?.role_id ?? user?.role;
   const normalizedRole = typeof rawRole === 'string' ? rawRole.toLowerCase() : rawRole;
   const numericRole = Number(rawRole);
   const isExecutive = normalizedRole === 5 || normalizedRole === 'executive' || numericRole === 5;
+  const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
   const [isOpen, setIsOpen] = useState(false);
   const [submenuOpen, setSubmenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -43,6 +59,26 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/admin' }) {
   const [selectedFundData, setSelectedFundData] = useState(null);
   const [currentMode, setCurrentMode] = useState(null);
   const pathname = usePathname();
+
+  const canViewPage = useCallback((pageId) => {
+    if (isExecutive) {
+      return pageId === "dashboard" || pageId === "applications-list";
+    }
+
+    const requiredPermission = PAGE_PERMISSION_BY_ID[pageId];
+    if (!requiredPermission) {
+      return true;
+    }
+    if (!hasPermissionSnapshot) {
+      return true;
+    }
+
+    if (pageId === "dashboard" && hasPermission("dashboard.view.admin")) {
+      return true;
+    }
+
+    return hasPermission(requiredPermission);
+  }, [hasPermission, hasPermissionSnapshot, isExecutive]);
 
   const normalizePage = useCallback((page) => {
     const canonicalPage = IMPORT_TAB_MAP[page] ? 'academic-imports' : page;
@@ -60,13 +96,33 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/admin' }) {
           'approval-records',
           'academic-imports',
           'import-export',
+          'access-control',
           'notifications',
           'generic-fund-application',
           'publication-reward-form',
         ];
 
-    return allowedPages.includes(canonicalPage) ? canonicalPage : 'dashboard';
-  }, [isExecutive]);
+    const permissionFilteredPages = allowedPages.filter(canViewPage);
+    const preferredFallbackOrder = [
+      'dashboard',
+      'research-fund',
+      'promotion-fund',
+      'applications-list',
+      'scopus-research-search',
+      'fund-settings',
+      'projects',
+      'approval-records',
+      'import-export',
+      'academic-imports',
+      'access-control',
+    ];
+    const fallbackPage =
+      preferredFallbackOrder.find((item) => permissionFilteredPages.includes(item)) ||
+      permissionFilteredPages[0] ||
+      'dashboard';
+
+    return permissionFilteredPages.includes(canonicalPage) ? canonicalPage : fallbackPage;
+  }, [canViewPage, isExecutive]);
 
   const pageFromPath = useCallback(
     (path) => {
@@ -211,6 +267,8 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/admin' }) {
         return <AdminImportExportPage />;
       case 'academic-imports':
         return <AdminAcademicImports initialTab={importTab} />;
+      case 'access-control':
+        return <AdminAccessControlPage />;
       case 'notifications':
         return <AdminNotificationCenter />;
       default:
@@ -231,6 +289,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/admin' }) {
         'approval-records': 'บันทึกข้อมูลการอนุมัติทุน',
         'import-export': 'นำเข้า / ส่งออก',
         'academic-imports': 'ข้อมูลผลงานวิชาการ / Academic Data Import',
+        'access-control': 'จัดการสิทธิ์การเข้าถึง',
         'scopus-research-search': 'ค้นหางานวิจัย',
         'notifications': 'การแจ้งเตือน'
     };
@@ -295,6 +354,7 @@ export default function AdminPage() {
   return (
     <AuthGuard 
       allowedRoles={[3, 'admin']}
+      allowedPermissions={['ui.page.admin.dashboard.view', 'dashboard.view.admin']}
       requireAuth={true}
     >
       <AdminPageContent />

@@ -11,7 +11,11 @@ export default function AdminDynamicPage({ params }) {
     : resolvedParams?.page;
 
   return (
-    <AuthGuard allowedRoles={[3, "admin"]} requireAuth={true}>
+    <AuthGuard
+      allowedRoles={[3, "admin"]}
+      allowedPermissions={["ui.page.admin.dashboard.view", "dashboard.view.admin"]}
+      requireAuth={true}
+    >
       <AdminPageContent initialPage={page} />
     </AuthGuard>
   );

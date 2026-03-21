@@ -6,55 +6,20 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 import UnauthorizedPage from "./UnauthorizedPage";
-
-const ROLE_NAME_BY_ID = {
-  1: 'teacher',
-  2: 'staff',
-  3: 'admin',
-  4: 'dept_head',
-  5: 'executive',
-};
-
-const normalizeRoleName = (role) => {
-  if (role == null) {
-    return null;
-  }
-
-  if (typeof role === 'object') {
-    if (role.role != null) {
-      return normalizeRoleName(role.role);
-    }
-    if (role.role_id != null) {
-      return normalizeRoleName(role.role_id);
-    }
-  }
-
-  if (typeof role === 'string') {
-    const numericRole = Number(role);
-    if (!Number.isNaN(numericRole) && ROLE_NAME_BY_ID[numericRole]) {
-      return ROLE_NAME_BY_ID[numericRole];
-    }
-    return role;
-  }
-
-  if (typeof role === 'number') {
-    return ROLE_NAME_BY_ID[role] || null;
-  }
-
-  return null;
-};
+import { hasAdminPortalAccess, hasMemberPortalAccess, normalizeRoleName } from "../lib/access_routing";
 
 const MEMBER_ALLOWED_ROLES = ['teacher', 'staff', 'dept_head'];
 
-export const canAccess = (pathname, role) => {
+export const canAccess = (pathname, user) => {
   if (!pathname) {
     return true;
   }
 
-  const normalizedRole = normalizeRoleName(role);
+  const roleValue = user?.role ?? user?.role_id ?? user;
+  const normalizedRole = normalizeRoleName(roleValue);
 
   if (pathname.startsWith('/admin')) {
-    return normalizedRole === 'admin';
+    return hasAdminPortalAccess(user);
   }
 
   if (pathname.startsWith('/executive')) {
@@ -62,7 +27,10 @@ export const canAccess = (pathname, role) => {
   }
 
   if (pathname.startsWith('/member')) {
-    return normalizedRole ? MEMBER_ALLOWED_ROLES.includes(normalizedRole) : false;
+    if (normalizedRole && MEMBER_ALLOWED_ROLES.includes(normalizedRole)) {
+      return true;
+    }
+    return hasMemberPortalAccess(user);
   }
 
   return true;
@@ -71,23 +39,18 @@ export const canAccess = (pathname, role) => {
 export default function AuthGuard({
   children,
   allowedRoles = [], // [1, 2, 3] หรือ ['teacher', 'staff', 'admin']
+  allowedPermissions = [],
   requireAuth = true,
   fallback = null
 }) {
-  const { isAuthenticated, user, isLoading, hasAnyRole } = useAuth();
+  const { isAuthenticated, user, isLoading, hasAnyRole, hasAnyPermission } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [showUnauthorized, setShowUnauthorized] = useState(false);
-  const [initialCheck, setInitialCheck] = useState(false);
 
   useEffect(() => {
     // รอให้ auth context โหลดเสร็จก่อน
     if (isLoading) return;
-
-    // ทำเครื่องหมายว่าเช็คครั้งแรกแล้ว
-    if (!initialCheck) {
-      setInitialCheck(true);
-    }
 
     // ถ้าต้องการ authentication แต่ยังไม่ได้ login
     if (requireAuth && !isAuthenticated) {
@@ -96,17 +59,19 @@ export default function AuthGuard({
       return;
     }
 
-    // ถ้า login แล้วแต่ไม่มีสิทธิ์ตาม role ที่กำหนด
-    if (isAuthenticated && allowedRoles.length > 0) {
-      if (!hasAnyRole(allowedRoles)) {
+    // ถ้า login แล้วแต่ไม่มีสิทธิ์ตาม role/permission ที่กำหนด
+    if (isAuthenticated && (allowedRoles.length > 0 || allowedPermissions.length > 0)) {
+      const roleMatched = allowedRoles.length > 0 ? hasAnyRole(allowedRoles) : false;
+      const permissionMatched = allowedPermissions.length > 0 ? hasAnyPermission(allowedPermissions) : false;
+      const pathMatched = canAccess(pathname, user);
+      if (!roleMatched && !permissionMatched && !pathMatched) {
         setShowUnauthorized(true);
         return;
       }
     }
 
     if (isAuthenticated) {
-      const roleValue = user?.role ?? user?.role_id;
-      if (!canAccess(pathname, roleValue)) {
+      if (!canAccess(pathname, user)) {
         setShowUnauthorized(true);
         return;
       }
@@ -120,9 +85,10 @@ export default function AuthGuard({
     isLoading,
     requireAuth,
     allowedRoles,
+    allowedPermissions,
     hasAnyRole,
+    hasAnyPermission,
     router,
-    initialCheck,
     pathname,
   ]);
 

@@ -8,6 +8,8 @@ const isExecutiveRole = () => {
   return Number(role) === 5 || String(role).toLowerCase() === 'executive';
 };
 
+const getSubmissionManagementBase = () => '/submissions-admin';
+
 const pickFirst = (...candidates) => {
   for (const value of candidates) {
     if (value !== undefined && value !== null && value !== '') {
@@ -496,25 +498,29 @@ const deriveFallbackDetails = (submission, detailCandidate) => {
 const buildFallbackSubmissionDetails = async (submissionId) => {
   let submissionPayload;
   try {
-    submissionPayload = await apiClient.get(`/submissions/${submissionId}`);
+    submissionPayload = await apiClient.get(`${getSubmissionManagementBase()}/${submissionId}/details`);
   } catch (error) {
-    console.error('[adminSubmissionAPI] fallback submission fetch failed', error);
-    throw error;
+    const status = Number(error?.status || 0);
+    const canFallbackToLegacy = status === 404 || status === 405;
+    if (!canFallbackToLegacy) {
+      console.error('[adminSubmissionAPI] fallback submission fetch failed', error);
+      throw error;
+    }
+
+    try {
+      const legacyEndpoint = isExecutiveRole()
+        ? `/executive/submissions/${submissionId}/details`
+        : `/admin/submissions/${submissionId}/details`;
+      submissionPayload = await apiClient.get(legacyEndpoint);
+    } catch (legacyError) {
+      console.error('[adminSubmissionAPI] fallback submission fetch failed', legacyError);
+      throw legacyError;
+    }
   }
 
   let usersPayload = null;
-  try {
-    usersPayload = await apiClient.get(`/submissions/${submissionId}/users`);
-  } catch (error) {
-    console.warn('[adminSubmissionAPI] fallback users fetch failed', error);
-  }
 
   let documentsPayload = null;
-  try {
-    documentsPayload = await apiClient.get(`/submissions/${submissionId}/documents`);
-  } catch (error) {
-    console.warn('[adminSubmissionAPI] fallback documents fetch failed', error);
-  }
 
   const submission = extractSubmissionFromPayload(submissionPayload) || null;
 
@@ -641,13 +647,23 @@ export const adminSubmissionAPI = {
 
     let primary;
     try {
-      const detailsEndpoint = isExecutiveRole()
-        ? `/executive/submissions/${submissionId}/details`
-        : `/admin/submissions/${submissionId}/details`;
+      const detailsEndpoint = `${getSubmissionManagementBase()}/${submissionId}/details`;
       primary = await apiClient.get(detailsEndpoint);
     } catch (error) {
-      console.warn('[adminSubmissionAPI] primary details fetch failed', error);
-      return buildFallbackSubmissionDetails(submissionId);
+      const primaryStatus = Number(error?.status || 0);
+      const canFallbackToLegacy = primaryStatus === 404 || primaryStatus === 405;
+      if (!canFallbackToLegacy) {
+        throw error;
+      }
+
+      try {
+        const legacyEndpoint = isExecutiveRole()
+          ? `/executive/submissions/${submissionId}/details`
+          : `/admin/submissions/${submissionId}/details`;
+        primary = await apiClient.get(legacyEndpoint);
+      } catch (legacyError) {
+        throw legacyError;
+      }
     }
     const payload =
       primary && typeof primary === 'object' && !Array.isArray(primary)
@@ -667,43 +683,8 @@ export const adminSubmissionAPI = {
       return null;
     };
 
-    const needsSupplement = (submission) => {
-      if (!submission || typeof submission !== 'object') return true;
-      const requiredKeys = [
-        'admin_comment',
-        'head_comment',
-        'admin_rejection_reason',
-        'head_rejection_reason',
-        'admin_approved_by',
-        'admin_approved_at',
-        'admin_rejected_by',
-        'admin_rejected_at',
-        'head_approved_by',
-        'head_approved_at',
-      ];
-      return requiredKeys.some((key) => !(key in submission));
-    };
-
     const submissionFromPrimary = extractSubmission(payload) || primary;
-    let supplementalSubmission = null;
-
-    if (needsSupplement(submissionFromPrimary)) {
-      try {
-        const fallback = await apiClient.get(`/submissions/${submissionId}`);
-        supplementalSubmission = extractSubmission(fallback) || fallback;
-      } catch (error) {
-        console.warn('[adminSubmissionAPI] fallback submission fetch failed', error);
-      }
-    }
-
-    const mergedSubmission = (() => {
-      if (submissionFromPrimary && supplementalSubmission) {
-        return { ...supplementalSubmission, ...submissionFromPrimary };
-      }
-      if (submissionFromPrimary) return submissionFromPrimary;
-      if (supplementalSubmission) return supplementalSubmission;
-      return null;
-    })();
+    const mergedSubmission = submissionFromPrimary || null;
 
     if (!mergedSubmission) {
       return buildFallbackSubmissionDetails(submissionId);
@@ -713,10 +694,7 @@ export const adminSubmissionAPI = {
       return {
         ...payload,
         submission: mergedSubmission,
-        supplemental_submission:
-          supplementalSubmission && !payload.supplemental_submission
-            ? supplementalSubmission
-            : payload.supplemental_submission,
+        supplemental_submission: payload.supplemental_submission,
       };
     }
 
@@ -729,32 +707,59 @@ export const adminSubmissionAPI = {
   // PATCH /api/v1/admin/submissions/:id/publication-reward/approval-amounts
   // payload: { reward_approve_amount, revision_fee_approve_amount, publication_fee_approve_amount, total_approve_amount }
   async updateApprovalAmounts(submissionId, payload) {
-    return apiClient.patch(
-      `/admin/submissions/${submissionId}/publication-reward/approval-amounts`,
-      payload
-    );
+    try {
+      return await apiClient.patch(
+        `${getSubmissionManagementBase()}/${submissionId}/publication-reward/approval-amounts`,
+        payload
+      );
+    } catch (error) {
+      return apiClient.patch(
+        `/admin/submissions/${submissionId}/publication-reward/approval-amounts`,
+        payload
+      );
+    }
   },
 
   // POST /api/v1/admin/submissions/:id/approve
   // payload may include the 4 approve amounts + admin_comment
   async approveSubmission(submissionId, payload) {
-    return apiClient.post(`/admin/submissions/${submissionId}/approve`, payload);
+    try {
+      return await apiClient.post(`${getSubmissionManagementBase()}/${submissionId}/approve`, payload);
+    } catch (error) {
+      return apiClient.post(`/admin/submissions/${submissionId}/approve`, payload);
+    }
   },
 
   // POST /api/v1/admin/submissions/:id/reject
   // payload: { admin_rejection_reason }
   async rejectSubmission(submissionId, payload) {
-    return apiClient.post(`/admin/submissions/${submissionId}/reject`, payload);
+    try {
+      return await apiClient.post(`${getSubmissionManagementBase()}/${submissionId}/reject`, payload);
+    } catch (error) {
+      return apiClient.post(`/admin/submissions/${submissionId}/reject`, payload);
+    }
   },
 
   async requestRevision(submissionId, payload = {}) {
-    return apiClient.post(`/admin/submissions/${submissionId}/request-revision`, payload);
+    try {
+      return await apiClient.post(`${getSubmissionManagementBase()}/${submissionId}/request-revision`, payload);
+    } catch (error) {
+      return apiClient.post(`/admin/submissions/${submissionId}/request-revision`, payload);
+    }
   },
 
   async getUsersByIds(ids = []) {
     if (!ids.length) return { users: [] };
-    const res = await apiClient.get('/admin/users', { params: { ids: ids.join(',') } }); // { users: [{user_id, user_fname, user_lname, email}] }
-    return res;
+    const params = { params: { ids: ids.join(',') } };
+    try {
+      return await apiClient.get('/users', params);
+    } catch (error) {
+      const status = Number(error?.status || 0);
+      if (status !== 404 && status !== 405) {
+        throw error;
+      }
+      return apiClient.get('/admin/users', params);
+    }
   },
 
   async getSubmissionDocuments(submissionId, params = {}) {
@@ -762,20 +767,27 @@ export const adminSubmissionAPI = {
       throw new Error('submissionId is required');
     }
 
-    const query = params && typeof params === 'object' ? { ...params } : {};
     let lastError = null;
 
     try {
-      const result = await apiClient.get(`/submissions/${submissionId}/documents`, query);
-      if (result !== undefined && result !== null) {
-        if (typeof result === 'object' && !Array.isArray(result)) {
-          return { ...result, source: result.source ?? 'general' };
-        }
-        return result;
+      const details = await this.getSubmissionDetails(submissionId);
+      const detailsPayload = details?.details?.data || details?.data || details || {};
+      const documents =
+        detailsPayload?.documents ||
+        detailsPayload?.submission?.documents ||
+        details?.documents ||
+        [];
+      if (Array.isArray(documents)) {
+        return {
+          documents,
+          data: { documents },
+          success: true,
+          source: 'details',
+        };
       }
     } catch (error) {
       lastError = error;
-      console.warn('[adminSubmissionAPI] primary documents fetch failed', error);
+      console.warn('[adminSubmissionAPI] details documents fetch failed', error);
     }
 
     try {
@@ -817,7 +829,12 @@ export const adminSubmissionAPI = {
       return { events: [], totals: normalizeResearchFundTotals() };
     }
 
-    const response = await apiClient.get(`/admin/submissions/${submissionId}/research-fund/events`);
+    let response;
+    try {
+      response = await apiClient.get(`${getSubmissionManagementBase()}/${submissionId}/research-fund/events`);
+    } catch (error) {
+      response = await apiClient.get(`/admin/submissions/${submissionId}/research-fund/events`);
+    }
     const payload = response?.data || response;
 
     const listSource = Array.isArray(payload?.events)
@@ -866,10 +883,18 @@ export const adminSubmissionAPI = {
       payload = fd;
     }
 
-    const response = await apiClient.postFormData(
-      `/admin/submissions/${submissionId}/research-fund/events`,
-      payload
-    );
+    let response;
+    try {
+      response = await apiClient.postFormData(
+        `${getSubmissionManagementBase()}/${submissionId}/research-fund/events`,
+        payload
+      );
+    } catch (error) {
+      response = await apiClient.postFormData(
+        `/admin/submissions/${submissionId}/research-fund/events`,
+        payload
+      );
+    }
 
     const body = response?.data || response || {};
     const eventSource = body?.event || body?.data || body;
@@ -892,10 +917,18 @@ export const adminSubmissionAPI = {
       throw new Error('submissionId is required');
     }
 
-    const response = await apiClient.post(
-      `/admin/submissions/${submissionId}/research-fund/toggle-closure`,
-      payload || {}
-    );
+    let response;
+    try {
+      response = await apiClient.post(
+        `${getSubmissionManagementBase()}/${submissionId}/research-fund/toggle-closure`,
+        payload || {}
+      );
+    } catch (error) {
+      response = await apiClient.post(
+        `/admin/submissions/${submissionId}/research-fund/toggle-closure`,
+        payload || {}
+      );
+    }
 
     const body = response?.data || response;
     const totals = normalizeResearchFundTotals(
@@ -993,12 +1026,22 @@ export const submissionsListingAPI = {
 
   async getAdminSubmissions(params) {
     try {
-      const endpoint = isExecutiveRole() ? '/executive/submissions' : '/admin/submissions';
-      const response = await apiClient.get(endpoint, { params });
+      const response = await apiClient.get(getSubmissionManagementBase(), { params });
       return response;
     } catch (error) {
-      console.error('[API] Error fetching admin submissions:', error);
-      throw error;
+      const status = Number(error?.status || 0);
+      const canFallbackToLegacy = status === 404 || status === 405;
+      if (!canFallbackToLegacy) {
+        throw error;
+      }
+
+      try {
+        const endpoint = isExecutiveRole() ? '/executive/submissions' : '/admin/submissions';
+        return await apiClient.get(endpoint, { params });
+      } catch (legacyError) {
+        console.error('[API] Error fetching admin submissions:', legacyError);
+        throw legacyError;
+      }
     }
   },
 

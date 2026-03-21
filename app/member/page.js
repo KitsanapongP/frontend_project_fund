@@ -24,6 +24,19 @@ import DeptHeadReview from "./components/dept/DeptHeadReview";
 import { useAuth } from "../contexts/AuthContext";
 import ProjectsList from "./components/projects/ProjectsList";
 
+const PAGE_PERMISSION_MAP = {
+  dashboard: 'ui.page.member.dashboard.view',
+  profile: 'ui.page.member.profile.view',
+  'research-fund': 'ui.page.member.research_fund.view',
+  'promotion-fund': 'ui.page.member.promotion_fund.view',
+  applications: 'ui.page.member.applications.view',
+  'received-funds': 'ui.page.member.received_funds.view',
+  announcements: 'ui.page.member.announcements.view',
+  projects: 'ui.page.member.projects.view',
+  notifications: 'ui.page.member.notifications.view',
+  'dept-review': 'ui.page.member.dept_review.view',
+};
+
 
 export function MemberPageContent({ initialPage = 'profile', initialMode = null }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,10 +44,19 @@ export function MemberPageContent({ initialPage = 'profile', initialMode = null 
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [selectedFundData, setSelectedFundData] = useState(null);
   const [currentMode, setCurrentMode] = useState(initialMode ?? null);
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const pathname = usePathname();
 
   const FUND_STORAGE_KEY = "member_selected_fund";
+
+  const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
+
+  const canViewPage = useCallback((page) => {
+    const required = PAGE_PERMISSION_MAP[page];
+    if (!required) return true;
+    if (!hasPermissionSnapshot) return true;
+    return hasPermission(required);
+  }, [hasPermission, hasPermissionSnapshot]);
 
   const normalizePage = useCallback((page) => {
     const allowedPages = [
@@ -55,8 +77,10 @@ export function MemberPageContent({ initialPage = 'profile', initialMode = null 
       'dept-review',
     ];
 
-    return allowedPages.includes(page) ? page : 'profile';
-  }, []);
+    const allowedWithPermissions = allowedPages.filter(canViewPage);
+    const fallbackPage = allowedWithPermissions[0] || 'profile';
+    return allowedWithPermissions.includes(page) ? page : fallbackPage;
+  }, [canViewPage]);
 
   const pageFromPath = useCallback(
     (path) => {
@@ -91,12 +115,15 @@ export function MemberPageContent({ initialPage = 'profile', initialMode = null 
 
   const isDeptHead = useMemo(() => {
     if (!user) return false;
+    if (hasPermissionSnapshot) {
+      return hasPermission('ui.page.member.dept_review.view') || hasPermission('submission.read.department');
+    }
     return (
       user.role === 'dept_head' ||
       user.user_role === 'dept_head' ||
       user.role_id === 4
     );
-  }, [user]);
+  }, [hasPermission, hasPermissionSnapshot, user]);
 
   useEffect(() => {
     const normalized = normalizePage(initialPage);

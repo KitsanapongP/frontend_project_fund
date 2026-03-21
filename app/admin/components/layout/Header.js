@@ -17,7 +17,7 @@ export default function Header({
   Navigation,
   currentPageTitle = "แดชบอร์ดผู้ดูแลระบบ",
 }) {
-  const { user, logout } = useAuth();
+  const { user, logout, getUserRoleDisplay } = useAuth();
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -91,11 +91,6 @@ export default function Header({
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase() || 'AD';
 
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
-
-  // Get role display
-  const getUserRoleDisplay = () => {
-    return 'ผู้ดูแลระบบ';
   };
 
   const handleLogout = async () => {

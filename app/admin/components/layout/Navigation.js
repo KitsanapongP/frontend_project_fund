@@ -1,6 +1,7 @@
 // app/admin/components/layout/Navigation.js
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   DollarSign,
@@ -14,10 +15,15 @@ import {
   Briefcase,
   Bell,
   Search,
-  ArrowDownUp
+  ArrowDownUp,
+  ShieldCheck,
+  User,
+  Gift,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { normalizeRoleName } from "@/app/lib/access_routing";
 
 export default function Navigation({ 
   currentPage, 
@@ -27,8 +33,12 @@ export default function Navigation({
   setSubmenuOpen,
   isExecutive = false
 }) {
-  const { logout } = useAuth();
+  const { logout, hasPermission, user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const [pendingRoute, setPendingRoute] = useState("");
+
+  const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
 
   const menuItems = [
     {
@@ -101,19 +111,120 @@ export default function Navigation({
       id: 'academic-imports',
       label: 'ข้อมูลผลงานวิชาการ / Academic Data Import',
       icon: BookOpen,
-      hasSubmenu: false
+      hasSubmenu: false,
+      requiredPermission: 'ui.page.admin.academic_imports.view',
+    },
+    {
+      id: 'access-control',
+      label: 'จัดการสิทธิ์การเข้าถึง',
+      icon: ShieldCheck,
+      hasSubmenu: false,
+      requiredPermission: 'ui.page.admin.access_control.view',
     }
   ];
 
+  const menuItemsWithPermissions = menuItems.map((item) => {
+    if (item.requiredPermission) {
+      return item;
+    }
+
+    const permissionByPage = {
+      dashboard: 'ui.page.admin.dashboard.view',
+      'research-fund': 'ui.page.admin.research_fund.view',
+      'promotion-fund': 'ui.page.admin.promotion_fund.view',
+      'applications-list': 'ui.page.admin.applications.view',
+      'scopus-research-search': 'ui.page.admin.scopus.view',
+      'fund-settings': 'ui.page.admin.fund_settings.view',
+      projects: 'ui.page.admin.projects.view',
+      'approval-records': 'ui.page.admin.approval_records.view',
+      'import-export': 'ui.page.admin.import_export.view',
+    };
+
+    return {
+      ...item,
+      requiredPermission: permissionByPage[item.id] || null,
+    };
+  });
+
+  const canViewMenu = (item) => {
+    if (!item.requiredPermission) {
+      return true;
+    }
+    if (!hasPermissionSnapshot) {
+      return true;
+    }
+    return hasPermission(item.requiredPermission);
+  };
 
   const visibleMenuItems = isExecutive
-    ? menuItems.filter((item) => item.id === "dashboard")
-    : menuItems;
+    ? menuItemsWithPermissions.filter((item) => item.id === "dashboard")
+    : menuItemsWithPermissions.filter(canViewMenu);
+
+  const normalizedRole = normalizeRoleName(user?.role ?? user?.role_id);
+  const canAccessMemberPortal = ["teacher", "staff", "dept_head"].includes(normalizedRole);
+
+  const memberShortcutItems = canAccessMemberPortal
+    ? [
+        { id: "member-profile", label: "ข้อมูลส่วนตัว", icon: User, route: "/member/profile" },
+        { id: "member-research-fund", label: "ทุนส่งเสริมการวิจัย", icon: HandHelping, route: "/member/research-fund" },
+        { id: "member-promotion-fund", label: "ทุนอุดหนุนกิจกรรม", icon: DollarSign, route: "/member/promotion-fund" },
+        { id: "member-applications", label: "คำร้องของฉัน", icon: FileText, route: "/member/applications" },
+        { id: "member-received", label: "ทุนที่เคยได้รับ", icon: Gift, route: "/member/received-funds" },
+        { id: "member-projects", label: "โครงการ", icon: Briefcase, route: "/member/projects" },
+        ...(normalizedRole === "dept_head"
+          ? [
+              {
+                id: "member-dept-review",
+                label: "พิจารณาคำร้องของหัวหน้าสาขา",
+                icon: ArrowLeftRight,
+                route: "/member/dept-review",
+              },
+            ]
+          : []),
+      ]
+    : [];
+
+  useEffect(() => {
+    const adminRoutes = visibleMenuItems.map((item) => `/admin/${item.id}`);
+    const memberRoutes = memberShortcutItems.map((item) => item.route);
+    [...adminRoutes, ...memberRoutes].forEach((route) => {
+      if (typeof router.prefetch === "function") {
+        router.prefetch(route);
+      }
+    });
+  }, [memberShortcutItems, router, visibleMenuItems]);
+
+  const navigateToRoute = (route) => {
+    if (!route || pendingRoute === route) {
+      return;
+    }
+
+    setPendingRoute(route);
+    if (typeof router.prefetch === "function") {
+      router.prefetch(route);
+    }
+
+    const currentPath = typeof window !== "undefined" ? window.location.pathname : pathname;
+    router.push(route);
+
+    window.setTimeout(() => {
+      const stillSamePath = typeof window !== "undefined" && window.location.pathname === currentPath;
+      if (stillSamePath) {
+        window.location.assign(route);
+      }
+      setPendingRoute("");
+    }, 700);
+  };
 
   const handleMenuClick = (item) => {
     if (item.hasSubmenu) {
       setSubmenuOpen(!submenuOpen);
     } else {
+      if (item.route) {
+        navigateToRoute(item.route);
+        return;
+      }
+
       // ใช้ handleNavigate ถ้ามี ไม่งั้นใช้ setCurrentPage
       if (handleNavigate) {
         handleNavigate(item.id);
@@ -147,13 +258,14 @@ export default function Navigation({
         <div key={item.id}>
           <button
             onClick={() => handleMenuClick(item)}
+            disabled={pendingRoute === `/admin/${item.id}`}
             className={`flex items-center gap-2 mb-2.5 w-full hover:text-blue-500 transition-colors ${
               isActive(item.id) ? 'text-blue-500 font-semibold' : 'text-gray-700'
             }`}
           >
             <item.icon size={20} />
             <div className="flex-1 text-left">
-              <span>{item.label}</span>
+              <span>{pendingRoute === `/admin/${item.id}` ? "กำลังเปิด..." : item.label}</span>
               {item.description && (
                 <span className="text-xs text-gray-500 block">{item.description}</span>
               )}
@@ -161,6 +273,28 @@ export default function Navigation({
           </button>
         </div>
       ))}
+
+      {memberShortcutItems.length > 0 && (
+        <>
+          <div className="mt-6 mb-3 border-t border-gray-200 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">เมนูบุคลากร</p>
+          </div>
+          {memberShortcutItems.map((item) => (
+            <div key={item.id}>
+              <button
+                onClick={() => handleMenuClick(item)}
+                disabled={pendingRoute === item.route}
+                className="flex items-center gap-2 mb-2.5 w-full text-gray-700 hover:text-blue-500 transition-colors disabled:opacity-60"
+              >
+                <item.icon size={20} />
+                <div className="flex-1 text-left">
+                  <span>{pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
+                </div>
+              </button>
+            </div>
+          ))}
+        </>
+      )}
 
       {/* Logout Button */}
       <div className="border-t border-gray-200 mt-6 pt-4">

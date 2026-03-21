@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "./contexts/AuthContext";
 import PublicHeader from "./components/public/PublicHeader";
 import { getSupportFundMappings } from "./lib/support_fundmapping_api";
+import { hasAdminPortalAccess } from "./lib/access_routing";
 
 const TABS = [
   { id: "home", label: "หน้าหลัก" },
@@ -845,6 +846,7 @@ export default function HomePage() {
     const userRoleRaw = userData.role_id ?? userData.role;
     const userRole = typeof userRoleRaw === "string" ? userRoleRaw.toLowerCase() : userRoleRaw;
     const userRoleNumber = Number(userRoleRaw);
+    const canAccessAdmin = hasAdminPortalAccess(userData);
 
     setTimeout(() => {
       if (
@@ -859,8 +861,10 @@ export default function HomePage() {
         userRole === "dept_head"
       ) {
         router.replace("/member");
+      } else if (canAccessAdmin) {
+        router.replace("/admin");
       } else if (userRole === 3 || userRoleNumber === 3 || userRole === "admin") {
-        router.replace("/admin/dashboard");
+        router.replace("/admin");
       } else if (userRole === 5 || userRoleNumber === 5 || userRole === "executive") {
         router.replace("/executive/dashboard");
       } else {

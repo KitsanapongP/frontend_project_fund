@@ -1159,6 +1159,40 @@ export const scopusImportAPI = {
   },
 };
 
+export const accessControlAPI = {
+  async listRoles() {
+    return apiClient.get('/admin/access/roles');
+  },
+
+  async listPermissions() {
+    return apiClient.get('/admin/access/permissions');
+  },
+
+  async getRolePermissions(roleId) {
+    return apiClient.get(`/admin/access/roles/${encodeURIComponent(roleId)}/permissions`);
+  },
+
+  async updateRolePermissions(roleId, permissionCodes = []) {
+    return apiClient.put(`/admin/access/roles/${encodeURIComponent(roleId)}/permissions`, {
+      permission_codes: permissionCodes,
+    });
+  },
+
+  async getUserOverrides(userId) {
+    return apiClient.get(`/admin/access/users/${encodeURIComponent(userId)}/overrides`);
+  },
+
+  async updateUserOverrides(userId, overrides = []) {
+    return apiClient.put(`/admin/access/users/${encodeURIComponent(userId)}/overrides`, {
+      overrides,
+    });
+  },
+
+  async getUserEffectivePermissions(userId) {
+    return apiClient.get(`/admin/access/users/${encodeURIComponent(userId)}/effective`);
+  },
+};
+
 export const usersAPI = {
   async search(q) {
     return apiClient.get('/admin/users/search', { q });

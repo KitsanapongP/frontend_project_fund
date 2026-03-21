@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI, passwordAPI, APIError, NetworkError } from '../lib/api';
+import { hasAdminPortalAccess } from '../lib/access_routing';
 
 export default function LoginPage() {
   const { login, isLoading, error, clearError, isAuthenticated, user } = useAuth();
@@ -59,6 +60,8 @@ export default function LoginPage() {
       return;
     }
 
+    const canAccessAdmin = hasAdminPortalAccess(user);
+
     // เธฃเธญเธเธฃเธฑเธ role เธ—เธฑเนเธเนเธเธ number/string เน€เธเนเธ 5 เธซเธฃเธทเธญ "5"
     const userRoleRaw = user.role_id ?? user.role;
     const userRole = typeof userRoleRaw === 'string' ? userRoleRaw.toLowerCase() : userRoleRaw;
@@ -78,12 +81,10 @@ export default function LoginPage() {
         userRole === 'dept_head'
       ) {
         router.replace('/member');
-      } else if (
-        userRole === 3 ||
-        userRoleNumber === 3 ||
-        userRole === 'admin'
-      ) {
-        router.replace('/admin/dashboard');
+      } else if (canAccessAdmin) {
+        router.replace('/admin');
+      } else if (userRole === 3 || userRoleNumber === 3 || userRole === 'admin') {
+        router.replace('/admin');
       } else if (
         userRole === 5 ||
         userRoleNumber === 5 ||
@@ -664,4 +665,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
