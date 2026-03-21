@@ -24,6 +24,7 @@ export default function LoginPage() {
   const { login, isLoading, error, clearError, isAuthenticated, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const ssoErrorCode = searchParams?.get('error') || '';
 
   const [formData, setFormData] = useState({
     email: '',
@@ -48,11 +49,27 @@ export default function LoginPage() {
 
   // Redirect if already authenticated - เนเธเนเนเธเนเธซเนเนเธเน Next.js router
   useEffect(() => {
+    if (ssoErrorCode) {
+      return;
+    }
+
     if (isAuthenticated && user && !redirecting) {
       setRedirecting(true);
       redirectBasedOnRole();
     }
-  }, [isAuthenticated, user, redirecting]);
+  }, [isAuthenticated, user, redirecting, ssoErrorCode]);
+
+  useEffect(() => {
+    if (!ssoErrorCode || typeof window === 'undefined') {
+      return;
+    }
+
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_data');
+    localStorage.removeItem('session_id');
+  }, [ssoErrorCode]);
 
   // เนเธเนเนเธเธเธฒเธฃ redirect เนเธซเนเนเธเน Next.js router เนเธฅเธฐเธ•เธฃเธงเธเธชเธญเธ role เนเธซเนเนเธกเนเธเธขเธณ
   const redirectBasedOnRole = () => {
@@ -265,8 +282,7 @@ export default function LoginPage() {
   }, [mode]);
 
   const ssoErrorMessage = useMemo(() => {
-    const ssoError = searchParams?.get('error');
-    if (!ssoError) {
+    if (!ssoErrorCode) {
       return '';
     }
 
@@ -274,10 +290,11 @@ export default function LoginPage() {
       sso_missing_code: 'ไม่พบรหัสยืนยันจาก KKU SSO กรุณาลองใหม่อีกครั้ง',
       sso_failed: 'เข้าสู่ระบบผ่าน KKU SSO ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
       sso_not_configured: 'ระบบยังไม่ได้ตั้งค่า KKU SSO สำหรับสภาพแวดล้อมนี้',
+      sso_user_not_allowed: 'บัญชีอีเมลนี้ยังไม่ได้รับสิทธิ์เข้าใช้งานระบบ กรุณาติดต่อผู้ดูแลระบบ',
     };
 
-    return messageMap[ssoError] || 'เกิดข้อผิดพลาดจาก KKU SSO';
-  }, [searchParams]);
+    return messageMap[ssoErrorCode] || 'เกิดข้อผิดพลาดจาก KKU SSO';
+  }, [ssoErrorCode]);
 
   useEffect(() => {
     const tokenParam = searchParams?.get('token');
