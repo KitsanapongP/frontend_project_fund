@@ -80,13 +80,33 @@ async function ensureLookupsLoaded() {
   }
 }
 
+const inferSubmissionTypeFromNumber = (submissionNumber) => {
+  const normalized = String(submissionNumber || "").trim().toUpperCase();
+  if (normalized.startsWith("PR")) return "publication_reward";
+  if (normalized.startsWith("FA")) return "fund_application";
+  return "";
+};
+
 /** ตัดสินใจเลือกคอมโพเนนต์รายละเอียดตาม submission_type */
-function pickDetailsComponentBySubmissionType(submissionType) {
-  const t = String(submissionType || "").toLowerCase();
+function pickDetailsComponentBySubmissionType(submissionType, submissionNumber) {
+  const normalizedType = String(submissionType || "").trim().toLowerCase();
+  const inferredType = inferSubmissionTypeFromNumber(submissionNumber);
+  const t = normalizedType || inferredType;
+
   if (t === "publication_reward") return "publication";
   if (t === "fund_application") return "general";
   // default -> general
   return "general";
+}
+
+function extractSubmissionTypeFromPayload(payload) {
+  const detailType = payload?.details?.type;
+  const submissionType = payload?.submission?.submission_type || payload?.submission_type;
+  const normalizedDetailType = String(detailType || "").trim().toLowerCase();
+  if (normalizedDetailType) return normalizedDetailType;
+  const normalizedSubmissionType = String(submissionType || "").trim().toLowerCase();
+  if (normalizedSubmissionType) return normalizedSubmissionType;
+  return "";
 }
 
 /** สร้างตารางจาก list+details (เติมชื่อผู้ยื่น/ประเภท/ทุนย่อยแบบ dynamic) */
@@ -164,6 +184,7 @@ async function hydrateRows(listRows, detailMap) {
 export default function DeptHeadReview() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [openingId, setOpeningId] = useState(null);
   const [error, setError] = useState(null);
 
   // โหมด “ดูรายละเอียด”
@@ -242,21 +263,44 @@ export default function DeptHeadReview() {
         accessor: "actions",
         render: (_, row) => (
           <button
-            onClick={() => {
+            onClick={async () => {
               const sid =
                 row.raw?.submission_id ??
                 row.raw?.SubmissionID ??
                 row.id;
+              const fallbackType =
+                row.raw?.submission_type ||
+                row.raw?.SubmissionType ||
+                row.submission_type;
+
+              let payloadType = "";
+              setOpeningId(sid);
+              try {
+                const detailPayload = await deptHeadAPI.getSubmissionDetails(sid);
+                payloadType = extractSubmissionTypeFromPayload(detailPayload);
+              } catch (e) {
+                payloadType = "";
+              } finally {
+                setOpeningId(null);
+              }
+
               setViewing({
                 id: sid,
                 submission_number: row.submission_number,
-                submission_type: row.submission_type,
+                submission_type: payloadType || fallbackType,
               });
             }}
+            disabled={openingId === (row.raw?.submission_id ?? row.raw?.SubmissionID ?? row.id)}
             className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
           >
-            <Eye size={16} />
-            ดูรายละเอียด
+            {openingId === (row.raw?.submission_id ?? row.raw?.SubmissionID ?? row.id) ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Eye size={16} />
+            )}
+            {openingId === (row.raw?.submission_id ?? row.raw?.SubmissionID ?? row.id)
+              ? 'กำลังเปิด...'
+              : 'ดูรายละเอียด'}
           </button>
         ),
       },
@@ -274,7 +318,10 @@ export default function DeptHeadReview() {
       load();
     };
 
-    const which = pickDetailsComponentBySubmissionType(viewing.submission_type);
+    const which = pickDetailsComponentBySubmissionType(
+      viewing.submission_type,
+      viewing.submission_number
+    );
     if (which === "publication") {
       return (
         <PublicationSubmissionDetailsDept
