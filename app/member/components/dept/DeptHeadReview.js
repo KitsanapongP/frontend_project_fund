@@ -8,10 +8,10 @@ import DataTable from "../common/DataTable";
 import StatusBadge from "../common/StatusBadge";
 import { deptHeadAPI } from "@/app/lib/dept_head_api";
 
-// ใช้ lookups แบบเดียวกับ Admin
+// Reuse the same lookup APIs used by the admin page
 import defaultAdminApis, { commonAPI } from "@/app/lib/admin_submission_api";
 
-// หน้ารายละเอียด (Dept เวอร์ชัน)
+// Detail pages for department-head workflow
 import PublicationSubmissionDetailsDept from "./details/PublicationSubmissionDetailsDept";
 import GeneralSubmissionDetailsDept from "./details/GeneralSubmissionDetailsDept";
 
@@ -49,7 +49,7 @@ async function fetchDetailsForRows(rows, { concurrency = 6 } = {}) {
   return results;
 }
 
-/** --- bulk lookups (cached) จาก commonAPI.getCategories / getSubcategories --- */
+/** --- cached lookup maps from commonAPI categories/subcategories --- */
 const _catMap = new Map();
 const _subMap = new Map();
 let _lookupsLoaded = false;
@@ -87,7 +87,7 @@ const inferSubmissionTypeFromNumber = (submissionNumber) => {
   return "";
 };
 
-/** ตัดสินใจเลือกคอมโพเนนต์รายละเอียดตาม submission_type */
+/** Pick the detail component based on submission type. */
 function pickDetailsComponentBySubmissionType(submissionType, submissionNumber) {
   const normalizedType = String(submissionType || "").trim().toLowerCase();
   const inferredType = inferSubmissionTypeFromNumber(submissionNumber);
@@ -95,7 +95,7 @@ function pickDetailsComponentBySubmissionType(submissionType, submissionNumber) 
 
   if (t === "publication_reward") return "publication";
   if (t === "fund_application") return "general";
-  // default -> general
+  // Fallback to general details view
   return "general";
 }
 
@@ -109,12 +109,12 @@ function extractSubmissionTypeFromPayload(payload) {
   return "";
 }
 
-/** สร้างตารางจาก list+details (เติมชื่อผู้ยื่น/ประเภท/ทุนย่อยแบบ dynamic) */
+/** Build normalized rows by combining list data with detail payloads. */
 async function hydrateRows(listRows, detailMap) {
   await ensureLookupsLoaded();
 
   const out = await Promise.all((listRows || []).map(async (item) => {
-    // ต้องประกาศ sub ก่อน แล้วค่อยคำนวณ id ที่เชื่อถือได้
+    // Build a stable id using detail payload first, then list item
     const tentativeId = item?.submission_id ?? item?.id;
     const detail = detailMap?.get(tentativeId);
     const sub = detail?.submission || item;
@@ -124,7 +124,7 @@ async function hydrateRows(listRows, detailMap) {
       sub?.id ??
       item?.id;
 
-    // ผู้ยื่น: ดึงจาก submission_users (owner > applicant > รายการแรก) หาก sub.user ไม่มี
+    // Resolve applicant from submission_users when sub.user is missing
     const users = detail?.submission_users || [];
     const owner = users.find(u => u?.role === "owner" && u?.is_primary) || users.find(u => u?.role === "owner");
     const applicantRole = users.find(u => u?.role === "applicant");
@@ -136,7 +136,7 @@ async function hydrateRows(listRows, detailMap) {
       item.applicant_name ||
       "-";
 
-    // ประเภท/ทุนย่อย: ใช้ชื่อจาก lookups ที่โหลดมา (ถ้า detail มีชื่อก็ใช้ก่อน)
+    // Resolve category/subcategory labels from details first, then lookup maps
     const catId = String(sub?.category_id ?? item?.category_id ?? "");
     const subId = String(sub?.subcategory_id ?? item?.subcategory_id ?? "");
     const catName =
@@ -148,7 +148,7 @@ async function hydrateRows(listRows, detailMap) {
       item.subcategory_name || item.subcategory?.subcategory_name ||
       (_subMap.get(subId) || "-");
 
-    // สถานะ: ใช้ชื่อจาก backend; ถ้าไม่มีก็แสดง code เป็น fallback
+    // Use backend status label; fall back to status code when needed
     const code = String(
       sub?.status?.status_code ??
       sub?.status_code ??
@@ -187,7 +187,7 @@ export default function DeptHeadReview() {
   const [openingId, setOpeningId] = useState(null);
   const [error, setError] = useState(null);
 
-  // โหมด “ดูรายละเอียด”
+  // Detail mode state
   const [viewing, setViewing] = useState(null); // { id, submission_number, submission_type }
 
   const load = async () => {
@@ -195,7 +195,7 @@ export default function DeptHeadReview() {
       setLoading(true);
       setError(null);
 
-      // ใช้ /submissions?status_code=5
+      // Load pending review submissions
       const listRes = await deptHeadAPI.getPendingReviews({ status_code: "5" });
       const listRows = listRes?.submissions || listRes?.data || [];
 
@@ -233,7 +233,7 @@ export default function DeptHeadReview() {
       {
         header: "หมวด/ทุนย่อย",
         accessor: "subcategory",
-        // ตัดชื่อยาวด้วย … และโชว์เต็มใน title
+        // Truncate long text but keep full value in title
         render: (value) => (
           <span
             className="block max-w-[18rem] md:max-w-[28rem] truncate"
@@ -308,11 +308,11 @@ export default function DeptHeadReview() {
     []
   );
 
-  // แสดงหน้า details ตาม submission_type
+  // Render the correct details screen by submission type
   const renderViewer = () => {
     if (!viewing) return null;
 
-    // onBack: ปิด viewer และรีเฟรชรายการทันที
+    // Close detail view and refresh list
     const handleBack = () => {
       setViewing(null);
       load();
@@ -338,7 +338,7 @@ export default function DeptHeadReview() {
     );
   };
 
-  // ถ้าเปิดดูรายละเอียด ให้เรนเดอร์หน้า details แทนตาราง
+  // Show detail view instead of the table when a row is selected
   if (viewing) {
     return renderViewer();
   }

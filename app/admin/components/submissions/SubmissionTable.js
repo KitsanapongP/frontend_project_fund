@@ -51,7 +51,7 @@ export default function SubmissionTable({
     );
   };
 
-  // ---- Name helpers (keep your fixed columns intact) ----
+  // ---- Name helpers for fixed table columns ----
   const getCategoryName = (s) =>
     s?.Category?.category_name ||
     (s?.category_id != null ? catMap[String(s.category_id)] : undefined) ||
@@ -88,14 +88,14 @@ export default function SubmissionTable({
   const getArticleTitle = (s) => {
     const dpo = getDPO(s);
 
-    // 1) ถ้าเป็น Fund Application ให้ใช้ชื่อโครงการก่อน
+    // 1) For fund applications, prefer project title first
     const faTitle =
       s?.FundApplicationDetail?.project_title ||
       dpo?.FundApplicationDetail?.project_title ||
       dpo?.project_title;
     if (faTitle) return faTitle;
 
-    // 2) งานตีพิมพ์: รองรับได้ทั้งอยู่ใน PublicationRewardDetail และอยู่แบน ๆ ใน dpo
+    // 2) For publication rewards, support both nested and flat payload shapes
     const pr =
       s?.PublicationRewardDetail ||
       dpo?.PublicationRewardDetail ||
@@ -122,7 +122,7 @@ export default function SubmissionTable({
   };
 
 
-  // รองรับทั้ง snake_case, camelCase, PascalCase
+  // Support snake_case, camelCase, and PascalCase user fields
   const pickNameFromUserObj = (u) => {
     if (!u || typeof u !== 'object') return '';
     const display =
@@ -141,14 +141,14 @@ export default function SubmissionTable({
     return name || email || username;
   };
 
-  // REPLACE this entire function in SubmissionTable.js
+  // Resolve applicant name from row, detail payload, and fallback maps
   const getAuthorName = (s) => {
-    // 1) จากแถวที่ join มาโดยตรง (backend ให้ User/user/applicant มา)
+    // 1) Read directly from joined row user objects
     const uRow = s?.User || s?.user || s?.applicant;
     const rowName = pickNameFromUserObj(uRow);
     if (rowName) return rowName;
 
-    // 2) จากรายละเอียดที่โหลดเฉพาะแถว (detailsMap)
+    // 2) Fall back to row-specific detail payload (detailsMap)
     const dp  = getDP(s);
     const dpo = getDPO(s);
     const uDetails =
@@ -158,10 +158,10 @@ export default function SubmissionTable({
     const nameFromDetails = pickNameFromUserObj(uDetails);
     if (nameFromDetails) return nameFromDetails;
 
-    // 3) จาก userMap (key = submissions.user_id) ที่ parent เตรียมไว้
+    // 3) Fall back to userMap prepared by parent (keyed by submissions.user_id)
     if (s?.user_id && userMap[String(s.user_id)]) return userMap[String(s.user_id)];
 
-    // 4) flat fields เผื่อ backend ยิงแบน ๆ มา
+    // 4) Handle fully flat fields from backend responses
     const flat = pickNameFromUserObj({
       user_fname: s.user_fname, user_lname: s.user_lname,
       email: s.email || s.user_email,
@@ -169,12 +169,12 @@ export default function SubmissionTable({
     });
     if (flat) return flat;
 
-    // 5) สุดท้ายจริง ๆ ก็ไม่แสดงเป็น ID แล้ว
+    // 5) Final fallback: keep text readable instead of showing raw IDs
     return 'ไม่ระบุผู้ยื่น';
   };
 
   const getAmount = (s) => {
-    // 1) Publication Reward: คำนวณเหมือนเดิม
+    // 1) Publication reward: derive total from detail fields
     const pr = getPRDetail(s);
     if (pr) {
       const total =
@@ -187,12 +187,12 @@ export default function SubmissionTable({
       return isFinite(n) ? n : 0;
     }
 
-    // 2) Fund Application (& อื่นๆ): แสดง "requested" เสมอ ไม่ใช้ approved
+    // 2) Fund application (and others): always show requested amount
     const dpo = getDPO(s) || {};
     const fa =
       s?.FundApplicationDetail ||
       dpo?.FundApplicationDetail ||
-      // ถ้า payload แบน ๆ และมี requested_amount / project_title ให้ถือเป็น FA detail
+      // Treat flat payload with requested_amount/project_title as FA detail
       (dpo && (dpo.requested_amount != null || dpo.project_title != null) ? dpo : null);
 
     const requested = Number(
@@ -238,7 +238,7 @@ export default function SubmissionTable({
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            {/* เลขที่คำร้อง (sortable) */}
+            {/* Request number (sortable) */}
             <th
               scope="col"
               className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -250,32 +250,32 @@ export default function SubmissionTable({
               </div>
             </th>
 
-            {/* หมวดทุน */}
+            {/* Fund category */}
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               หมวดทุน
             </th>
 
-            {/* ประเภททุน */}
+            {/* Fund subcategory */}
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               ประเภททุน
             </th>
 
-            {/* ชื่อบทความ */}
+            {/* Article or project title */}
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               ชื่อบทความ
             </th>
 
-            {/* ผู้ยื่น */}
+            {/* Applicant */}
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               ผู้ยื่น
             </th>
 
-            {/* จำนวนเงิน */}
+            {/* Amount */}
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               จำนวนเงิน
             </th>
 
-            {/* สถานะ (sortable) */}
+            {/* Status (sortable) */}
             <th
               scope="col"
               className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -287,7 +287,7 @@ export default function SubmissionTable({
               </div>
             </th>
 
-            {/* วันที่ส่งคำร้อง (sortable) */}
+            {/* Submission date (sortable) */}
             <th
               scope="col"
               className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -299,7 +299,7 @@ export default function SubmissionTable({
               </div>
             </th>
 
-            {/* การดำเนินการ */}
+            {/* Actions */}
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               จัดการ
             </th>
@@ -316,41 +316,41 @@ export default function SubmissionTable({
             const author = getAuthorName(s);
             return (
               <tr key={makeRowKey(s)} className="hover:bg-gray-50 transition-colors duration-150">
-                {/* เลขที่คำร้อง */}
+                {/* Request number */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {s.submission_number || s.id || '-'}
                 </td>
 
-                {/* หมวดทุน */}
+                {/* Fund category */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {catName}
                 </td>
 
-                {/* ประเภททุน */}
+                {/* Fund subcategory */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   <span className="block max-w-[260px] truncate" title={subName}>
                     {subName}
                   </span>
                 </td>
 
-                {/* ชื่อบทความ */}
+                {/* Article or project title */}
                 <td className="px-6 py-4 text-sm text-gray-700">
                   <span title={articleTitle} className="line-clamp-2">
                     {articleTitle}
                   </span>
                 </td>
 
-                {/* ผู้ยื่น */}
+                {/* Applicant */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {author || 'ไม่ระบุผู้ยื่น'}
                 </td>
 
-                {/* จำนวนเงิน */}
+                {/* Amount */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {formatCurrency(amount)}
                 </td>
 
-                {/* สถานะ */}
+                {/* Status */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <StatusBadge
                     statusId={s.status_id}
@@ -358,12 +358,12 @@ export default function SubmissionTable({
                   />
                 </td>
 
-                {/* วันที่ส่งคำร้อง */}
+                {/* Submission date */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {formatDate(getDisplayDate(s))}
                 </td>
 
-                {/* การดำเนินการ */}
+                {/* Actions */}
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end">
                     <button
