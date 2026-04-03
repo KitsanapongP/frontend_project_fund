@@ -1240,7 +1240,7 @@ const FileUpload = ({
             <FileText className="mt-0.5 h-5 w-5 text-green-600" />
             <div>
               <p className="text-sm font-medium text-green-800">{file.name}</p>
-              <p className="text-xs text-green-700">{(file.size / 1024 / 1024).toFixed(2)} MB • ไฟล์ใหม่ (รออัปโหลด)</p>
+              <p className="text-xs text-green-700">{(file.size / 1024 / 1024).toFixed(2)} MB • ไฟล์ใหม่</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -7920,6 +7920,9 @@ const showSubmissionConfirmation = async () => {
                                       <p className="mt-1 text-xs text-gray-500">
                                         โปรดระบุชื่อแหล่งทุนและแนบไฟล์หลักฐานเป็น PDF
                                       </p>
+                                      <p className="mt-1 text-xs text-amber-700">
+                                        ไฟล์หลักฐานจะถูกเก็บไว้บนเซิร์ฟเวอร์เมื่อกดบันทึกร่างหรือส่งคำร้องเท่านั้น
+                                      </p>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-2">
                                       <label
@@ -7961,7 +7964,7 @@ const showSubmissionConfirmation = async () => {
                                       <div className="flex items-center gap-2">
                                         <FileText className="h-3 w-3" />
                                         <span>{funding.file.name}</span>
-                                        <span className="font-semibold text-green-600">ไฟล์ใหม่ (รออัปโหลด)</span>
+                                        <span className="font-semibold text-green-600">ไฟล์ใหม่</span>
                                       </div>
                                       <div className="flex items-center gap-2">
                                         <button
@@ -8185,6 +8188,13 @@ const showSubmissionConfirmation = async () => {
         // ================================================================= */}
         <SimpleCard title="เอกสารแนบ (File Attachments)" icon={Upload} id="file-attachments-section">
           <div className="space-y-6">
+            <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800">
+              <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <p className="text-sm leading-relaxed">
+                ไฟล์ที่แนบจะถูกเก็บไว้บนเซิร์ฟเวอร์เมื่อกด <span className="font-semibold">บันทึกร่าง</span> หรือ <span className="font-semibold">ส่งคำร้อง</span> เท่านั้น
+              </p>
+            </div>
+
             {/* Document types */}
             {documentTypes && documentTypes.length > 0 ? (
               <>
