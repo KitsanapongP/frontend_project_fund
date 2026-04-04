@@ -64,6 +64,11 @@ const BY_USER_DETAILS_COLUMNS = [
   { key: "affiliationCountry", header: "country", width: 18 },
   { key: "affiliationUrl", header: "affiliation_url", width: 34 },
   { key: "affiliationsJson", header: "affiliations_json", width: 48 },
+  { key: "userAffiliationAfid", header: "user_affiliation_afid", width: 24 },
+  { key: "userAffiliationName", header: "user_affiliation_name", width: 36 },
+  { key: "userAffiliationCity", header: "user_affiliation_city", width: 24 },
+  { key: "userAffiliationCountry", header: "user_affiliation_country", width: 24 },
+  { key: "userAffiliationUrl", header: "user_affiliation_url", width: 36 },
   { key: "doi", header: "doi", width: 24 },
   { key: "citedBy", header: "citedby_count", width: 14 },
   { key: "citeScorePercentile", header: "cite_score_percentile", width: 18 },
@@ -85,6 +90,15 @@ const resolveAffiliationExportFields = (item) => ({
   affiliationCountry: item?.affiliation_country || item?.affiliationCountry || "",
   affiliationUrl: item?.affiliation_url || item?.affiliationUrl || "",
   affiliationsJson: item?.affiliations_json || item?.affiliationsJson || "",
+});
+
+const resolveUserAffiliationExportFields = (item) => ({
+  userAffiliationAfid: item?.user_affiliation_afid || item?.userAffiliationAfid || "",
+  userAffiliationName: item?.user_affiliation_name || item?.userAffiliationName || "",
+  userAffiliationCity: item?.user_affiliation_city || item?.userAffiliationCity || "",
+  userAffiliationCountry:
+    item?.user_affiliation_country || item?.userAffiliationCountry || "",
+  userAffiliationUrl: item?.user_affiliation_url || item?.userAffiliationUrl || "",
 });
 
 const resolveJournalTierBucket = (percentile) => {
@@ -327,6 +341,7 @@ export default function AdminScopusResearchSearch() {
       title: item?.title || "",
       publicationName: item?.publication_name || item?.venue || "",
       ...resolveAffiliationExportFields(item),
+      ...resolveUserAffiliationExportFields(item),
       doi: item?.doi || "",
       citedBy: item?.cited_by ?? "",
       citeScorePercentile: item?.cite_score_percentile ?? "",
