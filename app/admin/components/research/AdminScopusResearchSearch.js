@@ -39,6 +39,7 @@ const EXPORT_COLUMNS = [
   { key: "citeScoreStatus", header: "cite_score_status", width: 18 },
   { key: "citeScoreRank", header: "cite_score_rank", width: 14 },
   { key: "citeScorePercentile", header: "cite_score_percentile", width: 16 },
+  { key: "journalTierBucket", header: "journal_tier_bucket", width: 16 },
   { key: "citeScoreQuartile", header: "cite_score_quartile", width: 16 },
   { key: "year", header: "publication_year", width: 12 },
   { key: "eid", header: "eid", width: 22 },
@@ -65,8 +66,9 @@ const BY_USER_DETAILS_COLUMNS = [
   { key: "affiliationsJson", header: "affiliations_json", width: 48 },
   { key: "doi", header: "doi", width: 24 },
   { key: "citedBy", header: "citedby_count", width: 14 },
-  { key: "citeScoreQuartile", header: "cite_score_quartile", width: 16 },
   { key: "citeScorePercentile", header: "cite_score_percentile", width: 18 },
+  { key: "journalTierBucket", header: "journal_tier_bucket", width: 16 },
+  { key: "citeScoreQuartile", header: "cite_score_quartile", width: 16 },
   { key: "citeScoreStatus", header: "cite_score_status", width: 18 },
   { key: "documentId", header: "document_id", width: 14 },
 ];
@@ -84,6 +86,17 @@ const resolveAffiliationExportFields = (item) => ({
   affiliationUrl: item?.affiliation_url || item?.affiliationUrl || "",
   affiliationsJson: item?.affiliations_json || item?.affiliationsJson || "",
 });
+
+const resolveJournalTierBucket = (percentile) => {
+  if (percentile === null || percentile === undefined || percentile === "") return "";
+  const value = Number(percentile);
+  if (!Number.isFinite(value) || value <= 0) return "";
+  if (value >= 90) return "T1";
+  if (value >= 75) return "Q1";
+  if (value >= 50) return "Q2";
+  if (value >= 25) return "Q3";
+  return "Q4";
+};
 
 export default function AdminScopusResearchSearch() {
   const { user, hasPermission } = useAuth();
@@ -273,6 +286,7 @@ export default function AdminScopusResearchSearch() {
         citeScoreRank: citeScoreMetrics?.rank ?? "",
         citeScorePercentile:
           citeScoreMetrics?.percentile ?? "",
+        journalTierBucket: resolveJournalTierBucket(citeScoreMetrics?.percentile),
         citeScoreQuartile:
           (citeScoreMetrics?.quartile || "")?.toUpperCase(),
         year: pub.publication_year || coverYear,
@@ -315,8 +329,9 @@ export default function AdminScopusResearchSearch() {
       ...resolveAffiliationExportFields(item),
       doi: item?.doi || "",
       citedBy: item?.cited_by ?? "",
-      citeScoreQuartile: (item?.cite_score_quartile || "")?.toUpperCase(),
       citeScorePercentile: item?.cite_score_percentile ?? "",
+      journalTierBucket: resolveJournalTierBucket(item?.cite_score_percentile),
+      citeScoreQuartile: (item?.cite_score_quartile || "")?.toUpperCase(),
       citeScoreStatus: item?.cite_score_status || "",
       documentId,
       _userKey: `${userId}`,
