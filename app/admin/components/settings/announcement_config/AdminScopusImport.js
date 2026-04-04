@@ -243,7 +243,11 @@ export default function AdminScopusImport() {
 
   const disableManualActions = manualBusy || batchRunning;
   const disableSearchButton = !userQuery.trim() || searching || disableManualActions;
-  const disableBatchButton = batchRunning || manualBusy;
+  const hasBatchRunRunning = useMemo(
+    () => batchRuns.some((run) => isRunningStatus(run?.status)),
+    [batchRuns]
+  );
+  const disableBatchButton = batchRunning || manualBusy || hasBatchRunRunning;
   const disableBackfillButton = metricsBackfillRunning || hasMetricsRunRunning;
   const disableRefreshButton = metricsRefreshRunning || hasMetricsRunRunning;
 
@@ -663,7 +667,7 @@ export default function AdminScopusImport() {
       }
       const summary = await publicationsAPI.importScopusBatch(payload);
       setLastBatchSummary(summary);
-      setMsg("สั่งรัน Batch Import สำเร็จ");
+      setMsg("เริ่มรัน Batch Import แล้ว ติดตามผลได้จากประวัติการรัน");
       setMsgTone("success");
       fetchBatchRuns(1);
     } catch (error) {
