@@ -95,6 +95,11 @@ function StatusBadge({ status }) {
   );
 }
 
+function isRunningStatus(status) {
+  const normalized = (status || "").toLowerCase();
+  return ["running", "in_progress", "in-progress"].includes(normalized);
+}
+
 function maskApiKey(value) {
   const normalized = (value || "").trim();
   if (!normalized) return "-";
@@ -228,11 +233,19 @@ export default function AdminScopusImport() {
     [jobs, selectedJobId]
   );
 
+  const hasMetricsRunRunning = useMemo(
+    () =>
+      [...metricHistory.refresh.runs, ...metricHistory.backfill.runs].some((run) =>
+        isRunningStatus(run?.status)
+      ),
+    [metricHistory.refresh.runs, metricHistory.backfill.runs]
+  );
+
   const disableManualActions = manualBusy || batchRunning;
   const disableSearchButton = !userQuery.trim() || searching || disableManualActions;
   const disableBatchButton = batchRunning || manualBusy;
-  const disableBackfillButton = metricsBackfillRunning;
-  const disableRefreshButton = metricsRefreshRunning;
+  const disableBackfillButton = metricsBackfillRunning || hasMetricsRunRunning;
+  const disableRefreshButton = metricsRefreshRunning || hasMetricsRunRunning;
 
   const refreshLatest = useMemo(
     () => lastMetricsRefreshSummary || metricHistory.refresh.runs[0] || null,
@@ -667,7 +680,7 @@ export default function AdminScopusImport() {
     try {
       const summary = await scopusConfigAPI.backfillMetrics();
       setLastMetricsBackfillSummary(summary);
-      setMsg("ดึง CiteScore metrics สำหรับวารสารที่มีอยู่แล้วสำเร็จ");
+      setMsg("เริ่มสแกนวารสารแล้ว ติดตามสถานะได้จากประวัติการสแกน");
       setMsgTone("success");
       fetchMetricRuns("backfill", 1);
     } catch (error) {
@@ -683,7 +696,7 @@ export default function AdminScopusImport() {
     setMsg("");
     try {
       await scopusConfigAPI.refreshMetrics();
-      setMsg("CiteScore metrics updated successfully.");
+      setMsg("เริ่มอัปเดต CiteScore metrics แล้ว ติดตามผลได้จากประวัติการรัน");
       setMsgTone("success");
       fetchMetricRuns("refresh", 1);
     } catch (error) {
