@@ -18,6 +18,12 @@ const EXPORT_COLUMNS = [
   { key: "aggregationType", header: "aggregation_type", width: 18 },
   { key: "sourceId", header: "source_id", width: 18 },
   { key: "publicationName", header: "publication_name", width: 36 },
+  { key: "affiliationAfid", header: "afid", width: 22 },
+  { key: "affiliationName", header: "name", width: 34 },
+  { key: "affiliationCity", header: "city", width: 18 },
+  { key: "affiliationCountry", header: "country", width: 18 },
+  { key: "affiliationUrl", header: "affiliation_url", width: 34 },
+  { key: "affiliationsJson", header: "affiliations_json", width: 48 },
   { key: "issn", header: "issn", width: 18 },
   { key: "eissn", header: "eissn", width: 18 },
   { key: "isbn", header: "isbn", width: 18 },
@@ -51,6 +57,12 @@ const BY_USER_DETAILS_COLUMNS = [
   { key: "scopusId", header: "scopus_id", width: 14 },
   { key: "title", header: "title", width: 56 },
   { key: "publicationName", header: "publication_name", width: 34 },
+  { key: "affiliationAfid", header: "afid", width: 22 },
+  { key: "affiliationName", header: "name", width: 34 },
+  { key: "affiliationCity", header: "city", width: 18 },
+  { key: "affiliationCountry", header: "country", width: 18 },
+  { key: "affiliationUrl", header: "affiliation_url", width: 34 },
+  { key: "affiliationsJson", header: "affiliations_json", width: 48 },
   { key: "doi", header: "doi", width: 24 },
   { key: "citedBy", header: "citedby_count", width: 14 },
   { key: "citeScoreQuartile", header: "cite_score_quartile", width: 16 },
@@ -58,6 +70,15 @@ const BY_USER_DETAILS_COLUMNS = [
   { key: "citeScoreStatus", header: "cite_score_status", width: 18 },
   { key: "documentId", header: "document_id", width: 14 },
 ];
+
+const resolveAffiliationExportFields = (item) => ({
+  affiliationAfid: item?.affiliation_afid || item?.affiliationAfid || "",
+  affiliationName: item?.affiliation_name || item?.affiliationName || "",
+  affiliationCity: item?.affiliation_city || item?.affiliationCity || "",
+  affiliationCountry: item?.affiliation_country || item?.affiliationCountry || "",
+  affiliationUrl: item?.affiliation_url || item?.affiliationUrl || "",
+  affiliationsJson: item?.affiliations_json || item?.affiliationsJson || "",
+});
 
 export default function AdminScopusResearchSearch() {
   const { user, hasPermission } = useAuth();
@@ -229,6 +250,7 @@ export default function AdminScopusResearchSearch() {
         aggregationType: pub.aggregation_type || "",
         sourceId: pub.source_id || "",
         publicationName: pub.publication_name || pub.venue || "",
+        ...resolveAffiliationExportFields(pub),
         issn: pub.issn || "",
         eissn: pub.eissn || "",
         isbn: pub.isbn || "",
@@ -439,6 +461,7 @@ export default function AdminScopusResearchSearch() {
             scopusId: item?.scopus_id || "",
             title: item?.title || "",
             publicationName: item?.publication_name || item?.venue || "",
+            ...resolveAffiliationExportFields(item),
             doi: item?.doi || "",
             citedBy: item?.cited_by ?? "",
             citeScoreQuartile: (item?.cite_score_quartile || "")?.toUpperCase(),
@@ -563,6 +586,7 @@ export default function AdminScopusResearchSearch() {
             scopusId: item?.scopus_id || "",
             title: item?.title || "",
             publicationName: item?.publication_name || "",
+            ...resolveAffiliationExportFields(item),
             doi: item?.doi || "",
             citedBy: item?.cited_by ?? "",
             citeScoreQuartile: (item?.cite_score_quartile || "")?.toUpperCase(),
