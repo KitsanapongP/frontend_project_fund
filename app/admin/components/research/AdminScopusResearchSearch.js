@@ -18,6 +18,12 @@ const EXPORT_COLUMNS = [
   { key: "aggregationType", header: "aggregation_type", width: 18 },
   { key: "sourceId", header: "source_id", width: 18 },
   { key: "publicationName", header: "publication_name", width: 36 },
+  { key: "affiliationAfid", header: "afid", width: 22 },
+  { key: "affiliationName", header: "name", width: 34 },
+  { key: "affiliationCity", header: "city", width: 18 },
+  { key: "affiliationCountry", header: "country", width: 18 },
+  { key: "affiliationUrl", header: "affiliation_url", width: 34 },
+  { key: "affiliationsJson", header: "affiliations_json", width: 48 },
   { key: "issn", header: "issn", width: 18 },
   { key: "eissn", header: "eissn", width: 18 },
   { key: "isbn", header: "isbn", width: 18 },
@@ -33,6 +39,7 @@ const EXPORT_COLUMNS = [
   { key: "citeScoreStatus", header: "cite_score_status", width: 18 },
   { key: "citeScoreRank", header: "cite_score_rank", width: 14 },
   { key: "citeScorePercentile", header: "cite_score_percentile", width: 16 },
+  { key: "journalTierBucket", header: "journal_tier_bucket", width: 16 },
   { key: "citeScoreQuartile", header: "cite_score_quartile", width: 16 },
   { key: "year", header: "publication_year", width: 12 },
   { key: "eid", header: "eid", width: 22 },
@@ -51,13 +58,59 @@ const BY_USER_DETAILS_COLUMNS = [
   { key: "scopusId", header: "scopus_id", width: 14 },
   { key: "title", header: "title", width: 56 },
   { key: "publicationName", header: "publication_name", width: 34 },
+  { key: "affiliationAfid", header: "afid", width: 22 },
+  { key: "affiliationName", header: "name", width: 34 },
+  { key: "affiliationCity", header: "city", width: 18 },
+  { key: "affiliationCountry", header: "country", width: 18 },
+  { key: "affiliationUrl", header: "affiliation_url", width: 34 },
+  { key: "affiliationsJson", header: "affiliations_json", width: 48 },
+  { key: "userAffiliationAfid", header: "user_affiliation_afid", width: 24 },
+  { key: "userAffiliationName", header: "user_affiliation_name", width: 36 },
+  { key: "userAffiliationCity", header: "user_affiliation_city", width: 24 },
+  { key: "userAffiliationCountry", header: "user_affiliation_country", width: 24 },
+  { key: "userAffiliationUrl", header: "user_affiliation_url", width: 36 },
   { key: "doi", header: "doi", width: 24 },
   { key: "citedBy", header: "citedby_count", width: 14 },
-  { key: "citeScoreQuartile", header: "cite_score_quartile", width: 16 },
   { key: "citeScorePercentile", header: "cite_score_percentile", width: 18 },
+  { key: "journalTierBucket", header: "journal_tier_bucket", width: 16 },
+  { key: "citeScoreQuartile", header: "cite_score_quartile", width: 16 },
   { key: "citeScoreStatus", header: "cite_score_status", width: 18 },
   { key: "documentId", header: "document_id", width: 14 },
 ];
+
+const COMBINED_META_COLUMNS = [
+  { key: "key", header: "key", width: 24 },
+  { key: "value", header: "value", width: 72 },
+];
+
+const resolveAffiliationExportFields = (item) => ({
+  affiliationAfid: item?.affiliation_afid || item?.affiliationAfid || "",
+  affiliationName: item?.affiliation_name || item?.affiliationName || "",
+  affiliationCity: item?.affiliation_city || item?.affiliationCity || "",
+  affiliationCountry: item?.affiliation_country || item?.affiliationCountry || "",
+  affiliationUrl: item?.affiliation_url || item?.affiliationUrl || "",
+  affiliationsJson: item?.affiliations_json || item?.affiliationsJson || "",
+});
+
+const resolveUserAffiliationExportFields = (item) => ({
+  userAffiliationAfid: item?.user_affiliation_afid || item?.userAffiliationAfid || "",
+  userAffiliationName: item?.user_affiliation_name || item?.userAffiliationName || "",
+  userAffiliationCity: item?.user_affiliation_city || item?.userAffiliationCity || "",
+  userAffiliationCountry:
+    item?.user_affiliation_country || item?.userAffiliationCountry || "",
+  userAffiliationUrl: item?.user_affiliation_url || item?.userAffiliationUrl || "",
+});
+
+const resolveJournalTierBucket = (percentile) => {
+  if (percentile === null || percentile === undefined || percentile === "") return "";
+  const value = Number(percentile);
+  if (!Number.isFinite(value) || value <= 0) return "";
+  if (value >= 90) return "T1";
+  if (value >= 75) return "Q1";
+  if (value >= 50) return "Q2";
+  if (value >= 25) return "Q3";
+  return "Q4";
+};
 
 export default function AdminScopusResearchSearch() {
   const { user, hasPermission } = useAuth();
@@ -68,6 +121,7 @@ export default function AdminScopusResearchSearch() {
   const [pubError, setPubError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportingByUser, setExportingByUser] = useState(false);
+  const [exportingCombined, setExportingCombined] = useState(false);
   const [exportScope, setExportScope] = useState("filtered");
 
   const fetchPublications = useCallback(
@@ -229,6 +283,7 @@ export default function AdminScopusResearchSearch() {
         aggregationType: pub.aggregation_type || "",
         sourceId: pub.source_id || "",
         publicationName: pub.publication_name || pub.venue || "",
+        ...resolveAffiliationExportFields(pub),
         issn: pub.issn || "",
         eissn: pub.eissn || "",
         isbn: pub.isbn || "",
@@ -245,6 +300,7 @@ export default function AdminScopusResearchSearch() {
         citeScoreRank: citeScoreMetrics?.rank ?? "",
         citeScorePercentile:
           citeScoreMetrics?.percentile ?? "",
+        journalTierBucket: resolveJournalTierBucket(citeScoreMetrics?.percentile),
         citeScoreQuartile:
           (citeScoreMetrics?.quartile || "")?.toUpperCase(),
         year: pub.publication_year || coverYear,
@@ -265,17 +321,45 @@ export default function AdminScopusResearchSearch() {
   const canExportByUser = hasPermissionSnapshot
     ? hasPermission("scopus.publications.export_by_user")
     : isAdmin;
+  const canExportCombined = canExport && canExportByUser;
 
-  const downloadByUserWorkbook = useCallback((detailRows) => {
-    if (!Array.isArray(detailRows) || detailRows.length === 0) {
-      toast.error("ไม่พบข้อมูลงานวิจัยสำหรับส่งออก");
-      return false;
-    }
+  const buildByUserDetailRow = useCallback((item, context = {}) => {
+    const coverDate = item?.cover_date ? new Date(item.cover_date) : null;
+    const yearValue =
+      item?.publication_year ||
+      (coverDate && !Number.isNaN(coverDate.getTime()) ? coverDate.getFullYear() : "");
+    const userId = context.userId ?? item?.user_id ?? "";
+    const documentId = item?.document_id || item?.id || item?.scopus_id || item?.eid || "";
+    return {
+      userId,
+      userName: context.userName ?? item?.user_name ?? "",
+      userEmail: context.userEmail ?? item?.user_email ?? "",
+      userScopusId: context.userScopusId ?? item?.user_scopus_id ?? "",
+      year: yearValue,
+      eid: item?.eid || "",
+      scopusId: item?.scopus_id || "",
+      title: item?.title || "",
+      publicationName: item?.publication_name || item?.venue || "",
+      ...resolveAffiliationExportFields(item),
+      ...resolveUserAffiliationExportFields(item),
+      doi: item?.doi || "",
+      citedBy: item?.cited_by ?? "",
+      citeScorePercentile: item?.cite_score_percentile ?? "",
+      journalTierBucket: resolveJournalTierBucket(item?.cite_score_percentile),
+      citeScoreQuartile: (item?.cite_score_quartile || "")?.toUpperCase(),
+      citeScoreStatus: item?.cite_score_status || "",
+      documentId,
+      _userKey: `${userId}`,
+      _docKey: item?.eid || documentId,
+    };
+  }, []);
 
+  const buildByUserWorkbookData = useCallback((detailRows) => {
+    const rows = Array.isArray(detailRows) ? detailRows : [];
     const summaryMap = new Map();
     const yearSet = new Set();
 
-    detailRows.forEach((row) => {
+    rows.forEach((row) => {
       const key = row._userKey;
       const docKey = row._docKey;
       if (!key || !docKey) return;
@@ -338,31 +422,56 @@ export default function AdminScopusResearchSearch() {
         return row;
       });
 
-    const cleanedDetailRows = detailRows.map(({ _userKey, _docKey, ...rest }) => rest);
-    const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
-    const filename = `scopus_publications_by_user_${timestamp}.xlsx`;
-
-    downloadXlsx(BY_USER_DETAILS_COLUMNS, cleanedDetailRows, {
-      filename,
-      sheets: [
-        {
-          name: "Summary",
-          columns: summaryColumns,
-          rows: summaryRows,
-        },
-        {
-          name: "Details",
-          columns: BY_USER_DETAILS_COLUMNS,
-          rows: cleanedDetailRows,
-        },
-      ],
+    const cleanedDetailRows = rows.map((row, index) => {
+      const { _userKey, _docKey, ...rest } = row;
+      return {
+        rowNumber: index + 1,
+        ...rest,
+      };
     });
 
-    toast.success(`ส่งออกสำเร็จ ${summaryRows.length} ผู้ใช้ / ${cleanedDetailRows.length} รายการผลงาน`);
-    return true;
+    return {
+      summaryColumns,
+      summaryRows,
+      cleanedDetailRows,
+    };
   }, []);
 
-  const exportByUserViaUserFallback = useCallback(async (scope = exportScope) => {
+  const fetchAllDocumentRows = useCallback(async (scope = exportScope) => {
+    const query = scope === "all" ? "" : pubQuery.trim();
+    const limit = pubMeta?.limit || PUB_PAGE_SIZE;
+    let offset = 0;
+    let total = scope === "all" ? undefined : pubMeta?.total || 0;
+    const allRows = [];
+
+    while (true) {
+      const params = { limit, offset, sort: "year", direction: "desc" };
+      if (scope !== "all" && query) {
+        params.q = query;
+      }
+
+      const res = await publicationsAPI.searchScopusPublications(params);
+      const items = Array.isArray(res?.data) ? res.data : [];
+      const paging = res?.paging || {};
+      total = paging.total ?? total;
+      const pageLimit = paging.limit || limit;
+
+      allRows.push(...buildExportRows(items, offset));
+
+      if (items.length < pageLimit) {
+        break;
+      }
+      offset += pageLimit;
+
+      if (total !== undefined && offset >= total) {
+        break;
+      }
+    }
+
+    return allRows;
+  }, [buildExportRows, exportScope, pubMeta?.limit, pubMeta?.total, pubQuery]);
+
+  const fetchByUserDetailsViaFallback = useCallback(async (scope = exportScope) => {
     const query = scope === "all" ? "" : pubQuery.trim();
     const users = [];
     const userPageLimit = 200;
@@ -404,13 +513,8 @@ export default function AdminScopusResearchSearch() {
       const userId = userItem?.user_id || userItem?.userId;
       if (!userId) continue;
 
-      const userName = userItem?.name || userItem?.user_name || "";
-      const userEmail = userItem?.email || userItem?.user_email || "";
-      const userScopusId = userItem?.scopus_author_id || userItem?.scopus_id || "";
-
       const pubLimit = 200;
       let pubOffset = 0;
-
       while (true) {
         const params = { limit: pubLimit, offset: pubOffset, sort: "year", direction: "desc" };
         if (query) {
@@ -424,30 +528,14 @@ export default function AdminScopusResearchSearch() {
         const total = pubPaging.total;
 
         pubItems.forEach((item) => {
-          const coverDate = item?.cover_date ? new Date(item.cover_date) : null;
-          const yearValue =
-            item?.publication_year ||
-            (coverDate && !Number.isNaN(coverDate.getTime()) ? coverDate.getFullYear() : "");
-          detailRows.push({
-            rowNumber: detailRows.length + 1,
-            userId,
-            userName,
-            userEmail,
-            userScopusId,
-            year: yearValue,
-            eid: item?.eid || "",
-            scopusId: item?.scopus_id || "",
-            title: item?.title || "",
-            publicationName: item?.publication_name || item?.venue || "",
-            doi: item?.doi || "",
-            citedBy: item?.cited_by ?? "",
-            citeScoreQuartile: (item?.cite_score_quartile || "")?.toUpperCase(),
-            citeScorePercentile: item?.cite_score_percentile ?? "",
-            citeScoreStatus: item?.cite_score_status || "",
-            documentId: item?.id || item?.document_id || item?.scopus_id || item?.eid || "",
-            _userKey: `${userId}`,
-            _docKey: item?.eid || item?.id || item?.document_id || item?.scopus_id || "",
-          });
+          detailRows.push(
+            buildByUserDetailRow(item, {
+              userId,
+              userName: userItem?.name || userItem?.user_name || "",
+              userEmail: userItem?.email || userItem?.user_email || "",
+              userScopusId: userItem?.scopus_author_id || userItem?.scopus_id || "",
+            })
+          );
         });
 
         if (pubItems.length < pageLimit) {
@@ -460,8 +548,91 @@ export default function AdminScopusResearchSearch() {
       }
     }
 
-    return downloadByUserWorkbook(detailRows);
-  }, [downloadByUserWorkbook, exportScope, pubQuery]);
+    return detailRows;
+  }, [buildByUserDetailRow, exportScope, pubQuery]);
+
+  const fetchByUserDetailsRows = useCallback(async (scope = exportScope) => {
+    const query = scope === "all" ? "" : pubQuery.trim();
+    const limit = 200;
+    let offset = 0;
+    let total;
+    const detailRows = [];
+
+    while (true) {
+      const params = { limit, offset, sort: "year", direction: "desc" };
+      if (scope !== "all" && query) {
+        params.q = query;
+      }
+
+      const res = await publicationsAPI.searchScopusPublicationsByUser(params);
+      const items = Array.isArray(res?.data) ? res.data : [];
+      const paging = res?.paging || {};
+      total = paging.total ?? total;
+      const pageLimit = paging.limit || limit;
+
+      items.forEach((item) => {
+        detailRows.push(buildByUserDetailRow(item));
+      });
+
+      if (items.length < pageLimit) {
+        break;
+      }
+      offset += pageLimit;
+
+      if (total !== undefined && offset >= total) {
+        break;
+      }
+    }
+
+    return detailRows;
+  }, [buildByUserDetailRow, exportScope, pubQuery]);
+
+  const fetchByUserDetailsWithFallback = useCallback(async (scope = exportScope) => {
+    try {
+      return await fetchByUserDetailsRows(scope);
+    } catch (error) {
+      if (error instanceof APIError && error.status === 404) {
+        try {
+          return await fetchByUserDetailsViaFallback(scope);
+        } catch (fallbackError) {
+          const wrappedError = new Error("BY_USER_FALLBACK_FAILED");
+          wrappedError.cause = fallbackError;
+          throw wrappedError;
+        }
+      }
+      throw error;
+    }
+  }, [exportScope, fetchByUserDetailsRows, fetchByUserDetailsViaFallback]);
+
+  const downloadByUserWorkbook = useCallback((detailRows) => {
+    if (!Array.isArray(detailRows) || detailRows.length === 0) {
+      toast.error("ไม่พบข้อมูลงานวิจัยสำหรับส่งออก");
+      return false;
+    }
+
+    const { summaryColumns, summaryRows, cleanedDetailRows } = buildByUserWorkbookData(detailRows);
+    const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
+    const filename = `scopus_publications_by_user_${timestamp}.xlsx`;
+
+    downloadXlsx(BY_USER_DETAILS_COLUMNS, cleanedDetailRows, {
+      filename,
+      sheets: [
+        {
+          name: "Summary",
+          columns: summaryColumns,
+          rows: summaryRows,
+        },
+        {
+          name: "Details",
+          columns: BY_USER_DETAILS_COLUMNS,
+          rows: cleanedDetailRows,
+        },
+      ],
+    });
+
+    toast.success(`ส่งออกสำเร็จ ${summaryRows.length} ผู้ใช้ / ${cleanedDetailRows.length} รายการผลงาน`);
+    return true;
+  }, [buildByUserWorkbookData]);
 
   const handleExport = useCallback(async (scope = exportScope) => {
     if (!canExport) {
@@ -471,36 +642,7 @@ export default function AdminScopusResearchSearch() {
     if (scope !== "all" && !hasExportableData) return;
     setExporting(true);
     try {
-      const query = scope === "all" ? "" : pubQuery.trim();
-      const limit = pubMeta?.limit || PUB_PAGE_SIZE;
-      let offset = 0;
-      let total = scope === "all" ? undefined : pubMeta?.total || 0;
-      const allRows = [];
-
-      while (true) {
-        const params = { limit, offset, sort: "year", direction: "desc" };
-        if (scope !== "all" && query) {
-          params.q = query;
-        }
-
-        const res = await publicationsAPI.searchScopusPublications(params);
-        const items = Array.isArray(res?.data) ? res.data : [];
-        const paging = res?.paging || {};
-        total = paging.total ?? total;
-        const pageLimit = paging.limit || limit;
-
-        allRows.push(...buildExportRows(items, offset));
-
-        if (items.length < pageLimit) {
-          break;
-        }
-        offset += pageLimit;
-
-        if (total !== undefined && offset >= total) {
-          break;
-        }
-      }
-
+      const allRows = await fetchAllDocumentRows(scope);
       if (allRows.length === 0) {
         toast.error("ไม่พบข้อมูลงานวิจัยสำหรับส่งออก");
         return;
@@ -519,80 +661,22 @@ export default function AdminScopusResearchSearch() {
     } finally {
       setExporting(false);
     }
-  }, [buildExportRows, canExport, exportScope, hasExportableData, pubMeta?.limit, pubMeta?.total, pubQuery]);
+  }, [canExport, exportScope, fetchAllDocumentRows, hasExportableData]);
 
   const handleExportByUser = useCallback(async (scope = exportScope) => {
     if (!canExportByUser) {
       toast.error("คุณไม่มีสิทธิ์ส่งออกรายผู้ใช้");
       return;
     }
+
     setExportingByUser(true);
     try {
-      const query = scope === "all" ? "" : pubQuery.trim();
-      const limit = 200;
-      let offset = 0;
-      let total;
-      const detailRows = [];
-
-      while (true) {
-        const params = { limit, offset, sort: "year", direction: "desc" };
-        if (scope !== "all" && query) {
-          params.q = query;
-        }
-
-        const res = await publicationsAPI.searchScopusPublicationsByUser(params);
-        const items = Array.isArray(res?.data) ? res.data : [];
-        const paging = res?.paging || {};
-        total = paging.total ?? total;
-        const pageLimit = paging.limit || limit;
-
-        items.forEach((item) => {
-          const coverDate = item?.cover_date ? new Date(item.cover_date) : null;
-          const yearValue =
-            item?.publication_year ||
-            (coverDate && !Number.isNaN(coverDate.getTime()) ? coverDate.getFullYear() : "");
-
-          detailRows.push({
-            rowNumber: detailRows.length + 1,
-            userId: item?.user_id || "",
-            userName: item?.user_name || "",
-            userEmail: item?.user_email || "",
-            userScopusId: item?.user_scopus_id || "",
-            year: yearValue,
-            eid: item?.eid || "",
-            scopusId: item?.scopus_id || "",
-            title: item?.title || "",
-            publicationName: item?.publication_name || "",
-            doi: item?.doi || "",
-            citedBy: item?.cited_by ?? "",
-            citeScoreQuartile: (item?.cite_score_quartile || "")?.toUpperCase(),
-            citeScorePercentile: item?.cite_score_percentile ?? "",
-            citeScoreStatus: item?.cite_score_status || "",
-            documentId: item?.document_id || "",
-            _userKey: `${item?.user_id || ""}`,
-            _docKey: item?.eid || item?.document_id || "",
-          });
-        });
-
-        if (items.length < pageLimit) {
-          break;
-        }
-        offset += pageLimit;
-
-        if (total !== undefined && offset >= total) {
-          break;
-        }
-      }
-
+      const detailRows = await fetchByUserDetailsWithFallback(scope);
       downloadByUserWorkbook(detailRows);
     } catch (error) {
-      if (error instanceof APIError && error.status === 404) {
-        try {
-          await exportByUserViaUserFallback(scope);
-        } catch (fallbackError) {
-          console.error("Export publications by user fallback error", fallbackError);
-          toast.error("ระบบ API ยังไม่พร้อมสำหรับการส่งออกรายผู้ใช้");
-        }
+      if (error?.message === "BY_USER_FALLBACK_FAILED") {
+        console.error("Export publications by user fallback error", error?.cause || error);
+        toast.error("ระบบ API ยังไม่พร้อมสำหรับการส่งออกรายผู้ใช้");
       } else {
         console.error("Export publications by user error", error);
         toast.error("ไม่สามารถส่งออกไฟล์ได้");
@@ -600,7 +684,89 @@ export default function AdminScopusResearchSearch() {
     } finally {
       setExportingByUser(false);
     }
-  }, [canExportByUser, downloadByUserWorkbook, exportByUserViaUserFallback, exportScope, pubQuery]);
+  }, [canExportByUser, downloadByUserWorkbook, exportScope, fetchByUserDetailsWithFallback]);
+
+  const handleExportCombined = useCallback(async (scope = exportScope) => {
+    if (!canExportCombined) {
+      toast.error("ต้องมีสิทธิ์ส่งออกทั้งเอกสารและรายผู้ใช้");
+      return;
+    }
+    if (scope !== "all" && !hasExportableData) return;
+
+    setExportingCombined(true);
+    try {
+      const [documentRows, detailRows] = await Promise.all([
+        fetchAllDocumentRows(scope),
+        fetchByUserDetailsWithFallback(scope),
+      ]);
+      if (documentRows.length === 0 && detailRows.length === 0) {
+        toast.error("ไม่พบข้อมูลงานวิจัยสำหรับส่งออก");
+        return;
+      }
+
+      const { summaryColumns, summaryRows, cleanedDetailRows } = buildByUserWorkbookData(detailRows);
+      const query = scope === "all" ? "" : pubQuery.trim();
+      const generatedAt = new Date().toISOString();
+      const metaRows = [
+        { key: "generated_at", value: generatedAt },
+        { key: "scope", value: scope },
+        { key: "query", value: query || "-" },
+        { key: "documents_rows", value: documentRows.length },
+        { key: "users_details_rows", value: cleanedDetailRows.length },
+        { key: "users_summary_rows", value: summaryRows.length },
+      ];
+
+      const timestamp = generatedAt.replace(/[:T]/g, "-").split(".")[0];
+      const filename = `scopus_full_export_${timestamp}.xlsx`;
+      downloadXlsx(EXPORT_COLUMNS, documentRows, {
+        filename,
+        sheets: [
+          {
+            name: "Documents",
+            columns: EXPORT_COLUMNS,
+            rows: documentRows,
+          },
+          {
+            name: "Users_Details",
+            columns: BY_USER_DETAILS_COLUMNS,
+            rows: cleanedDetailRows,
+          },
+          {
+            name: "Users_Summary",
+            columns: summaryColumns,
+            rows: summaryRows,
+          },
+          {
+            name: "Meta",
+            columns: COMBINED_META_COLUMNS,
+            rows: metaRows,
+          },
+        ],
+      });
+
+      toast.success(
+        `ส่งออกครบทุกชีตแล้ว (Documents ${documentRows.length} / Users ${cleanedDetailRows.length})`
+      );
+    } catch (error) {
+      if (error?.message === "BY_USER_FALLBACK_FAILED") {
+        console.error("Export combined fallback error", error?.cause || error);
+        toast.error("ระบบ API ยังไม่พร้อมสำหรับการส่งออกรายผู้ใช้");
+      } else {
+        console.error("Export combined error", error);
+        toast.error("ไม่สามารถส่งออกไฟล์รวมได้");
+      }
+    } finally {
+      setExportingCombined(false);
+    }
+  }, [
+    buildByUserWorkbookData,
+    canExportCombined,
+    exportScope,
+    fetchAllDocumentRows,
+    fetchByUserDetailsWithFallback,
+    hasExportableData,
+    pubQuery,
+  ]);
 
   return (
     <PageLayout
@@ -658,7 +824,7 @@ export default function AdminScopusResearchSearch() {
               disabled={!canExport || exporting || (exportScope !== "all" && !hasExportableData)}
               className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}ส่งออก Excel
+              {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}ส่งออกเอกสาร
             </button>
             <button
               type="button"
@@ -666,7 +832,15 @@ export default function AdminScopusResearchSearch() {
               disabled={!canExportByUser || exportingByUser || (exportScope !== "all" && !hasExportableData)}
               className="inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {exportingByUser ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}ส่งออกรายผู้ใช้
+              {exportingByUser ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}ส่งออกจากรายชื่อผู้ใช้
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExportCombined(exportScope)}
+              disabled={!canExportCombined || exportingCombined || (exportScope !== "all" && !hasExportableData)}
+              className="inline-flex items-center justify-center rounded-lg border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-800 shadow-sm transition hover:border-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {exportingCombined ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}ส่งออกทั้งหมด
             </button>
           </div>
         </div>

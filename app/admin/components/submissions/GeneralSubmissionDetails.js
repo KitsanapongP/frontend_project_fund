@@ -860,7 +860,7 @@ function FundApprovalPanel({
       allowOutsideClick: () => !Swal.isLoading(),
       preConfirm: async () => {
         try {
-          await onReject(String(reason).trim());
+          await onReject(String(reason).trim(), comment?.trim() || '');
         } catch (e) {
           Swal.showValidationMessage(e?.message || 'ไม่อนุมัติไม่สำเร็จ');
           throw e;
@@ -2233,10 +2233,17 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
     await refetchSubmission();
   };
 
-  const reject = async (reason) => {
-    await adminSubmissionAPI.rejectSubmission(submission.submission_id, {
+  const reject = async (reason, adminComment) => {
+    const payload = {
       admin_rejection_reason: reason,
-    });
+    };
+    const trimmedComment = typeof adminComment === 'string' ? adminComment.trim() : '';
+    if (trimmedComment) {
+      payload.admin_comment = trimmedComment;
+      payload.comment = trimmedComment;
+    }
+
+    await adminSubmissionAPI.rejectSubmission(submission.submission_id, payload);
     // แจ้งเตือนผู้ยื่น: ไม่อนุมัติ
     try {
       await notificationsAPI.notifySubmissionRejected(
