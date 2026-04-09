@@ -64,6 +64,7 @@ const Toast = Swal.mixin({
 });
 
 const MAX_CURRENCY_AMOUNT = 1_000_000;
+const FEE_NET_NON_NEGATIVE_MESSAGE = 'ค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์หลังหักทุนภายนอก ต้องไม่น้อยกว่า 0 บาท';
 
 const clampCurrencyValue = (rawValue) => {
   if (rawValue === null || rawValue === undefined) {
@@ -3298,14 +3299,13 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
           ? (externalFundings || []).reduce((sum, funding) => sum + (parseFloat(funding.amount) || 0), 0)
           : 0;
 
-        const reimbursementTotal =
-          (parseFloat(formData.publication_reward) || 0) +
+        const feeNetTotal =
           (parseFloat(formData.revision_fee) || 0) +
           (parseFloat(formData.publication_fee) || 0) -
           externalAmount;
 
-        if (reimbursementTotal < 0) {
-          setFeeError('จำนวนเงินที่ขอเบิกสุทธิต้องไม่น้อยกว่า 0 บาท (ทุนภายนอกต้องไม่เกินผลรวมเงินรางวัลและค่าใช้จ่าย)');
+        if (feeNetTotal < 0) {
+          setFeeError(FEE_NET_NON_NEGATIVE_MESSAGE);
           return;
         }
 
@@ -3335,7 +3335,6 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     checkFees();
   }, [
     formData.journal_quartile,
-    formData.publication_reward,
     formData.revision_fee,
     formData.publication_fee,
     formData.external_funding_amount,
@@ -3346,6 +3345,21 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     rewardConfigMap,
     rewardConfigYear,
   ]);
+
+  useEffect(() => {
+    if (feeError) {
+      return;
+    }
+
+    setErrors((prev) => {
+      if (!prev || !prev.fees) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next.fees;
+      return next;
+    });
+  }, [feeError]);
 
   // Clear fees and external funding when quartile changes to ineligible ones
   useEffect(() => {
@@ -5616,14 +5630,13 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
       ? (externalFundings || []).reduce((sum, funding) => sum + (parseFloat(funding.amount) || 0), 0)
       : 0;
 
-    const reimbursementTotal =
-      (parseFloat(formData.publication_reward) || 0) +
+    const feeNetTotal =
       (parseFloat(formData.revision_fee) || 0) +
       (parseFloat(formData.publication_fee) || 0) -
       externalAmountForValidation;
 
-    if (reimbursementTotal < 0) {
-      feeMessages.push('จำนวนเงินที่ขอเบิกสุทธิต้องไม่น้อยกว่า 0 บาท (ทุนภายนอกต้องไม่เกินผลรวมเงินรางวัลและค่าใช้จ่าย)');
+    if (feeNetTotal < 0) {
+      feeMessages.push(FEE_NET_NON_NEGATIVE_MESSAGE);
     }
 
     let feesMessage = '';
