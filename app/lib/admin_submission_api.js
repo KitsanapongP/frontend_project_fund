@@ -731,12 +731,25 @@ export const adminSubmissionAPI = {
   },
 
   // POST /api/v1/admin/submissions/:id/reject
-  // payload: { admin_rejection_reason }
+  // payload: { rejection_reason } (+ backward-compatible aliases)
   async rejectSubmission(submissionId, payload) {
+    const normalizedPayload = { ...(payload || {}) };
+    const rawReason =
+      normalizedPayload.rejection_reason ??
+      normalizedPayload.admin_rejection_reason ??
+      normalizedPayload.reason;
+    const trimmedReason = typeof rawReason === 'string' ? rawReason.trim() : rawReason;
+
+    if (trimmedReason) {
+      normalizedPayload.rejection_reason = trimmedReason;
+      normalizedPayload.admin_rejection_reason = trimmedReason;
+      normalizedPayload.reason = trimmedReason;
+    }
+
     try {
-      return await apiClient.post(`${getSubmissionManagementBase()}/${submissionId}/reject`, payload);
+      return await apiClient.post(`${getSubmissionManagementBase()}/${submissionId}/reject`, normalizedPayload);
     } catch (error) {
-      return apiClient.post(`/admin/submissions/${submissionId}/reject`, payload);
+      return apiClient.post(`/admin/submissions/${submissionId}/reject`, normalizedPayload);
     }
   },
 
