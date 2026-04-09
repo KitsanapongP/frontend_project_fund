@@ -3293,6 +3293,22 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
   useEffect(() => {
     const checkFees = async () => {
       if (formData.journal_quartile) {
+        const canUseExternal = Boolean(formData.journal_quartile && feeLimits.total > 0);
+        const externalAmount = canUseExternal
+          ? (externalFundings || []).reduce((sum, funding) => sum + (parseFloat(funding.amount) || 0), 0)
+          : 0;
+
+        const reimbursementTotal =
+          (parseFloat(formData.publication_reward) || 0) +
+          (parseFloat(formData.revision_fee) || 0) +
+          (parseFloat(formData.publication_fee) || 0) -
+          externalAmount;
+
+        if (reimbursementTotal < 0) {
+          setFeeError('จำนวนเงินที่ขอเบิกสุทธิต้องไม่น้อยกว่า 0 บาท (ทุนภายนอกต้องไม่เกินผลรวมเงินรางวัลและค่าใช้จ่าย)');
+          return;
+        }
+
         const yearObj = years.find(y => y.year_id === formData.year_id);
         const targetYear =
           lockedBudgetYearLabel ||
@@ -3302,7 +3318,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         const check = await checkFeesLimit(
           formData.revision_fee,
           formData.publication_fee,
-          formData.external_funding_amount,
+          externalAmount,
           formData.journal_quartile,
           rewardConfigMap,
           targetYear
@@ -3319,9 +3335,12 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     checkFees();
   }, [
     formData.journal_quartile,
+    formData.publication_reward,
     formData.revision_fee,
     formData.publication_fee,
     formData.external_funding_amount,
+    externalFundings,
+    feeLimits.total,
     years,
     lockedBudgetYearLabel,
     rewardConfigMap,
@@ -5573,6 +5592,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
   const validateAdditionalRules = async () => {
     const errorList = [];
     let resolutionMessage = '';
+    const feeMessages = [];
     const lockedDraft = Boolean(prefilledSubmissionId && currentSubmissionStatus === 'draft' && !isReadOnly);
 
     if (!lockedDraft && !selectionLocked && formData.author_status && formData.journal_quartile) {
@@ -5592,6 +5612,20 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
       });
     }
 
+    const externalAmountForValidation = Boolean(formData.journal_quartile && feeLimits.total > 0)
+      ? (externalFundings || []).reduce((sum, funding) => sum + (parseFloat(funding.amount) || 0), 0)
+      : 0;
+
+    const reimbursementTotal =
+      (parseFloat(formData.publication_reward) || 0) +
+      (parseFloat(formData.revision_fee) || 0) +
+      (parseFloat(formData.publication_fee) || 0) -
+      externalAmountForValidation;
+
+    if (reimbursementTotal < 0) {
+      feeMessages.push('จำนวนเงินที่ขอเบิกสุทธิต้องไม่น้อยกว่า 0 บาท (ทุนภายนอกต้องไม่เกินผลรวมเงินรางวัลและค่าใช้จ่าย)');
+    }
+
     let feesMessage = '';
     if (formData.journal_quartile) {
       const yearObj = years.find(y => y.year_id === formData.year_id);
@@ -5604,19 +5638,23 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         formData.journal_quartile,
         formData.revision_fee,
         formData.publication_fee,
-        formData.external_funding_amount,
+        externalAmountForValidation,
         targetYear,
         rewardConfigMap
       );
       if (feeErrors.length > 0) {
-        feesMessage = feeErrors.join(', ');
-        errorList.push({
-          fieldKey: 'fees',
-          label: 'ค่าปรับปรุงและค่าธรรมเนียมการตีพิมพ์',
-          refOrId: 'field-fees_limit',
-          message: feesMessage
-        });
+        feeMessages.push(...feeErrors);
       }
+    }
+
+    if (feeMessages.length > 0) {
+      feesMessage = feeMessages.join(', ');
+      errorList.push({
+        fieldKey: 'fees',
+        label: 'ค่าปรับปรุงและค่าธรรมเนียมการตีพิมพ์',
+        refOrId: 'field-fees_limit',
+        message: feesMessage
+      });
     }
 
     setResolutionError(lockedDraft ? '' : resolutionMessage);
