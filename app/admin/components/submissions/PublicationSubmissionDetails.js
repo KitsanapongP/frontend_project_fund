@@ -1304,7 +1304,7 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
       preConfirm: async () => {
         try {
           setSaving(true);
-          await onReject(trimmedReason);
+          await onReject(trimmedReason, adminComment?.trim() || '');
 
           // NEW: แจ้งเตือน + ส่งอีเมล (best-effort)
           try {
@@ -2284,10 +2284,17 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
     setSubmission(data);
   };
 
-  const reject = async (reason) => {
-    await adminSubmissionAPI.rejectSubmission(submission.submission_id, {
+  const reject = async (reason, adminComment) => {
+    const payload = {
       admin_rejection_reason: reason,
-    });
+    };
+    const trimmedComment = typeof adminComment === 'string' ? adminComment.trim() : '';
+    if (trimmedComment) {
+      payload.admin_comment = trimmedComment;
+      payload.comment = trimmedComment;
+    }
+
+    await adminSubmissionAPI.rejectSubmission(submission.submission_id, payload);
     // reload
     const res = await adminSubmissionAPI.getSubmissionDetails(submission.submission_id);
     let data = res?.submission || res;
