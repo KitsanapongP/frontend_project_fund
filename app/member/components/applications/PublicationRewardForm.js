@@ -873,7 +873,7 @@ const getMaxFeeLimit = async (quartile, year = null, preloadedLimits = null) => 
   }
 };
 
-const validateFees = async (journalQuartile, revisionFee, publicationFee, currentYear, feeLimitMap = null) => {
+const validateFees = async (journalQuartile, revisionFee, publicationFee, externalFunding, currentYear, feeLimitMap = null) => {
   const errors = [];
 
   if (journalQuartile) {
@@ -881,11 +881,14 @@ const validateFees = async (journalQuartile, revisionFee, publicationFee, curren
       // ดึงวงเงินสูงสุดจาก API
       const maxLimit = await getMaxFeeLimit(journalQuartile, currentYear, feeLimitMap);
 
-      // คำนวณผลรวมของค่าปรับปรุงและค่าตีพิมพ์
-      const totalFees = (parseFloat(revisionFee) || 0) + (parseFloat(publicationFee) || 0);
+      // คำนวณผลรวมของค่าปรับปรุงและค่าตีพิมพ์ หลังหักทุนภายนอก
+      const totalFees =
+        (parseFloat(revisionFee) || 0) +
+        (parseFloat(publicationFee) || 0) -
+        (parseFloat(externalFunding) || 0);
       
       if (totalFees > maxLimit) {
-        errors.push(`ค่าปรับปรุงและค่าตีพิมพ์รวมกันเกินวงเงินสูงสุด ${maxLimit.toLocaleString()} บาท`);
+        errors.push(`ค่าปรับปรุงและค่าตีพิมพ์หลังหักทุนภายนอกเกินวงเงินสูงสุด ${maxLimit.toLocaleString()} บาท`);
       }
     } catch (error) {
       console.error('Error validating fees:', error);
@@ -897,16 +900,19 @@ const validateFees = async (journalQuartile, revisionFee, publicationFee, curren
 };
 
 // Real-time fee validation
-const validateFeesRealtime = async (revisionFee, publicationFee, quartile, feeLimitsTotal, setFeeErrorFn) => {
+const validateFeesRealtime = async (revisionFee, publicationFee, externalFunding, quartile, feeLimitsTotal, setFeeErrorFn) => {
   if (!quartile || feeLimitsTotal === 0) {
     setFeeErrorFn('');
     return true;
   }
   
-  const totalFees = (parseFloat(revisionFee) || 0) + (parseFloat(publicationFee) || 0);
+  const totalFees =
+    (parseFloat(revisionFee) || 0) +
+    (parseFloat(publicationFee) || 0) -
+    (parseFloat(externalFunding) || 0);
   
   if (totalFees > feeLimitsTotal) {
-    setFeeErrorFn(`ค่าปรับปรุงและค่าตีพิมพ์รวมกันเกินวงเงินสูงสุด ${feeLimitsTotal.toLocaleString()} บาท`);
+    setFeeErrorFn(`ค่าปรับปรุงและค่าตีพิมพ์หลังหักทุนภายนอกเกินวงเงินสูงสุด ${feeLimitsTotal.toLocaleString()} บาท`);
     return false;
   }
   
@@ -914,7 +920,7 @@ const validateFeesRealtime = async (revisionFee, publicationFee, quartile, feeLi
   return true;
 };
 // Check if fees are within limit
-const checkFeesLimit = async (revisionFee, publicationFee, quartile, feeLimitMap = null, targetYear = null) => {
+const checkFeesLimit = async (revisionFee, publicationFee, externalFunding, quartile, feeLimitMap = null, targetYear = null) => {
   if (!quartile) {
     return {
       isValid: true,
@@ -926,7 +932,10 @@ const checkFeesLimit = async (revisionFee, publicationFee, quartile, feeLimitMap
 
   try {
     const maxLimit = await getMaxFeeLimit(quartile, targetYear, feeLimitMap);
-    const total = (parseFloat(revisionFee) || 0) + (parseFloat(publicationFee) || 0);
+    const total =
+      (parseFloat(revisionFee) || 0) +
+      (parseFloat(publicationFee) || 0) -
+      (parseFloat(externalFunding) || 0);
 
     return {
       isValid: total <= maxLimit,
@@ -3293,13 +3302,14 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         const check = await checkFeesLimit(
           formData.revision_fee,
           formData.publication_fee,
+          formData.external_funding_amount,
           formData.journal_quartile,
           rewardConfigMap,
           targetYear
         );
 
         if (!check.isValid && check.maxLimit > 0) {
-          setFeeError(`รวมค่าปรับปรุงและค่าตีพิมพ์เกินวงเงินที่กำหนด (ไม่เกิน ${formatCurrency(check.maxLimit)} บาท)`);
+          setFeeError(`รวมค่าปรับปรุงและค่าตีพิมพ์หลังหักทุนภายนอกเกินวงเงินที่กำหนด (ไม่เกิน ${formatCurrency(check.maxLimit)} บาท)`);
         } else {
           setFeeError('');
         }
@@ -3311,6 +3321,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     formData.journal_quartile,
     formData.revision_fee,
     formData.publication_fee,
+    formData.external_funding_amount,
     years,
     lockedBudgetYearLabel,
     rewardConfigMap,
@@ -5593,6 +5604,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         formData.journal_quartile,
         formData.revision_fee,
         formData.publication_fee,
+        formData.external_funding_amount,
         targetYear,
         rewardConfigMap
       );
@@ -5985,7 +5997,17 @@ const showSubmissionConfirmation = async () => {
     ? 'px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors'
     : 'px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors';
 
-    const summaryHTML = `
+  const coauthorSummaryItems = (coauthors || [])
+    .map((author, index) => {
+      const { name, email } = getCoauthorDisplayInfo(author);
+      const fallbackName = [author?.user_fname, author?.user_lname].filter(Boolean).join(' ').trim();
+      const resolvedName = (name || fallbackName || `ผู้แต่งร่วม ${index + 1}`).trim();
+      const emailMarkup = email ? ` <span class="text-xs text-gray-600">(${email})</span>` : '';
+      return `<li>• ${resolvedName}${emailMarkup}</li>`;
+    })
+    .join('');
+
+  const summaryHTML = `
       <div class="text-left space-y-4">
         <div class="bg-gray-50 p-4 rounded-lg">
           <h4 class="font-semibold text-gray-700 mb-2">ข้อมูลบทความ</h4>
@@ -6010,7 +6032,7 @@ const showSubmissionConfirmation = async () => {
               <div class="mt-2">
                 <span class="font-medium">รายชื่อผู้แต่งร่วม:</span>
                 <ul class="ml-4 mt-1">
-                  ${coauthors.map(author => `<li>• ${author.user_fname} ${author.user_lname}</li>`).join('')}
+                  ${coauthorSummaryItems}
                 </ul>
               </div>
             ` : ''}
@@ -6044,10 +6066,10 @@ const showSubmissionConfirmation = async () => {
                   ยอดสุทธิที่เบิกจากวิทยาลัย: ${formatCurrency(formData.total_amount || 0)} บาท
                 </p>
                 <div class="text-xs text-gray-600 mt-1">
-                  คำนวณจาก: เงินรางวัล + ค่าปรับปรุง + ค่าตีพิมพ์ - ทุนภายนอก
+                  คำนวณจาก: เงินรางวัล + (ค่าปรับปรุง + ค่าตีพิมพ์ - ทุนภายนอก)
                 </div>
                 <div class="text-xs text-gray-600">
-                  = ${formatCurrency(formData.publication_reward || 0)} + ${formatCurrency(formData.revision_fee || 0)} + ${formatCurrency(formData.publication_fee || 0)} - ${formatCurrency(formData.external_funding_amount || 0)}
+                  = ${formatCurrency(formData.publication_reward || 0)} + (${formatCurrency(formData.revision_fee || 0)} + ${formatCurrency(formData.publication_fee || 0)} - ${formatCurrency(formData.external_funding_amount || 0)})
                 </div>
               </div>
             </div>
@@ -7638,7 +7660,7 @@ const showSubmissionConfirmation = async () => {
               {formData.journal_quartile && feeLimits.total > 0 && (
                 <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
                   <p className="text-sm font-medium text-gray-700">
-                    วงเงินค่าปรับปรุงและค่าตีพิมพ์รวมกันไม่เกิน (Maximum total for editing and page charge): 
+                    วงเงินค่าปรับปรุงและค่าตีพิมพ์หลังหักทุนภายนอกไม่เกิน (Maximum total for editing and page charge after external funding): 
                     <span className="text-blue-700 font-bold ml-1">
                       {formatCurrency(feeLimits.total)} บาท (Baht)
                     </span>
@@ -7682,7 +7704,14 @@ const showSubmissionConfirmation = async () => {
                       setFormData(prev => ({ ...prev, revision_fee: newValue }));
 
                       // Validate fees in real-time
-                      await validateFeesRealtime(newValue, formData.publication_fee, formData.journal_quartile, feeLimits.total, setFeeError);
+                      await validateFeesRealtime(
+                        newValue,
+                        formData.publication_fee,
+                        formData.external_funding_amount,
+                        formData.journal_quartile,
+                        feeLimits.total,
+                        setFeeError
+                      );
                     }}
                     disabled={!formData.journal_quartile || feeLimits.total === 0}
                     min="0"
@@ -7716,7 +7745,14 @@ const showSubmissionConfirmation = async () => {
                       setFormData(prev => ({ ...prev, publication_fee: newValue }));
 
                       // Validate fees in real-time
-                      await validateFeesRealtime(formData.revision_fee, newValue, formData.journal_quartile, feeLimits.total, setFeeError);
+                      await validateFeesRealtime(
+                        formData.revision_fee,
+                        newValue,
+                        formData.external_funding_amount,
+                        formData.journal_quartile,
+                        feeLimits.total,
+                        setFeeError
+                      );
                     }}
                     disabled={!formData.journal_quartile || feeLimits.total === 0}
                     min="0"
@@ -7738,7 +7774,7 @@ const showSubmissionConfirmation = async () => {
                   </p>
                   {formData.journal_quartile && feeLimits.total > 0 && (
                     <p className="text-xs text-red-500 mt-1">
-                      ใช้ไปแล้ว (Used): {formatCurrency((parseFloat(formData.revision_fee) || 0) + (parseFloat(formData.publication_fee) || 0))} บาท (Baht)
+                      ใช้ไปแล้วหลังหักทุนภายนอก (Used after external funding): {formatCurrency((parseFloat(formData.revision_fee) || 0) + (parseFloat(formData.publication_fee) || 0) - (parseFloat(formData.external_funding_amount) || 0))} บาท (Baht)
                     </p>
                   )}
                 </div>
@@ -7760,9 +7796,9 @@ const showSubmissionConfirmation = async () => {
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   = เงินรางวัล (Reward) ({formatCurrency(formData.publication_reward || 0)}) 
-                  + ค่าปรับปรุง (Editing) ({formatCurrency(formData.revision_fee || 0)}) 
+                  + (ค่าปรับปรุง (Editing) ({formatCurrency(formData.revision_fee || 0)}) 
                   + ค่าตีพิมพ์ (Page Charge) ({formatCurrency(formData.publication_fee || 0)}) 
-                  - ทุนภายนอก (External Funding) ({formatCurrency(formData.external_funding_amount || 0)})
+                  - ทุนภายนอก (External Funding) ({formatCurrency(formData.external_funding_amount || 0)}))
                 </div>
               </div>
             </div>
