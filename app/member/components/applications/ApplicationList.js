@@ -293,14 +293,42 @@ export default function ApplicationList({ onNavigate }) {
     return submission.project_title || submission.title || '−';
   };
 
+  const toNumber = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+
   const getAmount = (submission) => {
     if (submission.submission_type === 'publication_reward') {
-      return submission.PublicationRewardDetail?.reward_amount ||
-             submission.publication_reward_detail?.reward_amount || 0;
-    } else if (submission.submission_type === 'fund_application') {
-      return submission.FundApplicationDetail?.requested_amount ||
-             submission.fund_application_detail?.requested_amount || 0;
+      const detail = submission.PublicationRewardDetail || submission.publication_reward_detail || {};
+
+      // ใช้ยอดรวมสุดท้ายก่อน เพื่อให้ตรงกับหน้ารายละเอียดคำร้อง
+      const storedTotal = toNumber(detail.total_amount);
+      if (storedTotal > 0) {
+        return storedTotal;
+      }
+
+      // fallback กรณีข้อมูลเก่ายังไม่บันทึก total_amount
+      const reward = toNumber(detail.reward_amount);
+      const revision = toNumber(detail.revision_fee);
+      const publication = toNumber(detail.publication_fee);
+      const externalFunding = toNumber(detail.external_funding_amount);
+      const computedTotal = reward + revision + publication - externalFunding;
+
+      if (computedTotal > 0) {
+        return computedTotal;
+      }
+
+      return reward;
     }
+
+    if (submission.submission_type === 'fund_application') {
+      return toNumber(
+        submission.FundApplicationDetail?.requested_amount ??
+        submission.fund_application_detail?.requested_amount
+      );
+    }
+
     return 0;
   };
 
