@@ -304,7 +304,7 @@ export default function ApplicationList({ onNavigate }) {
 
       // ใช้ยอดรวมสุดท้ายก่อน เพื่อให้ตรงกับหน้ารายละเอียดคำร้อง
       const storedTotal = toNumber(detail.total_amount);
-      if (storedTotal > 0) {
+      if (detail.total_amount !== null && detail.total_amount !== undefined && detail.total_amount !== '') {
         return storedTotal;
       }
 
@@ -319,7 +319,7 @@ export default function ApplicationList({ onNavigate }) {
         return computedTotal;
       }
 
-      return reward;
+      return 0;
     }
 
     if (submission.submission_type === 'fund_application') {
