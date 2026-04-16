@@ -64,6 +64,7 @@ const Toast = Swal.mixin({
 });
 
 const MAX_CURRENCY_AMOUNT = 1_000_000;
+const FEE_NET_NON_NEGATIVE_MESSAGE = 'ค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์หลังหักทุนภายนอก ต้องไม่น้อยกว่า 0 บาท';
 
 const clampCurrencyValue = (rawValue) => {
   if (rawValue === null || rawValue === undefined) {
@@ -3293,6 +3294,21 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
   useEffect(() => {
     const checkFees = async () => {
       if (formData.journal_quartile) {
+        const canUseExternal = Boolean(formData.journal_quartile && feeLimits.total > 0);
+        const externalAmount = canUseExternal
+          ? (externalFundings || []).reduce((sum, funding) => sum + (parseFloat(funding.amount) || 0), 0)
+          : 0;
+
+        const feeNetTotal =
+          (parseFloat(formData.revision_fee) || 0) +
+          (parseFloat(formData.publication_fee) || 0) -
+          externalAmount;
+
+        if (feeNetTotal < 0) {
+          setFeeError(FEE_NET_NON_NEGATIVE_MESSAGE);
+          return;
+        }
+
         const yearObj = years.find(y => y.year_id === formData.year_id);
         const targetYear =
           lockedBudgetYearLabel ||
@@ -3302,7 +3318,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         const check = await checkFeesLimit(
           formData.revision_fee,
           formData.publication_fee,
-          formData.external_funding_amount,
+          externalAmount,
           formData.journal_quartile,
           rewardConfigMap,
           targetYear
@@ -3322,11 +3338,28 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     formData.revision_fee,
     formData.publication_fee,
     formData.external_funding_amount,
+    externalFundings,
+    feeLimits.total,
     years,
     lockedBudgetYearLabel,
     rewardConfigMap,
     rewardConfigYear,
   ]);
+
+  useEffect(() => {
+    if (feeError) {
+      return;
+    }
+
+    setErrors((prev) => {
+      if (!prev || !prev.fees) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next.fees;
+      return next;
+    });
+  }, [feeError]);
 
   // Clear fees and external funding when quartile changes to ineligible ones
   useEffect(() => {
@@ -5573,6 +5606,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
   const validateAdditionalRules = async () => {
     const errorList = [];
     let resolutionMessage = '';
+    const feeMessages = [];
     const lockedDraft = Boolean(prefilledSubmissionId && currentSubmissionStatus === 'draft' && !isReadOnly);
 
     if (!lockedDraft && !selectionLocked && formData.author_status && formData.journal_quartile) {
@@ -5592,6 +5626,19 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
       });
     }
 
+    const externalAmountForValidation = Boolean(formData.journal_quartile && feeLimits.total > 0)
+      ? (externalFundings || []).reduce((sum, funding) => sum + (parseFloat(funding.amount) || 0), 0)
+      : 0;
+
+    const feeNetTotal =
+      (parseFloat(formData.revision_fee) || 0) +
+      (parseFloat(formData.publication_fee) || 0) -
+      externalAmountForValidation;
+
+    if (feeNetTotal < 0) {
+      feeMessages.push(FEE_NET_NON_NEGATIVE_MESSAGE);
+    }
+
     let feesMessage = '';
     if (formData.journal_quartile) {
       const yearObj = years.find(y => y.year_id === formData.year_id);
@@ -5604,19 +5651,23 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         formData.journal_quartile,
         formData.revision_fee,
         formData.publication_fee,
-        formData.external_funding_amount,
+        externalAmountForValidation,
         targetYear,
         rewardConfigMap
       );
       if (feeErrors.length > 0) {
-        feesMessage = feeErrors.join(', ');
-        errorList.push({
-          fieldKey: 'fees',
-          label: 'ค่าปรับปรุงและค่าธรรมเนียมการตีพิมพ์',
-          refOrId: 'field-fees_limit',
-          message: feesMessage
-        });
+        feeMessages.push(...feeErrors);
       }
+    }
+
+    if (feeMessages.length > 0) {
+      feesMessage = feeMessages.join(', ');
+      errorList.push({
+        fieldKey: 'fees',
+        label: 'ค่าปรับปรุงและค่าธรรมเนียมการตีพิมพ์',
+        refOrId: 'field-fees_limit',
+        message: feesMessage
+      });
     }
 
     setResolutionError(lockedDraft ? '' : resolutionMessage);
