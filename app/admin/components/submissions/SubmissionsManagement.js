@@ -78,9 +78,22 @@ const formatDateTime = (value) => {
 const resolveFileURL = (filePath) => {
   if (!filePath) return '';
   if (/^https?:\/\//i.test(filePath)) return filePath;
-  const base = apiClient.baseURL.replace(/\/?api\/v1$/, '');
+
+  const normalized = String(filePath).trim().replace(/\\/g, '/');
+  let apiViewPath = normalized;
+
+  const uploadsSegmentIndex = normalized.toLowerCase().indexOf('/uploads/');
+  if (uploadsSegmentIndex >= 0) {
+    apiViewPath = normalized.slice(uploadsSegmentIndex + 1);
+  }
+
+  apiViewPath = apiViewPath.replace(/^\.+\//, '').replace(/^\/+/, '');
+  if (!apiViewPath.toLowerCase().startsWith('uploads/')) {
+    apiViewPath = `uploads/${apiViewPath}`;
+  }
+
   try {
-    return new URL(filePath, base).href;
+    return new URL(`/api/v1/view/${apiViewPath}`, apiClient.getBackendBaseURL()).href;
   } catch {
     return filePath;
   }
