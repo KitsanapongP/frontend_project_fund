@@ -18,6 +18,7 @@ import SubmissionsManagement from "./components/submissions/SubmissionsManagemen
 import LegacySubmissionManager from "./components/submissions/legacy/LegacySubmissionManager";
 import AdminAcademicImports from "./components/settings/announcement_config/AdminAcademicImports";
 import AdminScopusResearchSearch from "./components/research/AdminScopusResearchSearch";
+import AdminScopusResearchDashboard from "./components/research/AdminScopusResearchDashboard";
 import ApprovalRecords from "./components/approves/ApprovalRecords";
 import AdminNotificationCenter from "./components/notifications/NotificationCenter";
 import AdminImportExportPage from "./components/import-export/AdminImportExportPage";
@@ -33,6 +34,7 @@ const IMPORT_TAB_MAP = {
 
 const PAGE_PERMISSION_BY_ID = {
   dashboard: "ui.page.admin.dashboard.view",
+  "research-dashboard": "ui.page.admin.scopus.view",
   "research-fund": "ui.page.admin.research_fund.view",
   "promotion-fund": "ui.page.admin.promotion_fund.view",
   "applications-list": "ui.page.admin.applications.view",
@@ -86,6 +88,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/admin' }) {
       ? ['dashboard', 'applications-list']
       : [
           'dashboard',
+          'research-dashboard',
           'research-fund',
           'promotion-fund',
           'applications-list',
@@ -105,6 +108,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/admin' }) {
     const permissionFilteredPages = allowedPages.filter(canViewPage);
     const preferredFallbackOrder = [
       'dashboard',
+      'research-dashboard',
       'research-fund',
       'promotion-fund',
       'applications-list',
@@ -227,6 +231,8 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/admin' }) {
     switch (currentPage) {
       case 'dashboard':
         return <DashboardContent onNavigate={handleNavigate} basePath={basePath} />;
+      case 'research-dashboard':
+        return <AdminScopusResearchDashboard />;
       case 'research-fund':
         return <ResearchFundContent onNavigate={handleNavigate} />;
       case 'promotion-fund':
@@ -279,6 +285,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/admin' }) {
   const getPageTitle = () => {
       const titles = {
         'dashboard': 'แดชบอร์ดผู้ดูแลระบบ',
+        'research-dashboard': 'แดชบอร์ดงานวิจัย',
         'research-fund': 'ทุนส่งเสริมงานวิจัย',
         'promotion-fund': 'ทุนอุดหนุนกิจกรรม',
         'applications-list': 'รายการการขอทุน',

@@ -694,6 +694,26 @@ export const adminAPI = {
     }
   },
 
+  async getScopusDashboardFilterOptions(params = {}) {
+    try {
+      const response = await apiClient.get('/admin/scopus/dashboard/filter-options', params);
+      return response;
+    } catch (error) {
+      console.error('Error fetching scopus dashboard filter options:', error);
+      throw error;
+    }
+  },
+
+  async getScopusDashboardSummary(params = {}) {
+    try {
+      const response = await apiClient.get('/admin/scopus/dashboard/summary', params);
+      return response;
+    } catch (error) {
+      console.error('Error fetching scopus dashboard summary:', error);
+      throw error;
+    }
+  },
+
   // Get budget overview
   async getBudgetOverview(yearId) {
     try {

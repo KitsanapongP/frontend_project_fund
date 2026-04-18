@@ -20,6 +20,7 @@ import {
   User,
   Gift,
   ArrowLeftRight,
+  BarChart3,
 } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
@@ -45,6 +46,12 @@ export default function Navigation({
       id: 'dashboard',
       label: 'แดชบอร์ดผู้ดูแลระบบ',
       icon: LayoutDashboard,
+      hasSubmenu: false
+    },
+    {
+      id: 'research-dashboard',
+      label: 'แดชบอร์ดงานวิจัย',
+      icon: BarChart3,
       hasSubmenu: false
     },
     {
@@ -130,6 +137,7 @@ export default function Navigation({
 
     const permissionByPage = {
       dashboard: 'ui.page.admin.dashboard.view',
+      'research-dashboard': 'ui.page.admin.scopus.view',
       'research-fund': 'ui.page.admin.research_fund.view',
       'promotion-fund': 'ui.page.admin.promotion_fund.view',
       'applications-list': 'ui.page.admin.applications.view',
