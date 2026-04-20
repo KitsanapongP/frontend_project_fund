@@ -98,7 +98,7 @@ const PERSON_MATRIX_STICKY_WIDTHS = {
   user_scopus_id: 170,
 };
 const PERSON_MATRIX_RANK_WIDTH = 72;
-const OVERVIEW_METRICS_LABEL_WIDTH = 270;
+const OVERVIEW_METRICS_LABEL_WIDTH = 290;
 
 const PERSON_ALL_COLUMNS = [
   ...PERSON_BASE_COLUMNS,
@@ -869,6 +869,7 @@ export default function AdminScopusResearchDashboard() {
         q2: Number(row?.q2 || 0),
         q3: Number(row?.q3 || 0),
         q4: Number(row?.q4 || 0),
+        tci: Number(row?.tci || 0),
         journal: Number(row?.journal || 0),
         conference: Number(row?.conference || 0),
         unique_documents: Number(row?.unique_documents || 0),
@@ -888,6 +889,7 @@ export default function AdminScopusResearchDashboard() {
         q2: Number(row?.q2 || 0),
         q3: Number(row?.q3 || 0),
         q4: Number(row?.q4 || 0),
+        tci: Number(row?.tci || 0),
         journal: Number(row?.journal || 0),
         conference: Number(row?.conference || 0),
         unique_documents: Number(row?.unique_documents || 0),
@@ -905,11 +907,12 @@ export default function AdminScopusResearchDashboard() {
       const q2 = Number(bucket.q2 || 0);
       const q3 = Number(bucket.q3 || 0);
       const q4 = Number(bucket.q4 || 0);
+      const tci = Number(bucket.tci || 0);
       const conference = Number(bucket.conference || 0);
       const uniqueDocuments = Number(bucket.unique_documents || 0);
       const groupedTotal = t1 + q1 + q2 + q3 + q4;
       const worksWithQ = groupedTotal;
-      const totalWithConference = groupedTotal + conference;
+      const totalWithConferenceAndTCI = groupedTotal + conference + tci;
 
       acc[year] = {
         t1,
@@ -917,17 +920,18 @@ export default function AdminScopusResearchDashboard() {
         q2,
         q3,
         q4,
+        tci,
         journal: Number(bucket.journal || 0),
         conference,
         groupedTotal,
         worksWithQ,
-        totalWithConference,
+        totalWithConferenceAndTCI,
         teacherCount,
         t1PerGrouped: worksWithQ > 0 ? t1 / worksWithQ : 0,
         q1PerGrouped: worksWithQ > 0 ? q1 / worksWithQ : 0,
         q1PerAll: uniqueDocuments > 0 ? q1 / uniqueDocuments : 0,
         worksWithQPerTeacher: teacherCount > 0 ? worksWithQ / teacherCount : 0,
-        allPerTeacher: teacherCount > 0 ? uniqueDocuments / teacherCount : 0,
+        allPerTeacher: teacherCount > 0 ? totalWithConferenceAndTCI / teacherCount : 0,
       };
       return acc;
     }, {});
@@ -2286,6 +2290,30 @@ export default function AdminScopusResearchDashboard() {
                           ))}
                         </tr>
                         <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "tci" ? "" : "tci"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "tci" ? "bg-amber-100" : "hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "tci" ? "bg-amber-100" : "bg-slate-50"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            TCI
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-tci-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.tci || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-tci-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.tci || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
                           onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "conference" ? "" : "conference"))}
                           className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "conference" ? "bg-amber-100" : "hover:bg-sky-50"}`}
                         >
@@ -2327,10 +2355,10 @@ export default function AdminScopusResearchDashboard() {
                             รวม
                           </td>
                           {overviewYearsBE.map((year) => (
-                            <td key={`cal-total-${year}`} className="border border-blue-200 bg-blue-100/70 px-3 py-2 text-right font-semibold text-blue-900">{formatNumber(overviewYearMetricsCalendar[year]?.totalWithConference || 0)}</td>
+                            <td key={`cal-total-${year}`} className="border border-blue-200 bg-blue-100/70 px-3 py-2 text-right font-semibold text-blue-900">{formatNumber(overviewYearMetricsCalendar[year]?.totalWithConferenceAndTCI || 0)}</td>
                           ))}
                           {overviewYearsBE.map((year) => (
-                            <td key={`fy-total-${year}`} className="border border-emerald-200 bg-emerald-100/70 px-3 py-2 text-right font-semibold text-emerald-900">{formatNumber(overviewYearMetricsFiscal[year]?.totalWithConference || 0)}</td>
+                            <td key={`fy-total-${year}`} className="border border-emerald-200 bg-emerald-100/70 px-3 py-2 text-right font-semibold text-emerald-900">{formatNumber(overviewYearMetricsFiscal[year]?.totalWithConferenceAndTCI || 0)}</td>
                           ))}
                         </tr>
                         <tr
@@ -2594,12 +2622,16 @@ export default function AdminScopusResearchDashboard() {
                       {fundingSponsorBreakdown.length === 0 ? (
                         <p className="text-sm text-slate-500">ไม่พบข้อมูล</p>
                       ) : (
-                        fundingSponsorBreakdown.map((item, index) => (
-                          <div key={`${item.label}-${index}`} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                            <p className="w-[78%] truncate text-sm text-slate-700">{item.label}</p>
-                            <p className="text-sm font-semibold text-slate-900">{formatNumber(item.total || 0)}</p>
+                        <div className="max-h-[360px] overflow-y-auto rounded-lg border border-slate-200 bg-white">
+                          <div className="space-y-2 p-2">
+                            {fundingSponsorBreakdown.map((item, index) => (
+                              <div key={`${item.label}-${index}`} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                                <p className="w-[78%] truncate text-sm text-slate-700">{String(item.label || "").trim().toUpperCase() === "N/A" ? "ไม่ระบุแหล่งทุน" : item.label}</p>
+                                <p className="text-sm font-semibold text-slate-900">{formatNumber(item.total || 0)}</p>
+                              </div>
+                            ))}
                           </div>
-                        ))
+                        </div>
                       )}
                     </div>
                   )}
