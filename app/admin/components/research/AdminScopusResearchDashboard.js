@@ -98,6 +98,7 @@ const PERSON_MATRIX_STICKY_WIDTHS = {
   user_scopus_id: 170,
 };
 const PERSON_MATRIX_RANK_WIDTH = 72;
+const OVERVIEW_METRICS_LABEL_WIDTH = 270;
 
 const PERSON_ALL_COLUMNS = [
   ...PERSON_BASE_COLUMNS,
@@ -200,6 +201,7 @@ export default function AdminScopusResearchDashboard() {
   const [selectedPersonSummaryRow, setSelectedPersonSummaryRow] = useState("");
   const [isPersonMatrixCollapsed, setIsPersonMatrixCollapsed] = useState(false);
   const [selectedPersonMatrixRow, setSelectedPersonMatrixRow] = useState("");
+  const [selectedOverviewMetricsRow, setSelectedOverviewMetricsRow] = useState("");
   const [isInternalCollabCollapsed, setIsInternalCollabCollapsed] = useState(false);
   const [selectedInternalCollabRow, setSelectedInternalCollabRow] = useState("");
   const [internalCollabSearch, setInternalCollabSearch] = useState("");
@@ -221,6 +223,7 @@ export default function AdminScopusResearchDashboard() {
   const [personSort, setPersonSort] = useState({ key: "unique_documents", direction: "desc" });
   const [documentChartView, setDocumentChartView] = useState("bar");
   const [quartileChartView, setQuartileChartView] = useState("donut");
+  const [publicationSourceSort, setPublicationSourceSort] = useState("desc");
   const [optionsError, setOptionsError] = useState("");
   const [summaryError, setSummaryError] = useState("");
 
@@ -613,7 +616,30 @@ export default function AdminScopusResearchDashboard() {
   const topPublicationSources = Array.isArray(summary?.top_publication_sources) ? summary.top_publication_sources : [];
   const fundingSponsorBreakdown = Array.isArray(summary?.funding_sponsor_breakdown) ? summary.funding_sponsor_breakdown : [];
   const facultyQuartileHistory = Array.isArray(summary?.faculty_quartile_history) ? summary.faculty_quartile_history : [];
+  const facultyQuartileHistoryFiscal = Array.isArray(summary?.faculty_quartile_history_fiscal) ? summary.faculty_quartile_history_fiscal : [];
   const yearBreakdownBE = summary?.year_breakdown_be || {};
+
+  const publicationSourceRows = useMemo(
+    () => {
+      const rows = topPublicationSources.map((item) => ({
+        aggregationType: String(item?.aggregation_type || "N/A"),
+        publicationSource: String(item?.publication_source || item?.label || "N/A"),
+        total: Number(item?.total || 0),
+      }));
+
+      rows.sort((left, right) => {
+        if (left.total !== right.total) {
+          return publicationSourceSort === "desc" ? right.total - left.total : left.total - right.total;
+        }
+        const sourceCompare = left.publicationSource.localeCompare(right.publicationSource);
+        if (sourceCompare !== 0) return sourceCompare;
+        return left.aggregationType.localeCompare(right.aggregationType);
+      });
+
+      return rows;
+    },
+    [publicationSourceSort, topPublicationSources]
+  );
 
   const visiblePersonBaseColumns = useMemo(
     () => PERSON_BASE_COLUMNS.filter((col) => personColumnVisibility[col.key]),
@@ -799,6 +825,125 @@ export default function AdminScopusResearchDashboard() {
     if (years.length === 0) return "-";
     return `${years[0]} - ${years[years.length - 1]}`;
   }, [appliedFilters?.yearStartBE, appliedFilters?.yearEndBE, yearBreakdownBE]);
+
+  const latestScopusPullLabel = useMemo(() => {
+    const raw = summary?.latest_scopus_pull_at;
+    if (!raw) return "-";
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return String(raw);
+    return parsed.toLocaleString("th-TH", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  }, [summary?.latest_scopus_pull_at]);
+
+  const overviewYearsBE = useMemo(() => {
+    const calendarYears = facultyQuartileHistory
+      .map((row) => Number(row?.publication_year || 0))
+      .filter((year) => Number.isFinite(year) && year > 0);
+    const fiscalYears = facultyQuartileHistoryFiscal
+      .map((row) => Number(row?.publication_year || 0))
+      .filter((year) => Number.isFinite(year) && year > 0);
+
+    const start = Number(appliedFilters?.yearStartBE || 0);
+    const end = Number(appliedFilters?.yearEndBE || 0);
+    if (start > 0 && end > 0 && end >= start) {
+      const years = [];
+      for (let year = start; year <= end; year += 1) {
+        years.push(year);
+      }
+      return years;
+    }
+
+    return Array.from(new Set([...calendarYears, ...fiscalYears])).sort((a, b) => a - b);
+  }, [appliedFilters?.yearEndBE, appliedFilters?.yearStartBE, facultyQuartileHistory, facultyQuartileHistoryFiscal]);
+
+  const calendarHistoryByYear = useMemo(() => {
+    const map = {};
+    facultyQuartileHistory.forEach((row) => {
+      const year = Number(row?.publication_year || 0);
+      if (!year) return;
+      map[year] = {
+        t1: Number(row?.t1 || 0),
+        q1: Number(row?.q1 || 0),
+        q2: Number(row?.q2 || 0),
+        q3: Number(row?.q3 || 0),
+        q4: Number(row?.q4 || 0),
+        journal: Number(row?.journal || 0),
+        conference: Number(row?.conference || 0),
+        unique_documents: Number(row?.unique_documents || 0),
+      };
+    });
+    return map;
+  }, [facultyQuartileHistory]);
+
+  const fiscalHistoryByYear = useMemo(() => {
+    const map = {};
+    facultyQuartileHistoryFiscal.forEach((row) => {
+      const year = Number(row?.publication_year || 0);
+      if (!year) return;
+      map[year] = {
+        t1: Number(row?.t1 || 0),
+        q1: Number(row?.q1 || 0),
+        q2: Number(row?.q2 || 0),
+        q3: Number(row?.q3 || 0),
+        q4: Number(row?.q4 || 0),
+        journal: Number(row?.journal || 0),
+        conference: Number(row?.conference || 0),
+        unique_documents: Number(row?.unique_documents || 0),
+      };
+    });
+    return map;
+  }, [facultyQuartileHistoryFiscal]);
+
+  const buildOverviewYearMetrics = useCallback((sourceMap) => {
+    const teacherCount = Number(kpi.total_teachers_with_scopus || 0);
+    return overviewYearsBE.reduce((acc, year) => {
+      const bucket = sourceMap[year] || {};
+      const t1 = Number(bucket.t1 || 0);
+      const q1 = Number(bucket.q1 || 0);
+      const q2 = Number(bucket.q2 || 0);
+      const q3 = Number(bucket.q3 || 0);
+      const q4 = Number(bucket.q4 || 0);
+      const conference = Number(bucket.conference || 0);
+      const uniqueDocuments = Number(bucket.unique_documents || 0);
+      const groupedTotal = t1 + q1 + q2 + q3 + q4;
+      const worksWithQ = groupedTotal;
+      const totalWithConference = groupedTotal + conference;
+
+      acc[year] = {
+        t1,
+        q1,
+        q2,
+        q3,
+        q4,
+        journal: Number(bucket.journal || 0),
+        conference,
+        groupedTotal,
+        worksWithQ,
+        totalWithConference,
+        teacherCount,
+        t1PerGrouped: worksWithQ > 0 ? t1 / worksWithQ : 0,
+        q1PerGrouped: worksWithQ > 0 ? q1 / worksWithQ : 0,
+        q1PerAll: uniqueDocuments > 0 ? q1 / uniqueDocuments : 0,
+        worksWithQPerTeacher: teacherCount > 0 ? worksWithQ / teacherCount : 0,
+        allPerTeacher: teacherCount > 0 ? uniqueDocuments / teacherCount : 0,
+      };
+      return acc;
+    }, {});
+  }, [kpi.total_teachers_with_scopus, overviewYearsBE]);
+
+  const overviewYearMetricsCalendar = useMemo(
+    () => buildOverviewYearMetrics(calendarHistoryByYear),
+    [buildOverviewYearMetrics, calendarHistoryByYear]
+  );
+
+  const overviewYearMetricsFiscal = useMemo(
+    () => buildOverviewYearMetrics(fiscalHistoryByYear),
+    [buildOverviewYearMetrics, fiscalHistoryByYear]
+  );
+
+  const formatRatio = useCallback((value) => Number(value || 0).toFixed(2), []);
 
   const documentChartOptions = useMemo(() => {
     const categories = documentTypeRows.map((row) => row.label);
@@ -1009,7 +1154,7 @@ export default function AdminScopusResearchDashboard() {
   return (
     <PageLayout
       title="แดชบอร์ดงานวิจัย"
-      subtitle="Filter Contract v1 พร้อมใช้งาน: ระดับคณะ / รายบุคคล + Advanced Search"
+      subtitle="ระดับคณะ / รายบุคคล"
       icon={BarChart3}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/admin" },
@@ -1950,21 +2095,370 @@ export default function AdminScopusResearchDashboard() {
             {!isOverviewCollapsed && <div className="space-y-5">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                 <div className="rounded-lg border border-teal-200 bg-teal-50 p-4">
-                  <p className="text-xs text-teal-700">จำนวนอาจารย์ที่มีเลข Scopus ในคณะ</p>
-                  <p className="mt-2 text-2xl font-semibold text-teal-900">{formatNumber(kpi.total_teachers_with_scopus || 0)}</p>
+                  <p className="text-xs text-teal-700">จำนวนอาจารย์ในคณะ</p>
+                  <p className="mt-2 text-right text-2xl font-semibold text-teal-900">{formatNumber(kpi.total_teachers_with_scopus || 0)}</p>
                 </div>
                 <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
                   <p className="text-xs text-indigo-700">จำนวนผลงานทั้งหมด (Unique Document)</p>
-                  <p className="mt-2 text-2xl font-semibold text-indigo-900">{formatNumber(kpi.total_documents || 0)}</p>
+                  <p className="mt-2 text-right text-2xl font-semibold text-indigo-900">{formatNumber(kpi.total_documents || 0)}</p>
                 </div>
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                   <p className="text-xs text-amber-700">จำนวน Citation ทั้งหมด (Total Citation)</p>
-                  <p className="mt-2 text-2xl font-semibold text-amber-900">{formatNumber(kpi.total_citations || 0)}</p>
+                  <p className="mt-2 text-right text-2xl font-semibold text-amber-900">{formatNumber(kpi.total_citations || 0)}</p>
                 </div>
                 <div className="rounded-lg border border-sky-200 bg-sky-50 p-4">
                   <p className="text-xs text-sky-700">ช่วงปีผลงาน (Publication Year Range)</p>
-                  <p className="mt-2 text-2xl font-semibold text-sky-900">{publicationYearRangeLabel}</p>
+                  <p className="mt-2 text-right text-2xl font-semibold text-sky-900">{publicationYearRangeLabel}</p>
                 </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 p-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-slate-800">จำนวนบทความที่เผยแพร่</p>
+                </div>
+                {overviewYearsBE.length === 0 ? (
+                  <p className="text-sm text-slate-500">ไม่พบข้อมูลรายปี</p>
+                ) : (
+                  <>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-[980px] border-collapse text-sm">
+                      <thead>
+                        <tr className="text-slate-700">
+                          <th
+                            className="border border-indigo-200 bg-indigo-50 px-3 py-2 text-left text-indigo-800 whitespace-nowrap"
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 30,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          />
+                          <th colSpan={overviewYearsBE.length} className="border border-blue-200 bg-blue-50 px-3 py-2 text-center text-blue-800">
+                            ปีปฏิทิน (ม.ค. - ธ.ค.)
+                          </th>
+                          <th colSpan={overviewYearsBE.length} className="border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-emerald-800">
+                            ปีงบประมาณ (ต.ค. - ก.ย.)
+                          </th>
+                        </tr>
+                        <tr className="text-slate-700">
+                          <th
+                            className="border border-indigo-200 bg-indigo-50 px-3 py-2 text-left text-indigo-800 whitespace-nowrap"
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 30,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            รายการ
+                          </th>
+                          {overviewYearsBE.map((year) => (
+                            <th key={`cal-${year}`} className="border border-blue-200 bg-blue-50 px-3 py-2 text-center text-blue-800">{year}</th>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <th key={`fy-${year}`} className="border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-emerald-800">{year}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "t1" ? "" : "t1"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "t1" ? "bg-amber-100" : "hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "t1" ? "bg-amber-100" : "bg-slate-50"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            T1 (90-100)
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-t1-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.t1 || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-t1-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.t1 || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "q1" ? "" : "q1"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "q1" ? "bg-amber-100" : "hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "q1" ? "bg-amber-100" : "bg-slate-50"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            Q1 (75-89)
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-q1-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.q1 || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-q1-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.q1 || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "q2" ? "" : "q2"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "q2" ? "bg-amber-100" : "hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "q2" ? "bg-amber-100" : "bg-slate-50"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            Q2 (50-74)
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-q2-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.q2 || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-q2-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.q2 || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "q3" ? "" : "q3"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "q3" ? "bg-amber-100" : "hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "q3" ? "bg-amber-100" : "bg-slate-50"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            Q3 (25-49)
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-q3-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.q3 || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-q3-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.q3 || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "q4" ? "" : "q4"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "q4" ? "bg-amber-100" : "hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "q4" ? "bg-amber-100" : "bg-slate-50"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            Q4 (0-24)
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-q4-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.q4 || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-q4-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.q4 || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "conference" ? "" : "conference"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "conference" ? "bg-amber-100" : "hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "conference" ? "bg-amber-100" : "bg-slate-50"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            Conference Proceeding
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-conf-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.conference || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-conf-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.conference || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "total" ? "" : "total"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "total" ? "bg-amber-100" : "bg-indigo-50 hover:bg-indigo-100/70"}`}
+                        >
+                          <td
+                            className={`border border-indigo-200 px-3 py-2 font-semibold text-indigo-900 whitespace-nowrap ${selectedOverviewMetricsRow === "total" ? "bg-amber-100" : "bg-indigo-100"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            รวม
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-total-${year}`} className="border border-blue-200 bg-blue-100/70 px-3 py-2 text-right font-semibold text-blue-900">{formatNumber(overviewYearMetricsCalendar[year]?.totalWithConference || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-total-${year}`} className="border border-emerald-200 bg-emerald-100/70 px-3 py-2 text-right font-semibold text-emerald-900">{formatNumber(overviewYearMetricsFiscal[year]?.totalWithConference || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "t1_per_q" ? "" : "t1_per_q"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "t1_per_q" ? "bg-amber-100 text-slate-900" : "bg-slate-100 text-slate-800 hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium whitespace-nowrap ${selectedOverviewMetricsRow === "t1_per_q" ? "bg-amber-100" : "bg-slate-100"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            ร้อยละของ T1 ต่อ จำนวนผลงานที่มี Q
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-t1g-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right font-semibold">{formatRatio(overviewYearMetricsCalendar[year]?.t1PerGrouped || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-t1g-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right font-semibold">{formatRatio(overviewYearMetricsFiscal[year]?.t1PerGrouped || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "q1_per_q" ? "" : "q1_per_q"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "q1_per_q" ? "bg-amber-100 text-slate-900" : "bg-slate-100 text-slate-800 hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium whitespace-nowrap ${selectedOverviewMetricsRow === "q1_per_q" ? "bg-amber-100" : "bg-slate-100"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            ร้อยละของ Q1 ต่อ จำนวนผลงานที่มี Q
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-q1g-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right font-semibold">{formatRatio(overviewYearMetricsCalendar[year]?.q1PerGrouped || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-q1g-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right font-semibold">{formatRatio(overviewYearMetricsFiscal[year]?.q1PerGrouped || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "q1_per_all" ? "" : "q1_per_all"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "q1_per_all" ? "bg-amber-100 text-slate-900" : "bg-slate-100 text-slate-800 hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium whitespace-nowrap ${selectedOverviewMetricsRow === "q1_per_all" ? "bg-amber-100" : "bg-slate-100"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            ร้อยละของ Q1 ต่อ จำนวนผลงานทุกประเภท
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-q1all-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right font-semibold">{formatRatio(overviewYearMetricsCalendar[year]?.q1PerAll || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-q1all-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right font-semibold">{formatRatio(overviewYearMetricsFiscal[year]?.q1PerAll || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "works_q_per_teacher" ? "" : "works_q_per_teacher"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "works_q_per_teacher" ? "bg-amber-100 text-slate-900" : "bg-slate-100 text-slate-800 hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium whitespace-nowrap ${selectedOverviewMetricsRow === "works_q_per_teacher" ? "bg-amber-100" : "bg-slate-100"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            ร้อยละของจำนวนผลงานที่มี Q ต่อจำนวนอาจารย์
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-worksqteacher-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right font-semibold">{formatRatio(overviewYearMetricsCalendar[year]?.worksWithQPerTeacher || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-worksqteacher-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right font-semibold">{formatRatio(overviewYearMetricsFiscal[year]?.worksWithQPerTeacher || 0)}</td>
+                          ))}
+                        </tr>
+                        <tr
+                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "all_per_teacher" ? "" : "all_per_teacher"))}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "all_per_teacher" ? "bg-amber-100 text-slate-900" : "bg-slate-100 text-slate-800 hover:bg-sky-50"}`}
+                        >
+                          <td
+                            className={`border border-slate-300 px-3 py-2 font-medium whitespace-nowrap ${selectedOverviewMetricsRow === "all_per_teacher" ? "bg-amber-100" : "bg-slate-100"}`}
+                            style={{
+                              position: "sticky",
+                              left: "0px",
+                              zIndex: 20,
+                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                            }}
+                          >
+                            ร้อยละผลงานทุกประเภทต่อ จำนวนอาจารย์
+                          </td>
+                          {overviewYearsBE.map((year) => (
+                            <td key={`cal-allteacher-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right font-semibold">{formatRatio(overviewYearMetricsCalendar[year]?.allPerTeacher || 0)}</td>
+                          ))}
+                          {overviewYearsBE.map((year) => (
+                            <td key={`fy-allteacher-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right font-semibold">{formatRatio(overviewYearMetricsFiscal[year]?.allPerTeacher || 0)}</td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="mt-3 text-xs text-slate-500">อัปเดตล่าสุด: <span className="font-medium text-slate-700">{latestScopusPullLabel}</span></p>
+                  </>
+                )}
               </div>
 
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -2046,15 +2540,38 @@ export default function AdminScopusResearchDashboard() {
                   </div>
                   {!isSourceCollapsed && (
                     <div className="space-y-2">
-                      {topPublicationSources.length === 0 ? (
+                      {publicationSourceRows.length === 0 ? (
                         <p className="text-sm text-slate-500">ไม่พบข้อมูล</p>
                       ) : (
-                        topPublicationSources.map((item, index) => (
-                          <div key={`${item.label}-${index}`} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                            <p className="w-[78%] truncate text-sm text-slate-700">{item.label}</p>
-                            <p className="text-sm font-semibold text-slate-900">{formatNumber(item.total || 0)}</p>
-                          </div>
-                        ))
+                        <div className="max-h-[360px] overflow-y-auto rounded-lg border border-slate-200">
+                          <table className="min-w-full border-collapse text-sm">
+                            <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700">
+                              <tr>
+                                <th className="border border-slate-200 px-3 py-2 text-left font-semibold">ประเภทผลงาน</th>
+                                <th className="border border-slate-200 px-3 py-2 text-left font-semibold">แหล่งตีพิมพ์</th>
+                                <th className="border border-slate-200 px-3 py-2 text-right font-semibold">
+                                  <button
+                                    type="button"
+                                    onClick={() => setPublicationSourceSort((prev) => (prev === "desc" ? "asc" : "desc"))}
+                                    className="inline-flex items-center gap-1 text-right text-slate-700 hover:text-slate-900"
+                                  >
+                                    <span>จำนวน</span>
+                                    {publicationSourceSort === "desc" ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                                  </button>
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {publicationSourceRows.map((item, index) => (
+                                <tr key={`${item.aggregationType}-${item.publicationSource}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                                  <td className="border border-slate-200 px-3 py-2 text-slate-700">{item.aggregationType}</td>
+                                  <td className="border border-slate-200 px-3 py-2 text-slate-700">{item.publicationSource}</td>
+                                  <td className="border border-slate-200 px-3 py-2 text-right font-semibold text-slate-900">{formatNumber(item.total)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
                     </div>
                   )}
