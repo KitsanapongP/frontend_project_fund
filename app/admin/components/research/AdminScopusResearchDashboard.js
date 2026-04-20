@@ -4,10 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   BarChart3,
-  Building2,
-  UserRound,
   SlidersHorizontal,
-  Search,
   Filter,
   ChevronDown,
   ChevronUp,
@@ -47,7 +44,6 @@ const DEFAULT_FILTERS = {
   searchKeyword: "",
 };
 
-const FILTER_COLLAPSE_STORAGE_KEY = "admin_scopus_dashboard_filters_collapsed";
 const SOURCE_COLLAPSE_STORAGE_KEY = "admin_scopus_dashboard_sources_collapsed";
 const SPONSOR_COLLAPSE_STORAGE_KEY = "admin_scopus_dashboard_sponsors_collapsed";
 const OVERVIEW_COLLAPSE_STORAGE_KEY = "admin_scopus_dashboard_overview_collapsed";
@@ -190,8 +186,6 @@ export default function AdminScopusResearchDashboard() {
   const [summary, setSummary] = useState(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingSummary, setLoadingSummary] = useState(false);
-  const [isFilterCollapsed, setIsFilterCollapsed] = useState(true);
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isSourceCollapsed, setIsSourceCollapsed] = useState(false);
   const [isSponsorCollapsed, setIsSponsorCollapsed] = useState(false);
   const [isOverviewCollapsed, setIsOverviewCollapsed] = useState(false);
@@ -229,13 +223,6 @@ export default function AdminScopusResearchDashboard() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const savedFilter = window.localStorage.getItem(FILTER_COLLAPSE_STORAGE_KEY);
-    if (savedFilter === "0") {
-      setIsFilterCollapsed(false);
-    } else if (savedFilter === "1") {
-      setIsFilterCollapsed(true);
-    }
-
     const savedSource = window.localStorage.getItem(SOURCE_COLLAPSE_STORAGE_KEY);
     if (savedSource === "1") {
       setIsSourceCollapsed(true);
@@ -270,16 +257,6 @@ export default function AdminScopusResearchDashboard() {
     if (savedInternalCollab === "1") {
       setIsInternalCollabCollapsed(true);
     }
-  }, []);
-
-  const toggleFilterCollapsed = useCallback(() => {
-    setIsFilterCollapsed((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(FILTER_COLLAPSE_STORAGE_KEY, next ? "1" : "0");
-      }
-      return next;
-    });
   }, []);
 
   const toggleSourceCollapsed = useCallback(() => {
@@ -512,11 +489,43 @@ export default function AdminScopusResearchDashboard() {
   const yearOptions = useMemo(() => (Array.isArray(options?.year_options) ? options.year_options : []), [options]);
   const aggregationOptions = useMemo(() => (Array.isArray(options?.aggregation_types) ? options.aggregation_types : []), [options]);
   const qualityOptions = useMemo(() => (Array.isArray(options?.quality_buckets) ? options.quality_buckets : []), [options]);
-  const openAccessOptions = useMemo(() => (Array.isArray(options?.open_access_modes) ? options.open_access_modes : []), [options]);
 
-  const selectedScopeLabel = useMemo(() => {
-    return scopeOptions.find((item) => item.value === draftFilters.scope)?.label || "ระดับคณะ";
-  }, [scopeOptions, draftFilters.scope]);
+  const appliedFilterSummaryItems = useMemo(() => {
+    const scopeLabel = scopeOptions.find((item) => item.value === appliedFilters.scope)?.label || "ระดับคณะ";
+
+    const yearStart = String(appliedFilters.yearStartBE || "").trim();
+    const yearEnd = String(appliedFilters.yearEndBE || "").trim();
+    let yearLabel = "ทุกปี";
+    if (yearStart && yearEnd) yearLabel = `${yearStart} - ${yearEnd}`;
+    else if (yearStart) yearLabel = `${yearStart} - ล่าสุด`;
+    else if (yearEnd) yearLabel = `เริ่มต้น - ${yearEnd}`;
+
+    const aggregationLabelMap = aggregationOptions.reduce((acc, item) => {
+      acc[String(item.value)] = String(item.label || item.value);
+      return acc;
+    }, {});
+    const qualityLabelMap = qualityOptions.reduce((acc, item) => {
+      acc[String(item.value)] = String(item.label || item.value);
+      return acc;
+    }, {});
+
+    const selectedAggregations = Array.isArray(appliedFilters.aggregationTypes) ? appliedFilters.aggregationTypes : [];
+    const selectedQuality = Array.isArray(appliedFilters.qualityBuckets) ? appliedFilters.qualityBuckets : [];
+
+    const aggregationLabel = selectedAggregations.length > 0
+      ? selectedAggregations.map((value) => aggregationLabelMap[String(value)] || String(value)).join(", ")
+      : "ทั้งหมด";
+    const qualityLabel = selectedQuality.length > 0
+      ? selectedQuality.map((value) => qualityLabelMap[String(value)] || String(value)).join(", ")
+      : "ทั้งหมด";
+
+    return [
+      { key: "scope", label: "มุมมอง", value: scopeLabel },
+      { key: "year", label: "ช่วงปี", value: yearLabel },
+      { key: "aggregation", label: "ประเภทผลงาน", value: aggregationLabel },
+      { key: "quality", label: "คุณภาพวารสาร", value: qualityLabel },
+    ];
+  }, [aggregationOptions, appliedFilters, qualityOptions, scopeOptions]);
 
   const toggleMulti = useCallback((key, value) => {
     setDraftFilters((prev) => {
@@ -1171,71 +1180,49 @@ export default function AdminScopusResearchDashboard() {
           icon={SlidersHorizontal}
         >
           <div className="space-y-4">
-            <div className="rounded-xl border border-slate-200 p-4">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">มุมมองข้อมูล</p>
-              <div className="flex flex-wrap gap-2">
-                {scopeOptions.map((mode) => {
-                  const active = mode.value === draftFilters.scope;
-                  const ModeIcon = mode.value === "faculty" ? Building2 : UserRound;
-                  const description = mode.value === "faculty"
-                    ? "ภาพรวมผลงานระดับคณะ"
-                    : "วิเคราะห์ผลงานเฉพาะที่ผูกกับบุคลากรในระบบ";
-                  return (
-                    <button
-                      key={mode.value}
-                      type="button"
-                      onClick={() => setDraftFilters((prev) => ({ ...prev, scope: mode.value }))}
-                      className={`min-w-[230px] flex-1 rounded-lg border px-3 py-2.5 text-left transition ${
-                        active
-                          ? "border-blue-500 bg-blue-50 shadow-sm"
-                          : "border-slate-200 bg-white hover:border-slate-300"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className={`rounded-md p-1.5 ${active ? "bg-blue-100" : "bg-slate-100"}`}>
-                          <ModeIcon size={16} className={active ? "text-blue-700" : "text-slate-600"} />
-                        </span>
-                        <div>
-                          <p className={`text-sm font-semibold ${active ? "text-blue-700" : "text-slate-800"}`}>
-                            {mode.label}
-                          </p>
-                          <p className="text-[11px] text-slate-500">{description}</p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-sm font-medium text-slate-700">ตัวกรองเพิ่มเติม</p>
-              <button
-                type="button"
-                onClick={toggleFilterCollapsed}
-                aria-label={isFilterCollapsed ? "แสดงตัวกรอง" : "ซ่อนตัวกรอง"}
-                title={isFilterCollapsed ? "แสดงตัวกรอง" : "ซ่อนตัวกรอง"}
-                className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-slate-700 hover:bg-slate-200"
-              >
-                <span>{isFilterCollapsed ? "แสดงตัวกรอง" : "ซ่อนตัวกรอง"}</span>
-                {isFilterCollapsed ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
-              </button>
-            </div>
-
-            {optionsError ? (
+            {optionsError && (
               <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{optionsError}</p>
-            ) : isFilterCollapsed ? null : (
-              <>
-              <div className="rounded-xl border border-slate-200 p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">ช่วงเวลาและปริมาณ</p>
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <div>
-                    <p className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">ช่วงปี (พ.ศ.)</p>
+            )}
+
+            <div className="rounded-xl border border-slate-200 p-4">
+              <div className="space-y-3">
+                <div className="grid gap-3 xl:grid-cols-2">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">มุมมอง</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {scopeOptions.map((mode) => {
+                        const checked = mode.value === draftFilters.scope;
+                        return (
+                          <label
+                            key={mode.value}
+                            className={`inline-flex h-10 w-full cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm transition ${
+                              checked
+                                ? "border-blue-500 bg-blue-50 text-blue-700"
+                                : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="scopus-scope"
+                              value={mode.value}
+                              checked={checked}
+                              onChange={(event) => setDraftFilters((prev) => ({ ...prev, scope: event.target.value }))}
+                              className="h-4 w-4 border-slate-300 text-blue-600"
+                            />
+                            <span className="font-medium">{mode.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">ช่วงปี (พ.ศ.)</p>
                     <div className="flex items-center gap-2">
                       <select
                         value={draftFilters.yearStartBE}
                         onChange={(event) => setDraftFilters((prev) => ({ ...prev, yearStartBE: event.target.value }))}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
                         disabled={loadingOptions}
                       >
                         <option value="">ปีเริ่มต้น</option>
@@ -1247,7 +1234,7 @@ export default function AdminScopusResearchDashboard() {
                       <select
                         value={draftFilters.yearEndBE}
                         onChange={(event) => setDraftFilters((prev) => ({ ...prev, yearEndBE: event.target.value }))}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
                         disabled={loadingOptions}
                       >
                         <option value="">ปีสิ้นสุด</option>
@@ -1257,145 +1244,80 @@ export default function AdminScopusResearchDashboard() {
                       </select>
                     </div>
                   </div>
-
-                  <div>
-                    <p className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Open Access</p>
-                    <select
-                      value={draftFilters.openAccessMode}
-                      onChange={(event) => setDraftFilters((prev) => ({ ...prev, openAccessMode: event.target.value }))}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                    >
-                      {openAccessOptions.map((item) => (
-                        <option key={item.value} value={item.value}>{item.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <p className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">ช่วง Citation</p>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="ขั้นต่ำ"
-                        value={draftFilters.citationMin}
-                        onChange={(event) => setDraftFilters((prev) => ({ ...prev, citationMin: event.target.value }))}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
-                      <span className="text-slate-400">-</span>
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="สูงสุด"
-                        value={draftFilters.citationMax}
-                        onChange={(event) => setDraftFilters((prev) => ({ ...prev, citationMax: event.target.value }))}
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </div>
                 </div>
-              </div>
 
-              <div className="rounded-xl border border-slate-200 p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">ประเภทและคุณภาพ</p>
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <div>
-                    <p className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">ประเภทผลงาน (aggregation type)</p>
-                    <div className="flex flex-wrap gap-2">
+                <div className="grid gap-3 xl:grid-cols-2">
+                  <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">ประเภทผลงาน</p>
+                    <div className="grid grid-cols-4 gap-2">
                       {aggregationOptions.map((item) => {
                         const active = draftFilters.aggregationTypes.includes(item.value);
                         return (
-                          <button
+                          <label
                             key={item.value}
-                            type="button"
-                            onClick={() => toggleMulti("aggregationTypes", item.value)}
-                            className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                            className={`inline-flex h-10 min-w-0 w-full cursor-pointer items-center gap-2 rounded-lg border px-2.5 text-xs transition ${
                               active
-                                ? "border-blue-500 bg-blue-50 text-blue-700"
-                                : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                                ? "border-blue-500 bg-blue-100/60 text-blue-700"
+                                : "border-blue-200 bg-white text-slate-700 hover:border-blue-300"
                             }`}
                           >
-                            {item.label} ({formatNumber(item.total || 0)})
-                          </button>
+                            <input
+                              type="checkbox"
+                              checked={active}
+                              onChange={() => toggleMulti("aggregationTypes", item.value)}
+                              className="h-3.5 w-3.5 border-slate-300 text-blue-600"
+                            />
+                            <span className="truncate whitespace-nowrap">{item.label}</span>
+                          </label>
                         );
                       })}
                     </div>
                   </div>
 
-                  <div>
-                    <p className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">คุณภาพวารสาร (รวม T1)</p>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">คุณภาพวารสาร</p>
+                    <div className="grid grid-cols-6 gap-2">
                       {qualityOptions.map((item) => {
                         const active = draftFilters.qualityBuckets.includes(item.value);
                         return (
-                          <button
+                          <label
                             key={item.value}
-                            type="button"
-                            onClick={() => toggleMulti("qualityBuckets", item.value)}
-                            className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                            className={`inline-flex h-10 min-w-0 w-full cursor-pointer items-center gap-2 rounded-lg border px-2.5 text-xs transition ${
                               active
-                                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                                : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                                ? "border-emerald-500 bg-emerald-100/60 text-emerald-700"
+                                : "border-emerald-200 bg-white text-slate-700 hover:border-emerald-300"
                             }`}
                           >
-                            {item.label} ({formatNumber(item.total || 0)})
-                          </button>
+                            <input
+                              type="checkbox"
+                              checked={active}
+                              onChange={() => toggleMulti("qualityBuckets", item.value)}
+                              className="h-3.5 w-3.5 border-slate-300 text-emerald-600"
+                            />
+                            <span className="truncate whitespace-nowrap">{(String(item.value || "").trim().toUpperCase() === "T1" || String(item.label || "").trim().toUpperCase().startsWith("T1")) ? "T1" : item.label}</span>
+                          </label>
                         );
                       })}
                     </div>
                   </div>
                 </div>
               </div>
-
-              <div className="rounded-xl border border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setIsAdvancedOpen((prev) => !prev)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-slate-700"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <Search size={16} />
-                    Advanced Search
-                  </span>
-                  {isAdvancedOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </button>
-
-                {isAdvancedOpen && (
-                  <div className="grid gap-3 border-t border-slate-200 px-4 py-4 md:grid-cols-2 xl:grid-cols-4">
-                    {[
-                      { key: "searchTitle", label: "Title", placeholder: "ค้นหาชื่อบทความ" },
-                      { key: "searchDOI", label: "DOI", placeholder: "10.xxxx/xxxx" },
-                      { key: "searchEID", label: "EID", placeholder: "2-s2.0-..." },
-                      { key: "searchScopusID", label: "Scopus ID", placeholder: "SCOPUS_ID:..." },
-                      { key: "searchJournal", label: "Journal", placeholder: "ชื่อวารสาร" },
-                      { key: "searchAuthor", label: "Author", placeholder: "ชื่อผู้แต่ง" },
-                      { key: "searchAffiliation", label: "Affiliation", placeholder: "สังกัด/ประเทศ" },
-                      { key: "searchKeyword", label: "Keyword", placeholder: "คำสำคัญ" },
-                    ].map((field) => (
-                      <div key={field.key}>
-                        <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                          {field.label}
-                        </label>
-                        <input
-                          type="text"
-                          value={draftFilters[field.key]}
-                          onChange={(event) => setDraftFilters((prev) => ({ ...prev, [field.key]: event.target.value }))}
-                          placeholder={field.placeholder}
-                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              </>
-            )}
+            </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <div className="flex items-center gap-2 text-xs text-slate-600">
-                <Filter size={14} />
-                โหมดปัจจุบัน: <span className="font-semibold text-slate-800">{selectedScopeLabel}</span>
+              <div className="flex min-w-0 flex-1 items-start gap-2 text-xs text-slate-600">
+                <Filter size={14} className="mt-0.5" />
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-700">ตัวกรองปัจจุบัน:</p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {appliedFilterSummaryItems.map((item) => (
+                      <span key={item.key} className="inline-flex max-w-full items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-700">
+                        <span className="font-semibold text-slate-600">{item.label}:</span>
+                        <span className="truncate">{item.value}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
