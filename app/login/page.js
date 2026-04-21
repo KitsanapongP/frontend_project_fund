@@ -238,7 +238,7 @@ export default function LoginPage() {
       case 'reset':
         return 'กรอกโทเคนและรหัสผ่านใหม่เพื่อเข้าใช้งานระบบอีกครั้ง';
       default:
-        return 'เข้าสู่ระบบเพื่อใช้งานระบบทั้งหมดใน Portal';
+        return 'เข้าสู่ระบบเพื่อใช้งานระบบกองทุนวิจัยฯ';
     }
   }, [mode]);
 

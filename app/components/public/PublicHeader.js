@@ -106,60 +106,62 @@ export default function PublicHeader({
 
   return (
     <header className="fixed top-0 z-40 w-full border-b border-gray-200 bg-white/95 backdrop-blur">
-      <div className="px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <button
-            className={`${
-              isOpen || !canToggleMenu ? "hidden" : "block"
-            } inline-flex items-center justify-center me-4 ms-3 p-2 w-10 h-10 text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200`}
-            onClick={handleToggleMenu}
-            aria-label="open-mobile-menu"
-          >
-            <HiMenu className="w-5 h-5 text-gray-700" />
-          </button>
-
-          <div className={logoContainerClass} style={containerStyle || undefined}>
-            {renderLogoContent()}
-          </div>
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-800">
-              {subtitles.public || "งานวิจัยและนวัตกรรม วิทยาลัยการคอมพิวเตอร์"}
-            </h1>
-            <p className="text-sm text-gray-700 leading-tight">
-              {appName || "Fund Management"}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">{currentPageTitle}</p>
+      <div className="flex items-start justify-between gap-3 px-4 py-3 sm:items-center sm:px-6">
+        <div className="flex items-start gap-3 sm:items-center">
+          <div className="flex items-start gap-3 sm:items-center">
+            <div className={logoContainerClass} style={containerStyle || undefined}>
+              {renderLogoContent()}
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold text-gray-800 sm:text-xl">
+                {subtitles.public || "งานวิจัยและนวัตกรรม วิทยาลัยการคอมพิวเตอร์"}
+              </h1>
+              <p className="text-sm text-gray-700 leading-tight">
+                {appName || "Fund Management"}
+              </p>
+              <p className="mt-1 text-xs text-gray-500 truncate" title={currentPageTitle}>
+                {currentPageTitle}
+              </p>
+            </div>
           </div>
         </div>
 
-        {userLabel ? (
-          <div className="hidden sm:inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
-            {userLabel}
-          </div>
-        ) : null}
+        <div className="flex items-center gap-3">
+          {canToggleMenu ? (
+            <button
+              className="inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-sm text-gray-600 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 md:hidden"
+              onClick={handleToggleMenu}
+              aria-label={isOpen ? "close-mobile-menu" : "open-mobile-menu"}
+              aria-expanded={isOpen}
+            >
+              {isOpen ? (
+                <RxCross2 className="w-5 h-5 text-gray-700" />
+              ) : (
+                <HiMenu className="w-5 h-5 text-gray-700" />
+              )}
+            </button>
+          ) : null}
 
-        {loginHref ? (
-          <Link
-            href={loginHref}
-            className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            <LogIn size={16} />
-            <span>{loginLabel}</span>
-          </Link>
-        ) : null}
+          {userLabel ? (
+            <div className="hidden sm:inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
+              {userLabel}
+            </div>
+          ) : null}
 
-        {isOpen && (
-          <button
-            className="md:hidden inline-flex items-center justify-center me-4 ms-3 p-2 w-10 h-10 text-sm text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200"
-            onClick={handleCloseMenu}
-            aria-label="close-mobile-menu"
-          >
-            <RxCross2 className="w-5 h-5 text-gray-700" />
-          </button>
-        )}
+          {loginHref ? (
+            <Link
+              href={loginHref}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+            >
+              <LogIn size={16} />
+              <span>{loginLabel}</span>
+            </Link>
+          ) : null}
+        </div>
+
       </div>
 
-      {isOpen && (
+      {isOpen && canToggleMenu && (
         <div className="fixed inset-0 bg-gray-200/50 z-40" onClick={handleCloseMenu}>
           <div
             className="absolute top-0 pt-5 right-0 h-screen z-50 w-64 bg-white shadow p-4"
