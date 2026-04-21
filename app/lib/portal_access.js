@@ -22,6 +22,7 @@ export const PORTAL_ITEM_ACCESS = {
   },
   researcherMatching: {
     ...DEFAULT_PORTAL_RULE,
+    requireAuth: false,
   },
   researcherManagement: {
     ...DEFAULT_PORTAL_RULE,
