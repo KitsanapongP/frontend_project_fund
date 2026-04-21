@@ -1,7 +1,9 @@
 ﻿"use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo } from "react";
+import { LogIn } from "lucide-react";
 import { HiMenu } from "react-icons/hi";
 import { RxCross2 } from "react-icons/rx";
 import { BRANDING } from "../../config/branding";
@@ -11,6 +13,9 @@ export default function PublicHeader({
   setIsOpen,
   Navigation,
   currentPageTitle = "หน้าหลัก",
+  loginHref,
+  loginLabel = "เข้าสู่ระบบ",
+  userLabel = "",
 }) {
   const {
     appName,
@@ -118,7 +123,7 @@ export default function PublicHeader({
           </div>
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-gray-800">
-              {subtitles.public || "งานวิจัยและนวัตกรรมวิทยาลัยการคอมพิวเตอร์"}
+              {subtitles.public || "งานวิจัยและนวัตกรรม วิทยาลัยการคอมพิวเตอร์"}
             </h1>
             <p className="text-sm text-gray-700 leading-tight">
               {appName || "Fund Management"}
@@ -126,6 +131,22 @@ export default function PublicHeader({
             <p className="text-xs text-gray-500 mt-1">{currentPageTitle}</p>
           </div>
         </div>
+
+        {userLabel ? (
+          <div className="hidden sm:inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
+            {userLabel}
+          </div>
+        ) : null}
+
+        {loginHref ? (
+          <Link
+            href={loginHref}
+            className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            <LogIn size={16} />
+            <span>{loginLabel}</span>
+          </Link>
+        ) : null}
 
         {isOpen && (
           <button

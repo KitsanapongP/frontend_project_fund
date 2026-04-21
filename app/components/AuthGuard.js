@@ -55,7 +55,11 @@ export default function AuthGuard({
     // ถ้าต้องการ authentication แต่ยังไม่ได้ login
     if (requireAuth && !isAuthenticated) {
       console.log('User not authenticated, redirecting to login');
-      router.replace('/login');
+      const currentPath =
+        typeof window !== 'undefined'
+          ? `${window.location.pathname}${window.location.search}`
+          : pathname || '/';
+      router.replace(`/login?next=${encodeURIComponent(currentPath)}`);
       return;
     }
 
