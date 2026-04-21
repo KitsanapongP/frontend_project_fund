@@ -18,6 +18,7 @@ const normalizeCode = (value) => String(value || "").trim().toLowerCase();
 const PAGE_CHILD_PERMISSION_HINTS = {
   "ui.page.admin.dashboard.view": ["dashboard.view.admin"],
   "ui.page.admin.applications.view": ["submission.read.all", "fund.request.approve", "publication.reward.approve"],
+  "ui.page.admin.research_dashboard.view": ["scopus.publications.read"],
   "ui.page.admin.scopus.view": [
     "scopus.publications.read",
     "scopus.publications.read_by_user",
@@ -428,10 +429,20 @@ export default function AdminAccessControlPage() {
     setUserOverrideMap((prev) => {
       const next = { ...prev };
       const pageCode = normalizeCode(group?.pagePermission?.code);
+      const childCodes = Array.isArray(group?.children)
+        ? group.children.map((item) => normalizeCode(item?.code)).filter(Boolean)
+        : [];
       if (normalizedEffect === "allow" || normalizedEffect === "deny") {
         next[code] = normalizedEffect;
-        if (pageCode && code !== pageCode && !next[pageCode]) {
-          next[pageCode] = "allow";
+        if (pageCode) {
+          if (code !== pageCode && !next[pageCode]) {
+            next[pageCode] = "allow";
+          }
+          if (code === pageCode && normalizedEffect === "allow") {
+            childCodes.forEach((childCode) => {
+              next[childCode] = "allow";
+            });
+          }
         }
       } else {
         delete next[code];

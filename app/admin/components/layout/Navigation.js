@@ -137,7 +137,7 @@ export default function Navigation({
 
     const permissionByPage = {
       dashboard: 'ui.page.admin.dashboard.view',
-      'research-dashboard': 'ui.page.admin.scopus.view',
+      'research-dashboard': 'ui.page.admin.research_dashboard.view',
       'research-fund': 'ui.page.admin.research_fund.view',
       'promotion-fund': 'ui.page.admin.promotion_fund.view',
       'applications-list': 'ui.page.admin.applications.view',
