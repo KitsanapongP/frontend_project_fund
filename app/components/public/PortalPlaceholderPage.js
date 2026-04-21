@@ -1,6 +1,10 @@
-import Link from "next/link";
+"use client";
 
-export default function PortalPlaceholderPage({ title, description }) {
+import Link from "next/link";
+import AuthGuard from "../AuthGuard";
+import { getPortalItemAccess } from "../../lib/portal_access";
+
+function PortalPlaceholderPageContent({ title, description }) {
   return (
     <div className="min-h-screen bg-gray-100 px-4 pb-12 pt-28 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl rounded-3xl border border-gray-200 bg-white p-8 shadow-sm sm:p-10">
@@ -16,5 +20,23 @@ export default function PortalPlaceholderPage({ title, description }) {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function PortalPlaceholderPage({ title, description, accessKey }) {
+  const accessRule = getPortalItemAccess(accessKey);
+
+  if (!accessRule.requireAuth) {
+    return <PortalPlaceholderPageContent title={title} description={description} />;
+  }
+
+  return (
+    <AuthGuard
+      requireAuth={true}
+      allowedRoles={accessRule.allowedRoles || []}
+      allowedPermissions={accessRule.allowedPermissions || []}
+    >
+      <PortalPlaceholderPageContent title={title} description={description} />
+    </AuthGuard>
   );
 }

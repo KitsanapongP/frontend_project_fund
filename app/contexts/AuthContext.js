@@ -123,15 +123,20 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = localStorage.getItem('auth_token');
+        const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
         const userData = localStorage.getItem('user_data');
 
         if (token && userData) {
           try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const currentTime = Date.now() / 1000;
+            let tokenNotExpired = true;
 
-            if (payload.exp > currentTime) {
+            if (token.includes('.')) {
+              const payload = JSON.parse(atob(token.split('.')[1]));
+              const currentTime = Date.now() / 1000;
+              tokenNotExpired = payload.exp > currentTime;
+            }
+
+            if (tokenNotExpired) {
               let user = JSON.parse(userData);
 
               try {
@@ -155,11 +160,9 @@ export function AuthProvider({ children }) {
               return;
             }
           } catch (error) {
-            console.error('Invalid token format:', error);
+            console.warn('Cannot decode token expiry, fallback to profile check:', error);
           }
         }
-
-        localStorage.removeItem('auth_token');
 
         const profile = await authAPI.getProfileIfAuthenticated();
         if (profile?.user) {
@@ -175,6 +178,8 @@ export function AuthProvider({ children }) {
           return;
         }
 
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
         dispatch({
           type: AUTH_ACTIONS.INIT_AUTH,
@@ -186,6 +191,7 @@ export function AuthProvider({ children }) {
         });
       } catch (error) {
         console.error('Auth initialization error:', error);
+        localStorage.removeItem('access_token');
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
         dispatch({

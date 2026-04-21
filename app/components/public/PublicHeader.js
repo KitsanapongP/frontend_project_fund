@@ -15,6 +15,7 @@ export default function PublicHeader({
   currentPageTitle = "หน้าหลัก",
   loginHref,
   loginLabel = "เข้าสู่ระบบ",
+  userLabel = "",
 }) {
   const {
     appName,
@@ -130,6 +131,12 @@ export default function PublicHeader({
             <p className="text-xs text-gray-500 mt-1">{currentPageTitle}</p>
           </div>
         </div>
+
+        {userLabel ? (
+          <div className="hidden sm:inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
+            {userLabel}
+          </div>
+        ) : null}
 
         {loginHref ? (
           <Link

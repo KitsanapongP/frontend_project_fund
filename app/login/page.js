@@ -18,13 +18,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI, passwordAPI, APIError, NetworkError } from '../lib/api';
-import { hasAdminPortalAccess } from '../lib/access_routing';
+import { sanitizeNextPath } from '../lib/portal_access';
 
 export default function LoginPage() {
   const { login, isLoading, error, clearError, isAuthenticated, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const ssoErrorCode = searchParams?.get('error') || '';
+  const nextPath = useMemo(() => sanitizeNextPath(searchParams?.get('next') || ''), [searchParams]);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -47,7 +48,7 @@ export default function LoginPage() {
   const [resetStatus, setResetStatus] = useState({ message: '', error: '' });
   const [resetLoading, setResetLoading] = useState(false);
 
-  // Redirect if already authenticated - เนเธเนเนเธเนเธซเนเนเธเน Next.js router
+  // Redirect if already authenticated
   useEffect(() => {
     if (ssoErrorCode) {
       return;
@@ -55,9 +56,12 @@ export default function LoginPage() {
 
     if (isAuthenticated && user && !redirecting) {
       setRedirecting(true);
-      redirectBasedOnRole();
+      const targetPath = nextPath || '/';
+      setTimeout(() => {
+        router.replace(targetPath);
+      }, 100);
     }
-  }, [isAuthenticated, user, redirecting, ssoErrorCode]);
+  }, [isAuthenticated, user, redirecting, ssoErrorCode, nextPath, router]);
 
   useEffect(() => {
     if (!ssoErrorCode || typeof window === 'undefined') {
@@ -70,49 +74,6 @@ export default function LoginPage() {
     localStorage.removeItem('user_data');
     localStorage.removeItem('session_id');
   }, [ssoErrorCode]);
-
-  // เนเธเนเนเธเธเธฒเธฃ redirect เนเธซเนเนเธเน Next.js router เนเธฅเธฐเธ•เธฃเธงเธเธชเธญเธ role เนเธซเนเนเธกเนเธเธขเธณ
-  const redirectBasedOnRole = () => {
-    if (!user) {
-      return;
-    }
-
-    const canAccessAdmin = hasAdminPortalAccess(user);
-
-    // เธฃเธญเธเธฃเธฑเธ role เธ—เธฑเนเธเนเธเธ number/string เน€เธเนเธ 5 เธซเธฃเธทเธญ "5"
-    const userRoleRaw = user.role_id ?? user.role;
-    const userRole = typeof userRoleRaw === 'string' ? userRoleRaw.toLowerCase() : userRoleRaw;
-    const userRoleNumber = Number(userRoleRaw);
-
-    // เธซเธเนเธงเธเน€เธงเธฅเธฒเน€เธฅเนเธเธเนเธญเธขเน€เธเธทเนเธญเนเธซเน state update เน€เธชเธฃเนเธ
-    setTimeout(() => {
-      if (
-        userRole === 1 ||
-        userRole === 2 ||
-        userRole === 4 ||
-        userRoleNumber === 1 ||
-        userRoleNumber === 2 ||
-        userRoleNumber === 4 ||
-        userRole === 'teacher' ||
-        userRole === 'staff' ||
-        userRole === 'dept_head'
-      ) {
-        router.replace('/member');
-      } else if (canAccessAdmin) {
-        router.replace('/admin');
-      } else if (userRole === 3 || userRoleNumber === 3 || userRole === 'admin') {
-        router.replace('/admin');
-      } else if (
-        userRole === 5 ||
-        userRoleNumber === 5 ||
-        userRole === 'executive'
-      ) {
-        router.replace('/executive/dashboard');
-      } else {
-        router.replace('/dashboard');
-      }
-    }, 100);
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -277,7 +238,7 @@ export default function LoginPage() {
       case 'reset':
         return 'กรอกโทเคนและรหัสผ่านใหม่เพื่อเข้าใช้งานระบบอีกครั้ง';
       default:
-        return 'กองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์';
+        return 'เข้าสู่ระบบเพื่อใช้งานระบบทั้งหมดใน Portal';
     }
   }, [mode]);
 

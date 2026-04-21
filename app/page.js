@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -14,16 +13,18 @@ import {
   Handshake,
   Users,
 } from "lucide-react";
+import Swal from "sweetalert2";
 import { useAuth } from "./contexts/AuthContext";
 import PublicHeader from "./components/public/PublicHeader";
+import MemberHeader from "./member/components/layout/Header";
 import { getSupportFundMappings } from "./lib/support_fundmapping_api";
-import { hasAdminPortalAccess } from "./lib/access_routing";
+import { canAccessPortalRule, getPortalItemAccess } from "./lib/portal_access";
 
 const PORTAL_ITEMS = [
   {
     id: "researchFund",
     label: "กองทุนวิจัยฯ",
-    href: "/?page=researchFund",
+    href: "/member/research-fund",
     icon: BookOpenText,
     description: "ข้อมูลกองทุนและการใช้งานระบบ",
   },
@@ -79,8 +80,6 @@ const PAGE_TITLES = {
 };
 
 const APP_DISPLAY_NAME = "ระบบบริหารจัดการทุนวิจัย";
-const WELCOME_TAGLINE =
-  "ระบบกลางสำหรับบริหารจัดการทุนวิจัยของวิทยาลัยการคอมพิวเตอร์ มหาวิทยาลัยขอนแก่น";
 
 const MATCHING_STATUS_LABELS = {
   N: "ยังไม่ได้จับคู่",
@@ -109,47 +108,25 @@ function createEmptyAdvancedFilters() {
   };
 }
 
-function ResearchFundContent({ onLogin }) {
-  return (
-    <section className="rounded-3xl border border-gray-200 bg-white shadow-sm">
-      <div className="px-6 py-10 sm:px-10 sm:py-12">
-        <h3 className="text-2xl font-semibold leading-tight text-gray-900 sm:text-3xl">
-          {APP_DISPLAY_NAME}
-        </h3>
-        <p className="mt-4 max-w-3xl text-base text-gray-600 sm:text-lg">
-          {WELCOME_TAGLINE}
-        </p>
-        <div className="mt-8">
-          <button
-            onClick={onLogin}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:-translate-y-0.5 hover:shadow-xl"
-          >
-            <span>เข้าสู่ระบบ</span>
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function PortalGridContent() {
+function PortalGridContent({ onCardClick }) {
   return (
     <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {PORTAL_ITEMS.map((item) => {
           const Icon = item.icon;
           return (
-            <Link
+            <button
               key={item.id}
-              href={item.href}
-              className="group rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-white hover:shadow"
+              type="button"
+              onClick={() => onCardClick(item)}
+              className="group w-full rounded-2xl border border-gray-200 bg-gray-50 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-white hover:shadow"
             >
               <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white">
                 <Icon size={22} />
               </div>
               <h3 className="mt-4 text-lg font-semibold text-gray-900">{item.label}</h3>
               <p className="mt-1 text-sm text-gray-600">{item.description}</p>
-            </Link>
+            </button>
           );
         })}
       </div>
@@ -909,54 +886,38 @@ function ResearcherMatchingContent() {
 export default function HomePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, user, isLoading } = useAuth();
-  const [redirecting, setRedirecting] = useState(false);
+  const { isAuthenticated, isLoading, hasAnyRole, hasAnyPermission } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState("home");
 
-  useEffect(() => {
-    if (isLoading) {
-      return;
-    }
+  const promptLoginRequired = useCallback(
+    async (targetHref) => {
+      const result = await Swal.fire({
+        title: "แจ้งเตือน",
+        text: "กรุณาเข้าสู่ระบบเพื่อใช้งาน",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "เข้าสู่ระบบ",
+        cancelButtonText: "ปิด",
+        reverseButtons: true,
+      });
 
-    if (isAuthenticated && user) {
-      setRedirecting(true);
-      redirectBasedOnRole(user);
-    } else {
-      setRedirecting(false);
-    }
-  }, [isAuthenticated, user, isLoading]);
-
-  const redirectBasedOnRole = (userData) => {
-    const userRoleRaw = userData.role_id ?? userData.role;
-    const userRole = typeof userRoleRaw === "string" ? userRoleRaw.toLowerCase() : userRoleRaw;
-    const userRoleNumber = Number(userRoleRaw);
-    const canAccessAdmin = hasAdminPortalAccess(userData);
-
-    setTimeout(() => {
-      if (
-        userRole === 1 ||
-        userRole === 2 ||
-        userRole === 4 ||
-        userRoleNumber === 1 ||
-        userRoleNumber === 2 ||
-        userRoleNumber === 4 ||
-        userRole === "teacher" ||
-        userRole === "staff" ||
-        userRole === "dept_head"
-      ) {
-        router.replace("/member");
-      } else if (canAccessAdmin) {
-        router.replace("/admin");
-      } else if (userRole === 3 || userRoleNumber === 3 || userRole === "admin") {
-        router.replace("/admin");
-      } else if (userRole === 5 || userRoleNumber === 5 || userRole === "executive") {
-        router.replace("/executive/dashboard");
-      } else {
-        router.replace("/dashboard");
+      if (result.isConfirmed) {
+        const nextPath = targetHref || "/";
+        router.push(`/login?next=${encodeURIComponent(nextPath)}`);
       }
-    }, 100);
-  };
+    },
+    [router]
+  );
+
+  const promptNoPermission = useCallback(async () => {
+    await Swal.fire({
+      title: "แจ้งเตือน",
+      text: "คุณไม่มีสิทธิ์เข้าใช้งานส่วนนี้",
+      icon: "warning",
+      confirmButtonText: "ปิด",
+    });
+  }, []);
 
   useEffect(() => {
     const requestedPage = searchParams.get("page");
@@ -969,22 +930,84 @@ export default function HomePage() {
     setCurrentPage("home");
   }, [searchParams]);
 
+  useEffect(() => {
+    if (isLoading || currentPage === "home") {
+      return;
+    }
+
+    const pageAccessRule = getPortalItemAccess(currentPage);
+    const canAccessCurrentPage = canAccessPortalRule(pageAccessRule, {
+      isAuthenticated,
+      hasAnyRole,
+      hasAnyPermission,
+    });
+
+    if (pageAccessRule.requireAuth && !isAuthenticated) {
+      setCurrentPage("home");
+      const targetPath = currentPage === "researchFund" ? "/member/research-fund" : `/?page=${currentPage}`;
+      void promptLoginRequired(targetPath);
+      return;
+    }
+
+    if (!canAccessCurrentPage) {
+      setCurrentPage("home");
+      void promptNoPermission();
+      return;
+    }
+
+    if (currentPage === "researchFund") {
+      router.push("/member/research-fund");
+      setCurrentPage("home");
+    }
+  }, [
+    currentPage,
+    isAuthenticated,
+    isLoading,
+    hasAnyRole,
+    hasAnyPermission,
+    promptLoginRequired,
+    promptNoPermission,
+    router,
+  ]);
+
   const currentPageTitle = useMemo(() => {
     return PAGE_TITLES[currentPage] || "หน้าหลัก";
   }, [currentPage]);
-
-  const handleLogin = () => {
-    router.push("/login");
-  };
 
   const handleBackToPortal = () => {
     router.push("/");
     setCurrentPage("home");
   };
 
+  const handlePortalCardClick = (item) => {
+    const rule = getPortalItemAccess(item?.id);
+    const canAccess = canAccessPortalRule(rule, {
+      isAuthenticated,
+      hasAnyRole,
+      hasAnyPermission,
+    });
+
+    if (!rule.requireAuth) {
+      router.push(item.href);
+      return;
+    }
+
+    if (!isAuthenticated) {
+      void promptLoginRequired(item.href);
+      return;
+    }
+
+    if (!canAccess) {
+      void promptNoPermission();
+      return;
+    }
+
+    router.push(item.href);
+  };
+
   const renderPageContent = () => {
     if (currentPage === "home") {
-      return <PortalGridContent />;
+      return <PortalGridContent onCardClick={handlePortalCardClick} />;
     }
 
     const renderContentWithBack = (content) => (
@@ -1000,10 +1023,6 @@ export default function HomePage() {
       </div>
     );
 
-    if (currentPage === "researchFund") {
-      return renderContentWithBack(<ResearchFundContent onLogin={handleLogin} />);
-    }
-
     if (currentPage === "researcherMatching") {
       return renderContentWithBack(<ResearcherMatchingContent />);
     }
@@ -1011,7 +1030,7 @@ export default function HomePage() {
     return <ComingSoonContent pageTitle={currentPageTitle} />;
   };
 
-  if (isLoading || redirecting) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-white text-center">
         <Image
@@ -1032,12 +1051,20 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <PublicHeader
-        isOpen={isMenuOpen}
-        setIsOpen={setIsMenuOpen}
-        currentPageTitle={currentPageTitle}
-        loginHref="/login"
-      />
+      {isAuthenticated ? (
+        <MemberHeader
+          isOpen={isMenuOpen}
+          setIsOpen={setIsMenuOpen}
+          currentPageTitle={currentPageTitle}
+        />
+      ) : (
+        <PublicHeader
+          isOpen={isMenuOpen}
+          setIsOpen={setIsMenuOpen}
+          currentPageTitle={currentPageTitle}
+          loginHref="/login"
+        />
+      )}
 
       <main className="pt-40 lg:pt-32 px-4 sm:px-6 lg:px-8 pb-8">
         <div className="mx-auto max-w-6xl">
