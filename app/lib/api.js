@@ -571,19 +571,12 @@ export const authAPI = {
   },
 
   async logout() {
-    apiClient.clearAuth();
-
-    if (typeof window !== 'undefined') {
-      window.location.href = `${apiClient.getBackendBaseURL()}/api/auth/logout`;
-      return;
-    }
-
     try {
-      // Call logout endpoint to invalidate session
       await apiClient.post('/logout');
     } catch (error) {
-      // Even if logout API fails, clear local storage
       console.warn('Logout endpoint error:', error);
+    } finally {
+      apiClient.clearAuth();
     }
   },
 
@@ -598,11 +591,25 @@ export const authAPI = {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${apiClient.baseURL}/profile`, {
-      method: 'GET',
-      headers,
-      credentials: 'include',
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    let response;
+    try {
+      response = await fetch(`${apiClient.baseURL}/profile`, {
+        method: 'GET',
+        headers,
+        credentials: 'include',
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error?.name === 'AbortError' || error instanceof TypeError) {
+        return null;
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (response.status === 401) {
       return null;

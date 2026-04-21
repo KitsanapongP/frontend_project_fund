@@ -274,7 +274,7 @@ export function AuthProvider({ children }) {
     };
 
     // Logout function
-    const handleLogout = async () => {
+  const handleLogout = async () => {
     try {
         await authAPI.logout();
     } catch (error) {
@@ -282,7 +282,10 @@ export function AuthProvider({ children }) {
     }
 
     // Clear localStorage
+    localStorage.removeItem('access_token');
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('session_id');
     localStorage.removeItem('user_data');
     
     // ลบการเรียก authAPI.clearAuth
