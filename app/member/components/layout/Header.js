@@ -89,6 +89,7 @@ export default function Header({
   setIsOpen,
   Navigation,
   currentPageTitle = "แดชบอร์ดบุคลากร",
+  brandTitle,
   onNavigate,
 }) {
   const { user, logout } = useAuth();
@@ -183,7 +184,7 @@ export default function Header({
             <div className={logoContainerClass}>{renderLogoContent()}</div>
             <div className="min-w-0">
               <h1 className="text-lg font-bold text-gray-800 sm:text-xl">
-                {subtitles.member || "กองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์"}
+                {brandTitle || subtitles.member || "กองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์"}
               </h1>
               <p className="text-sm text-gray-700 leading-tight">
                 {appName || "Fund Management"}

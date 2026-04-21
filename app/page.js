@@ -20,6 +20,7 @@ import MemberHeader from "./member/components/layout/Header";
 import { getSupportFundMappings } from "./lib/support_fundmapping_api";
 import { canAccessPortalRule, getPortalItemAccess } from "./lib/portal_access";
 import { hasAdminPortalAccess, hasMemberPortalAccess, normalizeRoleName } from "./lib/access_routing";
+import { BRANDING } from "./config/branding";
 
 const PORTAL_ITEMS = [
   {
@@ -919,6 +920,10 @@ export default function HomePage() {
   const { isAuthenticated, isLoading, hasAnyRole, hasAnyPermission, user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState("home");
+  const portalBrandTitle =
+    currentPage === "home"
+      ? BRANDING.subtitles?.public || "งานวิจัยและนวัตกรรม วิทยาลัยการคอมพิวเตอร์"
+      : BRANDING.subtitles?.member || "กองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์";
 
   const promptLoginRequired = useCallback(
     async (targetHref) => {
@@ -1099,6 +1104,7 @@ export default function HomePage() {
           isOpen={isMenuOpen}
           setIsOpen={setIsMenuOpen}
           currentPageTitle={currentPageTitle}
+          brandTitle={portalBrandTitle}
         />
       ) : (
         <PublicHeader
