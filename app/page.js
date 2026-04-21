@@ -19,12 +19,13 @@ import PublicHeader from "./components/public/PublicHeader";
 import MemberHeader from "./member/components/layout/Header";
 import { getSupportFundMappings } from "./lib/support_fundmapping_api";
 import { canAccessPortalRule, getPortalItemAccess } from "./lib/portal_access";
+import { hasAdminPortalAccess, hasMemberPortalAccess, normalizeRoleName } from "./lib/access_routing";
 
 const PORTAL_ITEMS = [
   {
     id: "researchFund",
     label: "กองทุนวิจัยฯ",
-    href: "/member/research-fund",
+    href: "/?page=researchFund",
     icon: BookOpenText,
     description: "ข้อมูลกองทุนและการใช้งานระบบ",
   },
@@ -95,6 +96,35 @@ const MATCHING_STATUS_UI = {
   D: "border-rose-200 bg-rose-50 text-rose-800",
   default: "border-blue-200 bg-blue-50 text-blue-800",
 };
+
+function getResearchFundPathByUser(user) {
+  if (!user) {
+    return "/?page=researchFund";
+  }
+
+  const roleName = normalizeRoleName(user?.role ?? user?.role_id);
+  if (roleName === "executive") {
+    return "/executive/dashboard";
+  }
+
+  if (hasAdminPortalAccess(user)) {
+    return "/admin/research-fund";
+  }
+
+  if (hasMemberPortalAccess(user) || ["teacher", "staff", "dept_head"].includes(roleName)) {
+    return "/member/research-fund";
+  }
+
+  return "";
+}
+
+function getPortalItemDestination(item, user) {
+  if (item?.id === "researchFund") {
+    return getResearchFundPathByUser(user);
+  }
+
+  return item?.href || "/";
+}
 
 function createEmptyAdvancedFilters() {
   return {
@@ -886,7 +916,7 @@ function ResearcherMatchingContent() {
 export default function HomePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, isLoading, hasAnyRole, hasAnyPermission } = useAuth();
+  const { isAuthenticated, isLoading, hasAnyRole, hasAnyPermission, user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState("home");
 
@@ -944,7 +974,7 @@ export default function HomePage() {
 
     if (pageAccessRule.requireAuth && !isAuthenticated) {
       setCurrentPage("home");
-      const targetPath = currentPage === "researchFund" ? "/member/research-fund" : `/?page=${currentPage}`;
+      const targetPath = currentPage === "researchFund" ? "/?page=researchFund" : `/?page=${currentPage}`;
       void promptLoginRequired(targetPath);
       return;
     }
@@ -956,7 +986,13 @@ export default function HomePage() {
     }
 
     if (currentPage === "researchFund") {
-      router.push("/member/research-fund");
+      const targetPath = getResearchFundPathByUser(user);
+      if (!targetPath) {
+        setCurrentPage("home");
+        void promptNoPermission();
+        return;
+      }
+      router.push(targetPath);
       setCurrentPage("home");
     }
   }, [
@@ -965,6 +1001,7 @@ export default function HomePage() {
     isLoading,
     hasAnyRole,
     hasAnyPermission,
+    user,
     promptLoginRequired,
     promptNoPermission,
     router,
@@ -981,6 +1018,7 @@ export default function HomePage() {
 
   const handlePortalCardClick = (item) => {
     const rule = getPortalItemAccess(item?.id);
+    const targetPath = getPortalItemDestination(item, user);
     const canAccess = canAccessPortalRule(rule, {
       isAuthenticated,
       hasAnyRole,
@@ -988,21 +1026,26 @@ export default function HomePage() {
     });
 
     if (!rule.requireAuth) {
-      router.push(item.href);
+      if (!targetPath) {
+        void promptNoPermission();
+        return;
+      }
+      router.push(targetPath);
       return;
     }
 
     if (!isAuthenticated) {
-      void promptLoginRequired(item.href);
+      const nextPath = item?.id === "researchFund" ? "/?page=researchFund" : targetPath;
+      void promptLoginRequired(nextPath);
       return;
     }
 
-    if (!canAccess) {
+    if (!canAccess || !targetPath) {
       void promptNoPermission();
       return;
     }
 
-    router.push(item.href);
+    router.push(targetPath);
   };
 
   const renderPageContent = () => {
