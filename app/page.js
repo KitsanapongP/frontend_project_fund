@@ -1,23 +1,82 @@
 ﻿"use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowLeft,
+  BookOpenText,
+  BriefcaseBusiness,
+  ExternalLink,
+  FileSearch,
+  GraduationCap,
+  Handshake,
+  Users,
+} from "lucide-react";
 import { useAuth } from "./contexts/AuthContext";
 import PublicHeader from "./components/public/PublicHeader";
 import { getSupportFundMappings } from "./lib/support_fundmapping_api";
 import { hasAdminPortalAccess } from "./lib/access_routing";
 
-const TABS = [
-  { id: "home", label: "หน้าหลัก" },
-  { id: "researchFund", label: "กองทุนวิจัยฯ" },
-  { id: "externalFund", label: "ทุนภายนอก" },
-  { id: "publicationSearch", label: "สืบค้นผลงาน" },
-  { id: "mou", label: "MOU" },
-  { id: "links", label: "Links" },
-  { id: "researcherMatching", label: "จับคู่นักวิจัย" },
-  { id: "studentWorks", label: "ผลงานนักศึกษา" },
+const PORTAL_ITEMS = [
+  {
+    id: "researchFund",
+    label: "กองทุนวิจัยฯ",
+    href: "/?page=researchFund",
+    icon: BookOpenText,
+    description: "ข้อมูลกองทุนและการใช้งานระบบ",
+  },
+  {
+    id: "externalFund",
+    label: "ทุนภายนอก",
+    href: "/external-fund",
+    icon: BriefcaseBusiness,
+    description: "รายการและประกาศทุนจากแหล่งภายนอก",
+  },
+  {
+    id: "publicationSearch",
+    label: "สืบค้นผลงาน",
+    href: "/publication-search",
+    icon: FileSearch,
+    description: "สืบค้นข้อมูลผลงานและผลงานนักศึกษา",
+  },
+  {
+    id: "mou",
+    label: "MOU",
+    href: "/mou",
+    icon: Handshake,
+    description: "ข้อมูลความร่วมมือและบันทึกข้อตกลง",
+  },
+  {
+    id: "links",
+    label: "Links",
+    href: "/links",
+    icon: ExternalLink,
+    description: "ลิงก์ระบบที่เกี่ยวข้อง",
+  },
+  {
+    id: "researcherMatching",
+    label: "จับคู่นักวิจัย",
+    href: "/?page=researcherMatching",
+    icon: Users,
+    description: "ค้นหาและจับคู่หัวข้อกับนักวิจัย",
+  },
+  {
+    id: "researcherManagement",
+    label: "จัดการบุคลากร",
+    href: "/researcher-management",
+    icon: GraduationCap,
+    description: "บริหารจัดการข้อมูลบุคลากรวิจัย",
+  },
 ];
+
+const RENDERABLE_PAGE_IDS = new Set(["researchFund", "researcherMatching"]);
+const PAGE_TITLES = {
+  home: "หน้าหลัก",
+  researchFund: "กองทุนวิจัยฯ",
+  researcherMatching: "จับคู่นักวิจัย",
+};
 
 const APP_DISPLAY_NAME = "ระบบบริหารจัดการทุนวิจัย";
 const WELCOME_TAGLINE =
@@ -68,6 +127,31 @@ function ResearchFundContent({ onLogin }) {
             <span>เข้าสู่ระบบ</span>
           </button>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function PortalGridContent() {
+  return (
+    <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {PORTAL_ITEMS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              className="group rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-white hover:shadow"
+            >
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white">
+                <Icon size={22} />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-gray-900">{item.label}</h3>
+              <p className="mt-1 text-sm text-gray-600">{item.description}</p>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
@@ -824,10 +908,11 @@ function ResearcherMatchingContent() {
 
 export default function HomePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, user, isLoading } = useAuth();
   const [redirecting, setRedirecting] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState("researchFund");
+  const [currentPage, setCurrentPage] = useState("home");
 
   useEffect(() => {
     if (isLoading) {
@@ -873,21 +958,54 @@ export default function HomePage() {
     }, 100);
   };
 
+  useEffect(() => {
+    const requestedPage = searchParams.get("page");
+
+    if (requestedPage && RENDERABLE_PAGE_IDS.has(requestedPage)) {
+      setCurrentPage(requestedPage);
+      return;
+    }
+
+    setCurrentPage("home");
+  }, [searchParams]);
+
   const currentPageTitle = useMemo(() => {
-    return TABS.find((tab) => tab.id === currentPage)?.label || "หน้าหลัก";
+    return PAGE_TITLES[currentPage] || "หน้าหลัก";
   }, [currentPage]);
 
   const handleLogin = () => {
     router.push("/login");
   };
 
+  const handleBackToPortal = () => {
+    router.push("/");
+    setCurrentPage("home");
+  };
+
   const renderPageContent = () => {
+    if (currentPage === "home") {
+      return <PortalGridContent />;
+    }
+
+    const renderContentWithBack = (content) => (
+      <div className="space-y-3">
+        <button
+          onClick={handleBackToPortal}
+          className="inline-flex items-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-blue-300 hover:text-blue-700"
+        >
+          <ArrowLeft size={16} className="me-2" />
+          กลับหน้าหลัก
+        </button>
+        {content}
+      </div>
+    );
+
     if (currentPage === "researchFund") {
-      return <ResearchFundContent onLogin={handleLogin} />;
+      return renderContentWithBack(<ResearchFundContent onLogin={handleLogin} />);
     }
 
     if (currentPage === "researcherMatching") {
-      return <ResearcherMatchingContent />;
+      return renderContentWithBack(<ResearcherMatchingContent />);
     }
 
     return <ComingSoonContent pageTitle={currentPageTitle} />;
@@ -918,34 +1036,12 @@ export default function HomePage() {
         isOpen={isMenuOpen}
         setIsOpen={setIsMenuOpen}
         currentPageTitle={currentPageTitle}
+        loginHref="/login"
       />
 
       <main className="pt-40 lg:pt-32 px-4 sm:px-6 lg:px-8 pb-8">
         <div className="mx-auto max-w-6xl">
-          <div className="overflow-hidden rounded-2xl border border-gray-300 bg-white shadow-sm">
-            <div className="border-b border-gray-300 bg-gray-50 p-2">
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {TABS.map((tab) => {
-                  const active = currentPage === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setCurrentPage(tab.id)}
-                      className={`whitespace-nowrap rounded-md border px-4 py-2 text-sm font-medium transition ${
-                        active
-                          ? "border-blue-200 bg-blue-50 text-blue-700 shadow-sm"
-                          : "border-transparent bg-transparent text-gray-600 hover:bg-blue-50 hover:text-blue-700"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="bg-gray-100 p-3 sm:p-4">{renderPageContent()}</div>
-          </div>
+          <div className="bg-gray-100 p-1 sm:p-2">{renderPageContent()}</div>
         </div>
       </main>
     </div>
