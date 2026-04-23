@@ -1,5 +1,5 @@
 import { LogIn, LayoutDashboard } from 'lucide-react';
-import PageLayout from '@/app/member/components/common/PageLayout';
+import PageLayout from '@/app/(portal)/(research-fund-system)/member/components/common/PageLayout';
 
 export default function PublicWelcomeContent({ appDisplayName, tagline, onLogin, pageTitle }) {
   return (
