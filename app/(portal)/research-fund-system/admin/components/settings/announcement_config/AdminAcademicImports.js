@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AdminPublicationsImport from "./AdminPublicationsImport";
 import AdminScopusImport from "./AdminScopusImport";
 import AdminKkuPeopleScraper from "./AdminKkuPeopleScraper";
+import AdminThaiJOImport from "./AdminThaiJOImport";
 
 const TAB_CONFIG = [
   {
@@ -20,6 +21,11 @@ const TAB_CONFIG = [
     id: "kku-profile",
     label: "KKU Profile",
     description: "ดึงข้อมูลโปรไฟล์บุคลากรจากระบบมหาวิทยาลัย",
+  },
+  {
+    id: "thaijo",
+    label: "ThaiJO",
+    description: "นำเข้าบทความจาก ThaiJO พร้อมกรองผลด้วย author-search และจัดการ tier",
   },
 ];
 
@@ -40,6 +46,8 @@ export default function AdminAcademicImports({ initialTab = "scholar" }) {
         return <AdminScopusImport />;
       case "kku-profile":
         return <AdminKkuPeopleScraper />;
+      case "thaijo":
+        return <AdminThaiJOImport />;
       case "scholar":
       default:
         return <AdminPublicationsImport />;

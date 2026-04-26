@@ -1101,6 +1101,10 @@ export const publicationsAPI = {
     const payload = { ...params, user_id: userId };
     return apiClient.get('/teacher/user-publications/scopus/stats', payload);
   },
+  async getThaiJOPublicationsForUser(userId, params = {}) {
+    const payload = { ...params, user_id: userId };
+    return apiClient.get('/teacher/user-publications/thaijo', payload);
+  },
   async importScholarForUser(userId, authorId) {
     const url = `/admin/user-publications/import/scholar?user_id=${encodeURIComponent(
       userId
@@ -1130,6 +1134,26 @@ export const publicationsAPI = {
     }
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
     const res = await apiClient.post(`/admin/user-publications/import/scopus/all${suffix}`);
+    return res.summary || res;
+  },
+  async importThaiJOForUser(userId) {
+    const params = new URLSearchParams({ user_id: userId });
+    const res = await apiClient.post(`/admin/user-publications/import/thaijo?${params.toString()}`);
+    return res.summary || res;
+  },
+  async importThaiJOBatch({ user_ids, limit } = {}) {
+    const qs = new URLSearchParams();
+    if (user_ids) {
+      const value = Array.isArray(user_ids) ? user_ids.join(',') : String(user_ids);
+      if (value.trim()) {
+        qs.set('user_ids', value.trim());
+      }
+    }
+    if (limit) {
+      qs.set('limit', limit);
+    }
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    const res = await apiClient.post(`/admin/user-publications/import/thaijo/all${suffix}`);
     return res.summary || res;
   },
 };
@@ -1163,6 +1187,18 @@ export const scopusImportAPI = {
   },
   async listBatchRuns(params = {}) {
     return apiClient.get('/admin/scopus/import/batch/runs', params);
+  },
+};
+
+export const thaiJOImportAPI = {
+  async listJobs(params = {}) {
+    return apiClient.get('/admin/thaijo/import/jobs', params);
+  },
+  async listRequests(jobId, params = {}) {
+    return apiClient.get(`/admin/thaijo/import/jobs/${encodeURIComponent(jobId)}/requests`, params);
+  },
+  async listBatchRuns(params = {}) {
+    return apiClient.get('/admin/thaijo/import/batch/runs', params);
   },
 };
 
@@ -1215,6 +1251,19 @@ export const usersAPI = {
   async setScopusAuthorId(userId, scopusId) {
     return apiClient.post(`/admin/users/${encodeURIComponent(userId)}/scopus-author`, {
       scopus_id: scopusId,
+    });
+  },
+  async listThaiJOUsers(params = {}) {
+    return apiClient.get('/admin/users/thaijo', params);
+  },
+  async setThaiJOAuthorId(userId, thaijoAuthorId) {
+    return apiClient.post(`/admin/users/${encodeURIComponent(userId)}/thaijo-author`, {
+      thaijo_author_id: thaijoAuthorId,
+    });
+  },
+  async setThaiJOSyncEnabled(userId, enabled) {
+    return apiClient.post(`/admin/users/${encodeURIComponent(userId)}/thaijo-sync`, {
+      enabled: Boolean(enabled),
     });
   },
 };

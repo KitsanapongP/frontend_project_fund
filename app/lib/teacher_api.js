@@ -144,6 +144,17 @@ export const teacherAPI = {
     }
   },
 
+  // Get ThaiJO publication list for current user
+  async getUserThaiJOPublications(params = {}) {
+    try {
+      const response = await apiClient.get('/teacher/user-publications/thaijo', params);
+      return response;
+    } catch (error) {
+      console.error('Error fetching ThaiJO publications:', error);
+      throw error;
+    }
+  },
+
   // Get current user's innovations
   async getUserInnovations(params = {}) {
     try {

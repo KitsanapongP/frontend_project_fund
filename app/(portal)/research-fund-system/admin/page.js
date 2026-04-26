@@ -30,6 +30,7 @@ const IMPORT_TAB_MAP = {
   'publications-import': 'scholar',
   'scopus-import': 'scopus',
   'kku-people-scraper': 'kku-profile',
+  'thaijo-import': 'thaijo',
 };
 
 const PAGE_PERMISSION_BY_ID = {
