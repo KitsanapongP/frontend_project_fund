@@ -18,15 +18,15 @@ export const canAccess = (pathname, user) => {
   const roleValue = user?.role ?? user?.role_id ?? user;
   const normalizedRole = normalizeRoleName(roleValue);
 
-  if (pathname.startsWith('/admin')) {
+  if (pathname.startsWith('/research-fund-system/admin') || pathname.startsWith('/admin')) {
     return hasAdminPortalAccess(user);
   }
 
-  if (pathname.startsWith('/executive')) {
+  if (pathname.startsWith('/research-fund-system/executive') || pathname.startsWith('/executive')) {
     return normalizedRole === 'executive';
   }
 
-  if (pathname.startsWith('/member')) {
+  if (pathname.startsWith('/research-fund-system/member') || pathname.startsWith('/member')) {
     if (normalizedRole && MEMBER_ALLOWED_ROLES.includes(normalizedRole)) {
       return true;
     }

@@ -16,7 +16,7 @@ import {
 import Swal from "sweetalert2";
 import { useAuth } from "../contexts/AuthContext";
 import PublicHeader from "../components/public/PublicHeader";
-import MemberHeader from "./(research-fund-system)/member/components/layout/Header";
+import MemberHeader from "./research-fund-system/member/components/layout/Header";
 import { getSupportFundMappings } from "../lib/support_fundmapping_api";
 import { canAccessPortalRule, getPortalItemAccess } from "../lib/portal_access";
 import { hasAdminPortalAccess, hasMemberPortalAccess, normalizeRoleName } from "../lib/access_routing";
@@ -105,15 +105,15 @@ function getResearchFundPathByUser(user) {
 
   const roleName = normalizeRoleName(user?.role ?? user?.role_id);
   if (roleName === "executive") {
-    return "/executive/dashboard";
+    return "/research-fund-system/executive/dashboard";
   }
 
   if (hasAdminPortalAccess(user)) {
-    return "/admin/research-fund";
+    return "/research-fund-system/admin/research-fund";
   }
 
   if (hasMemberPortalAccess(user) || ["teacher", "staff", "dept_head"].includes(roleName)) {
-    return "/member/research-fund";
+    return "/research-fund-system/member/research-fund";
   }
 
   return "";
