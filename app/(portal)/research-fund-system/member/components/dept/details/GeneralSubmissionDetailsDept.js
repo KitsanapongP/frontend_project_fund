@@ -111,16 +111,20 @@ function getFileURL(filePath) {
 /* =========================
  * Dept Decision Panel (แทน Approval Result เดิมทั้งก้อน)
  * ========================= */
-function DeptDecisionPanel({ submission, onApprove, onReject }) {
+function DeptDecisionPanel({ submission, onApprove, onReject, onBack }) {
   const [comment, setComment] = useState(
     submission?.head_comment ?? submission?.comment ?? ''
   );  
   const [saving, setSaving] = useState(false);
+  const [decisionPending, setDecisionPending] = useState(false);
 
   const statusId = Number(submission?.status_id);
   const canAct = statusId === 1 || String(submission?.status?.status_code || '').toLowerCase() === 'pending';
 
   const handleApprove = async () => {
+    if (saving || decisionPending) return false;
+    setDecisionPending(true);
+
     const html = `
       <div style="text-align:left;font-size:14px;line-height:1.6;">
         ${comment?.trim()
@@ -154,13 +158,23 @@ function DeptDecisionPanel({ submission, onApprove, onReject }) {
       },
     });
 
-    if (result.isConfirmed) {
-      await Swal.fire({ icon: 'success', title: 'อนุมัติแล้ว', timer: 1400, showConfirmButton: false });
+    try {
+      if (result.isConfirmed) {
+        await Swal.fire({ icon: 'success', title: 'อนุมัติแล้ว', timer: 1400, showConfirmButton: false });
+        if (typeof onBack === 'function') onBack();
+        return true;
+      }
+      return false;
+    } finally {
+      setDecisionPending(false);
     }
   };
 
 
   const handleReject = async () => {
+    if (saving || decisionPending) return false;
+    setDecisionPending(true);
+
     // Step 1: กล่องกรอกเหตุผล
     const { value: reason } = await Swal.fire({
       title: 'เหตุผลการไม่อนุมัติ',
@@ -172,7 +186,10 @@ function DeptDecisionPanel({ submission, onApprove, onReject }) {
       cancelButtonText: 'ยกเลิก',
       inputValidator: (v) => (!v?.trim() ? 'กรุณาระบุเหตุผล' : undefined),
     });
-    if (!reason) return;
+    if (!reason) {
+      setDecisionPending(false);
+      return false;
+    }
 
     // Step 2: กล่องยืนยัน + preConfirm เรียก onReject
     const res2 = await Swal.fire({
@@ -208,8 +225,15 @@ function DeptDecisionPanel({ submission, onApprove, onReject }) {
       },
     });
 
-    if (res2.isConfirmed) {
-      await Swal.fire({ icon: 'success', title: 'ดำเนินการแล้ว', timer: 1200, showConfirmButton: false });
+    try {
+      if (res2.isConfirmed) {
+        await Swal.fire({ icon: 'success', title: 'ดำเนินการแล้ว', timer: 1200, showConfirmButton: false });
+        if (typeof onBack === 'function') onBack();
+        return true;
+      }
+      return false;
+    } finally {
+      setDecisionPending(false);
     }
   };
 
@@ -224,7 +248,7 @@ function DeptDecisionPanel({ submission, onApprove, onReject }) {
             placeholder="เขียนหมายเหตุของหัวหน้าสาขาหรือบันทึกหมายเหตุ (ถ้ามี)"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            disabled={saving}
+            disabled={saving || decisionPending}
           />
         </div>
 
@@ -232,7 +256,7 @@ function DeptDecisionPanel({ submission, onApprove, onReject }) {
           <button
             className="btn btn-primary inline-flex items-center gap-2 disabled:opacity-60"
             onClick={handleApprove}
-            disabled={saving}
+            disabled={saving || decisionPending}
             title="อนุมัติและส่งต่อให้ Admin พิจารณาต่อ"
           >
             อนุมัติ
@@ -241,13 +265,13 @@ function DeptDecisionPanel({ submission, onApprove, onReject }) {
           <button
             className="btn btn-danger inline-flex items-center gap-2 disabled:opacity-60"
             onClick={handleReject}
-            disabled={saving}
+            disabled={saving || decisionPending}
             title="ปฏิเสธคำร้อง"
           >
             ปฏิเสธ
           </button>
 
-          {saving && <span className="text-sm text-gray-500">กำลังดำเนินการ…</span>}
+          {(saving || decisionPending) && <span className="text-sm text-gray-500">กำลังดำเนินการ…</span>}
         </div>
       </div>
     </Card>
@@ -1021,6 +1045,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
           submission={submission}
           onApprove={approve}
           onReject={reject}
+          onBack={onBack}
         />
       </div>
 
