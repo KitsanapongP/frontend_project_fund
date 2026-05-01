@@ -23,6 +23,7 @@ import NotificationCenter from "./components/notifications/NotificationCenter";
 import DeptHeadReview from "./components/dept/DeptHeadReview";
 import { useAuth } from "../../../contexts/AuthContext";
 import ProjectsList from "./components/projects/ProjectsList";
+import MyApprovalRecords from "./components/approves/MyApprovalRecords";
 
 const PAGE_PERMISSION_MAP = {
   dashboard: 'ui.page.member.dashboard.view',
@@ -35,6 +36,7 @@ const PAGE_PERMISSION_MAP = {
   projects: 'ui.page.member.projects.view',
   notifications: 'ui.page.member.notifications.view',
   'dept-review': 'ui.page.member.dept_review.view',
+  'approval-records': 'ui.page.member.applications.view',
 };
 
 
@@ -75,6 +77,7 @@ export function MemberPageContent({ initialPage = 'profile', initialMode = null 
       'notifications',
       'projects',
       'dept-review',
+      'approval-records',
     ];
 
     const allowedWithPermissions = allowedPages.filter(canViewPage);
@@ -268,6 +271,8 @@ export function MemberPageContent({ initialPage = 'profile', initialMode = null 
         return <ProjectsList />;
       case 'dept-review':
         return <DeptHeadReview />;
+      case 'approval-records':
+        return <MyApprovalRecords />;
       default:
         return <UnderDevelopmentContent currentPage={currentPage} />;
     }
@@ -289,6 +294,7 @@ export function MemberPageContent({ initialPage = 'profile', initialMode = null 
       'notifications': 'การแจ้งเตือน',
       'projects': 'โครงการ',
       'dept-review': 'พิจารณาคำร้องของหัวหน้าสาขา',
+      'approval-records': 'บันทึกข้อมูลการอนุมัติทุน',
     };
     return titles[currentPage] || currentPage;
   };

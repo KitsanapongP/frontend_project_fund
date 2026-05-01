@@ -168,6 +168,13 @@ export default function Navigation({
       requiredPermission: "ui.page.member.received_funds.view",
     },
     {
+      id: "approval-records",
+      label: "บันทึกข้อมูลการอนุมัติทุน",
+      icon: FileCheck,
+      hasSubmenu: false,
+      requiredPermission: "ui.page.member.applications.view",
+    },
+    {
       id: "announcements",
       label: "ประกาศกองทุนวิจัยและนวัตกรรม",
       icon: FileText,
