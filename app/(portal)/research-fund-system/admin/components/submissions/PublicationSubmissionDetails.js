@@ -894,6 +894,8 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
     Number(requestedRevision || 0) +
     Number(requestedPublication || 0)
   );
+  const requestedSharedFeeTotal =
+    Number(requestedRevision || 0) + Number(requestedPublication || 0);
 
   // ใช้ค่าที่อนุมัติแล้วถ้ามี, ถ้าไม่มีให้ใช้ค่าที่ขอ
   // *แก้ไขตามที่ผู้ใช้ร้องขอ: เพื่อให้ 'เงินรางวัลที่จะอนุมัติ' แสดงค่า default เป็น 'เงินรางวัลที่ขอ'
@@ -933,6 +935,7 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
   const [selectedDecision, setSelectedDecision] = useState('approve');
   const [decisionPending, setDecisionPending] = useState(false);
   const [errors, setErrors] = useState({});
+  const sharedFeeCap = requestedSharedFeeTotal > 0 ? requestedSharedFeeTotal : feeCap;
 
   // ซ่อน 2 ฟิลด์เมื่อไม่พบเพดาน
   const hideSharedFeeFields = !!capError && /ไม่สามารถเบิกค่าใช้จ่ายนี้ได้/.test(capError);
@@ -1055,20 +1058,23 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
   // Clamp helper สำหรับวงเงินร่วม (Revision+Publication)
   const clampShared = (val, other) => {
     const n = Number.isFinite(val) ? val : 0;
-    if (feeCap == null) return Math.max(0, n);
-    const remain = Math.max(0, feeCap - Math.max(0, other || 0));
+    if (sharedFeeCap == null) return Math.max(0, n);
+    const remain = Math.max(0, sharedFeeCap - Math.max(0, other || 0));
     return Math.max(0, Math.min(n, remain));
   };
 
   const renderCapHelper = () => {
     if (capLoading) return <p className="text-gray-500 text-xs">กำลังโหลดเพดานวงเงิน…</p>;
     if (capError)   return <p className="text-red-600 text-xs">{capError}</p>;
-    if (typeof feeCap === 'number') {
+    if (typeof sharedFeeCap === 'number') {
       const used = Number(revisionApprove || 0) + Number(publicationApprove || 0);
-      const remain = Math.max(0, feeCap - used);
+      const remain = Math.max(0, sharedFeeCap - used);
+      const remainText = remain === 0
+        ? `คงเหลือ ฿${formatCurrency(0)}`
+        : `คงเหลือ ฿${formatCurrency(remain)}`;
       return (
         <p className="text-gray-500 text-[11px]">
-          ใช้วงเงินร่วม: ฿{formatCurrency(feeCap)} (คงเหลือ ฿{formatCurrency(remain)})
+          ใช้วงเงินร่วมตามยอดที่ขอ: ฿{formatCurrency(sharedFeeCap)} ({remainText})
         </p>
       );
     }
@@ -1086,14 +1092,14 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
   };
 
   const handleChangeRevision = (next) => {
-    if (!manualEdit || feeCap == null) return;
+    if (!manualEdit || sharedFeeCap == null) return;
     const clamped = clampShared(Number(next || 0), publicationApprove);
     setRevisionApprove(clamped);
     setErrors((e) => ({ ...e, sharedCap: undefined, revisionApprove: undefined }));
   };
 
   const handleChangePublication = (next) => {
-    if (!manualEdit || feeCap == null) return;
+    if (!manualEdit || sharedFeeCap == null) return;
     const clamped = clampShared(Number(next || 0), revisionApprove);
     setPublicationApprove(clamped);
     setErrors((e) => ({ ...e, sharedCap: undefined, publicationApprove: undefined }));
@@ -1110,15 +1116,15 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
 
     checkNonNeg('rewardApprove', rewardApprove);
 
-    if (feeCap != null) {
+    if (sharedFeeCap != null) {
       checkNonNeg('revisionApprove', revisionApprove);
       checkNonNeg('publicationApprove', publicationApprove);
     }
     checkNonNeg('totalApprove', totalApprove);
 
-    if (feeCap != null) {
+    if (sharedFeeCap != null) {
       const sum = Number(revisionApprove || 0) + Number(publicationApprove || 0);
-      if (sum > feeCap) {
+      if (sum > sharedFeeCap) {
         e.sharedCap = 'ยอดรวมเกินวงเงินร่วม';
       }
     }
@@ -1129,8 +1135,11 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
 
   // รีเซ็ตกลับค่าเริ่มต้นจาก FI/คำขอ
   const recalc = () => {
+    setManualEdit(false);
     setRewardApprove(rewardAutoValue);
-    applyAutoSharedFeeValues();
+    setRevisionApprove(revisionAutoValue);
+    setPublicationApprove(publicationAutoValue);
+    setErrors({});
   };
 
   const escapeHtml = (value = '') =>
@@ -1144,9 +1153,9 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
     if (!validate()) return false;
 
     const capHint =
-      typeof feeCap === 'number' && feeCap > 0
+      typeof sharedFeeCap === 'number' && sharedFeeCap > 0
         ? `<div style="font-size:12px;color:#6b7280;margin:.25rem 0 0;">
-             วงเงินร่วมสำหรับค่าปรับปรุง & ค่าธรรมเนียมการตีพิมพ์: ฿${formatCurrency(feeCap)}
+             วงเงินร่วมสำหรับค่าปรับปรุง & ค่าธรรมเนียมการตีพิมพ์: ฿${formatCurrency(sharedFeeCap)}
            </div>`
         : '';
 
@@ -1174,6 +1183,11 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
                 <strong>฿${formatCurrency(publicationApprove)}</strong>
               </div>
             `}
+
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span>เงินสนับสนุนจากภายนอก</span>
+              <strong>฿${formatCurrency(extFunding)}</strong>
+            </div>
 
             <hr style="margin:1rem 0 1rem;border-color:#999999;" />
 
@@ -1472,8 +1486,8 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
             onChange={handleChangeRevision}
             error={errors.revisionApprove || errors.sharedCap}
             helperRight={renderCapHelper()}
-            disabled={!manualEdit || capLoading || feeCap == null}
-            max={feeCap == null ? undefined : Math.max(0, feeCap - Number(publicationApprove || 0))}
+            disabled={!manualEdit || capLoading || sharedFeeCap == null}
+            max={sharedFeeCap == null ? undefined : Math.max(0, sharedFeeCap - Number(publicationApprove || 0))}
             autoSyncWhenDisabled
           />
         </div>
@@ -1490,8 +1504,8 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
             onChange={handleChangePublication}
             error={errors.publicationApprove || errors.sharedCap}
             helperRight={renderCapHelper()}
-            disabled={!manualEdit || capLoading || feeCap == null}
-            max={feeCap == null ? undefined : Math.max(0, feeCap - Number(revisionApprove || 0))}
+            disabled={!manualEdit || capLoading || sharedFeeCap == null}
+            max={sharedFeeCap == null ? undefined : Math.max(0, sharedFeeCap - Number(revisionApprove || 0))}
             autoSyncWhenDisabled
           />
         </div>
