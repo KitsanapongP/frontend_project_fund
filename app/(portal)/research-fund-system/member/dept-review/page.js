@@ -1,15 +1,15 @@
 "use client";
 
 import AuthGuard from "../../../../components/AuthGuard";
-import DeptHeadReview from "../components/dept/DeptHeadReview";
+import { MemberPageContent } from "../page";
 
 export default function DeptReviewPage() {
   return (
     <AuthGuard
-      allowedRoles={[4, 'dept_head']}
+      allowedRoles={[1, 2, 4, "teacher", "staff", "dept_head"]}
       requireAuth={true}
     >
-      <DeptHeadReview />
+      <MemberPageContent initialPage="dept-review" />
     </AuthGuard>
   );
 }
