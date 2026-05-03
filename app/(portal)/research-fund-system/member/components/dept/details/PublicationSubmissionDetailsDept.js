@@ -40,6 +40,7 @@ import { notificationsAPI } from '@/app/lib/notifications_api';
 
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import UnauthorizedPage from '@/app/components/UnauthorizedPage';
 
 const pickArray = (...candidates) => {
   for (const candidate of candidates) {
@@ -1236,7 +1237,7 @@ function DeptDecisionPanel({
           {errors.comment ? (
             <p className="text-xs text-red-600 text-right">{errors.comment}</p>
           ) : (
-            <p className="text-xs text-gray-400 text-right">ใช้หมายเหตุนี้เมื่อขอข้อมูลเพิ่มเติม</p>
+            <p className="text-xs text-gray-400 text-right"></p>
           )}
         </div>
 
@@ -1258,7 +1259,7 @@ function DeptDecisionPanel({
         <div className="border-t border-gray-200 pt-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3 md:max-w-[60%]">
-              <span className="text-sm font-medium text-gray-700">ดำเนินการ</span>
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap shrink-0">ดำเนินการ</span>
               <DecisionDropdown
                 value={selectedAction}
                 onChange={(next) => {
@@ -1302,6 +1303,7 @@ function DeptDecisionPanel({
 export default function PublicationSubmissionDetailsDept({ submissionId, onBack }) {
   const [loading, setLoading] = useState(true);
   const [submission, setSubmission] = useState(null);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
 
   // >>> Add for mapped announcements
@@ -1347,6 +1349,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
     if (!submissionId) return;
     const load = async () => {
       setLoading(true);
+      setIsUnauthorized(false);
       try {
         const res = await deptHeadAPI.getSubmissionDetails(submissionId);
         let data = res?.submission || res;
@@ -1387,6 +1390,11 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
         }
       } catch (err) {
         console.error('Error loading submission details:', err);
+        const status = Number(err?.response?.status || err?.status || 0);
+        if (status === 401 || status === 403) {
+          setIsUnauthorized(true);
+          return;
+        }
         toast.error('โหลดข้อมูลล้มเหลว');
       } finally {
         setLoading(false);
@@ -1394,6 +1402,10 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
     };
     load();
   }, [submissionId]);
+
+  if (isUnauthorized) {
+    return <UnauthorizedPage />;
+  }
 
   // Applicant detection (robust)
   const getApplicant = useMemo(

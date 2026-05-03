@@ -6,7 +6,7 @@ import {
   ArrowLeft, FileText,
     User,
   CheckCircle, XCircle, AlertTriangle, Clock,
-  Eye, Download, DollarSign,
+  Eye, Download, DollarSign, Check, ChevronDown, MessageCircle,
 } from 'lucide-react';
 
 import PageLayout from '../../common/PageLayout';
@@ -20,6 +20,7 @@ import { PDFDocument } from 'pdf-lib';
 import PublicationSubmissionDetailsDept from './PublicationSubmissionDetailsDept';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import UnauthorizedPage from '@/app/components/UnauthorizedPage';
 
 /* =========================
  * Helpers
@@ -108,28 +109,194 @@ function getFileURL(filePath) {
   try { return new URL(filePath, base).href; } catch { return filePath; }
 }
 
+const DEPT_DECISION_OPTIONS = [
+  {
+    value: 'approve',
+    label: 'เห็นควรพิจารณา',
+    hint: 'บันทึกผลพร้อมลายเซ็นหัวหน้าสาขา',
+    description: 'ยืนยันการอนุมัติและบันทึกหมายเหตุที่ระบุ',
+    icon: CheckCircle,
+    iconClass: 'text-emerald-600',
+    iconBg: 'bg-emerald-50',
+    activeRing: 'ring-emerald-200',
+  },
+  {
+    value: 'reject',
+    label: 'ไม่เห็นควรพิจารณา',
+    hint: 'เปลี่ยนสถานะเป็นไม่อนุมัติ',
+    description: 'ปฏิเสธคำร้องและแจ้งเหตุผลให้ผู้ยื่นทราบ',
+    icon: XCircle,
+    iconClass: 'text-red-600',
+    iconBg: 'bg-red-50',
+    activeRing: 'ring-red-200',
+  },
+  {
+    value: 'revision',
+    label: 'ต้องการข้อมูลเพิ่มเติม',
+    hint: 'แจ้งผู้ยื่นให้ส่งข้อมูลเพิ่ม',
+    description: 'ส่งคำขอข้อมูลเพิ่มเติมโดยใช้หมายเหตุของหัวหน้าสาขา',
+    icon: MessageCircle,
+    iconClass: 'text-amber-600',
+    iconBg: 'bg-amber-50',
+    activeRing: 'ring-amber-200',
+  },
+];
+
+function DecisionDropdown({ value, onChange, disabled = false, className = '' }) {
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const selected = useMemo(() => {
+    return DEPT_DECISION_OPTIONS.find((option) => option.value === value) || DEPT_DECISION_OPTIONS[0];
+  }, [value]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleClick = (event) => {
+      if (
+        buttonRef.current?.contains(event.target) ||
+        menuRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+
+    const handleKey = (event) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('touchstart', handleClick);
+    document.addEventListener('keydown', handleKey);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('touchstart', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
+
+  const handleSelect = (nextValue) => {
+    if (typeof onChange === 'function') {
+      onChange(nextValue);
+    }
+    setOpen(false);
+  };
+
+  return (
+    <div className={`relative ${className}`}>
+      <button
+        type="button"
+        ref={buttonRef}
+        onClick={() => setOpen((prev) => !prev)}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={[
+          'inline-flex w-full items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2',
+          'text-sm font-medium text-gray-700 shadow-sm transition',
+          'hover:border-blue-300 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500',
+          'disabled:cursor-not-allowed disabled:opacity-60',
+        ].join(' ')}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <span
+            className={`flex h-10 w-10 items-center justify-center rounded-full ${selected.iconBg} ${open ? `ring-2 ring-offset-2 ${selected.activeRing}` : ''}`}
+          >
+            <selected.icon className={`h-5 w-5 ${selected.iconClass}`} />
+          </span>
+          <span className="flex flex-1 flex-col text-left">
+            <span className="text-sm font-semibold text-gray-900">{selected.label}</span>
+            <span className="text-xs text-gray-500">{selected.hint}</span>
+          </span>
+          <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </div>
+      </button>
+
+      {open && (
+        <div
+          ref={menuRef}
+          role="listbox"
+          className="absolute left-0 bottom-full z-[9999] mb-2 w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5"
+        >
+          <div className="py-1">
+            {DEPT_DECISION_OPTIONS.map((option) => {
+              const active = option.value === selected.value;
+              return (
+                <button
+                  type="button"
+                  key={option.value}
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => handleSelect(option.value)}
+                  className={[
+                    'flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition',
+                    active ? 'bg-blue-50/70 text-gray-900' : 'text-gray-700 hover:bg-gray-50',
+                  ].join(' ')}
+                >
+                  <span
+                    className={`flex h-10 w-10 items-center justify-center rounded-full ${option.iconBg} ${active ? `ring-2 ring-offset-2 ${option.activeRing}` : ''}`}
+                  >
+                    <option.icon className={`h-5 w-5 ${option.iconClass}`} />
+                  </span>
+                  <span className="flex-1">
+                    <span className="block font-semibold">{option.label}</span>
+                    <span className="block text-xs text-gray-500">{option.description}</span>
+                  </span>
+                  {active ? <Check className="h-4 w-4 text-blue-600" /> : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* =========================
- * Dept Decision Panel (แทน Approval Result เดิมทั้งก้อน)
+ * Dept Decision Panel
  * ========================= */
-function DeptDecisionPanel({ submission, onApprove, onReject, onBack }) {
+function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision, onBack }) {
   const [comment, setComment] = useState(
     submission?.head_comment ?? submission?.comment ?? ''
-  );  
+  );
   const [saving, setSaving] = useState(false);
+  const [selectedAction, setSelectedAction] = useState('approve');
   const [decisionPending, setDecisionPending] = useState(false);
-
-  const statusId = Number(submission?.status_id);
-  const canAct = statusId === 1 || String(submission?.status?.status_code || '').toLowerCase() === 'pending';
+  const [errors, setErrors] = useState({});
+  const isCommentRequired = true;
 
   const handleApprove = async () => {
-    if (saving || decisionPending) return false;
-    setDecisionPending(true);
+    const trimmedComment = comment?.trim() || '';
+
+    if (isCommentRequired && !trimmedComment) {
+      setErrors((prev) => ({
+        ...prev,
+        comment: 'กรุณาระบุหมายเหตุของหัวหน้าสาขาก่อนอนุมัติ',
+      }));
+      await Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาระบุหมายเหตุ',
+        text: 'โปรดกรอกหมายเหตุของหัวหน้าสาขาก่อนอนุมัติคำขอรับเงินทุน',
+      });
+      return false;
+    }
 
     const html = `
       <div style="text-align:left;font-size:14px;line-height:1.6;">
-        ${comment?.trim()
+        ${trimmedComment
           ? `<div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
-            <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;">${comment.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+            <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${trimmedComment.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
           : `<div style="font-size:12px;color:#6b7280;">(ไม่มีหมายเหตุ)</div>`
         }
       </div>
@@ -147,8 +314,7 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onBack }) {
       preConfirm: async () => {
         try {
           setSaving(true);
-          // ส่งหมายเหตุ (comment/head_comment) ไปเก็บที่ submissions เท่านั้น
-          await onApprove(comment?.trim() || '');
+          await onApprove(trimmedComment);
         } catch (e) {
           Swal.showValidationMessage(e?.message || 'อนุมัติไม่สำเร็จ');
           throw e;
@@ -158,24 +324,19 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onBack }) {
       },
     });
 
-    try {
-      if (result.isConfirmed) {
-        await Swal.fire({ icon: 'success', title: 'อนุมัติแล้ว', timer: 1400, showConfirmButton: false });
-        if (typeof onBack === 'function') onBack();
-        return true;
-      }
-      return false;
-    } finally {
-      setDecisionPending(false);
+    if (result.isConfirmed) {
+      await Swal.fire({ icon: 'success', title: 'อนุมัติแล้ว', timer: 1400, showConfirmButton: false });
+      if (typeof onBack === 'function') onBack();
+      return true;
     }
+
+    return false;
   };
 
 
   const handleReject = async () => {
-    if (saving || decisionPending) return false;
-    setDecisionPending(true);
+    const trimmedComment = comment?.trim() || '';
 
-    // Step 1: กล่องกรอกเหตุผล
     const { value: reason } = await Swal.fire({
       title: 'เหตุผลการไม่อนุมัติ',
       input: 'textarea',
@@ -187,11 +348,9 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onBack }) {
       inputValidator: (v) => (!v?.trim() ? 'กรุณาระบุเหตุผล' : undefined),
     });
     if (!reason) {
-      setDecisionPending(false);
       return false;
     }
 
-    // Step 2: กล่องยืนยัน + preConfirm เรียก onReject
     const res2 = await Swal.fire({
       title: 'ยืนยันการไม่อนุมัติ',
       html: `
@@ -199,6 +358,13 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onBack }) {
           <div style="font-weight:500;margin-bottom:.25rem;">เหตุผลการไม่อนุมัติ</div>
           <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.75rem;border-radius:.5rem;white-space:pre-wrap;">
             ${String(reason).replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+          </div>
+          <div style="margin-top:.75rem;">
+            <div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
+            ${trimmedComment
+              ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${trimmedComment.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+              : `<div style="font-size:12px;color:#6b7280;">(ไม่มีหมายเหตุ)</div>`
+            }
           </div>
           <p style="font-size:12px;color:#6b7280;margin-top:.5rem;">
             ระบบจะบันทึกเหตุผลและเปลี่ยนสถานะคำร้องเป็น “ไม่อนุมัติ”
@@ -214,8 +380,7 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onBack }) {
       preConfirm: async () => {
         try {
           setSaving(true);
-          // ส่งเหตุผล + หมายเหตุหัวหน้าสาขา (comment) ไปหลังบ้าน (เก็บที่ submissions เท่านั้น)
-          await onReject(String(reason).trim(), comment?.trim() || '');
+          await onReject(String(reason).trim(), trimmedComment);
         } catch (e) {
           Swal.showValidationMessage(e?.message || 'ไม่อนุมัติไม่สำเร็จ');
           throw e;
@@ -225,53 +390,178 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onBack }) {
       },
     });
 
-    try {
-      if (res2.isConfirmed) {
-        await Swal.fire({ icon: 'success', title: 'ดำเนินการแล้ว', timer: 1200, showConfirmButton: false });
-        if (typeof onBack === 'function') onBack();
-        return true;
-      }
+    if (res2.isConfirmed) {
+      await Swal.fire({ icon: 'success', title: 'ดำเนินการแล้ว', timer: 1200, showConfirmButton: false });
+      if (typeof onBack === 'function') onBack();
+      return true;
+    }
+
+    return false;
+  };
+
+  const handleRequestRevision = async () => {
+    const trimmedComment = comment?.trim() || '';
+
+    if (!trimmedComment) {
+      setErrors((prev) => ({
+        ...prev,
+        comment: 'กรุณาระบุหมายเหตุเพื่อขอข้อมูลเพิ่มเติม',
+      }));
+      await Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาระบุหมายเหตุ',
+        text: 'โปรดกรอกหมายเหตุของหัวหน้าสาขาก่อนขอข้อมูลเพิ่มเติม',
+      });
       return false;
+    }
+
+    const result = await Swal.fire({
+      title: 'ยืนยันการขอข้อมูลเพิ่มเติม',
+      html: `
+        <div style="text-align:left;font-size:14px;line-height:1.6;">
+          <div>
+            <div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
+            <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${trimmedComment.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+          </div>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'บันทึกคำขอ',
+      cancelButtonText: 'ยกเลิก',
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      preConfirm: async () => {
+        try {
+          setSaving(true);
+          await onRequestRevision({
+            message: trimmedComment,
+            headComment: trimmedComment,
+          });
+        } catch (e) {
+          Swal.showValidationMessage(e?.message || 'ส่งคำขอไม่สำเร็จ');
+          throw e;
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
+
+    if (result.isConfirmed) {
+      setErrors((prev) => {
+        if (!prev.comment) return prev;
+        const updated = { ...prev };
+        delete updated.comment;
+        return updated;
+      });
+      await Swal.fire({ icon: 'success', title: 'ส่งคำขอแล้ว', timer: 1400, showConfirmButton: false });
+      if (typeof onBack === 'function') onBack();
+      return true;
+    }
+
+    return false;
+  };
+
+  const handleDecisionSubmit = async () => {
+    if (decisionPending || saving) return;
+
+    setDecisionPending(true);
+    try {
+      let completed = false;
+      if (selectedAction === 'approve') {
+        completed = await handleApprove();
+      } else if (selectedAction === 'reject') {
+        completed = await handleReject();
+      } else if (selectedAction === 'revision') {
+        completed = await handleRequestRevision();
+      }
+
+      if (completed) {
+        setSelectedAction('approve');
+      }
     } finally {
       setDecisionPending(false);
     }
   };
 
   return (
-    <Card title="ผลการพิจารณา (หัวหน้าสาขา)" icon={DollarSign} collapsible={false}>
-      <div className="space-y-4">
-        {/* ช่องคอมเมนต์ */}
-        <div>
-          <label className="text-sm text-gray-600">หมายเหตุของหัวหน้าสาขา</label>
-          <textarea
-            className="w-full min-h-[100px] rounded-lg border border-gray-300 p-3 outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="เขียนหมายเหตุของหัวหน้าสาขาหรือบันทึกหมายเหตุ (ถ้ามี)"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            disabled={saving || decisionPending}
-          />
+    <Card title="ผลการพิจารณา (หัวหน้าสาขา)" icon={DollarSign} collapsible={false} className="overflow-visible">
+      <div className="space-y-6">
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-gray-700 leading-tight">
+            หมายเหตุของหัวหน้าสาขา
+            {isCommentRequired && <span className="text-red-500"> *</span>}
+            <br /><span className="text-xs font-normal text-gray-600">Comment</span>
+          </label>
+          {isCommentRequired && (
+            <p className="text-xs text-gray-500">จำเป็นสำหรับคำขอรับเงินทุน</p>
+          )}
+          <div
+            className={[
+              'rounded-lg border bg-white shadow-sm transition',
+              'border-gray-300 hover:border-blue-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500',
+              errors.comment ? 'border-red-400 focus-within:border-red-500 focus-within:ring-red-500/40' : '',
+            ].join(' ')}
+          >
+            <textarea
+              className="w-full min-h-[100px] rounded-lg border-0 bg-transparent p-3 outline-none"
+              placeholder="เขียนหมายเหตุของหัวหน้าสาขาหรือบันทึกหมายเหตุ"
+              value={comment}
+              onChange={(e) => {
+                const next = e.target.value;
+                setComment(next);
+                setErrors((prev) => {
+                  if (!prev.comment) return prev;
+                  const updated = { ...prev };
+                  delete updated.comment;
+                  return updated;
+                });
+              }}
+              disabled={saving}
+            />
+          </div>
+          {errors.comment ? (
+            <p className="text-xs text-red-600 text-right">{errors.comment}</p>
+          ) : (
+            <p className="text-xs text-gray-400 text-right"></p>
+          )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            className="btn btn-primary inline-flex items-center gap-2 disabled:opacity-60"
-            onClick={handleApprove}
-            disabled={saving || decisionPending}
-            title="อนุมัติและส่งต่อให้ Admin พิจารณาต่อ"
-          >
-            อนุมัติ
-          </button>
-
-          <button
-            className="btn btn-danger inline-flex items-center gap-2 disabled:opacity-60"
-            onClick={handleReject}
-            disabled={saving || decisionPending}
-            title="ปฏิเสธคำร้อง"
-          >
-            ปฏิเสธ
-          </button>
-
-          {(saving || decisionPending) && <span className="text-sm text-gray-500">กำลังดำเนินการ…</span>}
+        <div className="border-t border-gray-200 pt-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3 md:max-w-[60%]">
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap shrink-0">ดำเนินการ</span>
+              <DecisionDropdown
+                value={selectedAction}
+                onChange={(next) => {
+                  setSelectedAction(next);
+                  if (next !== 'revision') {
+                    setErrors((prev) => {
+                      if (!prev.comment) return prev;
+                      const updated = { ...prev };
+                      delete updated.comment;
+                      return updated;
+                    });
+                  }
+                }}
+                disabled={saving || decisionPending}
+                className="w-full md:min-w-[18rem]"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3 md:self-end">
+              {(saving || decisionPending) && (
+                <span className="text-sm text-gray-500">กำลังดำเนินการ…</span>
+              )}
+              <button
+                className="btn btn-primary min-w-[164px] justify-center gap-2 disabled:opacity-60"
+                onClick={handleDecisionSubmit}
+                disabled={saving || decisionPending}
+                title="บันทึกผลการพิจารณา"
+              >
+                บันทึกผล
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Card>
@@ -343,6 +633,7 @@ function RequestInfoCard({ submission, detail }) {
 export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
   const [loading, setLoading] = useState(true);
   const [submission, setSubmission] = useState(null);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
   const { getCodeById } = useStatusMap();
 
   // attachments
@@ -371,6 +662,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
     if (!submissionId) return;
     (async () => {
       setLoading(true);
+      setIsUnauthorized(false);
       try {
         const res = await deptHeadAPI.getSubmissionDetails(submissionId);
         console.log('[DeptHead] details payload:', res);
@@ -405,12 +697,21 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
 
       } catch (e) {
         console.error('load details failed', e);
+        const status = Number(e?.response?.status || e?.status || 0);
+        if (status === 401 || status === 403) {
+          setIsUnauthorized(true);
+          return;
+        }
         toast.error('โหลดรายละเอียดไม่สำเร็จ');
       } finally {
         setLoading(false);
       }
     })();
   }, [submissionId]);
+
+  if (isUnauthorized) {
+    return <UnauthorizedPage />;
+  }
 
   // Load attachments
   useEffect(() => {
@@ -752,6 +1053,33 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
     setSubmission(data);
   };
 
+  const requestRevision = async ({ message, headComment }) => {
+    const payload = {};
+    const trimmedMessage = message?.trim();
+    const trimmedComment = headComment?.trim();
+
+    if (trimmedMessage) {
+      payload.request_comment = trimmedMessage;
+      payload.revision_comment = trimmedMessage;
+      payload.reason = trimmedMessage;
+    }
+    if (trimmedComment) {
+      payload.head_comment = trimmedComment;
+      payload.comment = trimmedComment;
+    }
+
+    await deptHeadAPI.requestRevision(submission.submission_id, payload);
+
+    const res = await deptHeadAPI.getSubmissionDetails(submission.submission_id);
+    let data = res?.submission || res;
+    if (res?.submission_users) data.submission_users = res.submission_users;
+    if (res?.documents) data.documents = res.documents;
+    if (res?.details?.type === 'fund_application' && res.details.data) {
+      data.FundApplicationDetail = res.details.data;
+    }
+    setSubmission(data);
+  };
+
   const statusCode = getCodeById(submission.status_id);
   const ColoredIcon = getColoredStatusIcon(statusCode);
 
@@ -1045,6 +1373,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
           submission={submission}
           onApprove={approve}
           onReject={reject}
+          onRequestRevision={requestRevision}
           onBack={onBack}
         />
       </div>
