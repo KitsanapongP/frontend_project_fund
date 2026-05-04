@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AuthGuard from "../../../components/AuthGuard";
 import Header from "./components/layout/Header";
@@ -40,7 +40,7 @@ const PAGE_PERMISSION_MAP = {
 };
 
 
-export function MemberPageContent({ initialPage = 'profile', initialMode = null }) {
+export function MemberPageContent({ initialPage = 'dashboard', initialMode = null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [submenuOpen, setSubmenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -81,20 +81,20 @@ export function MemberPageContent({ initialPage = 'profile', initialMode = null 
     ];
 
     const allowedWithPermissions = allowedPages.filter(canViewPage);
-    const fallbackPage = allowedWithPermissions[0] || 'profile';
+    const fallbackPage = allowedWithPermissions[0] || 'dashboard';
     return allowedWithPermissions.includes(page) ? page : fallbackPage;
   }, [canViewPage]);
 
   const pageFromPath = useCallback(
     (path) => {
-      if (typeof path !== 'string') return { page: 'profile', mode: null };
+      if (typeof path !== 'string') return { page: 'dashboard', mode: null };
       const segments = path.split('/').filter(Boolean);
 
       if (segments[0] !== 'research-fund-system' || segments[1] !== 'member') {
-        return { page: 'profile', mode: null };
+        return { page: 'dashboard', mode: null };
       }
 
-      const page = normalizePage(segments[2] || 'profile');
+      const page = normalizePage(segments[2] || 'dashboard');
       const mode = segments[3] || null;
 
       return { page, mode };
@@ -117,34 +117,6 @@ export function MemberPageContent({ initialPage = 'profile', initialMode = null 
     },
     [normalizePage]
   );
-
-  const isDeptHead = useMemo(() => {
-    if (!user) return false;
-    if (hasPermissionSnapshot) {
-      return hasPermission('ui.page.member.dept_review.view') || hasPermission('submission.read.department');
-    }
-    return (
-      user.role === 'dept_head' ||
-      user.user_role === 'dept_head' ||
-      user.role_id === 4
-    );
-  }, [hasPermission, hasPermissionSnapshot, user]);
-
-  useEffect(() => {
-    const normalized = normalizePage(initialPage);
-    setCurrentPage(normalized);
-    setCurrentMode(initialMode ?? null);
-    setSelectedFundData(null);
-    syncPathWithPage(normalized, { mode: initialMode ?? null, replace: true });
-  }, [initialMode, initialPage, normalizePage, syncPathWithPage]);
-
-  useEffect(() => {
-    if (isDeptHead && initialPage === 'profile') {
-      setCurrentPage('dept-review');
-      setCurrentMode(null);
-      syncPathWithPage('dept-review', { replace: true });
-    }
-  }, [isDeptHead, initialPage, syncPathWithPage]);
 
   useEffect(() => {
     const { page, mode } = pageFromPath(pathname);
@@ -322,11 +294,6 @@ export function MemberPageContent({ initialPage = 'profile', initialMode = null 
         {/* Desktop Sidebar */}
         <div className="hidden md:block w-64 bg-white border-r border-gray-300 fixed h-[calc(100vh-5rem)] overflow-y-auto shadow-sm">
           <div className="p-5">
-            <div className="mb-6">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-                เมนูหลัก
-              </h2>
-            </div>
             <Navigation
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}
