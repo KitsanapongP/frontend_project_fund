@@ -8,6 +8,21 @@ const isExecutiveRole = () => {
   return Number(role) === 5 || String(role).toLowerCase() === 'executive';
 };
 
+const getUserRoleKey = () => {
+  const user = apiClient.getUser?.();
+  const rawRole = user?.role_id ?? user?.role ?? user?.user_role;
+  if (rawRole === null || rawRole === undefined) return '';
+
+  const normalized = String(rawRole).trim().toLowerCase();
+  if (!normalized) return '';
+  if (normalized === '1') return 'teacher';
+  if (normalized === '2') return 'staff';
+  if (normalized === '4') return 'dept_head';
+  if (normalized === '5') return 'executive';
+  if (normalized === '3') return 'admin';
+  return normalized;
+};
+
 const getSubmissionManagementBase = () => '/submissions-admin';
 
 const pickFirst = (...candidates) => {
@@ -1018,7 +1033,7 @@ export const submissionsListingAPI = {
   // Get teacher submissions
   async getTeacherSubmissions(params) {
     try {
-      const response = await apiClient.get('/teacher/submissions', { params });
+      const response = await apiClient.get('/teacher/submissions', params || {});
       return response;
     } catch (error) {
       console.error('Error fetching teacher submissions:', error);
@@ -1029,7 +1044,7 @@ export const submissionsListingAPI = {
   // Get staff submissions
   async getStaffSubmissions(params) {
     try {
-      const response = await apiClient.get('/staff/submissions', { params });
+      const response = await apiClient.get('/staff/submissions', params || {});
       return response;
     } catch (error) {
       console.error('Error fetching staff submissions:', error);
@@ -1038,31 +1053,47 @@ export const submissionsListingAPI = {
   },
 
   async getAdminSubmissions(params) {
-    try {
-      const response = await apiClient.get(getSubmissionManagementBase(), { params });
-      return response;
-    } catch (error) {
-      const status = Number(error?.status || 0);
-      const canFallbackToLegacy = status === 404 || status === 405;
-      if (!canFallbackToLegacy) {
-        throw error;
-      }
+    const requestParams = params || {};
+    const roleKey = getUserRoleKey();
 
+    const roleBasedEndpoint =
+      roleKey === 'teacher'
+        ? '/teacher/submissions'
+        : roleKey === 'staff'
+        ? '/staff/submissions'
+        : roleKey === 'dept_head'
+        ? '/dept-head/submissions'
+        : null;
+
+    const endpointCandidates = [
+      roleBasedEndpoint,
+      getSubmissionManagementBase(),
+      isExecutiveRole() ? '/executive/submissions' : '/admin/submissions',
+    ].filter(Boolean);
+
+    let lastError = null;
+    for (const endpoint of endpointCandidates) {
       try {
-        const endpoint = isExecutiveRole() ? '/executive/submissions' : '/admin/submissions';
-        return await apiClient.get(endpoint, { params });
-      } catch (legacyError) {
-        console.error('[API] Error fetching admin submissions:', legacyError);
-        throw legacyError;
+        return await apiClient.get(endpoint, requestParams);
+      } catch (error) {
+        const status = Number(error?.status || 0);
+        const canTryNext = status === 403 || status === 404 || status === 405;
+        if (!canTryNext) {
+          throw error;
+        }
+        lastError = error;
       }
     }
+
+    console.error('[API] Error fetching submissions from all endpoint candidates:', lastError);
+    throw lastError || new Error('Unable to fetch submissions');
   },
 
   // Export submissions (admin)
   async exportSubmissions(params) {
     try {
       const endpoint = isExecutiveRole() ? '/executive/submissions' : '/admin/submissions/export';
-      const response = await apiClient.get(endpoint, { params });
+      const response = await apiClient.get(endpoint, params || {});
       return response;
     } catch (error) {
       console.error('Error exporting submissions:', error);

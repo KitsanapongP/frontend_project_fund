@@ -37,6 +37,12 @@ export const memberAPI = {
   ...teacherAPI,
   ...staffAPI,
   deptHead: deptHeadAPI,
+  async getMyApprovalTotals(params = {}) {
+    const user = apiClient.getUser?.() || {};
+    const roleId = Number(user.role_id ?? user.role ?? 0);
+    const endpoint = roleId === 2 ? '/staff/approval-records/totals' : '/teacher/approval-records/totals';
+    return apiClient.get(endpoint, params);
+  },
 };
 
 export { teacherAPI };

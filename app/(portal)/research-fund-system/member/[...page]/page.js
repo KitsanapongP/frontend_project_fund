@@ -10,7 +10,7 @@ export default function MemberDynamicPage({ params }) {
     ? resolvedParams.page
     : [];
 
-  const page = pageSegments[0] || 'profile';
+  const page = pageSegments[0] || 'dashboard';
   const mode = pageSegments[1] || null;
 
   return (

@@ -9,7 +9,6 @@ import {
   Settings,
   LogOut,
   HandHelping,
-  ClipboardCheck,
   FileCheck,
   BookOpen,
   Briefcase,
@@ -25,6 +24,8 @@ import {
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { normalizeRoleName } from "@/app/lib/access_routing";
+import { MEMBER_BASE_MENU_ITEMS, MEMBER_DEPT_REVIEW_ITEM } from "@/app/lib/member_menu_config";
+import { ADMIN_BASE_MENU_ITEMS } from "@/app/lib/admin_menu_config";
 
 export default function Navigation({ 
   currentPage, 
@@ -43,127 +44,35 @@ export default function Navigation({
 
   const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
 
-  const menuItems = [
-    {
-      id: 'dashboard',
-      label: 'แดชบอร์ดผู้ดูแลระบบ',
-      icon: LayoutDashboard,
-      hasSubmenu: false
-    },
-    {
-      id: 'research-dashboard',
-      label: 'แดชบอร์ดงานวิจัย',
-      icon: BarChart3,
-      hasSubmenu: false
-    },
-    {
-      id: 'research-fund',
-      label: 'ทุนส่งเสริมงานวิจัย',
-      icon: HandHelping,
-      hasSubmenu: false
-    },
-    {
-      id: 'promotion-fund',
-      label: 'ทุนอุดหนุนกิจกรรม',
-      icon: DollarSign,
-      hasSubmenu: false
-    },
-    {
-      id: 'applications-list',
-      label: 'รายการการขอทุน',
-      icon: FileText,
-      hasSubmenu: false
-    },
-    {
-      id: 'scopus-research-search',
-      label: 'ค้นหางานวิจัย',
-      icon: Search,
-      hasSubmenu: false
-    },
-    // {
-    //   id: 'legacy-submissions',
-    //   label: 'จัดการคำร้อง (ข้อมูลเก่า)',
-    //   icon: ClipboardCheck,
-    //   hasSubmenu: false
-    // },
-    {
-      id: 'fund-settings',
-      label: 'ตั้งค่าทุน',
-      icon: Settings,
-      hasSubmenu: false
-    },
-    {
-      id: 'projects',
-      label: 'จัดการโครงการ',
-      icon: Briefcase,
-      hasSubmenu: false
-    },
-    {
-      id: 'approval-records',
-      label: 'บันทึกข้อมูลการอนุมัติทุน',
-      icon: FileCheck,
-      hasSubmenu: false
-    },
-    {
-      id: 'import-export',
-      label: 'นำเข้า/ส่งออก',
-      icon: ArrowDownUp,
-      hasSubmenu: false
-    },
-    // {
-    //   id: 'notifications',
-    //   label: 'การแจ้งเตือน',
-    //   icon: Bell,
-    //   hasSubmenu: false
-    // },
-    {
-      id: 'academic-imports',
-      label: 'ข้อมูลผลงานวิชาการ / Academic Data Import',
-      icon: BookOpen,
-      hasSubmenu: false,
-      requiredPermission: 'ui.page.admin.academic_imports.view',
-    },
-    {
-      id: 'access-control',
-      label: 'จัดการสิทธิ์การเข้าถึง',
-      icon: ShieldCheck,
-      hasSubmenu: false,
-      requiredPermission: 'ui.page.admin.access_control.view',
-    }
-  ];
+  const adminIconById = {
+    dashboard: LayoutDashboard,
+    "research-dashboard": BarChart3,
+    "research-fund": HandHelping,
+    "promotion-fund": DollarSign,
+    "applications-list": FileText,
+    "scopus-research-search": Search,
+    "fund-settings": Settings,
+    projects: Briefcase,
+    "approval-records": FileCheck,
+    "import-export": ArrowDownUp,
+    "academic-imports": BookOpen,
+    "access-control": ShieldCheck,
+  };
 
-  const menuItemsWithPermissions = menuItems.map((item) => {
-    if (item.requiredPermission) {
-      return item;
-    }
-
-    const permissionByPage = {
-      dashboard: 'ui.page.admin.dashboard.view',
-      'research-dashboard': 'ui.page.admin.research_dashboard.view',
-      'research-fund': 'ui.page.admin.research_fund.view',
-      'promotion-fund': 'ui.page.admin.promotion_fund.view',
-      'applications-list': 'ui.page.admin.applications.view',
-      'scopus-research-search': 'ui.page.admin.scopus.view',
-      'fund-settings': 'ui.page.admin.fund_settings.view',
-      projects: 'ui.page.admin.projects.view',
-      'approval-records': 'ui.page.admin.approval_records.view',
-      'import-export': 'ui.page.admin.import_export.view',
-    };
-
-    return {
-      ...item,
-      requiredPermission: permissionByPage[item.id] || null,
-    };
-  });
+  const menuItemsWithPermissions = ADMIN_BASE_MENU_ITEMS.map((item) => ({
+    ...item,
+    icon: adminIconById[item.id] || LayoutDashboard,
+    hasSubmenu: false,
+  }));
 
   const canViewMenu = (item) => {
-    if (!item.requiredPermission) {
+    if (!Array.isArray(item.requiredPermissions) || item.requiredPermissions.length === 0) {
       return true;
     }
     if (!hasPermissionSnapshot) {
       return true;
     }
-    return hasPermission(item.requiredPermission);
+    return item.requiredPermissions.some((code) => hasPermission(code));
   };
 
   const visibleMenuItems = isExecutive
@@ -173,36 +82,47 @@ export default function Navigation({
   const normalizedRole = normalizeRoleName(user?.role ?? user?.role_id);
   const canAccessMemberPortal = ["teacher", "staff", "dept_head"].includes(normalizedRole);
 
+  const memberShortcutIconById = {
+    profile: User,
+    "research-fund": HandHelping,
+    "promotion-fund": DollarSign,
+    applications: FileText,
+    "received-funds": Gift,
+    "approval-records": FileCheck,
+    announcements: Bell,
+    projects: Briefcase,
+    "dept-review": ArrowLeftRight,
+  };
+
+  const memberShortcutBase = [...MEMBER_BASE_MENU_ITEMS, ...(normalizedRole === "dept_head" ? [MEMBER_DEPT_REVIEW_ITEM] : [])];
+
   const memberShortcutItems = canAccessMemberPortal
-    ? [
-        { id: "member-profile", label: "ข้อมูลส่วนตัว", icon: User, route: `${MEMBER_BASE_PATH}/profile` },
-        { id: "member-research-fund", label: "ทุนส่งเสริมการวิจัย", icon: HandHelping, route: `${MEMBER_BASE_PATH}/research-fund` },
-        { id: "member-promotion-fund", label: "ทุนอุดหนุนกิจกรรม", icon: DollarSign, route: `${MEMBER_BASE_PATH}/promotion-fund` },
-        { id: "member-applications", label: "คำร้องของฉัน", icon: FileText, route: `${MEMBER_BASE_PATH}/applications` },
-        { id: "member-received", label: "ทุนที่เคยได้รับ", icon: Gift, route: `${MEMBER_BASE_PATH}/received-funds` },
-        { id: "member-projects", label: "โครงการ", icon: Briefcase, route: `${MEMBER_BASE_PATH}/projects` },
-        ...(normalizedRole === "dept_head"
-          ? [
-              {
-                id: "member-dept-review",
-                label: "พิจารณาคำร้องของหัวหน้าสาขา",
-                icon: ArrowLeftRight,
-                route: `${MEMBER_BASE_PATH}/dept-review`,
-              },
-            ]
-          : []),
-      ]
+    ? memberShortcutBase.map((item) => ({
+        id: `member-${item.id}`,
+        label: item.label,
+        icon: memberShortcutIconById[item.id] || User,
+        route: `${MEMBER_BASE_PATH}/${item.id}`,
+      }))
     : [];
 
   useEffect(() => {
-    const adminRoutes = visibleMenuItems.map((item) => `${ADMIN_BASE_PATH}/${item.id}`);
-    const memberRoutes = memberShortcutItems.map((item) => item.route);
+    const adminRoutes = visibleMenuItems.slice(0, 4).map((item) => item.route || `${ADMIN_BASE_PATH}/${item.id}`);
+    const memberRoutes = memberShortcutItems.slice(0, 2).map((item) => item.route);
     [...adminRoutes, ...memberRoutes].forEach((route) => {
       if (typeof router.prefetch === "function") {
         router.prefetch(route);
       }
     });
   }, [memberShortcutItems, router, visibleMenuItems]);
+
+  useEffect(() => {
+    if (!pendingRoute) {
+      return;
+    }
+    if (pathname === pendingRoute) {
+      setPendingRoute("");
+    }
+  }, [pathname, pendingRoute]);
 
   const navigateToRoute = (route) => {
     if (!route || pendingRoute === route) {
@@ -214,16 +134,7 @@ export default function Navigation({
       router.prefetch(route);
     }
 
-    const currentPath = typeof window !== "undefined" ? window.location.pathname : pathname;
     router.push(route);
-
-    window.setTimeout(() => {
-      const stillSamePath = typeof window !== "undefined" && window.location.pathname === currentPath;
-      if (stillSamePath) {
-        window.location.assign(route);
-      }
-      setPendingRoute("");
-    }, 700);
   };
 
   const handleMenuClick = (item) => {
@@ -264,18 +175,20 @@ export default function Navigation({
 
   return (
     <nav className="pb-40 md:ms-4">
+      <div className="mt-2"/>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">เมนูผู้ดูแล</p>
       {visibleMenuItems.map((item) => (
         <div key={item.id}>
           <button
             onClick={() => handleMenuClick(item)}
-            disabled={pendingRoute === `${ADMIN_BASE_PATH}/${item.id}`}
+            disabled={pendingRoute === (item.route || `${ADMIN_BASE_PATH}/${item.id}`)}
             className={`flex items-center gap-2 mb-2.5 w-full hover:text-blue-500 transition-colors ${
               isActive(item.id) ? 'text-blue-500 font-semibold' : 'text-gray-700'
             }`}
           >
             <item.icon size={20} />
             <div className="flex-1 text-left">
-              <span>{pendingRoute === `${ADMIN_BASE_PATH}/${item.id}` ? "กำลังเปิด..." : item.label}</span>
+              <span>{pendingRoute === (item.route || `${ADMIN_BASE_PATH}/${item.id}`) ? "กำลังเปิด..." : item.label}</span>
               {item.description && (
                 <span className="text-xs text-gray-500 block">{item.description}</span>
               )}
@@ -284,7 +197,7 @@ export default function Navigation({
         </div>
       ))}
 
-      {memberShortcutItems.length > 0 && (
+      {memberShortcutItems.length > 0 ? (
         <>
           <div className="mt-6 mb-3 border-t border-gray-200 pt-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">เมนูบุคลากร</p>
@@ -304,7 +217,7 @@ export default function Navigation({
             </div>
           ))}
         </>
-      )}
+      ) : null}
 
       {/* Logout Button */}
       <div className="border-t border-gray-200 mt-6 pt-4">

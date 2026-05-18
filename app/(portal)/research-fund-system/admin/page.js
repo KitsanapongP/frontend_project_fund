@@ -33,19 +33,19 @@ const IMPORT_TAB_MAP = {
   'thaijo-import': 'thaijo',
 };
 
-const PAGE_PERMISSION_BY_ID = {
-  dashboard: "ui.page.admin.dashboard.view",
-  "research-dashboard": "ui.page.admin.research_dashboard.view",
-  "research-fund": "ui.page.admin.research_fund.view",
-  "promotion-fund": "ui.page.admin.promotion_fund.view",
-  "applications-list": "ui.page.admin.applications.view",
-  "scopus-research-search": "ui.page.admin.scopus.view",
-  "fund-settings": "ui.page.admin.fund_settings.view",
-  projects: "ui.page.admin.projects.view",
-  "approval-records": "ui.page.admin.approval_records.view",
-  "import-export": "ui.page.admin.import_export.view",
-  "academic-imports": "ui.page.admin.academic_imports.view",
-  "access-control": "ui.page.admin.access_control.view",
+const PAGE_PERMISSIONS_BY_ID = {
+  dashboard: ["ui.page.admin.dashboard.view", "dashboard.view.admin"],
+  "research-dashboard": ["ui.page.admin.research_dashboard.view"],
+  "research-fund": ["ui.page.admin.research_fund.view"],
+  "promotion-fund": ["ui.page.admin.promotion_fund.view"],
+  "applications-list": ["ui.page.admin.applications.view"],
+  "scopus-research-search": ["ui.page.admin.scopus.view", "scopus.publications.read"],
+  "fund-settings": ["ui.page.admin.fund_settings.view"],
+  projects: ["ui.page.admin.projects.view"],
+  "approval-records": ["ui.page.admin.approval_records.view"],
+  "import-export": ["ui.page.admin.import_export.view"],
+  "academic-imports": ["ui.page.admin.academic_imports.view"],
+  "access-control": ["ui.page.admin.access_control.view", "access.manage"],
 };
 
 function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fund-system/admin' }) {
@@ -68,19 +68,15 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
       return pageId === "dashboard" || pageId === "applications-list";
     }
 
-    const requiredPermission = PAGE_PERMISSION_BY_ID[pageId];
-    if (!requiredPermission) {
+    const requiredPermissions = PAGE_PERMISSIONS_BY_ID[pageId];
+    if (!Array.isArray(requiredPermissions) || requiredPermissions.length === 0) {
       return true;
     }
     if (!hasPermissionSnapshot) {
       return true;
     }
 
-    if (pageId === "dashboard" && hasPermission("dashboard.view.admin")) {
-      return true;
-    }
-
-    return hasPermission(requiredPermission);
+    return requiredPermissions.some((code) => hasPermission(code));
   }, [hasPermission, hasPermissionSnapshot, isExecutive]);
 
   const normalizePage = useCallback((page) => {
@@ -163,18 +159,6 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
     },
     [basePath, normalizePage]
   );
-
-  useEffect(() => {
-    const normalized = normalizePage(initialPage);
-    const initialTab = IMPORT_TAB_MAP[initialPage];
-
-    if (normalized === 'academic-imports' && initialTab) {
-      setImportTab(initialTab);
-    }
-
-    setCurrentPage(normalized);
-    syncPathWithPage(normalized, { replace: true });
-  }, [initialPage, normalizePage, syncPathWithPage]);
 
   useEffect(() => {
     const pageFromUrl = pageFromPath(pathname);
@@ -334,11 +318,6 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
         {/* Desktop Sidebar */}
         <div className="hidden md:block w-64 bg-white border-r border-gray-300 fixed h-[calc(100vh-5rem)] overflow-y-auto shadow-sm">
           <div className="p-5">
-            <div className="mb-6">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-                เมนูหลัก
-              </h2>
-            </div>
             <Navigation
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}

@@ -40,6 +40,7 @@ import { notificationsAPI } from '@/app/lib/notifications_api';
 
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import UnauthorizedPage from '@/app/components/UnauthorizedPage';
 
 const pickArray = (...candidates) => {
   for (const candidate of candidates) {
@@ -1236,7 +1237,7 @@ function DeptDecisionPanel({
           {errors.comment ? (
             <p className="text-xs text-red-600 text-right">{errors.comment}</p>
           ) : (
-            <p className="text-xs text-gray-400 text-right">ใช้หมายเหตุนี้เมื่อขอข้อมูลเพิ่มเติม</p>
+            <p className="text-xs text-gray-400 text-right"></p>
           )}
         </div>
 
@@ -1258,7 +1259,7 @@ function DeptDecisionPanel({
         <div className="border-t border-gray-200 pt-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3 md:max-w-[60%]">
-              <span className="text-sm font-medium text-gray-700">ดำเนินการ</span>
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap shrink-0">ดำเนินการ</span>
               <DecisionDropdown
                 value={selectedAction}
                 onChange={(next) => {
@@ -1302,6 +1303,7 @@ function DeptDecisionPanel({
 export default function PublicationSubmissionDetailsDept({ submissionId, onBack }) {
   const [loading, setLoading] = useState(true);
   const [submission, setSubmission] = useState(null);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
 
   // >>> Add for mapped announcements
@@ -1347,6 +1349,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
     if (!submissionId) return;
     const load = async () => {
       setLoading(true);
+      setIsUnauthorized(false);
       try {
         const res = await deptHeadAPI.getSubmissionDetails(submissionId);
         let data = res?.submission || res;
@@ -1387,6 +1390,11 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
         }
       } catch (err) {
         console.error('Error loading submission details:', err);
+        const status = Number(err?.response?.status || err?.status || 0);
+        if (status === 401 || status === 403) {
+          setIsUnauthorized(true);
+          return;
+        }
         toast.error('โหลดข้อมูลล้มเหลว');
       } finally {
         setLoading(false);
@@ -1394,6 +1402,10 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
     };
     load();
   }, [submissionId]);
+
+  if (isUnauthorized) {
+    return <UnauthorizedPage />;
+  }
 
   // Applicant detection (robust)
   const getApplicant = useMemo(
@@ -2806,80 +2818,84 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               </div>
 
               {/* Reward */}
-              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[76px]`}>
+              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[56px]`}>
                 <label className="block text-sm font-medium text-gray-700 leading-tight">
                   เงินรางวัลที่ขอ
                   <br />
                   <span className="text-xs font-normal text-gray-600">Requested Reward Amount</span>
                 </label>
-                <span className="text-right font-semibold">฿{formatCurrency(requestedReward)}</span>
+                <span className="text-right font-semibold">{formatCurrency(requestedReward)} ฿</span>
                 {submission?.status_id === 2 && (
                   <span className="text-right font-semibold">
-                    {approvedRewardValue != null ? `฿${formatCurrency(approvedRewardValue)}` : '-'}
+                    {approvedRewardValue != null ? `${formatCurrency(approvedRewardValue)} ฿` : '-'}
                   </span>
                 )}
               </div>
 
-              {/* Revision fee (always visible) */}
-              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[76px]`}>
+              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[56px]`}>
                 <label className="block text-sm font-medium text-gray-700 leading-tight">
-                  ค่าปรับปรุงบทความ
-                  <br /><span className="text-xs font-normal text-gray-600">Requested Manuscript Editing Fee</span>
-                </label>
-                <span className="text-right">฿{formatCurrency(requestedRevision)}</span>
-                {submission?.status_id === 2 && (
-                  <span className="text-right">
-                    {approvedRevisionValue != null
-                      ? `฿${formatCurrency(approvedRevisionValue)}`
-                      : '-'}
-                  </span>
-                )}
-              </div>
-
-              {/* Publication fee (always visible) */}
-              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[76px]`}>
-                <label className="block text-sm font-medium text-gray-700 leading-tight">
-                  ค่าธรรมเนียมการตีพิมพ์
-                  <br /><span className="text-xs font-normal text-gray-600">Requested Page Charge</span>
-                </label>
-                <span className="text-right">฿{formatCurrency(requestedPublication)}</span>
-                {submission?.status_id === 2 && (
-                  <span className="text-right">
-                    {approvedPublicationValue != null
-                      ? `฿${formatCurrency(approvedPublicationValue)}`
-                      : '-'}
-                  </span>
-                )}
-              </div>
-
-              {/* External funding */}
-              {requestedExternal > 0 && (
-                <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center pt-2 mt-2 border-t`}>
-                  <label className="block text-sm font-medium text-gray-700">
-                    เงินสนับสนุนจากภายนอก
-                    <br />
-                    <span className="text-xs font-normal text-gray-600">External Funding Sources</span>
-                  </label>
-                  <span className="text-right text-red-600">
-                    ฿{formatCurrencyParen(requestedExternal)}
-                  </span>
-                  {submission?.status_id === 2 && <span></span>}
-                </div>
-              )}
-
-              {/* Total */}
-              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center pt-2 border-t min-h-[76px]`}>
-                <label className="block font-medium text-gray-700 leading-tight">
-                  รวมเบิกจากวิทยาลัยการคอม
+                  ค่าปรับปรุงบทความ (A)
                   <br />
-                  <span className="text-xs font-normal text-gray-600">Total Requested to CP-KKU</span>
+                  <span className="text-xs font-normal text-gray-600">Requested Manuscript Editing Fee</span>
+                </label>
+                <span className="text-right">{formatCurrency(requestedRevision)} ฿</span>
+                {submission?.status_id === 2 && (
+                  <span className="text-right">
+                    {approvedRevisionValue != null ? `${formatCurrency(approvedRevisionValue)} ฿` : '-'}
+                  </span>
+                )}
+              </div>
+
+              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[56px]`}>
+                <label className="block text-sm font-medium text-gray-700 leading-tight">
+                  ค่าธรรมเนียมการตีพิมพ์ (B)
+                  <br />
+                  <span className="text-xs font-normal text-gray-600">Requested Page Charge</span>
+                </label>
+                <span className="text-right">{formatCurrency(requestedPublication)} ฿</span>
+                {submission?.status_id === 2 && (
+                  <span className="text-right">
+                    {approvedPublicationValue != null ? `${formatCurrency(approvedPublicationValue)} ฿` : '-'}
+                  </span>
+                )}
+              </div>
+
+              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[56px]`}>
+                <label className="block text-sm font-medium text-gray-700 leading-tight">
+                  รวมเบิกจ่ายภายนอก (C)
+                  <br />
+                  <span className="text-xs font-normal text-gray-600">External Funding Sources</span>
+                </label>
+                <span className="text-right text-red-600">{formatCurrencyParen(requestedExternal)} ฿</span>
+                {submission?.status_id === 2 && <span className="text-right text-red-600">{formatCurrencyParen(approvedSummary?.external ?? 0)} ฿</span>}
+              </div>
+
+              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[56px]`}>
+                <label className="block text-sm font-bold text-gray-700 leading-tight">
+                  เงินสมทบ (A + B - C)
+                  <br />
+                  <span className="text-xs font-normal text-gray-600">Top-up fund</span>
+                </label>
+                <span className="text-right font-bold">{formatCurrency(requestedRevision + requestedPublication - requestedExternal)} ฿</span>
+                {submission?.status_id === 2 && (
+                  <span className="text-right font-bold">
+                    {formatCurrency((approvedSummary?.revision ?? 0) + (approvedSummary?.publication ?? 0) - (approvedSummary?.external ?? 0))} ฿
+                  </span>
+                )}
+              </div>
+
+              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center pt-2 border-t min-h-[56px]`}>
+                <label className="block font-bold text-blue-600 leading-tight">
+                  รวมจำนวนเงิน
+                  <br />
+                  <span className="text-xs font-bold text-blue-600">Total Amount</span>
                 </label>
                 <span className="text-right font-bold text-blue-600">
-                  ฿{formatCurrency(requestedTotal || 0)}
+                  {formatCurrency(requestedTotal || 0)} ฿
                 </span>
                 {submission?.status_id === 2 && (
                   <span className="text-right font-bold text-green-600">
-                    {approvedTotalDisplay != null ? `฿${formatCurrency(approvedTotalDisplay || 0)}` : '—'}
+                    {approvedTotalDisplay != null ? `${formatCurrency(approvedTotalDisplay || 0)} ฿` : '—'}
                   </span>
                 )}
               </div>
