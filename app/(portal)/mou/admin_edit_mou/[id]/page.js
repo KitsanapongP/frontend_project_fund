@@ -8,7 +8,6 @@ import { ChevronLeft, FileText, Upload } from "lucide-react";
 import apiClient from "../../../../lib/api";
 import { mouAPI } from "../../../../lib/mou_api";
 import { useAuth } from "../../../../contexts/AuthContext";
-import { notifyMouAction } from "../../../../lib/notificationHelper";
 import MouLayout from "../../components/MouLayout";
 
 function Icon({ name }) {
@@ -346,7 +345,6 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
         confirmButtonColor: "#2563eb",
         timer: 1500,
       });
-      await notifyMouAction(user?.user_id, "mou_update", "MOU #" + params.id, params.id ? parseInt(params.id) : null);
       router.replace("/mou");
     } catch (err) {
       console.error("Error updating MOU:", err);

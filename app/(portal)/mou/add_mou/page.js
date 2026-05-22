@@ -14,7 +14,6 @@ import {
 import apiClient from "../../../lib/api";
 import { mouAPI } from "../../../lib/mou_api";
 import { useAuth } from "../../../contexts/AuthContext";
-import { notifyMouAction } from "../../../lib/notificationHelper";
 import MouLayout from "../components/MouLayout";
 
 function Select({ value, onChange, options, placeholder = "เลือก", name, searchable = false }) {
@@ -430,7 +429,6 @@ export default function AddMouPage() {
         confirmButtonColor: "#2563eb",
         timer: 1500,
       });
-      await notifyMouAction(user?.user_id, "mou_create", formData.title || formData.mou_code, null);
       setFormData({
         mou_code: "",
         title: "",

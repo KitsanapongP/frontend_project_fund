@@ -12,7 +12,6 @@ import {
 import apiClient from "../../../lib/api";
 import { mouAPI } from "../../../lib/mou_api";
 import { useAuth } from "../../../contexts/AuthContext";
-import { notifyMouAction } from "../../../lib/notificationHelper";
 import MouLayout from "../components/MouLayout";
 import Swal from "sweetalert2";
 
@@ -173,7 +172,6 @@ export default function AddActivityMouPage() {
         confirmButtonColor: "#2563eb",
         timer: 1500,
       });
-      await notifyMouAction(user?.user_id, "activity_create", payload.title || "Activity", null);
       setFormData({
         mou_id: formData.mou_id,
         title: "",

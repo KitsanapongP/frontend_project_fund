@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { mouAPI } from "../../../lib/mou_api";
 import { useAuth } from "../../../contexts/AuthContext";
-import { notifyMouAction } from "../../../lib/notificationHelper";
 import MouLayout from "../components/MouLayout";
 
 export default function AdminManageTypeOkrPage() {
@@ -76,10 +75,8 @@ export default function AdminManageTypeOkrPage() {
       try {
         if (modalMode === "addType") {
           await mouAPI.createActivityType({ name: form.name, description: form.description });
-          await notifyMouAction(user?.user_id, "type_create", form.name || "", null);
         } else {
           await mouAPI.updateActivityType(editItem.id, { name: form.name, description: form.description });
-          await notifyMouAction(user?.user_id, "type_update", form.name || "", editItem?.id || null);
         }
         Swal.fire({ icon: "success", title: "บันทึกสำเร็จ", timer: 1500, showConfirmButton: false });
         closeModal();
@@ -107,10 +104,8 @@ export default function AdminManageTypeOkrPage() {
       try {
         if (modalMode === "addOkr") {
           await mouAPI.createOkr({ title: form.title, description: form.description, category: form.category });
-          await notifyMouAction(user?.user_id, "okr_create", form.title || "", null);
         } else {
           await mouAPI.updateOkr(editItem.id, { title: form.title, description: form.description, category: form.category });
-          await notifyMouAction(user?.user_id, "okr_update", form.title || "", editItem?.id || null);
         }
         Swal.fire({ icon: "success", title: "บันทึกสำเร็จ", timer: 1500, showConfirmButton: false });
         closeModal();
@@ -140,10 +135,8 @@ export default function AdminManageTypeOkrPage() {
     try {
       if (isType) {
         await mouAPI.deleteActivityType(id);
-        await notifyMouAction(user?.user_id, "type_delete", "", id);
       } else {
         await mouAPI.deleteOkr(id);
-        await notifyMouAction(user?.user_id, "okr_delete", "", id);
       }
       Swal.fire({ icon: "success", title: "ลบสำเร็จ", timer: 1500, showConfirmButton: false });
       loadData();

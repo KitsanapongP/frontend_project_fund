@@ -12,7 +12,6 @@ import {
 import apiClient from "../../../../lib/api";
 import { mouAPI } from "../../../../lib/mou_api";
 import { useAuth } from "../../../../contexts/AuthContext";
-import { notifyMouAction } from "../../../../lib/notificationHelper";
 import MouLayout from "../../components/MouLayout";
 import Swal from "sweetalert2";
 
@@ -346,7 +345,6 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
       setActivity(updated);
       setEditing(false);
       await Swal.fire({ icon: "success", title: "บันทึกสำเร็จ", timer: 1500, showConfirmButton: false });
-      await notifyMouAction(user?.user_id, "activity_update", activity?.title || "", activity?.id || null);
     } catch (err) {
       await Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: err.message });
     } finally {
@@ -370,7 +368,6 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
     try {
       await mouAPI.deleteMouActivity(activity.id);
       await Swal.fire({ icon: "success", title: "ลบสำเร็จ", timer: 1500, showConfirmButton: false });
-      await notifyMouAction(user?.user_id, "activity_delete", activity?.title || "", activity?.id || null);
       router.push(`/mou/show_detail_mou/${activity.mou_id}`);
     } catch (err) {
       await Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: err.message });
