@@ -1,4 +1,4 @@
-import { ExternalLink, Calendar, BookOpen, User, Tag, Globe, Award, Users, Hash, Download, Quote } from "lucide-react";
+import { ExternalLink, Calendar, BookOpen, User, Tag, University, Globe, Award, Users, Hash, Download, Quote, Library, Medal, Trophy } from "lucide-react";
 import BackButton from "./BackButton";
 import pool from "../../../../lib/db-connection";
 import { notFound } from "next/navigation";
@@ -68,44 +68,96 @@ export default async function DetailPage({ params }) {
   const authors = authorRows.filter(a => a.role !== 'advisor').map(row => row.name);
   const advisors = authorRows.filter(a => a.role === 'advisor').map(row => row.name);
   let journalName = null;
+  let journalNameEn = null;
+  let journalCategory = null;
+  let journalAcronym = null;
+  let journalTier = null;
+  let journalTierPeriod = null;
+  let journalUrl = null;
+  let journalPath = null;
+  let titleEn = null;
   let onlineIssn = null;
   let printIssn = null;
   let pdfUrl = null;
   let doi = null;
-  if (item.source_name === 'thaijo') {
-    const [jRows] = await pool.execute(
-      `SELECT j.name_th, j.online_issn, j.print_issn, d.pdf_url
-       FROM thaijo_documents d
-       JOIN thaijo_journals j ON d.journal_id = j.journal_id
-       WHERE d.id = ? LIMIT 1`,
+  let scopusIssn = null;
+  let scopusEissn = null;
+  let scopusVolume = null;
+  let scopusIssue = null;
+  let scopusPageRange = null;
+  let scopusArticleNumber = null;
+
+  if (item.source_name === 'scopus') {
+    const [sRows] = await pool.execute(
+      `SELECT doi, issn, eissn, volume, issue, page_range, article_number FROM scopus_documents WHERE id = ? LIMIT 1`,
       [item.source_id]
     );
-    if (jRows.length > 0) {
-      journalName = jRows[0].name_th;
-      onlineIssn = jRows[0].online_issn;
-      printIssn = jRows[0].print_issn;
-      pdfUrl = jRows[0].pdf_url;
+    if (sRows.length > 0) {
+      doi = sRows[0].doi;
+      scopusIssn = sRows[0].issn;
+      scopusEissn = sRows[0].eissn;
+      scopusVolume = sRows[0].volume;
+      scopusIssue = sRows[0].issue;
+      scopusPageRange = sRows[0].page_range;
+      scopusArticleNumber = sRows[0].article_number;
     }
   }
-  if (item.source_name === 'scopus') {
-    const [doiRows] = await pool.execute(
-      `SELECT doi FROM scopus_documents WHERE id = ? LIMIT 1`,
+
+  if (item.source_name === 'thaijo') {
+    const [jRows] = await pool.execute(
+      `SELECT 
+        j.name_th,
+        j.name_en,
+        j.category,
+        j.acronym,
+        j.online_issn,
+        j.print_issn,
+        j.tier,
+        j.tier_period,
+        j.path,
+        j.journal_url,
+        d.title_en,
+        d.pdf_url,
+        d.doi
+      FROM thaijo_documents d
+      JOIN thaijo_journals j ON d.journal_id = j.journal_id
+      WHERE d.id = ?
+      LIMIT 1`,
       [item.source_id]
     );
-    doi = doiRows.length > 0 ? doiRows[0].doi : null;
+
+    if (jRows.length > 0) {
+      journalName = jRows[0].name_th;
+      journalNameEn = jRows[0].name_en;
+      journalCategory = jRows[0].category;
+      journalAcronym = jRows[0].acronym;
+      onlineIssn = jRows[0].online_issn;
+      printIssn = jRows[0].print_issn;
+      journalTier = jRows[0].tier;
+      journalTierPeriod = jRows[0].tier_period;
+      journalPath = jRows[0].path;
+      journalUrl = jRows[0].journal_url;
+      titleEn = jRows[0].title_en;
+      pdfUrl = jRows[0].pdf_url;
+      doi = jRows[0].doi;
+    }
   }
 
   const keywordsList = parseKeywords(item.keywords);
   const sourceLabel = getSourceLabel(item.source_name);
 
   let groupCode = null;
+  let posterUrl = null;
   let membersWithIds = null;
   if (item.source_name === 'ai_showcase') {
     const [grp] = await pool.execute(
-      `SELECT group_code FROM ai_showcase_projects WHERE id = ? LIMIT 1`,
+      `SELECT group_code, poster_url FROM ai_showcase_projects WHERE id = ? LIMIT 1`,
       [item.source_id]
     );
-    groupCode = grp.length > 0 ? grp[0].group_code : null;
+    if (grp.length > 0) {
+      groupCode = grp[0].group_code;
+      posterUrl = grp[0].poster_url || (item.url?.startsWith('https://ai-dday.computing.kku.ac.th/') ? `${item.url}.webp` : null);
+    }
     const [memberRows] = await pool.execute(
       `SELECT name, student_id FROM ai_showcase_project_members WHERE project_id = ? AND role = 'student'`,
       [item.source_id]
@@ -113,9 +165,11 @@ export default async function DetailPage({ params }) {
     membersWithIds = memberRows;
   }
 
+  const isAIDdayLink = item.url?.startsWith('https://ai-dday.computing.kku.ac.th/');
+
   const getSourceLink = () => {
     if (item.source_name === 'ai_showcase') {
-      return item.url?.startsWith('https://ai-dday.computing.kku.ac.th/') ? item.url : null;
+      return isAIDdayLink ? item.url : null;
     }
     const directUrl = item.source_url || item.url || item.link || item.project_url;
     if (directUrl) return directUrl;
@@ -131,7 +185,7 @@ export default async function DetailPage({ params }) {
   };
 
   const sourceLink = getSourceLink();
-  const posterUrl = item.source_name === 'ai_showcase' && item.url?.startsWith('https://ai-dday.computing.kku.ac.th/') ? `${item.url}.webp` : null;
+  const infoCard = "rounded-xl border border-gray-200 bg-white p-4 hover:shadow-md hover:-translate-y-0.5 transition";
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -141,33 +195,32 @@ export default async function DetailPage({ params }) {
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           
-          <div className="px-8 py-6 bg-gray-50/50 border-b border-gray-100 flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
+          <div className="px-8 py-6 bg-gray-50/50 border-b border-gray-100 flex flex-wrap md:flex-nowrap items-start justify-between gap-4">
+            <div className="space-y-2 flex-1 min-w-0">
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <Globe size={14} />
                 <span className="font-medium">{sourceLabel}</span>
-                {journalName && (
-                  <>
-                    <span className="text-gray-300">/</span>
-                    <span className="font-medium text-gray-700">{journalName}</span>
-                  </>
-                )}
               </div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-800 leading-snug max-w-3xl">
                 {item.title}
               </h1>
+              {titleEn && (
+                <p className="text-sm text-gray-500 mt-1">{titleEn}</p>
+              )}
             </div>
             
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 shrink-0">
 
                {item.journal_quartile && (
-                  <span className="bg-orange-50 text-orange-700 px-3 py-1 rounded-xl text-xs font-semibold border border-orange-200">
-                    Quartile: {item.journal_quartile}
+                  <span className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-700 px-3 py-1 rounded-xl text-xs font-semibold border border-orange-200">
+                    <Medal size={14} className="text-orange-500 shrink-0" />
+                    {item.journal_quartile}
                     {item.journal_percentile && ` (${item.journal_percentile}%)`}
                   </span>
                 )}
                {item.journal_tier && (
-                 <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-xl text-xs font-semibold border border-emerald-200">
+                 <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-xl text-xs font-semibold border border-emerald-200">
+                    <Trophy size={14} className="text-emerald-500 shrink-0" />
                     กลุ่ม {item.journal_tier}
                  </span>
                )}
@@ -177,31 +230,66 @@ export default async function DetailPage({ params }) {
           <div className="p-8 space-y-8">
             
             <div className="flex flex-wrap items-start gap-8">
-              {groupCode && (
-                <section>
-                  <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-3 flex items-center gap-2">
-                    <Users size={16} className="text-gray-500" /> ชื่อกลุ่ม
-                  </h2>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs rounded-xl border border-indigo-200 font-medium">
-                    <Users size={12} className="text-indigo-500 shrink-0" />
-                    {groupCode}
+              {item.source_name === 'ai_showcase' && (
+                <div className="flex flex-col gap-8 w-full">
+                  {authors.length > 0 && (
+                    <section>
+                      <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <User size={16} className="text-gray-500 shrink-0" /> ผู้จัดทำ
+                      </h2>
+                      <div className="flex flex-wrap gap-2">
+                        {membersWithIds.map((entry, idx) => {
+                          const name = entry.name || entry;
+                          const sid = entry.student_id;
+                          return (
+                            <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 text-xs rounded-xl border border-sky-200 font-medium">
+                              <User size={12} className="text-sky-500 shrink-0" />
+                              {sid ? `${name} (${sid})` : name}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+
+                  <div className="flex flex-wrap items-start gap-8">
+                    {groupCode && (
+                      <section>
+                        <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-3 flex items-center gap-2">
+                          <Users size={16} className="text-gray-500" /> ชื่อกลุ่ม
+                        </h2>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs rounded-xl border border-indigo-200 font-medium">
+                          <Users size={12} className="text-indigo-500 shrink-0" />
+                          {groupCode}
+                        </div>
+                      </section>
+                    )}
+
+                    <section>
+                      <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <University size={16} className="text-gray-500" /> ภาคีเครือข่าย
+                      </h2>
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 border-violet-200 text-xs rounded-xl border font-medium">
+                        <University size={12} className="text-violet-500 shrink-0" />
+                        {TRACK_NAMES[item.track_id] || item.track_id || "-"}
+                      </div>
+                    </section>
                   </div>
-                </section>
+                </div>
               )}
 
-              {authors.length > 0 && (
+              {item.source_name !== 'ai_showcase' && authors.length > 0 && (
                 <section>
                   <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-3 flex items-center gap-2">
-                    <User size={16} className="text-gray-500" /> ผู้เขียน / ผู้จัดทำ
+                    <User size={16} className="text-gray-500 shrink-0" /> ผู้เขียน
                   </h2>
                   <div className="flex flex-wrap gap-2">
-                    {(membersWithIds || authors).map((entry, idx) => {
+                    {authors.map((entry, idx) => {
                       const name = entry.name || entry;
-                      const sid = entry.student_id;
                       return (
                         <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 text-xs rounded-xl border border-sky-200 font-medium">
                           <User size={12} className="text-sky-500 shrink-0" />
-                          {sid ? `${name} (${sid})` : name}
+                          {name}
                         </span>
                       );
                     })}
@@ -233,12 +321,12 @@ export default async function DetailPage({ params }) {
                 <div className="flex flex-wrap gap-3">
                   <a href={sourceLink} target="_blank" rel="noopener noreferrer" 
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-xl border border-orange-200 text-xs font-medium hover:bg-orange-100 transition">
-                    <Globe size={12} className="text-orange-500" /> เปิดหน้าผลงานต้นฉบับ ({sourceLabel})
+                    <ExternalLink size={12} className="text-orange-500" /> เปิดหน้าผลงานต้นฉบับ ({sourceLabel})
                   </a>
                   {pdfUrl && (
                     <a href={pdfUrl} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-xl border border-gray-300 text-sm font-medium hover:bg-gray-50 hover:text-gray-900 transition">
-                      <Download size={14} /> ดาวน์โหลด PDF
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 rounded-xl border border-rose-200 text-xs font-medium hover:bg-rose-100 transition">
+                      <Download size={12} className="text-rose-500" /> ดาวน์โหลด PDF
                     </a>
                   )}
                 </div>
@@ -253,6 +341,92 @@ export default async function DetailPage({ params }) {
                 {item.abstract || <span className="text-gray-400 italic">ไม่มีข้อมูลบทคัดย่อ</span>}
               </p>
             </section>
+
+            {(item.source_name === 'thaijo' || item.journal_name) && (
+              <section>
+                <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-3 flex items-center gap-2">
+                  <Library size={16} className="text-gray-500" /> ข้อมูลวารสาร
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                  {(item.journal_name || journalName) && (
+                    <div>
+                      <span className="text-gray-500">ชื่อวารสาร:</span>
+                      <p className="font-medium text-gray-800">{item.journal_name || journalName}</p>
+                    </div>
+                  )}
+                  {item.source_name === 'thaijo' && journalNameEn && (
+                    <div>
+                      <span className="text-gray-500">ชื่อวารสาร (EN):</span>
+                      <p className="font-medium text-gray-800">{journalNameEn}</p>
+                    </div>
+                  )}
+                  {item.source_name === 'thaijo' && journalCategory && (
+                    <div>
+                      <span className="text-gray-500">หมวดหมู่:</span>
+                      <p className="font-medium text-gray-800">{journalCategory}</p>
+                    </div>
+                  )}
+                  {item.source_name === 'thaijo' && journalAcronym && (
+                    <div>
+                      <span className="text-gray-500">ชื่อย่อ:</span>
+                      <p className="font-medium text-gray-800">{journalAcronym}</p>
+                    </div>
+                  )}
+                  {item.source_name === 'thaijo' && onlineIssn && (
+                    <div>
+                      <span className="text-gray-500">ISSN (ออนไลน์):</span>
+                      <p className="font-medium text-gray-800">{onlineIssn}</p>
+                    </div>
+                  )}
+                  {item.source_name === 'thaijo' && printIssn && (
+                    <div>
+                      <span className="text-gray-500">ISSN (สิ่งพิมพ์):</span>
+                      <p className="font-medium text-gray-800">{printIssn}</p>
+                    </div>
+                  )}
+                  {item.source_name === 'thaijo' && journalTier && (
+                    <div>
+                      <span className="text-gray-500">กลุ่ม TCI:</span>
+                      <p className="font-medium text-gray-800">กลุ่ม {journalTier}{journalTierPeriod ? ` (${journalTierPeriod})` : ''}</p>
+                    </div>
+                  )}
+                  {doi && (
+                    <div>
+                      <span className="text-gray-500">DOI:</span>
+                      <p className="font-medium text-gray-800">
+                        <a href={`https://doi.org/${doi}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                          {doi}
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                  {item.source_name === 'scopus' && (scopusIssn || scopusEissn) && (
+                    <div>
+                      <span className="text-gray-500">ISSN:</span>
+                      <p className="font-medium text-gray-800">{scopusIssn || scopusEissn}</p>
+                    </div>
+                  )}
+                  {item.source_name === 'scopus' && (scopusVolume || scopusIssue || scopusPageRange || scopusArticleNumber) && (
+                    <div>
+                      <span className="text-gray-500">เล่ม/หน้า:</span>
+                      <p className="font-medium text-gray-800">
+                        {[scopusVolume && `Vol. ${scopusVolume}`, scopusIssue && `(Issue ${scopusIssue})`, scopusPageRange, scopusArticleNumber && `Art. ${scopusArticleNumber}`].filter(Boolean).join(', ')}
+                      </p>
+                    </div>
+                  )}
+                  {item.source_name === 'thaijo' && journalUrl && (
+                    <div className="sm:col-span-2">
+                      <span className="text-gray-500">เว็บไซต์วารสาร:</span>
+                      <p className="font-medium text-gray-800">
+                        <a href={journalUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
+                          {journalUrl}
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
 
             {keywordsList.length > 0 && (
               <section>
@@ -270,7 +444,7 @@ export default async function DetailPage({ params }) {
               </section>
             )}
 
-            {posterUrl && (
+            {posterUrl && isAIDdayLink && (
               <div className="py-4 border-t border-gray-100">
                 <a href={item.url} target="_blank" rel="noopener noreferrer">
                   <img 
@@ -282,7 +456,8 @@ export default async function DetailPage({ params }) {
               </div>
             )}
 
-            <section className="border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
+            <section className="border-t border-gray-100 pt-6">
+              <div className={`grid gap-x-8 gap-y-3 ${item.source_name === 'scopus' ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
               <div>
                 <h3 className="text-xs text-gray-500 mb-1">{item.source_name === 'ai_showcase' ? 'ปีที่จัดทำ' : 'ปีที่ตีพิมพ์'}</h3>
                 <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
@@ -312,37 +487,7 @@ export default async function DetailPage({ params }) {
                   </p>
                 </div>
               )}
-              {doi && (
-                <div>
-                  <h3 className="text-xs text-gray-500 mb-1">DOI</h3>
-                  <p className="text-sm text-gray-800 flex items-center gap-2">
-                    <ExternalLink size={14} className="shrink-0" />
-                    <a href={`https://doi.org/${doi}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
-                      {doi}
-                    </a>
-                  </p>
-                </div>
-              )}
-              {item.source_name === 'ai_showcase' && (
-                <div>
-                  <h3 className="text-xs text-gray-500 mb-1">คณะ/วิทยาลัย</h3>
-                  <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                    <Globe size={14} /> {TRACK_NAMES[item.track_id] || item.track_id || "-"}
-                  </p>
-                </div>
-              )}
-              {onlineIssn && (
-                <div>
-                  <h3 className="text-xs text-gray-500 mb-1">ISSN (ออนไลน์)</h3>
-                  <p className="text-sm font-bold text-gray-800">{onlineIssn}</p>
-                </div>
-              )}
-              {printIssn && (
-                <div>
-                  <h3 className="text-xs text-gray-500 mb-1">ISSN (สิ่งพิมพ์)</h3>
-                  <p className="text-sm font-bold text-gray-800">{printIssn}</p>
-                </div>
-              )}
+            </div>
             </section>
 
 

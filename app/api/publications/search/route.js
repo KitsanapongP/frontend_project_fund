@@ -34,16 +34,49 @@ export async function GET(request) {
       title: ['c.title LIKE ?'],
       abstract: ['c.abstract LIKE ?'],
       keywords: ['c.keywords LIKE ?'],
-      author: ['c.id IN (SELECT unified_publication_id FROM unified_search_authors WHERE name LIKE ?)'],
+      author: [`c.id IN (
+        SELECT unified_publication_id FROM unified_search_authors WHERE name LIKE ?
+        UNION
+        SELECT CONCAT('scopus_', sda.document_id)
+        FROM scopus_document_authors sda
+        JOIN scopus_authors sa ON sa.id = sda.author_id
+        WHERE sa.given_name LIKE ? OR sa.surname LIKE ? OR CONCAT(sa.given_name, ' ', sa.surname) LIKE ?
+      )`],
     };
-    const allFields = ['c.title LIKE ?', 'c.abstract LIKE ?', 'c.keywords LIKE ?', 'c.id IN (SELECT unified_publication_id FROM unified_search_authors WHERE name LIKE ?)'];
+    const allFields = [
+      'c.title LIKE ?',
+      'c.abstract LIKE ?',
+      'c.keywords LIKE ?',
+      `c.id IN (
+        SELECT unified_publication_id FROM unified_search_authors WHERE name LIKE ?
+        UNION
+        SELECT CONCAT('scopus_', sda.document_id)
+        FROM scopus_document_authors sda
+        JOIN scopus_authors sa ON sa.id = sda.author_id
+        WHERE sa.given_name LIKE ? OR sa.surname LIKE ? OR CONCAT(sa.given_name, ' ', sa.surname) LIKE ?
+      )`
+    ];
     const selected = fieldConditions[searchField] || allFields;
     conditions.push(`(${selected.join(' OR ')})`);
-    selected.forEach(() => params.push(`%${q}%`));
+    selected.forEach(cond => {
+      const qCount = (cond.match(/\?/g) || []).length;
+      for (let i = 0; i < qCount; i++) params.push(`%${q}%`);
+    });
   }
 
   if (titleQuery) { conditions.push('c.title LIKE ?'); params.push(`%${titleQuery}%`); }
-  if (authorQuery) { conditions.push('c.id IN (SELECT unified_publication_id FROM unified_search_authors WHERE name LIKE ?)'); params.push(`%${authorQuery}%`); }
+  if (authorQuery) {
+    conditions.push(`c.id IN (
+      SELECT unified_publication_id FROM unified_search_authors WHERE name LIKE ?
+      UNION
+      SELECT CONCAT('scopus_', sda.document_id)
+      FROM scopus_document_authors sda
+      JOIN scopus_authors sa ON sa.id = sda.author_id
+      WHERE sa.given_name LIKE ? OR sa.surname LIKE ? OR CONCAT(sa.given_name, ' ', sa.surname) LIKE ?
+    )`);
+    const like = `%${authorQuery}%`;
+    params.push(like, like, like, like);
+  }
   if (keywordsQuery) { conditions.push('c.keywords LIKE ?'); params.push(`%${keywordsQuery}%`); }
   if (abstractQuery) { conditions.push('c.abstract LIKE ?'); params.push(`%${abstractQuery}%`); }
 

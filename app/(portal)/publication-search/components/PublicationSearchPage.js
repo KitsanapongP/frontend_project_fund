@@ -54,6 +54,10 @@ export default function PublicationSearchPage() {
 
   const defaultYearMin = useRef(null);
   const defaultYearMax = useRef(null);
+  const [lastImportDates, setLastImportDates] = useState([]);
+  useEffect(() => {
+    fetch('/api/publications/last-import').then(r => r.json()).then(d => setLastImportDates(d.data || [])).catch(() => {});
+  }, []);
   useEffect(() => {
     if (yearRange.min != null && yearRange.max != null) {
       const min = String(yearRange.min);
@@ -73,6 +77,7 @@ export default function PublicationSearchPage() {
     setSearchField("all");
     setQuery("");
     setAdvancedQueries({ title: "", author: "", keywords: "", abstract: "" });
+    setFilters({ sources: [], yearStart: "", yearEnd: "", quartiles: [], aggTypes: [], tciTiers: [], projectTypes: [], tracks: [] });
     setPage(1);
   };
 
@@ -228,7 +233,7 @@ export default function PublicationSearchPage() {
                         <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
                       </button>
                       {dropdownOpen && (
-                        <div className="absolute top-full left-0 mt-2 bg-white rounded-xl border border-gray-200 shadow-lg py-1.5 min-w-[160px] z-50 animate-in fade-in slide-in-from-top-2">
+                        <div className="absolute top-full left-0 mt-2 bg-white rounded-xl border border-gray-200 shadow-lg py-1.5 min-w-[160px] z-50 animate-in fade-in slide-in-from-top-2 overflow-hidden">
                           {availableFields.map((field) => {
                             const isActive = field.value === searchField;
                             return (
@@ -236,8 +241,8 @@ export default function PublicationSearchPage() {
                                 key={field.value}
                                 type="button"
                                 onClick={() => { setSearchField(field.value); setDropdownOpen(false); }}
-                                className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
-                                  isActive ? "bg-[#7F77DD]/10 text-[#7F77DD]" : "text-gray-700 hover:bg-gray-50"
+                                className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm outline-none ${
+                                  isActive ? "bg-[#7F77DD]/10 text-[#7F77DD]" : "text-gray-700"
                                 }`}
                               >
                                 <field.icon size={14} className={isActive ? "text-[#7F77DD]" : "text-gray-400"} />
@@ -269,11 +274,11 @@ export default function PublicationSearchPage() {
                   >
                     <Search size={18} className="transition-transform duration-300 group-hover:-scale-x-100" />
                   </button>
-                </div>
-              </div>
-            </div>
+                    </div>
+                     </div>
+                 </div>
+             </div>
           </div>
-        </div>
 
           {/* เส้นคั่น */}
         <div className="relative">
@@ -379,7 +384,7 @@ export default function PublicationSearchPage() {
             )}
             {(filters.sources.length === 0 || selectedSource === "ai_showcase") && tab === "student" && (
                 <FilterGroup 
-                  title="คณะ/วิทยาลัย"
+                  title="ภาคีเครือข่าย"
                   options={AI_TRACKS.map(t => ({ value: t.id, label: t.name }))}
                   selected={filters.tracks || []}
                   onToggle={(val) => toggleFilter("tracks", val)}
@@ -388,9 +393,9 @@ export default function PublicationSearchPage() {
             )}
             </div>
 
-           <div className="ml-auto flex items-center gap-3">
-              <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">ปี ค.ศ. (พ.ศ.)</span>
+            <div className="ml-auto flex flex-col items-end min-h-[80px]">
+               <div className="flex items-center gap-3">
+                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">ปี ค.ศ. (พ.ศ.)</span>
                   <div className="flex items-center gap-1.5">
                       <span className="text-xs text-gray-500">จาก:</span>
                       <div className="relative" ref={yearStartRef}>
@@ -451,10 +456,22 @@ export default function PublicationSearchPage() {
                             })}
                           </div>
                         )}
-                      </div>
-                  </div>
-              </div>
-           </div>
+                       </div>
+                   </div>
+               </div>
+                {lastImportDates.length > 0 && (
+                  <div className="flex items-center gap-2 mt-auto text-[10px] text-gray-400">
+                       <span className="font-medium text-gray-500">
+                        อัปเดตล่าสุด:
+                      </span>
+                    {lastImportDates.filter(d => tab === 'teacher' ? d.source !== 'AI Showcase' : d.source === 'AI Showcase').map(d => (
+                     <span key={d.source} className="text-[10px] text-gray-400">
+                       {d.source}: {new Date(d.finished_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                     </span>
+                   ))}
+                 </div>
+               )}
+            </div>
         </div>
 
       </div>

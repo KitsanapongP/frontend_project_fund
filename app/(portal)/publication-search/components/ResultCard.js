@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, Tag, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Tag, User, ChevronDown, ChevronUp } from "lucide-react";
 
 function highlightText(text, query) {
   if (!query || !text) return text;
@@ -155,7 +155,7 @@ export default function ResultCard({ item, tab, query, index }) {
       {tab === "student" ? (
         <>
 
-          <div className="flex flex-col items-center justify-center w-full md:w-[120px] text-center">
+          <div className="flex flex-col items-center justify-center w-full md:w-[180px] text-center">
             <span className="inline-flex items-center justify-center gap-1 h-8 w-full text-[10px] font-medium text-amber-700">
               {item.advisors && item.advisors.length > 0
                 ? item.advisors.join(", ")
@@ -197,19 +197,15 @@ export default function ResultCard({ item, tab, query, index }) {
         </span>
       </div>
 
-      <div className="flex flex-col items-center justify-center w-full md:w-[90px] text-center">
-        <span className={`inline-flex items-center justify-center h-8 px-2 rounded-lg text-[10px] font-semibold ${sourceColor}`}>
+      <div className={`flex flex-col items-center justify-center w-full ${tab === 'student' ? 'md:w-[120px]' : 'md:w-[200px]'} text-center`}>
+        {item.journal_name && (
+          <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-medium text-gray-500 bg-gray-100 leading-tight mb-1.5 max-w-[190px] line-clamp-2">
+            {item.journal_name}
+          </span>
+        )}
+        <span className={`inline-flex items-center justify-center h-6 px-1.5 rounded-md text-[9px] font-semibold ${sourceColor}`}>
           {sourceLabel}
         </span>
-      </div>
-
-      <div className="flex flex-col items-center justify-center w-full md:w-[110px] text-center">
-        <Link 
-          href={`/publication-search/detail/${item.id}`}
-          className="inline-flex items-center justify-center h-8 gap-1.5 px-3 rounded-lg text-xs font-medium transition bg-[#EFEEFC] text-[#8B7CF6] hover:bg-[#8B7CF6] hover:text-white w-full"
-          >   
-          <Eye size={12} /> ดูรายละเอียด
-        </Link>
       </div>
 
     </div>

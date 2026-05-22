@@ -105,15 +105,14 @@ export default function ResultList({ results, total, page, onPageChange, loading
         <div className="hidden md:flex px-5 py-3 gap-4 bg-gray-50/50 rounded-t-xl border-x border-t border-gray-100 text-xs font-bold text-gray-500">
           <div className="w-[40px] text-center">ลำดับ</div>
           <div className="flex-1">เรื่อง</div>
-          <div className="w-[120px] text-center">อาจารย์ที่ปรึกษา</div>
+          <div className="w-[180px] text-center">อาจารย์ที่ปรึกษา</div>
           <div className="w-[110px] text-center">
-            <SortHeader label="คณะ/วิทยาลัย" field="track_id" currentField={sortField} direction={sortDirection} onSort={handleSort} />
+            <SortHeader label="ภาคีเคลือข่าย" field="track_id" currentField={sortField} direction={sortDirection} onSort={handleSort} />
           </div>
           <div className="w-[110px] text-center">
             <SortHeader label="ปี ค.ศ. (พ.ศ.)" field="publication_year" currentField={sortField} direction={sortDirection} onSort={handleSort} onClear={clearSort} />
           </div>
-          <div className="w-[90px] text-center">แหล่งที่มา</div>
-          <div className="w-[110px] text-center">รายละเอียด</div>
+          <div className="w-[120px] text-center">แหล่งที่มา</div>
         </div>
       ) : (
         <div className="hidden md:flex px-5 py-3 gap-4 bg-gray-50/50 rounded-t-xl border-x border-t border-gray-100 text-xs font-bold text-gray-500">
@@ -129,8 +128,7 @@ export default function ResultList({ results, total, page, onPageChange, loading
           <div className="w-[110px] text-center">
             <SortHeader label="ปี ค.ศ. (พ.ศ.)" field="publication_year" currentField={sortField} direction={sortDirection} onSort={handleSort} onClear={clearSort} />
           </div>
-          <div className="w-[90px] text-center">แหล่งที่มา</div>
-          <div className="w-[110px] text-center">รายละเอียด</div>
+          <div className="w-[200px] text-center">แหล่งที่มา</div>
         </div>
       )}
 

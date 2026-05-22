@@ -6,10 +6,10 @@ CREATE OR REPLACE VIEW unified_search_contents AS
 
 SELECT
     CONCAT('scopus_', d.id)                         AS id,
-    'scopus' COLLATE utf8mb3_general_ci             AS source_name,
+    'scopus' COLLATE utf8mb4_general_ci             AS source_name,
     COALESCE(d.title, 'Untitled')                   AS title,
     d.abstract                                       AS abstract,
-    'faculty'                                        AS publication_type,
+    'faculty' COLLATE utf8mb4_general_ci             AS publication_type,
     COALESCE(
       YEAR(d.cover_date),
       CAST(RIGHT(d.cover_display_date, 4) AS UNSIGNED)
@@ -18,9 +18,10 @@ SELECT
     d.aggregation_type                               AS detail_type,
     d.citedby_count                                  AS cited_by,
     NULL                                             AS track_id,
-    NULLIF(UPPER(TRIM(metrics.cite_score_quartile)), '') AS journal_quartile,
+    CASE WHEN d.aggregation_type = 'Conference Proceeding' THEN NULL ELSE NULLIF(UPPER(TRIM(metrics.cite_score_quartile)), '') END AS journal_quartile,
     metrics.cite_score_percentile                    AS journal_percentile,
     NULL                                             AS journal_tier,
+    d.publication_name                               AS journal_name,
     d.scopus_link                                    AS url,
     d.authkeywords                                   AS keywords,
     NULL                                             AS poster_url,
@@ -80,10 +81,10 @@ UNION ALL
 
 SELECT
     CONCAT('thaijo_', d.id)                          AS id,
-    'thaijo' COLLATE utf8mb3_general_ci              AS source_name,
+    'thaijo' COLLATE utf8mb4_general_ci              AS source_name,
     COALESCE(d.title_th, d.title_en, 'Untitled')     AS title,
     COALESCE(d.abstract_th, d.abstract_en)           AS abstract,
-    'faculty'                                        AS publication_type,
+    'faculty' COLLATE utf8mb4_general_ci             AS publication_type,
     d.year                                           AS publication_year,
     d.id                                             AS source_id,
     NULL                                             AS detail_type,
@@ -94,6 +95,9 @@ SELECT
     (
       SELECT j.tier FROM thaijo_journals j WHERE j.journal_id = d.journal_id LIMIT 1
     )                                                AS journal_tier,
+    (
+      SELECT j.name_th FROM thaijo_journals j WHERE j.journal_id = d.journal_id LIMIT 1
+    )                                                AS journal_name,
     d.article_url                                    AS url,
     NULLIF(TRIM(BOTH ',' FROM REPLACE(REPLACE(REPLACE(JSON_UNQUOTE(d.keywords_json), '["', ''), '"]', ''), '","', ', ')), '') AS keywords,
     NULL                                             AS poster_url,
@@ -105,10 +109,10 @@ UNION ALL
 
 SELECT
     CONCAT('ai_', p.id)                             AS id,
-    'ai_showcase' COLLATE utf8mb3_general_ci        AS source_name,
+    'ai_showcase' COLLATE utf8mb4_general_ci        AS source_name,
     COALESCE(p.title_th, p.title_en, 'Untitled')   AS title,
     p.abstract                                       AS abstract,
-    'student'                                        AS publication_type,
+    'student' COLLATE utf8mb4_general_ci             AS publication_type,
     p.published_year                                 AS publication_year,
     p.id                                             AS source_id,
     p.project_type                                   AS detail_type,
@@ -117,20 +121,50 @@ SELECT
     NULL                                             AS journal_quartile,
     NULL                                             AS journal_percentile,
     NULL                                             AS journal_tier,
+    NULL                                             AS journal_name,
     p.ai_showcase_link                               AS url,
     NULL                                             AS keywords,
     p.poster_url                                     AS poster_url,
     p.group_code                                     AS group_code,
     MAKEDATE(p.published_year, 1)                   AS published_at
 FROM ai_showcase_projects p;
+
+CREATE OR REPLACE VIEW unified_search_authors AS
+SELECT
+    CONCAT('scopus_', da.document_id) COLLATE utf8mb4_general_ci  AS unified_publication_id,
+    'scopus' COLLATE utf8mb4_general_ci                           AS source_name,
+    COALESCE(a.full_name, 'Unknown') COLLATE utf8mb4_general_ci   AS name,
+    'author'                                                      AS role,
+    da.author_seq
+FROM scopus_document_authors da
+JOIN scopus_authors a ON a.id = da.author_id
+UNION ALL
+SELECT
+    CONCAT('thaijo_', da.document_id) COLLATE utf8mb4_general_ci  AS unified_publication_id,
+    'thaijo' COLLATE utf8mb4_general_ci                           AS source_name,
+    COALESCE(da.name_th, da.name_en, 'Unknown') COLLATE utf8mb4_general_ci AS name,
+    'author'                                                      AS role,
+    da.author_seq
+FROM thaijo_document_authors da
+UNION ALL
+SELECT
+    CONCAT('ai_', m.project_id) COLLATE utf8mb4_general_ci        AS unified_publication_id,
+    'ai_showcase' COLLATE utf8mb4_general_ci                      AS source_name,
+    COALESCE(m.name, 'Unknown') COLLATE utf8mb4_general_ci        AS name,
+    m.role COLLATE utf8mb4_general_ci                             AS role,
+    NULL                                                          AS author_seq
+FROM ai_showcase_project_members m;
 `;
 
 export async function POST() {
   try {
-    await pool.execute(MIGRATION_SQL);
+    const statements = MIGRATION_SQL.split(';').filter(s => s.trim());
+    for (const stmt of statements) {
+      await pool.execute(stmt.trim() + ';');
+    }
     return NextResponse.json({
       success: true,
-      message: 'unified_search_contents view updated with track_id column',
+      message: 'Migration completed successfully',
     });
   } catch (error) {
     console.error('Migration error:', error);

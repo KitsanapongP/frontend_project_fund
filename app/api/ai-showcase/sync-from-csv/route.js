@@ -68,33 +68,29 @@ function findColumnIndex(headers, patterns) {
 function cleanName(raw) {
   return raw
     .replace(/^[\s,;.\n\r\-()]+|[\s,;.\n\r\-()]+$/g, '')
-    .replace(/^\d+\.\s*/, '');
+    .replace(/^\d+\.\s*/, '')
+    .replace(/\b\d{7,12}(?:-\d+)?\b\s*/g, ' ')
+    .trim();
 }
 
 function parseMembers(text) {
   if (!text) return [];
-  const idRegex = /\b(\d{9,12}(?:-\d+)?)\b/g;
+  const segments = text.split(/[,;\n\r]+/).map(s => s.trim()).filter(Boolean);
   const members = [];
-  const ids = [];
-  const positions = [];
-  let match;
-  while ((match = idRegex.exec(text)) !== null) {
-    ids.push(match[1]);
-    positions.push({ start: match.index, end: match.index + match[0].length });
-  }
-  if (ids.length === 0) {
-    const name = cleanName(text);
-    if (name) members.push({ student_id: null, name });
-    return members;
-  }
-  for (let i = 0; i < ids.length; i++) {
-    const prevEnd = i > 0 ? positions[i - 1].end : 0;
-    const beforeText = text.slice(prevEnd, positions[i].start);
-    const nextStart = i < ids.length - 1 ? positions[i + 1].start : text.length;
-    const afterText = text.slice(positions[i].end, nextStart);
-    let rawName = cleanName(afterText);
-    if (!rawName) rawName = cleanName(beforeText);
-    if (rawName) members.push({ student_id: ids[i], name: rawName });
+  for (const seg of segments) {
+    const ids = [...seg.matchAll(/\b(\d{7,12}(?:-\d+)?)\b/g)];
+    if (ids.length === 0) { const n = cleanName(seg); if (n) members.push({ student_id: null, name: n }); continue; }
+    for (let i = 0; i < ids.length; i++) {
+      const m = ids[i];
+      const prevEnd = i > 0 ? ids[i-1].index + ids[i-1][0].length : 0;
+      const beforeText = seg.slice(prevEnd, m.index).trim();
+      const nextStart = i < ids.length - 1 ? ids[i+1].index : seg.length;
+      const afterText = seg.slice(m.index + m[0].length, nextStart).trim();
+      if (i > 0 && beforeText && beforeText === seg.slice(ids[i-1].index + ids[i-1][0].length, ids[i].index).trim()) continue;
+      const rawName = (beforeText && !afterText) ? beforeText : (afterText || beforeText);
+      const name = cleanName(rawName);
+      if (name) members.push({ student_id: m[1], name });
+    }
   }
   return members;
 }
@@ -225,9 +221,9 @@ export async function POST(request) {
           await pool.execute(
             `UPDATE ai_showcase_projects SET
               title_th = ?, title_en = ?, abstract = ?, project_type = ?,
-              track_id = ?, ai_showcase_link = ?, poster_url = ?
+              track_id = ?, updated_at = NOW()
             WHERE id = ?`,
-            [titleTh, titleEn, abstract, projectType, trackId, link, posterUrl, projectId]
+            [titleTh, titleEn, abstract, projectType, trackId, projectId]
           );
           stats.updated++;
         } else {

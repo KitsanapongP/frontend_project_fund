@@ -107,17 +107,24 @@ async function ensureTracks(pool, projects) {
 }
 
 async function upsertProject(pool, project) {
-  const [existing] = await pool.execute(
-    `SELECT id FROM ai_showcase_projects WHERE group_code = ? AND published_year = ? LIMIT 1`,
-    [project.group_code, project.published_year]
+  let [existing] = await pool.execute(
+    `SELECT id FROM ai_showcase_projects WHERE group_code = ? AND title_th = ? LIMIT 1`,
+    [project.group_code, project.title_th]
   );
+
+  if (existing.length === 0) {
+    [existing] = await pool.execute(
+      `SELECT id FROM ai_showcase_projects WHERE group_code = ? AND published_year = ? LIMIT 1`,
+      [project.group_code, project.published_year]
+    );
+  }
 
   if (existing.length > 0) {
     const projectId = existing[0].id;
     await pool.execute(
       `UPDATE ai_showcase_projects SET
         title_th = ?, title_en = ?, abstract = ?, description = ?,
-        project_type = ?, track_id = ?, ai_showcase_link = ?
+        project_type = ?, track_id = ?, ai_showcase_link = ?, updated_at = NOW()
       WHERE id = ?`,
       [
         project.title_th, project.title_en, project.abstract, project.description,
