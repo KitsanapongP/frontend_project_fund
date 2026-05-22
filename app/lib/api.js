@@ -230,7 +230,22 @@ class APIClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      // FIX: ใช้ response.text() ก่อนแล้วค่อย JSON.parse() แทน response.json() โดยตรง
+      // การอ่านเป็น text ก่อนช่วยให้ตรวจสอบและจัดการกับ empty response ได้
+      let data;
+      if (response.status === 204 || response.headers.get('content-length') === '0') {
+        data = {};
+      } else {
+        const text = await response.text();
+        if (!text) {
+          throw new NetworkError(`Empty response (${response.status})`);
+        }
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new NetworkError(`Invalid JSON response: ${text.slice(0, 100)}`);
+        }
+      }
 
       // Handle token expiration with automatic refresh
       if (response.status === 401) {
