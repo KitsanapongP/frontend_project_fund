@@ -15,6 +15,9 @@ import { useAuth } from "../../../../contexts/AuthContext";
 import MouLayout from "../../components/MouLayout";
 import Swal from "sweetalert2";
 
+const rawTrashSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
+const rawSaveSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
+
 function MouInfo({ label, icon: Icon, value, children, borderColor = "border-gray-100" }) {
   return (
     <div className={`bg-white rounded-lg px-4 py-3 border ${borderColor}`}>
@@ -261,12 +264,14 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
       const result = await Swal.fire({
         title: "ต้องการยกเลิกการแก้ไขใช่หรือไม่",
         text: "ข้อมูลที่แก้ไขจะไม่ถูกบันทึก",
-        icon: "question",
+        iconHtml: rawSaveSvg,
         showCancelButton: true,
         confirmButtonColor: "#2563eb",
         cancelButtonColor: "#6b7280",
         confirmButtonText: "ใช่",
         cancelButtonText: "ไม่",
+        reverseButtons: true,
+        customClass: { icon: 'swal-icon-save' },
       });
       if (!result.isConfirmed) return;
       const fmtActivityDate = (d) => {
@@ -300,13 +305,15 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
 
   const handleSave = async () => {
     const result = await Swal.fire({
-      title: "ต้องการบันทึกข้อมูลใช่หรือไม่",
-      icon: "question",
+      title: "ยืนยันการบันทึกข้อมูลหรือไม่ ?",
+      iconHtml: rawSaveSvg,
       showCancelButton: true,
       confirmButtonColor: "#2563eb",
       cancelButtonColor: "#6b7280",
       confirmButtonText: "ยืนยัน",
       cancelButtonText: "ยกเลิก",
+      reverseButtons: true,
+      customClass: { icon: 'swal-icon-save' },
     });
     if (!result.isConfirmed) return;
 
@@ -354,14 +361,16 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
 
   const handleDelete = async () => {
     const result = await Swal.fire({
-      title: "ต้องการลบกิจกรรมนี้ใช่หรือไม่",
+      title: "ยืนยันการลบกิจกรรมนี้หรือไม่ ?",
       text: "การกระทำนี้ไม่สามารถย้อนกลับได้",
-      icon: "warning",
+      iconHtml: rawTrashSvg,
       showCancelButton: true,
       confirmButtonColor: "#dc2626",
       cancelButtonColor: "#6b7280",
       confirmButtonText: "ยืนยัน",
       cancelButtonText: "ยกเลิก",
+      reverseButtons: true,
+      customClass: { icon: 'swal-icon-trash' },
     });
     if (!result.isConfirmed) return;
 
@@ -426,6 +435,12 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
         .afu { animation: fadeInUp 0.35s ease-out both; }
         .asd { animation: asd 0.3s ease-out both; }
         .formSection .field label { font-weight: 500 !important; }
+        .swal-icon-trash { border-color: #dc2626 !important; }
+        .swal-icon-save { border-color: #2563eb !important; }
+        .swal2-title { font-size: 1.05rem !important; }
+        .swal2-actions { width: 100% !important; justify-content: space-between !important; padding: 0 1rem !important; }
+        .swal2-actions .swal2-cancel { order: -1 !important; }
+        .swal2-actions .swal2-confirm { order: 0 !important; }
       `}</style>
 
       {/* Page Title */}
@@ -442,13 +457,50 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
-            href={`/mou/show_detail_mou/${activity.mou_id}`}
-          >
-            <ChevronLeft size={15} />
-            กลับ
-          </Link>
+          {editing ? (
+            <button
+              onClick={() => {
+                const fmt = (d) => {
+                  if (!d || d.startsWith("0001")) return "";
+                  return d;
+                };
+                setEditForm({
+                  title: activity.title || "",
+                  activity_start: fmt(activity.activity_start),
+                  activity_end: fmt(activity.activity_end),
+                  location: activity.location || "",
+                  participant_count: activity.participant_count || "",
+                  objective: activity.objective || "",
+                  description: activity.description || "",
+                  plan: activity.plan || "",
+                  notes: activity.notes || "",
+                  coordinator_id: activity.coordinator_id || "",
+                  coordinator_other: activity.coordinator_other || "",
+                  coordinator_org: activity.coordinator_org || "",
+                });
+                setSelectedTypeIds((activity.activity_types || []).map((t) => t.id));
+                setSelectedOkrIds((activity.okrs || []).map((o) => o.id));
+                if (activity.coordinator?.user_id) {
+                  setCoorQuery(`${activity.coordinator.prefix || ""} ${activity.coordinator.user_fname || ""} ${activity.coordinator.user_lname || ""}`.trim());
+                } else {
+                  setCoorQuery(activity.coordinator_other || "");
+                }
+                setEditing(false);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+            >
+              <ChevronLeft size={15} />
+              กลับ
+            </button>
+          ) : (
+            <Link
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+              href={`/mou/show_detail_mou/${activity.mou_id}`}
+            >
+              <ChevronLeft size={15} />
+              กลับ
+            </Link>
+          )}
           {!editing && (
             <button
               onClick={handleDelete}

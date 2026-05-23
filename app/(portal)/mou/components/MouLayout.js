@@ -19,7 +19,7 @@ import "./mou.css";
 
 const mouMenuItems = [
   { id: "list", label: "รายการ MOU ทั้งหมด", icon: ClipboardList, href: "/mou" },
-  { id: "manage", label: "จัดการประเภทกิจกรรม / OKR", icon: Settings, href: "/mou/admin_manage_type_okr" },
+  { id: "manage", label: "การจัดการประเภทของข้อมูล", icon: Settings, href: "/mou/admin_manage_type_okr" },
   { id: "dashboard", label: "รายงาน Dashboard", icon: LayoutDashboard, href: "/mou/admin_dashboard" },
 ];
 
@@ -140,7 +140,7 @@ export default function MouLayout({ children, title, subtitle }) {
 
               <div className="relative">
                 <button
-                  onClick={() => { setShowUserMenu(!showUserMenu); setShowNotifications(false); }}
+                  onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">

@@ -4,7 +4,7 @@ import React, { useEffect, use, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Swal from "sweetalert2";
-import { ChevronLeft, FileText, Upload } from "lucide-react";
+import { ChevronLeft, FileText, Upload, Layers, User, Handshake } from "lucide-react";
 import apiClient from "../../../../lib/api";
 import { mouAPI } from "../../../../lib/mou_api";
 import { useAuth } from "../../../../contexts/AuthContext";
@@ -58,6 +58,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
 
   const [mou, setMou] = useState(null);
   const [mouTypes, setMouTypes] = useState([]);
+  const [partnerTypes, setPartnerTypes] = useState([]);
   const [countries, setCountries] = useState([]);
   const [users, setUsers] = useState([]);
   const [faculties, setFaculties] = useState([]);
@@ -90,7 +91,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
     end_date: "",
     year_of_signing: "",
     partner_name: "",
-    partner_type: "",
+    partner_type_id: "",
     country_id: null,
     faculty_ids: [],
     coordinator_id: "",
@@ -117,13 +118,14 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [mouRes, typesRes, countriesRes, usersRes, facultiesRes, statusesRes] = await Promise.all([
+      const [mouRes, typesRes, countriesRes, usersRes, facultiesRes, statusesRes, partnerTypesRes] = await Promise.all([
         mouAPI.getMouDetail(params.id),
         mouAPI.getMouTypes(),
         mouAPI.getCountries(),
         apiClient.get("/users"),
         mouAPI.getFaculties(),
         mouAPI.getMouStatuses(),
+        mouAPI.getMouPartnerTypes(),
       ]);
       if (mouRes) {
         setMou(mouRes);
@@ -161,7 +163,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
           end_date: formatDateForInput(mouRes.end_date),
           year_of_signing: mouRes.year_of_signing ? String(mouRes.year_of_signing) : "",
           partner_name: mouRes.partners?.[0]?.partner_org || "",
-          partner_type: mouRes.partners?.[0]?.partner_type || "",
+          partner_type_id: mouRes.partners?.[0]?.partner_type_id || "",
           country_id: mouRes.country_id ? String(mouRes.country_id) : "",
           faculty_ids: existingFacultyIds,
           coordinator_id: mouRes.coordinator_id ? String(mouRes.coordinator_id) : "",
@@ -176,6 +178,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
       setUsers(usersRes?.users || []);
       setFaculties(facultiesRes || []);
       setStatuses(statusesRes || []);
+      setPartnerTypes(partnerTypesRes || []);
     } catch (err) {
       console.error("Error loading MOU:", err);
       setError("ไม่สามารถโหลดข้อมูล MOU ได้");
@@ -319,7 +322,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
         end_date: formData.end_date ? formData.end_date.split("-").reverse().join("/") : "",
         year_of_signing: formData.year_of_signing ? parseInt(formData.year_of_signing, 10) : null,
         partner_name: formData.partner_name,
-        partner_type: formData.partner_type,
+        partner_type_id: formData.partner_type_id ? parseInt(formData.partner_type_id, 10) : null,
         country_id: formData.country_id ? parseInt(formData.country_id, 10) : null,
         faculties: facultiesArr,
         coordinator_id: formData.coordinator_id ? parseInt(formData.coordinator_id, 10) : null,
@@ -395,7 +398,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="panel formSection" style={{ position: "relative" }}>
+        <div className="panel formSection afu" style={{ animationDelay: "0ms", position: "relative" }}>
           <div style={{ position: "absolute", top: "24px", right: "24px", display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ fontSize: "14px", color: "var(--mou-muted)", fontWeight: 500 }}>สถานะ</span>
             <div style={{ position: "relative", minWidth: "140px" }}>
@@ -413,10 +416,8 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
             </div>
           </div>
           <div className="sectionHead">
-            <span className="sectionIcon">
-              <Icon name="plus" />
-            </span>
-            <h3>ข้อมูลพื้นฐาน MOU</h3>
+            <FileText size={18} className="text-blue-500" />
+            <h3>ข้อมูล MOU</h3>
           </div>
 
           <div className="formGrid">
@@ -435,9 +436,10 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
             </div>
 
             <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <label><FileText size={14} className="shrink-0" />รายละเอียด</label>
+              <label>รายละเอียด</label>
               <textarea name="description" value={formData.description} onChange={handleChange} placeholder="ระบุรายละเอียด..." rows="4" />
             </div>
+
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label><Upload size={14} className="shrink-0" />ไฟล์แนบ</label>
               <div className="fileDrop" onClick={() => fileInputRef.current?.click()} style={{ position: "relative", cursor: "pointer", justifyContent: totalAttachments > 0 ? "flex-start" : "center", paddingTop: totalAttachments > 0 ? "40px" : "12px" }}>
@@ -474,8 +476,15 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="formGrid" style={{ marginTop: "18px", gridTemplateColumns: "140px 1fr 1fr 1fr" }}>
+        <div className="panel formSection afu" style={{ animationDelay: "80ms" }}>
+          <div className="sectionHead">
+            <Layers size={18} className="text-blue-500" />
+            <h3>ความร่วมมือ</h3>
+          </div>
+
+          <div className="formGrid">
             <div className="field">
               <label>
                 ระดับ <span className="required">*</span>
@@ -521,14 +530,12 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                 </select>
               </div>
             )}
-          </div>
 
-          {formData.level === "university" && (
-            <>
-              <div className="field" style={{ marginTop: "18px" }}>
+            {formData.level === "university" && (
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
                 <label>คณะที่เข้าร่วม</label>
-                <div style={{ display: "flex", gap: "18px" }}>
-                  <div ref={facultyRef} style={{ flex: 1, border: "1px solid var(--mou-line)", borderRadius: "5px", background: "var(--mou-field)", overflow: "hidden" }}>
+                <div style={{ display: "flex", gap: "18px", height: "280px" }}>
+                  <div ref={facultyRef} style={{ flex: 1, border: "1px solid var(--mou-line)", borderRadius: "5px", background: "var(--mou-field)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
                     <div style={{ padding: "6px 10px", borderBottom: "1px solid var(--mou-line)", background: "#fff" }}>
                       <input
                         type="text"
@@ -538,7 +545,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                         style={{ width: "100%", border: "none", outline: "none", fontSize: "14px", background: "transparent" }}
                       />
                     </div>
-                    <div style={{ maxHeight: "240px", overflowY: "auto" }}>
+                    <div style={{ flex: 1, overflowY: "auto" }}>
                       {faculties
                         .filter((fac) => !facultySearch || fac.name_th.includes(facultySearch))
                         .map((fac) => (
@@ -554,7 +561,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                         ))}
                     </div>
                   </div>
-                  <div style={{ width: "280px", minHeight: "100px", border: "1px solid var(--mou-line)", borderRadius: "5px", background: "var(--mou-surface)", padding: "10px" }}>
+                  <div style={{ width: "280px", border: "1px solid var(--mou-line)", borderRadius: "5px", background: "var(--mou-surface)", padding: "10px", overflowY: "auto" }}>
                     <div style={{ fontSize: "13px", color: "var(--mou-muted)", marginBottom: "8px", fontWeight: 500 }}>
                       เลือกแล้ว {formData.faculty_ids.length} คณะ
                     </div>
@@ -576,55 +583,68 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                   </div>
                 </div>
               </div>
-              {formData.faculty_ids.length > 0 && (
-                <>
-                  <div className="formGrid" style={{ marginTop: "18px" }}>
-                    {formData.faculty_ids.map((fid) => {
-                      const fac = faculties.find((f) => f.id === fid);
-                      return (
-                        <div className="field" key={fid}>
-                          <label>ผู้รับผิดชอบคณะ {fac?.name_th || `#${fid}`}</label>
-                          <input
-                            list={`faculty-user-${fid}`}
-                            value={facultyUsers[fid] || ""}
-                            onChange={(e) => handleFacultyUserChange(fid, e.target.value)}
-                            placeholder="พิมพ์ค้นหาชื่อหรือพิมพ์ชื่อที่ไม่มีในรายการ"
-                          />
-                          <datalist id={`faculty-user-${fid}`}>
-                            {users.map((u) => (
-                              <option key={u.user_id} value={`${u.prefix || ""} ${u.user_fname || ""} ${u.user_lname || ""}`.trim()} />
-                            ))}
-                          </datalist>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="formGrid" style={{ marginTop: "10px" }}>
-                    <div className="field">
-                      <label>ชื่อผู้รับผิดชอบภายนอก</label>
-                      <input
-                        type="text"
-                        value={facultyExternalNames["_global"] || ""}
-                        onChange={(e) => handleFacultyExternalNameChange("_global", e.target.value)}
-                        placeholder="ระบุชื่อ (กรณีผู้รับผิดชอบไม่ใช่บุคลากรในคณะ)"
-                      />
-                    </div>
-                    <div className="field">
-                      <label>หน่วยงานผู้รับผิดชอบภายนอก</label>
-                      <input
-                        type="text"
-                        value={facultyExternalOrgs["_global"] || ""}
-                        onChange={(e) => handleFacultyExternalOrgChange("_global", e.target.value)}
-                        placeholder="ระบุหน่วยงาน"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-            </>
-          )}
+            )}
+          </div>
+        </div>
 
-          <div className="formGrid" style={{ marginTop: "18px" }}>
+        {formData.level === "university" && formData.faculty_ids.length > 0 && (
+          <div className="panel formSection afu" style={{ animationDelay: "160ms" }}>
+            <div className="sectionHead">
+              <User size={18} className="text-blue-500" />
+              <h3>ผู้รับผิดชอบ</h3>
+            </div>
+
+            <div className="formGrid">
+              {formData.faculty_ids.map((fid) => {
+                const fac = faculties.find((f) => f.id === fid);
+                return (
+                  <div className="field" key={fid}>
+                    <label>ผู้รับผิดชอบคณะ {fac?.name_th || `#${fid}`}</label>
+                    <input
+                      list={`faculty-user-${fid}`}
+                      value={facultyUsers[fid] || ""}
+                      onChange={(e) => handleFacultyUserChange(fid, e.target.value)}
+                      placeholder="พิมพ์ค้นหาชื่อหรือพิมพ์ชื่อที่ไม่มีในรายการ"
+                    />
+                    <datalist id={`faculty-user-${fid}`}>
+                      {users.map((u) => (
+                        <option key={u.user_id} value={`${u.prefix || ""} ${u.user_fname || ""} ${u.user_lname || ""}`.trim()} />
+                      ))}
+                    </datalist>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="formGrid" style={{ marginTop: "10px" }}>
+              <div className="field">
+                <label>ชื่อผู้รับผิดชอบภายนอก</label>
+                <input
+                  type="text"
+                  value={facultyExternalNames["_global"] || ""}
+                  onChange={(e) => handleFacultyExternalNameChange("_global", e.target.value)}
+                  placeholder="ระบุชื่อ (กรณีผู้รับผิดชอบไม่ใช่บุคลากรในคณะ)"
+                />
+              </div>
+              <div className="field">
+                <label>หน่วยงานผู้รับผิดชอบภายนอก</label>
+                <input
+                  type="text"
+                  value={facultyExternalOrgs["_global"] || ""}
+                  onChange={(e) => handleFacultyExternalOrgChange("_global", e.target.value)}
+                  placeholder="ระบุหน่วยงาน"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="panel formSection afu" style={{ animationDelay: "200ms" }}>
+          <div className="sectionHead">
+            <Handshake size={18} className="text-blue-500" />
+            <h3>คู่สัญญาและกำหนดการ</h3>
+          </div>
+
+          <div className="formGrid">
             <div className="field">
               <label>
                 หน่วยงานคู่สัญญา <span className="required">*</span>
@@ -634,23 +654,19 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
 
             <div className="field">
               <label>ประเภทคู่สัญญา</label>
-              <select name="partner_type" value={formData.partner_type} onChange={handleChange}>
+              <select name="partner_type_id" value={formData.partner_type_id} onChange={handleChange}>
                 <option value="">เลือกประเภท</option>
-                <option value="มหาวิทยาลัย">มหาวิทยาลัย</option>
-                <option value="บริษัท">บริษัท</option>
-                <option value="หน่วยงานรัฐ">หน่วยงานรัฐ</option>
-                <option value="องค์กรไม่แสวงหาผลกำไร">องค์กรไม่แสวงหาผลกำไร</option>
-                <option value="สถาบันวิจัย">สถาบันวิจัย</option>
-                <option value="อื่นๆ">อื่นๆ</option>
+                {partnerTypes.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name_th}</option>
+                ))}
               </select>
             </div>
-          </div>
 
-          <div className="formGrid" style={{ gridTemplateColumns: "1fr 1fr", marginTop: "18px" }}>
             <div className="field">
               <label>ปีที่ลงนาม (ค.ศ.)</label>
               <input type="number" name="year_of_signing" value={formData.year_of_signing || ""} onChange={handleChange} min="1900" max="2155" placeholder="เช่น 2024" />
             </div>
+
             <div className="field">
               <label>ลงนามโดย</label>
               <select name="signed_by" value={formData.signed_by} onChange={handleChange}>
@@ -662,14 +678,17 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                 ))}
               </select>
             </div>
+
             <div className="field">
               <label>วันที่เริ่มต้น <span className="required">*</span></label>
               <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} required />
             </div>
+
             <div className="field">
               <label>วันที่สิ้นสุด <span className="required">*</span></label>
               <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} required />
             </div>
+
             <div className="field">
               <label>ผู้ประสานงาน <span className="required">*</span></label>
               <select name="coordinator_id" value={formData.coordinator_id} onChange={handleChange} required>
@@ -681,6 +700,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                 ))}
               </select>
             </div>
+
             <div className="field">
               <label>แจ้งเตือนก่อนสิ้นสุด</label>
               <div className="inputGroup">
@@ -688,6 +708,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                 <span className="inputSuffix">วัน</span>
               </div>
             </div>
+
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label>หมายเหตุ</label>
               <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="ระบุหมายเหตุ..." rows={3} />

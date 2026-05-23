@@ -109,6 +109,50 @@ export const mouAPI = {
     }
   },
 
+  // Get partner types
+  async getMouPartnerTypes() {
+    try {
+      const response = await apiClient.get('/mou/partner-types');
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching partner types:', error);
+      throw error;
+    }
+  },
+
+  // Create partner type
+  async createPartnerType(data) {
+    try {
+      const response = await apiClient.post('/mou/partner-types', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating partner type:', error);
+      throw error;
+    }
+  },
+
+  // Update partner type
+  async updatePartnerType(id, data) {
+    try {
+      const response = await apiClient.put(`/mou/partner-types/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating partner type:', error);
+      throw error;
+    }
+  },
+
+  // Delete partner type
+  async deletePartnerType(id) {
+    try {
+      const response = await apiClient.delete(`/mou/partner-types/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting partner type:', error);
+      throw error;
+    }
+  },
+
   // Get countries
   async getCountries() {
     try {

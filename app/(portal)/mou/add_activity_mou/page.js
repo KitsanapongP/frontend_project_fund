@@ -11,13 +11,11 @@ import {
 } from "lucide-react";
 import apiClient from "../../../lib/api";
 import { mouAPI } from "../../../lib/mou_api";
-import { useAuth } from "../../../contexts/AuthContext";
 import MouLayout from "../components/MouLayout";
 import Swal from "sweetalert2";
 
 export default function AddActivityMouPage() {
   const router = useRouter();
-  const { user } = useAuth();
   const [formData, setFormData] = useState({
     mou_id: "",
     title: "",

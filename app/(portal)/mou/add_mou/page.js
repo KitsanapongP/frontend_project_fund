@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import apiClient from "../../../lib/api";
 import { mouAPI } from "../../../lib/mou_api";
-import { useAuth } from "../../../contexts/AuthContext";
 import MouLayout from "../components/MouLayout";
 
 function Select({ value, onChange, options, placeholder = "เลือก", name, searchable = false }) {
@@ -187,7 +186,6 @@ function Select({ value, onChange, options, placeholder = "เลือก", nam
 
 export default function AddMouPage() {
   const router = useRouter();
-  const { user } = useAuth();
   const redirectTimerRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -202,7 +200,7 @@ export default function AddMouPage() {
     end_date: "",
     year_of_signing: "",
     partner_name: "",
-    partner_type: "",
+    partner_type_id: "",
     country_id: null,
     faculty_ids: [],
     coordinator_id: "",
@@ -212,6 +210,7 @@ export default function AddMouPage() {
     notify_days_before: "",
   });
   const [mouTypes, setMouTypes] = useState([]);
+  const [partnerTypes, setPartnerTypes] = useState([]);
   const [countries, setCountries] = useState([]);
   const [users, setUsers] = useState([]);
   const [faculties, setFaculties] = useState([]);
@@ -237,16 +236,18 @@ export default function AddMouPage() {
 
   const loadReferenceData = async () => {
     try {
-      const [typesResponse, countriesResponse, usersResponse, facultiesResponse] = await Promise.all([
+      const [typesResponse, countriesResponse, usersResponse, facultiesResponse, partnerTypesResponse] = await Promise.all([
         mouAPI.getMouTypes(),
         mouAPI.getCountries(),
         apiClient.get("/users"),
         mouAPI.getFaculties(),
+        mouAPI.getMouPartnerTypes(),
       ]);
       setMouTypes(typesResponse || []);
       setCountries(countriesResponse || []);
       setUsers(usersResponse?.users || []);
       setFaculties(facultiesResponse || []);
+      setPartnerTypes(partnerTypesResponse || []);
     } catch (err) {
       console.error("Error loading reference data:", err);
       setError("ไม่สามารถโหลดข้อมูลได้");
@@ -404,7 +405,7 @@ export default function AddMouPage() {
         end_date: formData.end_date ? formData.end_date.split("-").reverse().join("/") : "",
         year_of_signing: formData.year_of_signing ? parseInt(formData.year_of_signing, 10) : null,
         partner_name: formData.partner_name,
-        partner_type: formData.partner_type,
+        partner_type_id: parseInt(formData.partner_type_id) || 0,
         country_id: formData.country_id ? parseInt(formData.country_id, 10) : null,
         faculties: facultiesArr,
         coordinator_id: formData.coordinator_id ? parseInt(formData.coordinator_id, 10) : null,
@@ -440,7 +441,7 @@ export default function AddMouPage() {
         end_date: "",
         year_of_signing: "",
         partner_name: "",
-        partner_type: "",
+        partner_type_id: "",
         country_id: null,
         faculty_ids: [],
         coordinator_id: "",
@@ -642,14 +643,14 @@ export default function AddMouPage() {
             {formData.level === "university" && (
               <div className="field" style={{ gridColumn: "1 / -1", marginTop: "8px" }}>
                 <label><Building2 size={14} className="shrink-0" />คณะที่เข้าร่วม</label>
-                <div style={{ display: "flex", gap: "12px" }}>
-                  <div style={{ flex: 1, border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-field)", overflow: "hidden" }}>
+                <div style={{ display: "flex", gap: "12px", height: "260px" }}>
+                  <div style={{ flex: 1, border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-field)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
                     <div style={{ padding: "6px 10px", borderBottom: "1px solid var(--mou-line)", background: "#fff", display: "flex", alignItems: "center", gap: 6 }}>
                       <Search size={14} className="text-gray-400" />
                       <input type="text" placeholder="ค้นหาคณะ..." value={facultySearch} onChange={(e) => setFacultySearch(e.target.value)}
                         style={{ width: "100%", border: "none", outline: "none", fontSize: "14px", background: "transparent" }} />
                     </div>
-                    <div style={{ maxHeight: "240px", overflowY: "auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2px", padding: "4px" }}>
+                    <div style={{ flex: 1, overflowY: "auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2px", padding: "4px" }}>
                       {faculties.filter((fac) => !facultySearch || fac.name_th.includes(facultySearch)).map((fac) => (
                         <label key={fac.id} className="multiSelectItem" style={{ padding: "6px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", borderRadius: "4px" }}>
                           <input type="checkbox" checked={formData.faculty_ids.includes(fac.id)} onChange={() => handleFacultyToggle(fac.id)}
@@ -659,7 +660,7 @@ export default function AddMouPage() {
                       ))}
                     </div>
                   </div>
-                  <div style={{ width: "240px", minHeight: "100px", border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-surface)", padding: "10px" }}>
+                  <div style={{ width: "240px", border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-surface)", padding: "10px", overflowY: "auto" }}>
                     <div style={{ fontSize: "13px", color: "var(--mou-muted)", marginBottom: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
                       <Building2 size={14} />เลือกแล้ว {formData.faculty_ids.length} คณะ
                     </div>
@@ -739,13 +740,7 @@ export default function AddMouPage() {
             </div>
             <div className="field">
               <label><Tag size={14} className="shrink-0" />ประเภทคู่สัญญา <span className="required">*</span></label>
-              <Select name="partner_type" value={formData.partner_type} onChange={handleChange} placeholder="เลือกประเภท" options={[
-                { value: "university", label: "มหาวิทยาลัย" },
-                { value: "company", label: "บริษัท" },
-                { value: "government", label: "หน่วยงานรัฐ" },
-                { value: "ngo", label: "องค์กรไม่แสวงหาผลกำไร" },
-                { value: "other", label: "อื่นๆ" },
-              ]} />
+               <Select name="partner_type_id" value={formData.partner_type_id} onChange={handleChange} placeholder="เลือกประเภท" options={partnerTypes.map(t => ({value: t.id, label: t.name_th}))} />
             </div>
             <div className="field">
               <label><Bookmark size={14} className="shrink-0" />ปีที่ลงนาม (ค.ศ.)</label>

@@ -265,7 +265,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
   const levelName = mou.level === "university" ? "มหาวิทยาลัย" : mou.level === "faculty" ? "คณะ" : mou.level || "-";
   const scope = mou.is_international ? "ต่างประเทศ" : "ในประเทศ";
   const partnerOrg = mou.partners?.[0]?.partner_org || "-";
-  const partnerType = mou.partners?.[0]?.partner_type || "-";
+  const partnerType = mou.partners?.[0]?.partner_type?.name_th || "-";
   const yearOfSigning = mou.year_of_signing || "-";
   const coordinator = mou.coordinator
     ? [mou.coordinator.prefix || "", mou.coordinator.user_fname || "", mou.coordinator.user_lname || ""].filter(Boolean).join(" ")
