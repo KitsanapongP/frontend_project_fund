@@ -400,6 +400,7 @@ export default function AddMouPage() {
         description: formData.description,
         level: formData.level,
         mou_type_id: parseInt(formData.mou_type_id, 10),
+        status_id: asDraft ? 1 : 2,
         is_international: formData.is_international === "true",
         start_date: formData.start_date ? formData.start_date.split("-").reverse().join("/") : "",
         end_date: formData.end_date ? formData.end_date.split("-").reverse().join("/") : "",

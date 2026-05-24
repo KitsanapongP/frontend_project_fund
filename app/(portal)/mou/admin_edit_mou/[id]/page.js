@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, use, useRef, useState } from "react";
+import React, { useEffect, use, useRef, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import Swal from "sweetalert2";
-import { ChevronLeft, FileText, Upload, Layers, User, Handshake } from "lucide-react";
+import { ChevronLeft, ChevronDown, FileText, Upload, Layers, User, Handshake } from "lucide-react";
 import apiClient from "../../../../lib/api";
 import { mouAPI } from "../../../../lib/mou_api";
 import { useAuth } from "../../../../contexts/AuthContext";
@@ -43,6 +44,184 @@ function Icon({ name }) {
   );
 }
 
+function statusClass(name) {
+  const v = (name || "").toLowerCase();
+  if (v.includes("มีผล")) return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300";
+  if (v.includes("ใกล้")) return "bg-amber-50 text-amber-700 ring-1 ring-amber-300";
+  if (v.includes("หมด")) return "bg-red-50 text-red-700 ring-1 ring-red-300";
+  if (v.includes("รอดำเนินการ")) return "bg-blue-50 text-blue-700 ring-1 ring-blue-300";
+  return "bg-gray-50 text-gray-600 ring-1 ring-gray-300";
+}
+
+function Select({ value, onChange, options, placeholder = "เลือก", name, searchable = false }) {
+  const [open, setOpen] = useState(false);
+  const [focusedIdx, setFocusedIdx] = useState(-1);
+  const [query, setQuery] = useState("");
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const ref = useRef(null);
+  const inputRef = useRef(null);
+  const triggerRef = useRef(null);
+  const portalRef = useRef(null);
+
+  const selected = options.find((o) => String(o.value) === String(value));
+  const displayLabel = selected ? selected.label : placeholder;
+
+  const filtered = searchable && query.trim()
+    ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  const updatePos = useCallback(() => {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target) && portalRef.current && !portalRef.current.contains(e.target)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updatePos();
+    if (searchable && inputRef.current) inputRef.current.focus();
+    window.addEventListener("scroll", updatePos, true);
+    window.addEventListener("resize", updatePos);
+    return () => {
+      window.removeEventListener("scroll", updatePos, true);
+      window.removeEventListener("resize", updatePos);
+    };
+  }, [open, searchable, updatePos]);
+
+  const select = useCallback(
+    (val) => {
+      onChange({ target: { name, value: val } });
+      setOpen(false);
+      setQuery("");
+    },
+    [name, onChange]
+  );
+
+  const onKeyDown = (e) => {
+    if (searchable) {
+      if (e.key === "ArrowDown" && !open) {
+        e.preventDefault();
+        setOpen(true);
+        return;
+      }
+      if (e.key === "Escape" && open) {
+        e.preventDefault();
+        setOpen(false);
+        setQuery("");
+        return;
+      }
+      if (!open) return;
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setFocusedIdx((i) => (i < filtered.length - 1 ? i + 1 : 0));
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setFocusedIdx((i) => (i > 0 ? i - 1 : filtered.length - 1));
+          break;
+        case "Enter":
+          e.preventDefault();
+          if (focusedIdx >= 0 && filtered[focusedIdx]) {
+            select(filtered[focusedIdx].value);
+          } else {
+            setOpen(false);
+            setQuery("");
+          }
+          break;
+      }
+      return;
+    }
+    if (!open) {
+      if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+        e.preventDefault();
+        setOpen(true);
+        setFocusedIdx(0);
+      }
+      return;
+    }
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setFocusedIdx((i) => (i < options.length - 1 ? i + 1 : 0));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setFocusedIdx((i) => (i > 0 ? i - 1 : options.length - 1));
+        break;
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        if (focusedIdx >= 0 && options[focusedIdx]) select(options[focusedIdx].value);
+        break;
+      case "Escape":
+        e.preventDefault();
+        setOpen(false);
+        break;
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setQuery(val);
+    onChange({ target: { name, value: val } });
+    if (!open) setOpen(true);
+  };
+
+  const toggle = () => setOpen((o) => !o);
+
+  return (
+    <div ref={ref} className="csWrap" onKeyDown={onKeyDown}>
+      {searchable ? (
+        <div ref={triggerRef} className={`csBtn${open ? " open" : ""}${value ? " hasVal" : ""}`} style={{ padding: 0, overflow: "hidden", alignItems: "stretch" }}>
+          <input ref={inputRef} type="text" className="csInput" value={query || displayLabel} onChange={handleInputChange} onFocus={() => setOpen(true)} placeholder={placeholder} />
+          <div style={{ display: "flex", alignItems: "center", paddingRight: 8, cursor: "pointer" }} onClick={toggle}>
+            <ChevronDown size={18} className={`csArrow${open ? " open" : ""}`} />
+          </div>
+        </div>
+      ) : (
+        <button ref={triggerRef} type="button" className={`csBtn${open ? " open" : ""}${value ? " hasVal" : ""}`} onClick={toggle} aria-haspopup="listbox" aria-expanded={open}>
+          <span className="csLabel">{displayLabel}</span>
+          <ChevronDown size={18} className={`csArrow${open ? " open" : ""}`} />
+        </button>
+      )}
+      {open && typeof document !== "undefined" && createPortal(
+        <ul ref={portalRef} className="csDropdownPortal" role="listbox" style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width }}>
+          {filtered.length === 0 ? (
+            <li className="csOpt" style={{ color: "#9ca3af", cursor: "default", textAlign: "center" }}>ไม่มีรายการ</li>
+          ) : (
+            filtered.map((opt, idx) => (
+              <li
+                key={opt.value}
+                role="option"
+                aria-selected={String(value) === String(opt.value)}
+                className={`csOpt${String(value) === String(opt.value) ? " sel" : ""}${idx === focusedIdx ? " foc" : ""}`}
+                onClick={() => select(opt.value)}
+                onMouseEnter={() => setFocusedIdx(idx)}
+              >
+                {opt.label}
+              </li>
+            ))
+          )}
+        </ul>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 function formatDateForInput(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -77,6 +256,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
   const [saving, setSaving] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [currentStatusName, setCurrentStatusName] = useState("");
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -172,6 +352,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
           notes: mouRes.notes || "",
           notify_days_before: mouRes.notifications?.[0]?.days_before ?? 0,
         });
+        setCurrentStatusName(mouRes.status?.name || "");
       }
       setMouTypes(typesRes || []);
       setCountries(countriesRes || []);
@@ -280,6 +461,12 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
     try {
       if (!formData.mou_code || !formData.title || !formData.mou_type_id || !formData.start_date || !formData.end_date || !formData.partner_name) {
         setError("กรุณากรอกข้อมูลที่จำเป็นทั้งหมด");
+        return;
+      }
+
+      const newStatusId = formData.status_id ? parseInt(formData.status_id, 10) : null;
+      if (newStatusId === 3 && (!formData.year_of_signing || !formData.signed_by)) {
+        setError("กรุณากรอกปีที่ลงนามและผู้ลงนามก่อนเปลี่ยนสถานะเป็น 'มีผลบังคับใช้'");
         return;
       }
 
@@ -399,22 +586,31 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
 
       <form onSubmit={handleSubmit}>
         <div className="panel formSection afu" style={{ animationDelay: "0ms", position: "relative" }}>
-          <div style={{ position: "absolute", top: "24px", right: "24px", display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "14px", color: "var(--mou-muted)", fontWeight: 500 }}>สถานะ</span>
-            <div style={{ position: "relative", minWidth: "140px" }}>
-              <select
-                name="status_id"
-                value={formData.status_id}
-                onChange={handleChange}
-                style={{ width: "100%", minHeight: "30px", padding: "2px 28px 2px 10px", borderRadius: "999px", fontSize: "13px", fontWeight: 600, background: "var(--mou-primary-soft)", color: "var(--mou-primary)", border: "1px solid var(--mou-line)", cursor: "pointer", appearance: "none", outline: "none" }}
-              >
-                {statuses.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-              <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "10px", color: "var(--mou-primary)", pointerEvents: "none" }}>▾</span>
+            <div style={{ position: "absolute", top: "24px", right: "24px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "14px", color: "var(--mou-muted)", fontWeight: 500 }}>สถานะ</span>
+              <div style={{ position: "relative", minWidth: "160px" }}>
+                {(() => {
+                  const canChange = currentStatusName.includes("ร่าง") || currentStatusName.includes("รอดำเนินการ");
+                  const allowedStatuses = statuses.filter((s) => [1, 5, 2, 4].includes(s.id));
+                  if (!canChange) {
+                    return (
+                      <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${statusClass(currentStatusName)}`}>
+                        {currentStatusName || "-"}
+                      </span>
+                    );
+                  }
+                  return (
+                    <Select
+                      name="status_id"
+                      value={formData.status_id}
+                      onChange={handleChange}
+                      options={allowedStatuses.map((s) => ({ value: String(s.id), label: s.name }))}
+                      placeholder="เลือกสถานะ"
+                    />
+                  );
+                })()}
+              </div>
             </div>
-          </div>
           <div className="sectionHead">
             <FileText size={18} className="text-blue-500" />
             <h3>ข้อมูล MOU</h3>
@@ -725,6 +921,42 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
           </button>
         </div>
       </form>
+      <style>{`
+        @keyframes csIn {
+          from { opacity: 0; transform: translateY(-8px) scaleY(0.95); }
+          to { opacity: 1; transform: translateY(0) scaleY(1); }
+        }
+        .csWrap { position: relative; width: 100%; }
+        .csBtn {
+          width: 100%; min-height: 30px; border: 1px solid var(--mou-line); border-radius: 999px;
+          background: var(--mou-primary-soft); color: var(--mou-primary); padding: 2px 12px; font-size: 13px;
+          font-weight: 600; outline: none; cursor: pointer; display: flex; align-items: center;
+          justify-content: space-between; gap: 8px; text-align: left; font-family: inherit;
+          line-height: 1.5; transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .csBtn:hover { border-color: #a78bfa; background: #ede9fe; }
+        .csBtn.open, .csBtn:focus-visible { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.12); }
+        .csBtn.hasVal { color: var(--mou-primary); }
+        .csLabel { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .csInput { flex: 1; border: none; outline: none; background: transparent; padding: 2px 12px; font-size: 13px; font-family: inherit; color: var(--mou-primary); min-width: 0; }
+        .csArrow { flex-shrink: 0; color: var(--mou-primary); transition: transform 0.25s ease; }
+        .csArrow.open { transform: rotate(180deg); }
+        .csDropdownPortal {
+          max-height: 240px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 10px;
+          background: #fff; box-shadow: 0 8px 28px rgba(0,0,0,0.13); padding: 4px;
+          animation: csIn 0.2s ease-out; transform-origin: top center; z-index: 9999;
+        }
+        .csOpt {
+          padding: 8px 12px; font-size: 14px; cursor: pointer; border-radius: 6px;
+          list-style: none; color: #111827; transition: background 0.15s ease, color 0.15s ease;
+        }
+        .csOpt:hover, .csOpt.foc { background: #eff6ff; color: #2563eb; }
+        .csOpt.sel { background: #2563eb; color: #fff; font-weight: 500; }
+        .csOpt.sel:hover { background: #1d4ed8; }
+        .csDropdownPortal::-webkit-scrollbar { width: 4px; }
+        .csDropdownPortal::-webkit-scrollbar-track { background: transparent; }
+        .csDropdownPortal::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+      `}</style>
     </MouLayout>
   );
 }

@@ -299,7 +299,7 @@ export default function MouPage() {
   const statCards = [
     { key: "total", label: "MOU ทั้งหมด", value: stats.total, icon: FileSignature, color: "blue", gradient: "from-blue-500 to-blue-600" },
     { key: "active", label: "มีผลบังคับใช้", value: stats.active, icon: Bookmark, color: "green", gradient: "from-green-500 to-green-600" },
-    { key: "nearExpiry", label: "ใกล้หมดอายุ", value: stats.nearExpiry, icon: Clock, color: "amber", gradient: "from-amber-500 to-amber-600" },
+    { key: "nearExpiry", label: "ใกล้หมดอายุ (90 วัน)", value: stats.nearExpiry, icon: Clock, color: "amber", gradient: "from-amber-500 to-amber-600" },
     { key: "expired", label: "หมดอายุแล้ว", value: stats.expired, icon: AlertCircle, color: "red", gradient: "from-red-500 to-red-600" },
   ];
 
@@ -415,7 +415,7 @@ export default function MouPage() {
       `}</style>
 
       {/* Page Title */}
-      <div className="flex items-center justify-between animate-fadeInUp" style={{ animationDelay: "0ms" }}>
+      <div className="flex items-center justify-between mb-6 animate-fadeInUp" style={{ animationDelay: "0ms" }}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-blue-50 shadow-sm flex items-center justify-center">
             <List size={22} className="text-blue-600" />
@@ -432,8 +432,6 @@ export default function MouPage() {
           เพิ่ม MOU ใหม่
         </Link>
       </div>
-      <div className="h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full w-24 mt-4 mb-6"></div>
-
       {error && (
         <div className="panel animate-slideDown" style={{ color: "#dc2626", marginBottom: "18px", display: "flex", alignItems: "center", gap: 8 }}>
           <AlertCircle size={18} />

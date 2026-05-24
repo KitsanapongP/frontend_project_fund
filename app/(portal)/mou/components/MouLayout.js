@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -12,9 +12,13 @@ import {
   ChevronDown,
   Bell,
   Home,
+  Clock,
+  AlertTriangle,
+  ExternalLink,
 } from "lucide-react";
 import { HiMenu } from "react-icons/hi";
 import { RxCross2 } from "react-icons/rx";
+import { mouAPI } from "../../../lib/mou_api";
 import "./mou.css";
 
 const mouMenuItems = [
@@ -62,15 +66,62 @@ function resolveRoleLabel(user) {
 }
 
 export default function MouLayout({ children, title, subtitle }) {
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notifData, setNotifData] = useState(null);
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const notifRef = useRef(null);
 
   const displayName = getDisplayName(user);
   const roleLabel = resolveRoleLabel(user);
   const initials = getInitials(displayName);
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/login");
+    } else if (!isLoading && isAuthenticated && !hasRole(3) && !hasRole("admin")) {
+      router.replace("/unauthorized");
+    }
+  }, [isLoading, isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchNotifs = async () => {
+      try {
+        const res = await mouAPI.getNotifications();
+        if (res?.success) setNotifData(res.data);
+      } catch {}
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 60000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
+          <p className="text-gray-600 text-sm">กำลังตรวจสอบสิทธิ์...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || (!hasRole(3) && !hasRole("admin"))) return null;
 
   const isActive = (href) => {
     if (href === "/mou") {
@@ -131,7 +182,83 @@ export default function MouLayout({ children, title, subtitle }) {
             </button>
 
             <div className="hidden items-center gap-4 md:flex">
-              <Bell size={20} className="text-gray-600 cursor-pointer hover:text-blue-500 transition-colors" />
+              <div className="relative" ref={notifRef}>
+                <button
+                  onClick={() => setShowNotifMenu((v) => !v)}
+                  className="relative inline-flex items-center justify-center rounded-lg p-2 text-gray-600 transition hover:bg-gray-50 focus:outline-none"
+                  aria-label="notifications"
+                >
+                  <Bell size={20} />
+                  {notifData?.total > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
+                      {notifData.total > 99 ? "99+" : notifData.total}
+                    </span>
+                  )}
+                </button>
+
+                {showNotifMenu && (
+                  <div className="absolute right-0 mt-2 w-80 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-[70vh] flex flex-col">
+                    <div className="px-4 py-3 border-b border-gray-100 text-sm font-semibold text-gray-800 flex items-center gap-2">
+                      <Bell size={15} />
+                      การแจ้งเตือน
+                      {notifData?.total > 0 && (
+                        <span className="ml-auto text-xs text-gray-400">{notifData.total} รายการ</span>
+                      )}
+                    </div>
+                    <div className="overflow-y-auto flex-1">
+                      {!notifData || (notifData.nearExpiry.count === 0 && notifData.expired.count === 0) ? (
+                        <div className="px-4 py-8 text-center text-sm text-gray-400">ไม่มีการแจ้งเตือน</div>
+                      ) : (
+                        <>
+                          {notifData.expired.count > 0 && (
+                            <div className="px-4 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
+                              หมดอายุแล้ว ({notifData.expired.count})
+                            </div>
+                          )}
+                          {notifData.expired.items?.map((m) => (
+                            <Link
+                              key={`exp-${m.id}`}
+                              href={`/mou/show_detail_mou/${m.id}`}
+                              onClick={() => setShowNotifMenu(false)}
+                              className="flex items-start gap-3 px-4 py-3 hover:bg-red-50 transition border-b border-gray-50 last:border-b-0"
+                            >
+                              <AlertTriangle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <div className="text-sm font-medium text-gray-900 truncate">{m.mou_code} - {m.title}</div>
+                                <div className="text-xs text-red-600 mt-0.5">หมดอายุแล้ว</div>
+                              </div>
+                              <ExternalLink size={14} className="text-gray-400 flex-shrink-0 mt-1" />
+                            </Link>
+                          ))}
+                          {notifData.nearExpiry.count > 0 && (
+                            <div className="px-4 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
+                              ใกล้หมดอายุ ({notifData.nearExpiry.count})
+                            </div>
+                          )}
+                          {notifData.nearExpiry.items?.map((m) => {
+                            const days = Math.ceil((new Date(m.end_date) - new Date()) / (1000 * 60 * 60 * 24));
+                            return (
+                              <Link
+                                key={`near-${m.id}`}
+                                href={`/mou/show_detail_mou/${m.id}`}
+                                onClick={() => setShowNotifMenu(false)}
+                                className="flex items-start gap-3 px-4 py-3 hover:bg-amber-50 transition border-b border-gray-50 last:border-b-0"
+                              >
+                                <Clock size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-sm font-medium text-gray-900 truncate">{m.mou_code} - {m.title}</div>
+                                  <div className="text-xs text-amber-600 mt-0.5">เหลืออีก {days} วัน</div>
+                                </div>
+                                <ExternalLink size={14} className="text-gray-400 flex-shrink-0 mt-1" />
+                              </Link>
+                            );
+                          })}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-800">{displayName}</p>

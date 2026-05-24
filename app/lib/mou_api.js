@@ -266,12 +266,23 @@ export const mouAPI = {
   },
 
   // Get dashboard stats
-  async getDashboard() {
+  async getDashboard(year) {
     try {
-      const response = await apiClient.get('/mou/dashboard');
-      return response.data;
+      const response = await apiClient.get('/mou/dashboard', year ? { year } : {});
+      return response;
     } catch (error) {
       console.error('Error fetching dashboard:', error);
+      throw error;
+    }
+  },
+
+  // Get notifications (near expiry & expired)
+  async getNotifications() {
+    try {
+      const response = await apiClient.get('/mou/notifications');
+      return response;
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
       throw error;
     }
   },

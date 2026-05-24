@@ -237,8 +237,6 @@ export default function AddActivityMouPage() {
           กลับ
         </Link>
       </div>
-      <div className="h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full w-24 mb-6"></div>
-
       {(error) && (
         <div className="panel asd" style={{ marginBottom: "18px", display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: "#dc2626" }}>{error}</span>
