@@ -1,5 +1,5 @@
-import { ExternalLink, Calendar, BookOpen, User, Tag, University, Globe, Award, Users, Hash, Download, Quote, Library, Medal, Trophy } from "lucide-react";
-import BackButton from "./BackButton";
+import { ExternalLink, Calendar, BookOpen, User, Tag, University, Globe, Award, Users, Hash, Download, Quote, Library, Medal, Trophy, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import pool from "../../../../lib/db-connection";
 import { notFound } from "next/navigation";
 
@@ -86,10 +86,11 @@ export default async function DetailPage({ params }) {
   let scopusIssue = null;
   let scopusPageRange = null;
   let scopusArticleNumber = null;
+  let scopusIsbn = null;
 
   if (item.source_name === 'scopus') {
     const [sRows] = await pool.execute(
-      `SELECT doi, issn, eissn, volume, issue, page_range, article_number FROM scopus_documents WHERE id = ? LIMIT 1`,
+      `SELECT doi, issn, eissn, volume, issue, page_range, article_number, aggregation_type, raw_json FROM scopus_documents WHERE id = ? LIMIT 1`,
       [item.source_id]
     );
     if (sRows.length > 0) {
@@ -100,6 +101,16 @@ export default async function DetailPage({ params }) {
       scopusIssue = sRows[0].issue;
       scopusPageRange = sRows[0].page_range;
       scopusArticleNumber = sRows[0].article_number;
+      if (sRows[0].aggregation_type === 'Conference Proceeding' && sRows[0].raw_json) {
+        try {
+          const raw = typeof sRows[0].raw_json === 'string' ? JSON.parse(sRows[0].raw_json) : sRows[0].raw_json;
+          const isbnEntry = raw['prism:isbn'];
+          if (isbnEntry) {
+            const isbns = Array.isArray(isbnEntry) ? isbnEntry : [isbnEntry];
+            scopusIsbn = isbns.map(e => (e['$'] || e).replace(/^\[|\]$/g, '')).filter(Boolean).join(', ');
+          }
+        } catch {}
+      }
     }
   }
 
@@ -191,7 +202,9 @@ export default async function DetailPage({ params }) {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
         
-        <BackButton />
+        <Link href="/publication-search" className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#7F77DD] transition cursor-pointer">
+          <ArrowLeft size={16} /> กลับไปหน้าค้นหา
+        </Link>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           
@@ -209,9 +222,9 @@ export default async function DetailPage({ params }) {
               )}
             </div>
             
-            <div className="flex flex-wrap gap-2 shrink-0">
+             <div className="flex flex-wrap gap-2 shrink-0">
 
-               {item.journal_quartile && (
+                {item.journal_quartile && (
                   <span className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-700 px-3 py-1 rounded-xl text-xs font-semibold border border-orange-200">
                     <Medal size={14} className="text-orange-500 shrink-0" />
                     {item.journal_quartile}
@@ -221,7 +234,7 @@ export default async function DetailPage({ params }) {
                {item.journal_tier && (
                  <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-xl text-xs font-semibold border border-emerald-200">
                     <Trophy size={14} className="text-emerald-500 shrink-0" />
-                    กลุ่ม {item.journal_tier}
+                    TCI กลุ่ม {item.journal_tier}
                  </span>
                )}
             </div>
@@ -242,10 +255,11 @@ export default async function DetailPage({ params }) {
                           const name = entry.name || entry;
                           const sid = entry.student_id;
                           return (
-                            <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 text-xs rounded-xl border border-sky-200 font-medium">
+                            <Link key={idx} href={`/publication-search?q=${encodeURIComponent(name)}&search_field=author`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 text-xs rounded-xl border border-sky-200 font-medium hover:bg-sky-100 hover:border-sky-300 transition cursor-pointer">
                               <User size={12} className="text-sky-500 shrink-0" />
                               {sid ? `${name} (${sid})` : name}
-                            </span>
+                            </Link>
                           );
                         })}
                       </div>
@@ -287,10 +301,11 @@ export default async function DetailPage({ params }) {
                     {authors.map((entry, idx) => {
                       const name = entry.name || entry;
                       return (
-                        <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 text-xs rounded-xl border border-sky-200 font-medium">
+                        <Link key={idx} href={`/publication-search?q=${encodeURIComponent(name)}&search_field=author`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 text-xs rounded-xl border border-sky-200 font-medium hover:bg-sky-100 hover:border-sky-300 transition cursor-pointer">
                           <User size={12} className="text-sky-500 shrink-0" />
                           {name}
-                        </span>
+                        </Link>
                       );
                     })}
                   </div>
@@ -406,6 +421,12 @@ export default async function DetailPage({ params }) {
                       <p className="font-medium text-gray-800">{scopusIssn || scopusEissn}</p>
                     </div>
                   )}
+                  {scopusIsbn && (
+                    <div>
+                      <span className="text-gray-500">ISBN:</span>
+                      <p className="font-medium text-gray-800">{scopusIsbn}</p>
+                    </div>
+                  )}
                   {item.source_name === 'scopus' && (scopusVolume || scopusIssue || scopusPageRange || scopusArticleNumber) && (
                     <div>
                       <span className="text-gray-500">เล่ม/หน้า:</span>
@@ -435,10 +456,10 @@ export default async function DetailPage({ params }) {
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {keywordsList.map((kw, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-2xl border border-emerald-200 font-medium">
+                    <Link key={i} href={`/publication-search?q=${encodeURIComponent(kw)}&search_field=keywords`} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-2xl border border-emerald-200 font-medium hover:bg-emerald-100 hover:border-emerald-300 transition cursor-pointer">
                       <Tag size={11} className="text-emerald-500 shrink-0" />
                       {kw}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               </section>
@@ -489,7 +510,6 @@ export default async function DetailPage({ params }) {
               )}
             </div>
             </section>
-
 
           </div>
         </div>

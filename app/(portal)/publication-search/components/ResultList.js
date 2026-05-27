@@ -1,35 +1,56 @@
 import ResultCard from "./ResultCard";
-import { ArrowUp, ArrowDown, SearchX, Filter } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpDown, SearchX, Filter, Download } from "lucide-react";
 
-function SkeletonCard() {
+function SkeletonCard({ tab }) {
+  const isStudent = tab === 'student';
+  const skeletonClass = "h-5 bg-gray-200 rounded animate-pulse";
+
   return (
-    <div className="flex flex-col md:flex-row gap-4 p-5 animate-pulse">
-      <div className="flex-1 space-y-3">
-        <div className="h-5 bg-gray-200 rounded w-3/4" />
-        <div className="h-3 bg-gray-200 rounded w-1/3" />
-        <div className="space-y-2">
-          <div className="h-3 bg-gray-100 rounded w-full" />
-          <div className="h-3 bg-gray-100 rounded w-5/6" />
+    <div className="group flex flex-col md:flex-row gap-4 p-5">
+      <div className="hidden md:flex flex-col items-center justify-center w-[40px] shrink-0">
+        <div className="h-4 w-6 bg-gray-200 rounded animate-pulse" />
+      </div>
+      <div className="flex-1 space-y-2.5">
+        <div className={`${skeletonClass} w-3/4`} />
+        <div className="flex gap-1.5">
+          <div className="h-5 w-20 bg-gray-200 rounded-full animate-pulse" />
+          <div className="h-5 w-24 bg-gray-200 rounded-full animate-pulse" />
+          <div className="h-5 w-16 bg-gray-200 rounded-full animate-pulse" />
         </div>
-        <div className="flex gap-2">
-          <div className="h-5 w-16 bg-gray-100 rounded" />
-          <div className="h-5 w-20 bg-gray-100 rounded" />
+        <div className="flex gap-1.5">
+          <div className="h-5 w-14 bg-gray-100 rounded-full animate-pulse" />
+          <div className="h-5 w-20 bg-gray-100 rounded-full animate-pulse" />
         </div>
       </div>
-      <div className="flex flex-row md:flex-col gap-3 md:w-[60px] items-center justify-center">
-        <div className="h-8 w-10 bg-gray-100 rounded" />
+      {!isStudent && (
+        <>
+          <div className="flex flex-col items-center justify-center w-full md:w-[60px]">
+            <div className="h-5 w-8 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="flex flex-col items-center justify-center w-full md:w-[110px]">
+            <div className="h-5 w-14 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="flex flex-col items-center justify-center w-full md:w-[90px]">
+            <div className="h-5 w-12 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </>
+      )}
+      {isStudent && (
+        <>
+          <div className="flex flex-col items-center justify-center w-full md:w-[180px]">
+            <div className="h-5 w-24 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="flex flex-col items-center justify-center w-full md:w-[110px]">
+            <div className="h-5 w-16 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </>
+      )}
+      <div className="flex flex-col items-center justify-center w-full md:w-[110px]">
+        <div className="h-5 w-14 bg-gray-200 rounded animate-pulse" />
       </div>
-      <div className="hidden md:flex flex-col items-center justify-center w-[90px]">
-        <div className="h-8 w-16 bg-gray-100 rounded" />
-      </div>
-      <div className="hidden md:flex flex-col items-center justify-center w-[60px]">
-        <div className="h-4 w-8 bg-gray-100 rounded" />
-      </div>
-      <div className="hidden md:flex flex-col items-center justify-center w-[90px]">
-        <div className="h-6 w-16 bg-gray-100 rounded-full" />
-      </div>
-      <div className="hidden md:flex flex-col items-center justify-center w-[110px]">
-        <div className="h-8 w-20 bg-gray-100 rounded" />
+      <div className={`flex flex-col items-center justify-center w-full ${isStudent ? 'md:w-[120px]' : 'md:w-[200px]'} gap-1.5`}>
+        <div className="h-4 w-20 bg-gray-200 rounded-md animate-pulse" />
+        <div className="h-5 w-14 bg-gray-200 rounded-md animate-pulse" />
       </div>
     </div>
   );
@@ -68,7 +89,7 @@ function SortHeader({ label, field, currentField, direction, onSort, className }
   );
 }
 
-export default function ResultList({ results, total, page, onPageChange, loading, query, tab, sortField, sortDirection, onSort }) {
+export default function ResultList({ results, total, page, onPageChange, loading, query, tab, sortField, sortDirection, onSort, onExport }) {
   const totalPages = Math.ceil(total / 10);
 
   const isSortActive = sortField !== 'published_at' || sortDirection !== 'DESC';
@@ -91,16 +112,27 @@ export default function ResultList({ results, total, page, onPageChange, loading
     <div>
       <div className="mb-6 px-5 py-3 bg-gray-50 rounded-xl flex items-center justify-between">
         <span className="text-sm text-gray-600">
-          พบทั้งหมด <span className="font-bold text-gray-800">{total}</span> รายการ
+          พบทั้งหมด <span key={total} className="font-bold text-gray-800 animate-in">{total}</span> รายการ
           {query && <span> สำหรับ "<span className="font-medium text-gray-700">{query}</span>"</span>}
         </span>
-        {isSortActive && (
-          <button onClick={clearSort} className="text-xs text-gray-400 hover:text-red-500 transition cursor-pointer ml-auto">
-            ✕ ล้างการเรียง
+        <div className="flex items-center gap-2">
+          {isSortActive && (
+            <button onClick={clearSort} className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition cursor-pointer whitespace-nowrap">
+              <ArrowUpDown size={12} /> ล้างการเรียง
+            </button>
+          )}
+          <button
+            onClick={onExport}
+            disabled={total === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            <Download size={14} />
+            ส่งออกเป็น CSV
           </button>
-        )}
+        </div>
       </div>
 
+      <div id="result-table-header" />
       {tab === "student" ? (
         <div className="hidden md:flex px-5 py-3 gap-4 bg-gray-50/50 rounded-t-xl border-x border-t border-gray-100 text-xs font-bold text-gray-500">
           <div className="w-[40px] text-center">ลำดับ</div>
@@ -134,7 +166,7 @@ export default function ResultList({ results, total, page, onPageChange, loading
 
       <div className="bg-white border border-gray-100 rounded-b-xl shadow-sm divide-y divide-gray-100">
         {loading ? (
-          Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
+          Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} tab={tab} />)
         ) : results.length === 0 ? (
           <EmptyState hasQuery={!!query} />
         ) : (

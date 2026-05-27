@@ -72,7 +72,7 @@ export default function ResultCard({ item, tab, query, index }) {
     ? "bg-sky-100 text-sky-700" 
     : "bg-purple-100 text-purple-700";
 
-  const qualityLabel = item.journal_quartile ?? (item.journal_tier ? `กลุ่ม ${item.journal_tier}` : "-");
+  const qualityLabel = item.journal_quartile ?? (item.journal_tier ? `TCI กลุ่ม ${item.journal_tier}` : "-");
   const typeLabel = item.detail_type || "-";
   const trackName = TRACK_NAMES[item.track_id] || "-";
 
@@ -97,11 +97,13 @@ export default function ResultCard({ item, tab, query, index }) {
         {authorText && (
           <div className="flex flex-wrap gap-1.5">
             {authorText.split(", ").map((name, i) => (
-              <span key={i} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 
-                            bg-[#F3F8FF] text-[#4F8EF7] rounded-full border border-[#DCEBFF]">
+              <Link key={i} href={`/publication-search?q=${encodeURIComponent(name)}&search_field=author`}
+                className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 
+                            bg-[#F3F8FF] text-[#4F8EF7] rounded-full border border-[#DCEBFF]
+                            hover:bg-blue-100 hover:border-blue-300 transition cursor-pointer">
                 <User size={10} />
-                {name}
-              </span>
+                {highlightText(name, query)}
+              </Link>
             ))}
           </div>
         )}
@@ -109,13 +111,15 @@ export default function ResultCard({ item, tab, query, index }) {
         {keywordsList.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
             {(showAllKeywords ? keywordsList : keywordsList.slice(0, 3)).map((kw, i) => (
-              <span
+              <Link
                 key={i}
+                href={`/publication-search?q=${encodeURIComponent(kw)}&search_field=keywords`}
                 className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 
-                            bg-[#F4FFF8] text-[#34B27B] rounded-full border border-[#DCFCEB]">
+                            bg-[#F4FFF8] text-[#34B27B] rounded-full border border-[#DCFCEB]
+                            hover:bg-emerald-100 hover:border-emerald-300 transition cursor-pointer">
                 <Tag size={10} />
                 {highlightText(kw, query)}
-              </span>
+              </Link>
             ))}
             {keywordsList.length > 3 && (
               <button

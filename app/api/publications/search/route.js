@@ -5,6 +5,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q') || '';
   const tab = searchParams.get('tab') || 'all';
+  const isExport = searchParams.get('export') === '1';
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = 10;
   const offset = (page - 1) * limit;
@@ -143,7 +144,7 @@ export async function GET(request) {
     }
   }
 
-  // Combine all filter blocks with OR
+  // filter blocks with OR
   if (filterBlocks.length > 0) {
     conditions.push(`(${filterBlocks.join(' OR ')})`);
   }
@@ -181,8 +182,9 @@ export async function GET(request) {
     if (sort === 'published_at' && sortDir === 'DESC') {
       orderSql = `${TRACK_ORDER} ASC, c.published_at DESC`;
     }
-    const dataSql = `SELECT c.* FROM unified_search_contents c ${whereClause} ORDER BY ${orderSql} LIMIT ? OFFSET ?`;
-    const [rows] = await pool.execute(dataSql, [...params, limit, offset]);
+    const [rows] = isExport
+      ? await pool.execute(`SELECT c.* FROM unified_search_contents c ${whereClause} ORDER BY ${orderSql}`, params)
+      : await pool.execute(`SELECT c.* FROM unified_search_contents c ${whereClause} ORDER BY ${orderSql} LIMIT ? OFFSET ?`, [...params, limit, offset]);
 
     const ids = rows.map(r => r.id);
     let authors = [];
@@ -200,6 +202,10 @@ export async function GET(request) {
       authors: authors.filter(a => a.unified_publication_id === row.id && a.role !== 'advisor').map(a => a.name),
       advisors: authors.filter(a => a.unified_publication_id === row.id && a.role === 'advisor').map(a => a.name),
     }));
+
+    if (isExport) {
+      return NextResponse.json({ success: true, data: results, total });
+    }
 
     return NextResponse.json({ success: true, data: results, total, page, limit, min_year: yearStats[0].min_year, max_year: yearStats[0].max_year });
   } catch (error) {

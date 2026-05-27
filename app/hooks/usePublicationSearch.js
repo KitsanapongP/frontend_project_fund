@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 
 const DEFAULT_FILTERS = {
   sources: [],
@@ -11,15 +12,16 @@ const DEFAULT_FILTERS = {
   tracks: [],
 };
 
-function getTabFromUrl() {
-  if (typeof window === 'undefined') return 'teacher';
-  const params = new URLSearchParams(window.location.search);
-  return params.get('tab') || 'teacher';
+function getUrlParam(key, fallback) {
+  if (typeof window === 'undefined') return fallback;
+  return new URLSearchParams(window.location.search).get(key) || fallback;
 }
 
 export function usePublicationSearch() {
-  const [tab, setTab] = useState(getTabFromUrl);
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState(() => getUrlParam('tab', 'teacher'));
+  const [query, setQuery] = useState(() => getUrlParam('q', ''));
+  const [searchField, setSearchField] = useState(() => getUrlParam('search_field', 'all'));
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [results, setResults] = useState([]);
   const [total, setTotal] = useState(0);
@@ -28,7 +30,6 @@ export function usePublicationSearch() {
   const [yearRange, setYearRange] = useState({ min: null, max: null });
   const [sortField, setSortField] = useState("published_at");
   const [sortDirection, setSortDirection] = useState("DESC");
-  const [searchField, setSearchField] = useState("all");
   const [advancedQueries, setAdvancedQueries] = useState({
     title: "",
     author: "",
@@ -82,6 +83,16 @@ export function usePublicationSearch() {
       setLoading(false);
     }
   }, [tab, query, filters, page, sortField, sortDirection, searchField, advancedQueries]);
+
+  useEffect(() => {
+    const q = searchParams.get('q') || '';
+    const sf = searchParams.get('search_field') || 'all';
+    if (q !== query || sf !== searchField) {
+      setQuery(q);
+      setSearchField(sf);
+      setPage(1);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const t = setTimeout(fetchResults, 300);

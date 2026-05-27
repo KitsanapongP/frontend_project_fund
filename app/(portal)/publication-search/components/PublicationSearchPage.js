@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePublicationSearch } from "@/app/hooks/usePublicationSearch";
 import ResultList from "./ResultList";
-import { Search, ChevronDown, FileSearch, FilterX, FileText, Presentation, BookOpen, Book, Award, CircleSlash, Trophy, CheckCircle2, User, Tag } from "lucide-react";
+import { Search, ChevronDown, FileSearch, FilterX, FileText, Presentation, BookOpen, Book, Award, CircleSlash, Trophy, CheckCircle2, User, Tag, Download, Sprout, Building2, Monitor, BarChart3, HeartPulse, X } from "lucide-react";
 
 const SCOPUS_TYPES = [
   { value: "Journal", label: "Journal", icon: FileText },
@@ -18,9 +18,9 @@ const SCOPUS_QUALITIES = [
   { value: "N/A", label: "N/A", icon: CircleSlash },
 ];
 const TCI_TIERS = [
-  { value: "1", label: "กลุ่ม 1", icon: Trophy },
-  { value: "2", label: "กลุ่ม 2", icon: Trophy },
-  { value: "3", label: "กลุ่ม 3", icon: Trophy },
+  { value: "1", label: "TCI กลุ่ม 1", icon: Trophy },
+  { value: "2", label: "TCI กลุ่ม 2", icon: Trophy },
+  { value: "3", label: "TCI กลุ่ม 3", icon: Trophy },
   { value: "not_in_tci", label: "ไม่อยู่ใน TCI", icon: CircleSlash },
 ];
 const SEARCH_FIELDS = [
@@ -31,17 +31,18 @@ const SEARCH_FIELDS = [
   { value: "abstract", label: "บทคัดย่อ", icon: BookOpen },
 ];
 const AI_TRACKS = [
-  { id: "ag",   name: "คณะเกษตรศาสตร์" },
-  { id: "cola", name: "วิทยาลัยการปกครองท้องถิ่น" },
-  { id: "cp",   name: "วิทยาลัยการคอมพิวเตอร์" },
-  { id: "kkbs", name: "คณะบริหารธุรกิจและการบัญชี" },
-  { id: "md",   name: "คณะแพทยศาสตร์" },
+  { id: "ag",   name: "คณะเกษตรศาสตร์",               icon: Sprout },
+  { id: "cola", name: "วิทยาลัยการปกครองท้องถิ่น",     icon: Building2 },
+  { id: "cp",   name: "วิทยาลัยการคอมพิวเตอร์",        icon: Monitor },
+  { id: "kkbs", name: "คณะบริหารธุรกิจและการบัญชี",   icon: BarChart3 },
+  { id: "md",   name: "คณะแพทยศาสตร์",               icon: HeartPulse },
 ];
 
 export default function PublicationSearchPage() {
   const { tab, setTab, query, setQuery, filters, setFilters, results, total, loading, page, setPage, yearRange, sortField, setSortField, sortDirection, setSortDirection, searchField, setSearchField, advancedQueries, setAdvancedQueries } = usePublicationSearch();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const isFirstRender = useRef(true);
   const dropdownRef = useRef(null);
   const [yearDropdown, setYearDropdown] = useState({ start: false, end: false });
   const yearStartRef = useRef(null);
@@ -72,6 +73,22 @@ export default function PublicationSearchPage() {
     }
   }, [yearRange.min, yearRange.max]);
 
+  const scrollToResults = () => {
+    const el = document.getElementById('result-table-header');
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.pageYOffset - 120;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    scrollToResults();
+  }, [page]);
+
   const handleTabChange = (newTab) => {
     setTab(newTab);
     setSearchField("all");
@@ -79,6 +96,8 @@ export default function PublicationSearchPage() {
     setAdvancedQueries({ title: "", author: "", keywords: "", abstract: "" });
     setFilters({ sources: [], yearStart: "", yearEnd: "", quartiles: [], aggTypes: [], tciTiers: [], projectTypes: [], tracks: [] });
     setPage(1);
+    defaultYearMin.current = null;
+    defaultYearMax.current = null;
   };
 
   const selectedSource = filters.sources[0] || "";
@@ -145,8 +164,8 @@ export default function PublicationSearchPage() {
       ? 'hover:border-emerald-300'
       : 'hover:border-[#7F77DD]/30';
     return (
-      <div className="flex items-start gap-3 whitespace-nowrap">
-        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0 mt-1.5">
+      <div className="flex items-center gap-3 whitespace-nowrap">
+        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">
           {title}
         </span>
         <div className={gridCols ? "grid gap-1.5" : "flex gap-1.5"} style={gridCols ? { gridTemplateColumns: `repeat(${gridCols}, auto)` } : undefined}>
@@ -177,6 +196,53 @@ export default function PublicationSearchPage() {
       </div>
     );
   }
+
+  const handleExport = async () => {
+    const params = new URLSearchParams();
+    params.set("tab", tab);
+    if (query) params.set("q", query);
+    if (searchField) params.set("search_field", searchField);
+    if (advancedQueries.title) params.set("title_query", advancedQueries.title);
+    if (advancedQueries.author) params.set("author_query", advancedQueries.author);
+    if (advancedQueries.keywords) params.set("keywords_query", advancedQueries.keywords);
+    if (advancedQueries.abstract) params.set("abstract_query", advancedQueries.abstract);
+    if (filters.yearStart) params.set("year_start", filters.yearStart);
+    if (filters.yearEnd) params.set("year_end", filters.yearEnd);
+    if (Array.isArray(filters.sources)) filters.sources.forEach((s) => params.append("source", s));
+    if (Array.isArray(filters.quartiles)) filters.quartiles.forEach((q) => params.append("quartile", q));
+    if (Array.isArray(filters.aggTypes)) filters.aggTypes.forEach((t) => params.append("agg_type", t));
+    if (Array.isArray(filters.tciTiers)) filters.tciTiers.forEach((t) => params.append("tier", t));
+    if (Array.isArray(filters.projectTypes)) filters.projectTypes.forEach((t) => params.append("project_type", t));
+    if (Array.isArray(filters.tracks)) filters.tracks.forEach((t) => params.append("track", t));
+    params.set("sort", sortField);
+    params.set("order", sortDirection);
+    params.set("export", "1");
+    try {
+      const res = await fetch(`/api/publications/search?${params.toString()}`);
+      const json = await res.json();
+      if (!json.success || !json.data?.length) return;
+
+      const rows = json.data;
+      const headers = ['ชื่อเรื่อง', 'ผู้เขียน', 'แหล่งที่มา', 'ปี', 'ประเภทผลงาน', 'คุณภาพ', 'DOI/Link'];
+      const csvRows = [headers.join(',')];
+
+      for (const r of rows) {
+        const title = `"${(r.title || '').replace(/"/g, '""')}"`;
+        const authors = `"${(r.authors || []).join(', ').replace(/"/g, '""')}"`;
+        csvRows.push([title, authors, r.source_name, r.publication_year, r.detail_type || '', r.journal_quartile || r.journal_tier || '', r.url || ''].join(','));
+      }
+
+      const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `publications-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Export failed', e);
+    }
+  };
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6">
@@ -226,7 +292,7 @@ export default function PublicationSearchPage() {
                       <button
                         type="button"
                         onClick={() => setDropdownOpen(!dropdownOpen)}
-                        className="h-12 flex items-center gap-2 pl-5 pr-3 text-sm font-medium text-gray-700 border-r border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+                        className="h-12 flex items-center gap-2 pl-5 pr-3 text-sm font-medium text-gray-700 border-r border-gray-200 cursor-pointer"
                       >
                         <selectedField.icon size={14} className="text-[#7F77DD]" />
                         <span className="max-w-[80px] truncate">{selectedField.label}</span>
@@ -241,7 +307,7 @@ export default function PublicationSearchPage() {
                                 key={field.value}
                                 type="button"
                                 onClick={() => { setSearchField(field.value); setDropdownOpen(false); }}
-                                className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm outline-none ${
+                                className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm rounded-lg outline-none focus:outline-none focus-visible:outline-none ${
                                   isActive ? "bg-[#7F77DD]/10 text-[#7F77DD]" : "text-gray-700"
                                 }`}
                               >
@@ -258,6 +324,9 @@ export default function PublicationSearchPage() {
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') scrollToResults();
+                    }}
                     placeholder={
                       searchField === 'all'
                         ? (tab === 'teacher' ? 'ค้นหาชื่อเรื่อง / ชื่อผู้เขียน / คำสำคัญ / บทคัดย่อ...' : 'ค้นหาชื่อเรื่อง / ชื่อผู้จัดทำ / บทคัดย่อ...')
@@ -268,8 +337,16 @@ export default function PublicationSearchPage() {
                     }
                     className="flex-1 h-12 px-4 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
                   />
+                  {query && (
+                    <button
+                      onClick={() => setQuery('')}
+                      className="h-10 w-10 flex items-center justify-center text-gray-400 hover:text-gray-600 transition cursor-pointer shrink-0"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
                   <button
-                    onClick={() => {}}
+                    onClick={scrollToResults}
                     className="group h-10 w-10 mr-1.5 bg-[#7F77DD] hover:bg-[#9B8FC7] text-white rounded-full transition-all duration-300 flex items-center justify-center shrink-0"
                   >
                     <Search size={18} className="transition-transform duration-300 group-hover:-scale-x-100" />
@@ -294,7 +371,7 @@ export default function PublicationSearchPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-start gap-3">
+         <div className="flex flex-wrap items-start gap-3">
           
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">แหล่งที่มา</span>
@@ -383,13 +460,44 @@ export default function PublicationSearchPage() {
                 />
             )}
             {(filters.sources.length === 0 || selectedSource === "ai_showcase") && tab === "student" && (
-                <FilterGroup 
-                  title="ภาคีเครือข่าย"
-                  options={AI_TRACKS.map(t => ({ value: t.id, label: t.name }))}
-                  selected={filters.tracks || []}
-                  onToggle={(val) => toggleFilter("tracks", val)}
-                  gridCols={3}
-                />
+              <div className="grid gap-x-3 gap-y-1.5 whitespace-nowrap" style={{ gridTemplateColumns: 'auto 1fr' }}>
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0 mt-1">ภาคีเครือข่าย</span>
+                <div className="flex gap-1.5 items-center">
+                  {AI_TRACKS.slice(0, 3).map(t => {
+                    const Icon = t.icon;
+                    const isSelected = (filters.tracks || []).includes(t.id);
+                    return (
+                      <button key={t.id} onClick={() => toggleFilter("tracks", t.id)}
+                        className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-all whitespace-nowrap ${isSelected ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/30' : 'bg-white text-gray-400 border-gray-200 hover:border-[#7F77DD]/30'}`}
+                      >
+                        <span className="flex items-center gap-1">
+                          {isSelected && <CheckCircle2 size={12} />}
+                          <Icon size={11} className={isSelected ? '' : 'text-gray-300'} />
+                          {t.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div></div>
+                <div className="flex gap-1.5">
+                  {AI_TRACKS.slice(3).map(t => {
+                    const Icon = t.icon;
+                    const isSelected = (filters.tracks || []).includes(t.id);
+                    return (
+                      <button key={t.id} onClick={() => toggleFilter("tracks", t.id)}
+                        className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-all whitespace-nowrap ${isSelected ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/30' : 'bg-white text-gray-400 border-gray-200 hover:border-[#7F77DD]/30'}`}
+                      >
+                        <span className="flex items-center gap-1">
+                          {isSelected && <CheckCircle2 size={12} />}
+                          <Icon size={11} className={isSelected ? '' : 'text-gray-300'} />
+                          {t.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
             </div>
 
@@ -404,7 +512,7 @@ export default function PublicationSearchPage() {
                           onClick={() => setYearDropdown(prev => ({ ...prev, start: !prev.start, end: false }))}
                           className="h-8 w-36 px-2 rounded-md border border-gray-200 bg-white text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#7F77DD] cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between"
                         >
-                          <span>{filters.yearStart} ({Number(filters.yearStart) + 543})</span>
+                          <span>{filters.yearStart ? `${filters.yearStart} (${Number(filters.yearStart) + 543})` : '···'}</span>
                           <ChevronDown size={12} className={`text-gray-400 shrink-0 transition-transform duration-200 ${yearDropdown.start ? "rotate-180" : ""}`} />
                         </button>
                         {yearDropdown.start && (
@@ -434,7 +542,7 @@ export default function PublicationSearchPage() {
                           onClick={() => setYearDropdown(prev => ({ ...prev, end: !prev.end, start: false }))}
                           className="h-8 w-36 px-2 rounded-md border border-gray-200 bg-white text-xs text-center focus:outline-none focus:ring-1 focus:ring-[#7F77DD] cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between"
                         >
-                          <span>{filters.yearEnd} ({Number(filters.yearEnd) + 543})</span>
+                          <span>{filters.yearEnd ? `${filters.yearEnd} (${Number(filters.yearEnd) + 543})` : '···'}</span>
                           <ChevronDown size={12} className={`text-gray-400 shrink-0 transition-transform duration-200 ${yearDropdown.end ? "rotate-180" : ""}`} />
                         </button>
                         {yearDropdown.end && (
@@ -460,26 +568,26 @@ export default function PublicationSearchPage() {
                    </div>
                </div>
                 {lastImportDates.length > 0 && (
-                  <div className="flex items-center gap-2 mt-auto text-[10px] text-gray-400">
-                       <span className="font-medium text-gray-500">
-                        อัปเดตล่าสุด:
+                   <div className="flex items-center gap-2 mt-auto text-[10px] text-gray-400">
+                        <span className="font-medium text-gray-500">
+                         อัปเดตล่าสุด:
+                       </span>
+                     {lastImportDates.filter(d => tab === 'teacher' ? d.source !== 'AI Showcase' : d.source === 'AI Showcase').map(d => (
+                      <span key={d.source} className="text-[10px] text-gray-400">
+                        {d.source}: {new Date(d.finished_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>
-                    {lastImportDates.filter(d => tab === 'teacher' ? d.source !== 'AI Showcase' : d.source === 'AI Showcase').map(d => (
-                     <span key={d.source} className="text-[10px] text-gray-400">
-                       {d.source}: {new Date(d.finished_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                     </span>
-                   ))}
-                 </div>
-               )}
-            </div>
-        </div>
+                    ))}
+                  </div>
+                )}
+             </div>
+         </div>
 
-      </div>
+       </div>
 
-      {/* ================= ส่วนแสดงผล ================= */}
-      <div className="mt-6">
-        <ResultList results={results} total={total} page={page} onPageChange={setPage} loading={loading} query={query} tab={tab} sortField={sortField} sortDirection={sortDirection} onSort={(field, dir) => { setSortField(field); setSortDirection(dir); }} />
-      </div>
-    </div>
-  );
-}
+       {/* ================= ส่วนแสดงผล ================= */}
+       <div className="mt-6">
+         <ResultList results={results} total={total} page={page} onPageChange={setPage} loading={loading} query={query} tab={tab} sortField={sortField} sortDirection={sortDirection} onSort={(field, dir) => { setSortField(field); setSortDirection(dir); }} onExport={handleExport} />
+       </div>
+     </div>
+   );
+ }
