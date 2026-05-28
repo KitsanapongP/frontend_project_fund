@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import Swal from "sweetalert2";
-import { ChevronLeft, ChevronDown, FileText, Upload, Layers, User, Handshake } from "lucide-react";
+import { ChevronLeft, ChevronDown, FileText, Upload, Layers, User, Handshake, Plus, Briefcase, UserPlus, MinusCircle } from "lucide-react";
 import apiClient from "../../../../lib/api";
 import { mouAPI } from "../../../../lib/mou_api";
 import { useAuth } from "../../../../contexts/AuthContext";
@@ -248,6 +248,9 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
   const [facultyUsers, setFacultyUsers] = useState({});
   const [facultyExternalNames, setFacultyExternalNames] = useState({});
   const [facultyExternalOrgs, setFacultyExternalOrgs] = useState({});
+  const [facultyEmails, setFacultyEmails] = useState({});
+  const [externalPersons, setExternalPersons] = useState([]);
+  const externalPersonIdCounter = useRef(0);
   const [files, setFiles] = useState([]);
   const [existingAttachments, setExistingAttachments] = useState([]);
   const [removedAttachmentIds, setRemovedAttachmentIds] = useState([]);
@@ -316,6 +319,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
         const facultyUserMap = {};
         const facultyExtNameMap = {};
         const facultyExtOrgMap = {};
+        const facultyEmailMap = {};
         (mouRes.faculties || []).forEach((f) => {
           if (f.faculty_id) {
             if (f.user_id) {
@@ -326,8 +330,14 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
             }
             if (f.external_name && !f.user_id) facultyExtNameMap[f.faculty_id] = f.external_name;
             if (f.external_org) facultyExtOrgMap[f.faculty_id] = f.external_org;
+            if (f.email) facultyEmailMap[f.faculty_id] = f.email;
+          } else if (f.external_name || f.external_org || f.email) {
+            // External person from existing data
+            externalPersonIdCounter.current += 1;
+            setExternalPersons((prev) => [...prev, { id: externalPersonIdCounter.current, name: f.external_name || "", org: f.external_org || "", email: f.email || "" }]);
           }
         });
+        setFacultyEmails(facultyEmailMap);
         setFacultyUsers(facultyUserMap);
         setFacultyExternalNames(facultyExtNameMap);
         setFacultyExternalOrgs(facultyExtOrgMap);
@@ -433,6 +443,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
       setFacultyUsers((prevU) => { const next = { ...prevU }; delete next[fid]; return next; });
       setFacultyExternalNames((prev) => { const next = { ...prev }; delete next[fid]; return next; });
       setFacultyExternalOrgs((prev) => { const next = { ...prev }; delete next[fid]; return next; });
+      setFacultyEmails((prev) => { const next = { ...prev }; delete next[fid]; return next; });
     }
     setFormData((prev) => ({
       ...prev,
@@ -442,6 +453,33 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
 
   const handleFacultyUserChange = (fid, value) => {
     setFacultyUsers((prev) => ({ ...prev, [fid]: value }));
+    const COMPUTING_FACULTY_ID = 6;
+    if (fid === COMPUTING_FACULTY_ID) {
+      const matchedUser = users.find((u) => {
+        const fullName = [u.prefix || "", u.user_fname || "", u.user_lname || ""].filter(Boolean).join(" ").trim();
+        return fullName === value.trim();
+      });
+      if (matchedUser) {
+        setFacultyEmails((prev) => ({ ...prev, [fid]: matchedUser.email || "" }));
+      }
+    }
+  };
+
+  const handleFacultyEmailChange = (fid, value) => {
+    setFacultyEmails((prev) => ({ ...prev, [fid]: value }));
+  };
+
+  const addExternalPerson = () => {
+    externalPersonIdCounter.current += 1;
+    setExternalPersons((prev) => [...prev, { id: externalPersonIdCounter.current, name: "", org: "", email: "" }]);
+  };
+
+  const updateExternalPerson = (id, field, value) => {
+    setExternalPersons((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+  };
+
+  const removeExternalPerson = (id) => {
+    setExternalPersons((prev) => prev.filter((p) => p.id !== id));
   };
 
   const handleFacultyExternalNameChange = (fid, value) => {
@@ -472,8 +510,6 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
 
       const selectedUser = users.find(u => u.user_id === parseInt(formData.coordinator_id, 10));
 
-      const globalExtName = facultyExternalNames["_global"] || "";
-      const globalExtOrg = facultyExternalOrgs["_global"] || "";
       const facultiesArr = formData.faculty_ids.map((fid) => {
         const raw = (facultyUsers[fid] || "").trim();
         const matchedUser = users.find((u) => {
@@ -485,17 +521,21 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
           user_id: matchedUser ? matchedUser.user_id : 0,
           external_name: matchedUser ? null : (raw || null),
           external_org: null,
+          email: facultyEmails[fid] || null,
         };
       });
 
-      if (globalExtName || globalExtOrg) {
-        facultiesArr.push({
-          faculty_id: 0,
-          user_id: 0,
-          external_name: globalExtName || null,
-          external_org: globalExtOrg || null,
-        });
-      }
+      externalPersons.forEach((p) => {
+        if (p.name || p.org || p.email) {
+          facultiesArr.push({
+            faculty_id: 0,
+            user_id: 0,
+            external_name: p.name || null,
+            external_org: p.org || null,
+            email: p.email || null,
+          });
+        }
+      });
 
       const mouPayload = {
         mou_code: formData.mou_code,
@@ -790,46 +830,85 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
               <h3>ผู้รับผิดชอบ</h3>
             </div>
 
-            <div className="formGrid">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               {formData.faculty_ids.map((fid) => {
                 const fac = faculties.find((f) => f.id === fid);
+                const isComputing = fid === 6;
                 return (
-                  <div className="field" key={fid}>
-                    <label>ผู้รับผิดชอบคณะ {fac?.name_th || `#${fid}`}</label>
-                    <input
-                      list={`faculty-user-${fid}`}
-                      value={facultyUsers[fid] || ""}
-                      onChange={(e) => handleFacultyUserChange(fid, e.target.value)}
-                      placeholder="พิมพ์ค้นหาชื่อหรือพิมพ์ชื่อที่ไม่มีในรายการ"
-                    />
-                    <datalist id={`faculty-user-${fid}`}>
-                      {users.map((u) => (
-                        <option key={u.user_id} value={`${u.prefix || ""} ${u.user_fname || ""} ${u.user_lname || ""}`.trim()} />
-                      ))}
-                    </datalist>
+                  <div key={fid} style={{ border: "1px solid var(--mou-line)", borderRadius: 10, padding: "14px 16px", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: "var(--mou-primary-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <User size={14} style={{ color: "var(--mou-primary)" }} />
+                      </div>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--mou-text)" }}>
+                        {fac?.name_th || `#${fid}`}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                      <div style={{ flex: 1 }}>
+                        {isComputing ? (
+                          <input
+                            list={`faculty-user-${fid}`}
+                            value={facultyUsers[fid] || ""}
+                            onChange={(e) => handleFacultyUserChange(fid, e.target.value)}
+                            placeholder="พิมพ์ค้นหาชื่อหรือพิมพ์ชื่อที่ไม่มีในรายการ"
+                          />
+                        ) : (
+                          <input
+                            value={facultyUsers[fid] || ""}
+                            onChange={(e) => handleFacultyUserChange(fid, e.target.value)}
+                            placeholder="ระบุชื่อผู้รับผิดชอบ"
+                          />
+                        )}
+                        {isComputing && (
+                          <datalist id={`faculty-user-${fid}`}>
+                            {users.map((u) => (
+                              <option key={u.user_id} value={`${u.prefix || ""} ${u.user_fname || ""} ${u.user_lname || ""}`.trim()} />
+                            ))}
+                          </datalist>
+                        )}
+                      </div>
+                      <input type="email" value={facultyEmails[fid] || ""} onChange={(e) => handleFacultyEmailChange(fid, e.target.value)}
+                        placeholder="อีเมล" style={{ width: "220px" }} />
+                    </div>
                   </div>
                 );
               })}
             </div>
-            <div className="formGrid" style={{ marginTop: "10px" }}>
-              <div className="field">
-                <label>ชื่อผู้รับผิดชอบภายนอก</label>
-                <input
-                  type="text"
-                  value={facultyExternalNames["_global"] || ""}
-                  onChange={(e) => handleFacultyExternalNameChange("_global", e.target.value)}
-                  placeholder="ระบุชื่อ (กรณีผู้รับผิดชอบไม่ใช่บุคลากรในคณะ)"
-                />
+
+            {/* External responsible persons */}
+            <div style={{ marginTop: 16 }}>
+              <div className="formGrid" style={{ gridTemplateColumns: "1fr" }}>
+                {externalPersons.map((p) => (
+                  <div key={p.id} style={{ position: "relative", border: "1px solid var(--mou-line)", borderRadius: 10, padding: "14px 16px", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                    <button type="button" onClick={() => removeExternalPerson(p.id)}
+                      style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", color: "var(--mou-primary)", cursor: "pointer", padding: 4, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--mou-primary-soft)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                      title="ลบ">
+                      <MinusCircle size={18} />
+                    </button>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                      <div className="field" style={{ margin: 0 }}>
+                        <label style={{ fontSize: 13 }}>ชื่อผู้รับผิดชอบภายนอก</label>
+                        <input type="text" value={p.name} onChange={(e) => updateExternalPerson(p.id, "name", e.target.value)} placeholder="ชื่อ" />
+                      </div>
+                      <div className="field" style={{ margin: 0 }}>
+                        <label style={{ fontSize: 13 }}>หน่วยงาน</label>
+                        <input type="text" value={p.org} onChange={(e) => updateExternalPerson(p.id, "org", e.target.value)} placeholder="หน่วยงาน" />
+                      </div>
+                      <div className="field" style={{ margin: 0 }}>
+                        <label style={{ fontSize: 13 }}>อีเมล</label>
+                        <input type="email" value={p.email} onChange={(e) => updateExternalPerson(p.id, "email", e.target.value)} placeholder="อีเมล" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="field">
-                <label>หน่วยงานผู้รับผิดชอบภายนอก</label>
-                <input
-                  type="text"
-                  value={facultyExternalOrgs["_global"] || ""}
-                  onChange={(e) => handleFacultyExternalOrgChange("_global", e.target.value)}
-                  placeholder="ระบุหน่วยงาน"
-                />
-              </div>
+              <button type="button" onClick={addExternalPerson}
+                style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", border: "1px dashed var(--mou-primary)", borderRadius: 8, background: "var(--mou-primary-soft)", color: "var(--mou-primary)", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+                <Plus size={15} /> เพิ่มผู้รับผิดชอบภายนอก
+              </button>
             </div>
           </div>
         )}

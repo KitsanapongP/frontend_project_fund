@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import Swal from "sweetalert2";
 import {
   Bookmark, RefreshCw, Calendar, Key, FileText,
-  AlertCircle, RotateCcw
+  AlertCircle, RotateCcw, Download
 } from "lucide-react";
 import { mouAPI } from "../../../lib/mou_api";
 import apiClient from "../../../lib/api";
@@ -148,6 +148,9 @@ export default function AdminDashboardPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button onClick={() => { const url = mouAPI.exportMouCsv({}); window.open(url, '_blank'); }} className="btn inline-flex items-center gap-1.5" style={{ fontSize: 13 }}>
+            <Download size={15} /> ส่งออก CSV
+          </button>
           <select className="ySel" value={year} onChange={(e) => setYear(e.target.value)} style={{ fontSize: 14 }}>
             {yearOptions.map((y) => (
               <option key={y} value={y}>ปี พ.ศ. {y}</option>

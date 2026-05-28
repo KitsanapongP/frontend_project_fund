@@ -150,6 +150,7 @@ function FileIcon({ fileName }) {
 function FacultyItem({ fac }) {
   const userName = [fac.user?.prefix, fac.user?.user_fname, fac.user?.user_lname].filter(Boolean).join(" ");
   const responsibleName = userName || fac.external_name;
+  const email = fac.user?.email || fac.email;
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg bg-indigo-50/50 border border-indigo-100">
       <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
@@ -162,24 +163,11 @@ function FacultyItem({ fac }) {
             ผู้รับผิดชอบ: {responsibleName}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function ExternalOrgItem({ fac }) {
-  const orgName = fac.external_org;
-  const responsibleName = fac.external_name || "ไม่ระบุ";
-  return (
-    <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50/50 border border-amber-100">
-      <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-        <Building2 size={15} className="text-amber-600" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold text-amber-900 truncate">{orgName}</div>
-        <div className="text-xs text-gray-500 mt-0.5 truncate">
-          ผู้รับผิดชอบ: {responsibleName}
-        </div>
+        {email && (
+          <div className="text-[11px] text-gray-400 truncate mt-0.5">
+            อีเมล: {email}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -358,19 +346,15 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
                     <span className="text-sm font-semibold text-gray-700">ความร่วมมือ</span>
                   </div>
                   <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
-                    <div className="flex gap-1.5">
-                      <Tags size={12} className="text-gray-400 shrink-0 mt-0.5" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs text-gray-500 mb-2">ประเภท MOU</div>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-blue-300 text-blue-700 bg-blue-50">{typeName}</span>
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <InfoRow label="ประเภท MOU" value={typeName} borderColor="border-blue-100" />
+                      <InfoRow label="ระดับ" value={levelName} borderColor="border-blue-100" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <InfoRow label="ระดับ" value={levelName} borderColor="border-blue-100" />
                     <InfoRow label="ขอบเขตความร่วมมือ" value={scope} borderColor="border-blue-100" />
+                    <InfoRow label="ประเทศ" value={countryName} borderColor="border-blue-100" />
                   </div>
-                  <InfoRow label="ประเทศ" value={countryName} borderColor="border-blue-100" />
                   {faculties.length > 0 && (
                     <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
                       <div className="flex gap-1.5">
@@ -378,21 +362,9 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
                         <div className="min-w-0 flex-1">
                           <div className="text-xs text-gray-500 mb-2">คณะที่เข้าร่วม</div>
                           <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
-                            {faculties.map((fac) => {
-                              const userName = [fac.user?.prefix, fac.user?.user_fname, fac.user?.user_lname].filter(Boolean).join(" ");
-                              const responsibleName = userName || fac.external_name;
-                              return (
-                                <div key={fac.id} className="p-2 rounded-lg border border-blue-200">
-                                  <div className="flex items-center gap-1.5 mb-1">
-                                    <Building2 size={13} className="text-blue-500 shrink-0" />
-                                    <span className="text-xs font-medium text-blue-900 truncate">{fac.faculty?.name_th || "-"}</span>
-                                  </div>
-                                  {responsibleName && (
-                                    <div className="text-[11px] text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {responsibleName}</div>
-                                  )}
-                                </div>
-                              );
-                            })}
+                            {faculties.map((fac) => (
+                              <FacultyItem key={fac.id} fac={fac} />
+                            ))}
                           </div>
                         </div>
                       </div>
@@ -412,6 +384,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
                                   <span className="text-xs font-medium text-blue-900 truncate">{fac.external_org}</span>
                                 </div>
                                 <div className="text-[11px] text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {fac.external_name || "ไม่ระบุ"}</div>
+                                {fac.email && <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.email}</div>}
                               </div>
                             ))}
                           </div>
@@ -499,37 +472,81 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
               </div>
               <span className="text-sm font-semibold text-gray-800">ประวัติ</span>
             </div>
-            <div className="p-4">
-              <div className="space-y-4">
-                {mou.created_at && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-green-400 mt-2 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-gray-700">สร้างรายการ</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{new Date(mou.created_at).toLocaleString("th-TH")}</div>
-                      {mou.creator && (
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          โดย: {[mou.creator.prefix || "", mou.creator.user_fname || "", mou.creator.user_lname || ""].filter(Boolean).join(" ")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {mou.updated_at && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-blue-400 mt-2 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-gray-700">อัปเดตล่าสุด</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{new Date(mou.updated_at).toLocaleString("th-TH")}</div>
-                      {mou.updater && (
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          โดย: {[mou.updater.prefix || "", mou.updater.user_fname || "", mou.updater.user_lname || ""].filter(Boolean).join(" ")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รายการ</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันเวลา</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">โดย</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {(() => {
+                    const events = [];
+
+                    if (mou.created_at) {
+                      events.push({
+                        id: "create",
+                        title: "สร้าง MOU",
+                        date: new Date(mou.created_at),
+                        actor: mou.creator ? [mou.creator.prefix || "", mou.creator.user_fname || "", mou.creator.user_lname || ""].filter(Boolean).join(" ") : "",
+                        icon: "bg-green-400",
+                      });
+                    }
+
+                    if (mou.updated_at && mou.updated_at !== mou.created_at) {
+                      events.push({
+                        id: "update",
+                        title: "แก้ไขข้อมูลล่าสุด",
+                        date: new Date(mou.updated_at),
+                        actor: mou.updater ? [mou.updater.prefix || "", mou.updater.user_fname || "", mou.updater.user_lname || ""].filter(Boolean).join(" ") : "",
+                        icon: "bg-blue-400",
+                      });
+                    }
+
+                    (mou.mou_events || []).forEach((ev) => {
+                      const actor = ev.actor ? [ev.actor.prefix || "", ev.actor.user_fname || "", ev.actor.user_lname || ""].filter(Boolean).join(" ") : "";
+                      events.push({
+                        id: ev.id,
+                        title: ev.action || "เหตุการณ์",
+                        subtitle: ev.message || "",
+                        date: new Date(ev.sent_at),
+                        actor: actor || "",
+                        icon: ev.action?.includes("เปลี่ยนสถานะ") ? "bg-amber-400" : ev.action?.includes("สร้าง") ? "bg-green-400" : "bg-blue-400",
+                      });
+                    });
+
+                    events.sort((a, b) => b.date - a.date);
+
+                    if (events.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={3} className="px-5 py-8 text-center text-sm text-gray-400">ไม่มีประวัติ</td>
+                        </tr>
+                      );
+                    }
+
+                    return events.map((ev) => (
+                      <tr key={ev.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-start gap-2.5">
+                            <div className={`w-2 h-2 rounded-full ${ev.icon} mt-1.5 shrink-0`} />
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-gray-800">{ev.title}</div>
+                              {ev.subtitle && (
+                                <div className="text-[12px] text-gray-500 mt-0.5">{ev.subtitle}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 whitespace-nowrap text-sm text-gray-600">{ev.date.toLocaleString("th-TH")}</td>
+                        <td className="px-5 py-3.5 whitespace-nowrap text-sm text-gray-600">{ev.actor || "-"}</td>
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

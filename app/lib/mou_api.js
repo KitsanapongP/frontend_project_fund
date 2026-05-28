@@ -287,6 +287,26 @@ export const mouAPI = {
     }
   },
 
+  // Export MOU list as CSV
+  async exportMouCsv(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.mou_code) params.append('mou_code', filters.mou_code);
+    if (filters.title) params.append('title', filters.title);
+    if (filters.partner_name) params.append('partner_name', filters.partner_name);
+    if (filters.country) params.append('country', filters.country);
+    if (filters.status) params.append('status', filters.status);
+    if (filters.mouType) params.append('mou_type', filters.mouType);
+    if (filters.level) params.append('level', filters.level);
+    if (filters.is_international) params.append('is_international', filters.is_international);
+    return `/mou/export${params.toString() ? `?${params}` : ''}`;
+  },
+
+  // Send pending email notifications for expiring MOUs
+  async sendMouNotifications() {
+    const response = await apiClient.post('/mou/send-notifications');
+    return response.data;
+  },
+
   // ==================== ACTIVITIES ====================
 
   // Create new activity

@@ -427,10 +427,12 @@ export default function MouPage() {
             <p className="text-sm text-gray-500 mt-0.5">จัดการบันทึกข้อตกลงความร่วมมือทั้งหมด</p>
           </div>
         </div>
-        <Link className="btn primary inline-flex items-center gap-2" href="/mou/add_mou">
-          <Plus size={18} />
-          เพิ่ม MOU ใหม่
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link className="btn primary inline-flex items-center gap-2" href="/mou/add_mou">
+            <Plus size={18} />
+            เพิ่ม MOU ใหม่
+          </Link>
+        </div>
       </div>
       {error && (
         <div className="panel animate-slideDown" style={{ color: "#dc2626", marginBottom: "18px", display: "flex", alignItems: "center", gap: 8 }}>

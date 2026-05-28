@@ -9,7 +9,7 @@ import {
   Plus, FileSignature, Hash, FileText, Building2, Globe, Calendar,
   User, AlertCircle, CheckCircle, X, ChevronLeft, Upload,
   Sparkles, Search, Users, Clock, Bookmark, Layers, Tag, ChevronDown,
-  AlignLeft, Tags, MapPin, UserPlus, Briefcase, Handshake, UserCheck, Key, StickyNote
+  AlignLeft, Tags, MapPin, UserPlus, Briefcase, Handshake, UserCheck, Key, StickyNote, MinusCircle
 } from "lucide-react";
 import apiClient from "../../../lib/api";
 import { mouAPI } from "../../../lib/mou_api";
@@ -218,6 +218,9 @@ export default function AddMouPage() {
   const [facultyUsers, setFacultyUsers] = useState({});
   const [facultyExternalNames, setFacultyExternalNames] = useState({});
   const [facultyExternalOrgs, setFacultyExternalOrgs] = useState({});
+  const [facultyEmails, setFacultyEmails] = useState({});
+  const [externalPersons, setExternalPersons] = useState([]);
+  const externalPersonIdCounter = useRef(0);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState("");
   const [error, setError] = useState("");
@@ -327,6 +330,11 @@ export default function AddMouPage() {
         delete next[fid];
         return next;
       });
+      setFacultyEmails((prev) => {
+        const next = { ...prev };
+        delete next[fid];
+        return next;
+      });
     }
     setFormData((prev) => ({
       ...prev,
@@ -336,6 +344,15 @@ export default function AddMouPage() {
 
   const handleFacultyUserChange = (fid, value) => {
     setFacultyUsers((prev) => ({ ...prev, [fid]: value }));
+    if (fid === COMPUTING_FACULTY_ID) {
+      const matchedUser = users.find((u) => {
+        const fullName = [u.prefix || "", u.user_fname || "", u.user_lname || ""].filter(Boolean).join(" ").trim();
+        return fullName === value.trim();
+      });
+      if (matchedUser) {
+        setFacultyEmails((prev) => ({ ...prev, [fid]: matchedUser.email || "" }));
+      }
+    }
   };
 
   const handleFacultyExternalNameChange = (fid, value) => {
@@ -344,6 +361,23 @@ export default function AddMouPage() {
 
   const handleFacultyExternalOrgChange = (fid, value) => {
     setFacultyExternalOrgs((prev) => ({ ...prev, [fid]: value }));
+  };
+
+  const handleFacultyEmailChange = (fid, value) => {
+    setFacultyEmails((prev) => ({ ...prev, [fid]: value }));
+  };
+
+  const addExternalPerson = () => {
+    externalPersonIdCounter.current += 1;
+    setExternalPersons((prev) => [...prev, { id: externalPersonIdCounter.current, name: "", org: "", email: "" }]);
+  };
+
+  const updateExternalPerson = (id, field, value) => {
+    setExternalPersons((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+  };
+
+  const removeExternalPerson = (id) => {
+    setExternalPersons((prev) => prev.filter((p) => p.id !== id));
   };
 
   const handleSubmit = async (e, asDraft = true) => {
@@ -369,8 +403,6 @@ export default function AddMouPage() {
 
       const selectedUser = users.find(u => u.user_id === parseInt(formData.coordinator_id, 10));
 
-      const globalExtName = facultyExternalNames["_global"] || "";
-      const globalExtOrg = facultyExternalOrgs["_global"] || "";
       const facultiesArr = formData.faculty_ids.map((fid) => {
         const raw = (facultyUsers[fid] || "").trim();
         const matchedUser = users.find((u) => {
@@ -382,17 +414,21 @@ export default function AddMouPage() {
           user_id: matchedUser ? matchedUser.user_id : 0,
           external_name: matchedUser ? null : (raw || null),
           external_org: null,
+          email: facultyEmails[fid] || null,
         };
       });
 
-      if (globalExtName || globalExtOrg) {
-        facultiesArr.push({
-          faculty_id: 0,
-          user_id: 0,
-          external_name: globalExtName || null,
-          external_org: globalExtOrg || null,
-        });
-      }
+      externalPersons.forEach((p) => {
+        if (p.name || p.org || p.email) {
+          facultiesArr.push({
+            faculty_id: 0,
+            user_id: 0,
+            external_name: p.name || null,
+            external_org: p.org || null,
+            email: p.email || null,
+          });
+        }
+      });
 
       const mouPayload = {
         mou_code: formData.mou_code,
@@ -455,6 +491,9 @@ export default function AddMouPage() {
       setFacultyUsers({});
       setFacultyExternalNames({});
       setFacultyExternalOrgs({});
+      setFacultyEmails({});
+      setExternalPersons([]);
+      externalPersonIdCounter.current = 0;
       router.replace("/mou");
     } catch (err) {
       console.error("Error creating MOU:", err);
@@ -697,34 +736,71 @@ export default function AddMouPage() {
               <User size={18} className="text-blue-500" />
               <h3>ผู้รับผิดชอบ</h3>
             </div>
-            <div className="formGrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               {sortedFacultyIds.map((fid) => {
                 const fac = faculties.find((f) => f.id === fid);
                 const isComputing = fid === COMPUTING_FACULTY_ID;
                 return (
-                  <div className="field" key={fid}>
-                    <label><User size={14} className="shrink-0" />ผู้รับผิดชอบ {isComputing ? `คณะ${fac?.name_th || `#${fid}`}` : fac?.name_th || `#${fid}`}</label>
-                    {isComputing ? (
-                      <Select value={facultyUsers[fid] || ""} onChange={(e) => handleFacultyUserChange(fid, e.target.value)}
-                        placeholder="เลือกหรือพิมพ์ชื่อผู้รับผิดชอบ" searchable
-                        options={users.map((u) => ({ value: getUserFullName(u), label: getUserFullName(u) }))} />
-                    ) : (
-                      <input type="text" value={facultyUsers[fid] || ""} onChange={(e) => handleFacultyUserChange(fid, e.target.value)}
-                        placeholder="ระบุชื่อผู้รับผิดชอบ" required />
-                    )}
+                  <div key={fid} style={{ border: "1px solid var(--mou-line)", borderRadius: 10, padding: "14px 16px", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: "var(--mou-primary-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <User size={14} style={{ color: "var(--mou-primary)" }} />
+                      </div>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--mou-text)" }}>
+                        {isComputing ? `คณะ${fac?.name_th || `#${fid}`}` : fac?.name_th || `#${fid}`}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                      <div style={{ flex: 1 }}>
+                        {isComputing ? (
+                          <Select value={facultyUsers[fid] || ""} onChange={(e) => handleFacultyUserChange(fid, e.target.value)}
+                            placeholder="เลือกหรือพิมพ์ชื่อผู้รับผิดชอบ" searchable
+                            options={users.map((u) => ({ value: getUserFullName(u), label: getUserFullName(u) }))} />
+                        ) : (
+                          <input type="text" value={facultyUsers[fid] || ""} onChange={(e) => handleFacultyUserChange(fid, e.target.value)}
+                            placeholder="ระบุชื่อผู้รับผิดชอบ" required />
+                        )}
+                      </div>
+                      <input type="email" value={facultyEmails[fid] || ""} onChange={(e) => handleFacultyEmailChange(fid, e.target.value)}
+                        placeholder="อีเมล" style={{ width: "220px" }} />
+                    </div>
                   </div>
                 );
               })}
-              <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-                <div className="field" style={{ margin: 0 }}>
-                  <label><UserPlus size={14} className="shrink-0" />ชื่อผู้รับผิดชอบภายนอก</label>
-                  <input type="text" value={facultyExternalNames["_global"] || ""} onChange={(e) => handleFacultyExternalNameChange("_global", e.target.value)} placeholder="ระบุชื่อ (กรณีไม่ใช่บุคลากรในคณะ)" />
-                </div>
-                <div className="field" style={{ margin: 0 }}>
-                  <label><Briefcase size={14} className="shrink-0" />หน่วยงานภายนอก</label>
-                  <input type="text" value={facultyExternalOrgs["_global"] || ""} onChange={(e) => handleFacultyExternalOrgChange("_global", e.target.value)} placeholder="ระบุหน่วยงาน" />
-                </div>
+            </div>
+            {/* External responsible persons */}
+            <div style={{ marginTop: 16 }}>
+              <div className="formGrid" style={{ gridTemplateColumns: "1fr" }}>
+                {externalPersons.map((p) => (
+                  <div key={p.id} style={{ position: "relative", border: "1px solid var(--mou-line)", borderRadius: 10, padding: "14px 16px", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                    <button type="button" onClick={() => removeExternalPerson(p.id)}
+                      style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", color: "var(--mou-primary)", cursor: "pointer", padding: 4, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--mou-primary-soft)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                      title="ลบ">
+                      <MinusCircle size={18} />
+                    </button>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                      <div className="field" style={{ margin: 0 }}>
+                        <label style={{ fontSize: 13 }}><UserPlus size={13} className="shrink-0" />ชื่อผู้รับผิดชอบภายนอก</label>
+                        <input type="text" value={p.name} onChange={(e) => updateExternalPerson(p.id, "name", e.target.value)} placeholder="ชื่อ" />
+                      </div>
+                      <div className="field" style={{ margin: 0 }}>
+                        <label style={{ fontSize: 13 }}><Briefcase size={13} className="shrink-0" />หน่วยงาน</label>
+                        <input type="text" value={p.org} onChange={(e) => updateExternalPerson(p.id, "org", e.target.value)} placeholder="หน่วยงาน" />
+                      </div>
+                      <div className="field" style={{ margin: 0 }}>
+                        <label style={{ fontSize: 13 }}><FileText size={13} className="shrink-0" />อีเมล</label>
+                        <input type="email" value={p.email} onChange={(e) => updateExternalPerson(p.id, "email", e.target.value)} placeholder="อีเมล" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+              <button type="button" onClick={addExternalPerson}
+                style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", border: "1px dashed var(--mou-primary)", borderRadius: 8, background: "var(--mou-primary-soft)", color: "var(--mou-primary)", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+                <Plus size={15} /> เพิ่มผู้รับผิดชอบภายนอก
+              </button>
             </div>
           </div>
         )}
