@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import {
@@ -194,7 +193,6 @@ export default function AddMouPage() {
     title: "",
     description: "",
     level: "",
-    mou_type_id: "",
     is_international: "",
     start_date: "",
     end_date: "",
@@ -209,7 +207,6 @@ export default function AddMouPage() {
     notes: "",
     notify_days_before: "",
   });
-  const [mouTypes, setMouTypes] = useState([]);
   const [partnerTypes, setPartnerTypes] = useState([]);
   const [countries, setCountries] = useState([]);
   const [users, setUsers] = useState([]);
@@ -239,14 +236,12 @@ export default function AddMouPage() {
 
   const loadReferenceData = async () => {
     try {
-      const [typesResponse, countriesResponse, usersResponse, facultiesResponse, partnerTypesResponse] = await Promise.all([
-        mouAPI.getMouTypes(),
+      const [countriesResponse, usersResponse, facultiesResponse, partnerTypesResponse] = await Promise.all([
         mouAPI.getCountries(),
         apiClient.get("/users"),
         mouAPI.getFaculties(),
         mouAPI.getMouPartnerTypes(),
       ]);
-      setMouTypes(typesResponse || []);
       setCountries(countriesResponse || []);
       setUsers(usersResponse?.users || []);
       setFaculties(facultiesResponse || []);
@@ -388,7 +383,7 @@ export default function AddMouPage() {
     setSuccess("");
 
     try {
-      if (!formData.mou_code || !formData.title || !formData.mou_type_id || !formData.start_date || !formData.end_date || !formData.partner_name) {
+      if (!formData.title || !formData.start_date || !formData.end_date || !formData.partner_name) {
         setError("กรุณากรอกข้อมูลที่จำเป็นทั้งหมด");
         return;
       }
@@ -431,23 +426,22 @@ export default function AddMouPage() {
       });
 
       const mouPayload = {
-        mou_code: formData.mou_code,
+        mou_code: formData.mou_code || null,
         title: formData.title,
         description: formData.description,
         level: formData.level,
-        mou_type_id: parseInt(formData.mou_type_id, 10),
         status_id: asDraft ? 1 : 2,
         is_international: formData.is_international === "true",
         start_date: formData.start_date ? formData.start_date.split("-").reverse().join("/") : "",
         end_date: formData.end_date ? formData.end_date.split("-").reverse().join("/") : "",
-        year_of_signing: formData.year_of_signing ? parseInt(formData.year_of_signing, 10) : null,
+        year_of_signing: formData.year_of_signing || null,
         partner_name: formData.partner_name,
         partner_type_id: parseInt(formData.partner_type_id) || 0,
         country_id: formData.country_id ? parseInt(formData.country_id, 10) : null,
         faculties: facultiesArr,
         coordinator_id: formData.coordinator_id ? parseInt(formData.coordinator_id, 10) : null,
         coordinator_name: selectedUser ? `${selectedUser.user_fname || ""} ${selectedUser.user_lname || ""}`.trim() : "",
-        signed_by: formData.signed_by ? parseInt(formData.signed_by, 10) : null,
+        signed_by: formData.signed_by || null,
         notes: formData.notes,
         notify_days_before: formData.notify_days_before ? parseInt(formData.notify_days_before, 10) : null,
       };
@@ -472,7 +466,6 @@ export default function AddMouPage() {
         title: "",
         description: "",
         level: "",
-        mou_type_id: "",
         is_international: "",
         start_date: "",
         end_date: "",
@@ -585,10 +578,10 @@ export default function AddMouPage() {
             <p className="text-sm text-gray-500 mt-0.5">สร้างบันทึกข้อตกลงความร่วมมือฉบับใหม่</p>
           </div>
         </div>
-        <Link className="btn inline-flex items-center gap-2" href="/mou">
+        <button type="button" className="btn inline-flex items-center gap-2" onClick={() => router.back()}>
           <ChevronLeft size={16} />
           กลับ
-        </Link>
+        </button>
       </div>
 
       {(error || success) && (
@@ -606,12 +599,12 @@ export default function AddMouPage() {
           </div>
           <div className="formGrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div className="field">
-              <label><Key size={14} className="shrink-0" />รหัส MOU <span className="required">*</span></label>
-              <input type="text" name="mou_code" value={formData.mou_code} onChange={handleChange} placeholder="เช่น MOU-67-001" required />
-            </div>
-            <div className="field">
               <label><FileText size={14} className="shrink-0" />ชื่อ MOU <span className="required">*</span></label>
               <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="ระบุชื่อ MOU" required />
+            </div>
+            <div className="field">
+              <label><Key size={14} className="shrink-0" />รหัส MOU</label>
+              <input type="text" name="mou_code" value={formData.mou_code} onChange={handleChange} placeholder="ระบุรหัส MOU" />
             </div>
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label><AlignLeft size={14} className="shrink-0" />รายละเอียด</label>
@@ -624,7 +617,7 @@ export default function AddMouPage() {
                   <Sparkles size={12} />
                   {aiLoading ? "กำลังวิเคราะห์..." : "AI สรุปรายละเอียด"}
                 </button>
-                <input ref={fileInputRef} type="file" onChange={handleFileChange} style={{ display: "none" }} accept=".pdf,.doc,.docx,.txt" multiple />
+                <input ref={fileInputRef} type="file" onChange={handleFileChange} style={{ display: "none" }} accept=".pdf" multiple />
                 {files.length > 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%" }}>
                     {files.map((f, i) => (
@@ -642,7 +635,7 @@ export default function AddMouPage() {
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
                     <Upload size={22} style={{ color: "var(--mou-primary)" }} />
-                    <span style={{ color: "#6b7280", fontSize: "13px" }}>PDF / DOC / TXT สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB</span>
+                    <span style={{ color: "#6b7280", fontSize: "13px" }}>PDF สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB</span>
                   </div>
                 )}
               </div>
@@ -662,10 +655,6 @@ export default function AddMouPage() {
                 { value: "university", label: "มหาวิทยาลัย" },
                 { value: "faculty", label: "คณะ" },
               ]} />
-            </div>
-            <div className="field">
-              <label><Tags size={14} className="shrink-0" />ประเภท MOU <span className="required">*</span></label>
-              <Select name="mou_type_id" value={formData.mou_type_id} onChange={handleChange} placeholder="เลือกประเภท" options={mouTypes.map((type) => ({ value: type.id, label: type.name }))} />
             </div>
             <div className="field">
               <label><Globe size={14} className="shrink-0" />ขอบเขต <span className="required">*</span></label>
@@ -782,16 +771,16 @@ export default function AddMouPage() {
                     </button>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                       <div className="field" style={{ margin: 0 }}>
-                        <label style={{ fontSize: 13 }}><UserPlus size={13} className="shrink-0" />ชื่อผู้รับผิดชอบภายนอก</label>
-                        <input type="text" value={p.name} onChange={(e) => updateExternalPerson(p.id, "name", e.target.value)} placeholder="ชื่อ" />
+                        <label style={{ fontSize: 13 }}><UserPlus size={13} className="shrink-0" />ชื่อผู้รับผิดชอบภายนอก <span className="required">*</span></label>
+                        <input type="text" value={p.name} onChange={(e) => updateExternalPerson(p.id, "name", e.target.value)} placeholder="ชื่อ" required />
                       </div>
                       <div className="field" style={{ margin: 0 }}>
                         <label style={{ fontSize: 13 }}><Briefcase size={13} className="shrink-0" />หน่วยงาน</label>
                         <input type="text" value={p.org} onChange={(e) => updateExternalPerson(p.id, "org", e.target.value)} placeholder="หน่วยงาน" />
                       </div>
                       <div className="field" style={{ margin: 0 }}>
-                        <label style={{ fontSize: 13 }}><FileText size={13} className="shrink-0" />อีเมล</label>
-                        <input type="email" value={p.email} onChange={(e) => updateExternalPerson(p.id, "email", e.target.value)} placeholder="อีเมล" />
+                        <label style={{ fontSize: 13 }}><FileText size={13} className="shrink-0" />อีเมล <span className="required">*</span></label>
+                        <input type="email" value={p.email} onChange={(e) => updateExternalPerson(p.id, "email", e.target.value)} placeholder="อีเมล" required />
                       </div>
                     </div>
                   </div>
@@ -820,12 +809,12 @@ export default function AddMouPage() {
                <Select name="partner_type_id" value={formData.partner_type_id} onChange={handleChange} placeholder="เลือกประเภท" options={partnerTypes.map(t => ({value: t.id, label: t.name_th}))} />
             </div>
             <div className="field">
-              <label><Bookmark size={14} className="shrink-0" />ปีที่ลงนาม (ค.ศ.)</label>
-              <input type="number" name="year_of_signing" value={formData.year_of_signing || ""} onChange={handleChange} min="1900" max="2155" placeholder="เช่น 2024" />
+              <label><Bookmark size={14} className="shrink-0" />วันเดือนปีที่ลงนาม</label>
+              <input type="date" name="year_of_signing" value={formData.year_of_signing || ""} onChange={handleChange} placeholder="เช่น 2024-06-01" />
             </div>
             <div className="field">
               <label><FileSignature size={14} className="shrink-0" />ลงนามโดย</label>
-              <Select name="signed_by" value={formData.signed_by} onChange={handleChange} placeholder="เลือกหรือพิมพ์ชื่อผู้ลงนาม" searchable options={users.map((u) => ({ value: u.user_id, label: getUserFullName(u) }))} />
+              <input type="text" name="signed_by" value={formData.signed_by || ""} onChange={handleChange} placeholder="ชื่อผู้ลงนาม" />
             </div>
             <div className="field">
               <label><Calendar size={14} className="shrink-0" />วันที่เริ่มต้น <span className="required">*</span></label>
@@ -854,7 +843,7 @@ export default function AddMouPage() {
         </div>
 
         <div className="footerActions afu" style={{ animationDelay: "300ms" }}>
-          <button type="button" className="btn inline-flex items-center gap-2" onClick={() => router.push("/mou")}>
+          <button type="button" className="btn inline-flex items-center gap-2" onClick={() => router.back()}>
             <X size={16} />ยกเลิก
           </button>
           <button type="submit" className="btn soft inline-flex items-center gap-2" style={{ border: "1px solid var(--mou-primary)" }} disabled={loading}>

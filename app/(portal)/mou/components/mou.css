@@ -403,14 +403,14 @@
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 22px;
-  margin: 0 0 30px -18px;
-  width: calc(100% + 18px);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 30px 0;
+  width: 100%;
 }
 
 .statCard {
-  height: 73px;
+  height: 68px;
   border: 1px solid var(--mou-line);
   border-radius: 8px;
   background: var(--mou-surface);

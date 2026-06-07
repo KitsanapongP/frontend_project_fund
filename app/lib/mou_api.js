@@ -15,7 +15,6 @@ export const mouAPI = {
       if (filters.partner_name) params.append('partner_name', filters.partner_name);
       if (filters.country) params.append('country', filters.country);
       if (filters.status) params.append('status', filters.status);
-      if (filters.mouType) params.append('mou_type', filters.mouType);
       if (filters.level) params.append('level', filters.level);
       if (filters.is_international) params.append('is_international', filters.is_international);
       if (filters.page) params.append('page', filters.page);
@@ -83,17 +82,6 @@ export const mouAPI = {
       return response.data || [];
     } catch (error) {
       console.error('Error fetching MOU statuses:', error);
-      throw error;
-    }
-  },
-
-  // Get MOU types
-  async getMouTypes() {
-    try {
-      const response = await apiClient.get('/mou/types');
-      return response.data || [];
-    } catch (error) {
-      console.error('Error fetching MOU types:', error);
       throw error;
     }
   },
@@ -276,6 +264,17 @@ export const mouAPI = {
     }
   },
 
+  // Get MOUs active in a given year
+  async getActiveByYear(year) {
+    try {
+      const response = await apiClient.get(`/mou/active-by-year?year=${year}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching active MOUs by year:', error);
+      throw error;
+    }
+  },
+
   // Get notifications (near expiry & expired)
   async getNotifications() {
     try {
@@ -290,12 +289,10 @@ export const mouAPI = {
   // Export MOU list as CSV
   async exportMouCsv(filters = {}) {
     const params = new URLSearchParams();
-    if (filters.mou_code) params.append('mou_code', filters.mou_code);
     if (filters.title) params.append('title', filters.title);
     if (filters.partner_name) params.append('partner_name', filters.partner_name);
     if (filters.country) params.append('country', filters.country);
     if (filters.status) params.append('status', filters.status);
-    if (filters.mouType) params.append('mou_type', filters.mouType);
     if (filters.level) params.append('level', filters.level);
     if (filters.is_international) params.append('is_international', filters.is_international);
     return `/mou/export${params.toString() ? `?${params}` : ''}`;
@@ -305,6 +302,61 @@ export const mouAPI = {
   async sendMouNotifications() {
     const response = await apiClient.post('/mou/send-notifications');
     return response.data;
+  },
+
+  // ==================== NOTIFICATION SETTINGS ====================
+
+  // Get notification settings
+  async getNotificationSettings() {
+    try {
+      const response = await apiClient.get('/mou/notification-settings');
+      return response;
+    } catch (error) {
+      console.error('Error fetching notification settings:', error);
+      throw error;
+    }
+  },
+
+  // Update notification settings
+  async updateNotificationSettings(data) {
+    try {
+      const response = await apiClient.put('/mou/notification-settings', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating notification settings:', error);
+      throw error;
+    }
+  },
+
+  // List all potential notification recipients
+  async listNotificationRecipients() {
+    try {
+      const response = await apiClient.get('/mou/notification-recipients');
+      return response;
+    } catch (error) {
+      console.error('Error fetching notification recipients:', error);
+      throw error;
+    }
+  },
+
+  // Get notification email preview for a specific MOU
+  async getNotificationPreview(mouId, settings = null) {
+    try {
+      let endpoint = `/mou/notification-preview?mou_id=${mouId}`;
+      if (settings) {
+        if (settings.include_mou_code !== undefined) endpoint += `&include_mou_code=${settings.include_mou_code}`;
+        if (settings.include_title !== undefined) endpoint += `&include_title=${settings.include_title}`;
+        if (settings.include_partner !== undefined) endpoint += `&include_partner=${settings.include_partner}`;
+        if (settings.include_dates !== undefined) endpoint += `&include_dates=${settings.include_dates}`;
+        if (settings.include_level !== undefined) endpoint += `&include_level=${settings.include_level}`;
+        if (settings.include_status !== undefined) endpoint += `&include_status=${settings.include_status}`;
+      }
+      const response = await apiClient.get(endpoint);
+      return response;
+    } catch (error) {
+      console.error('Error fetching notification preview:', error);
+      throw error;
+    }
   },
 
   // ==================== ACTIVITIES ====================

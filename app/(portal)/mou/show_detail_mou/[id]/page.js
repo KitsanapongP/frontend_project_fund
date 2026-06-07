@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState, use, useRef } from "react";
 import Link from "next/link";
 import Swal from "sweetalert2";
@@ -8,7 +9,7 @@ import {
   MapPin, Building2, Paperclip, Download, ExternalLink,
   Tag, Activity, Users, FileSignature, History, ListChecks,
   ChevronLeft, Key, AlignLeft, Handshake, UserCheck, Tags, StickyNote,
-  Plus, Hash, UserCircle, X, Check, Edit3
+  Plus, Hash, UserCircle, X, Check, Edit3, Bell
 } from "lucide-react";
 import MouLayout from "../../components/MouLayout";
 import { mouAPI } from "../../../../lib/mou_api";
@@ -152,7 +153,7 @@ function FacultyItem({ fac }) {
   const responsibleName = userName || fac.external_name;
   const email = fac.user?.email || fac.email;
   return (
-    <div className="flex items-start gap-3 p-3 rounded-lg bg-indigo-50/50 border border-indigo-100">
+    <div className="flex items-start gap-3 p-3 rounded-lg bg-white border border-indigo-100">
       <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
         <Building2 size={15} className="text-indigo-600" />
       </div>
@@ -174,6 +175,7 @@ function FacultyItem({ fac }) {
 }
 
 export default function ShowDetailMouPage({ params: paramsPromise }) {
+  const router = useRouter();
   const params = use(paramsPromise);
   const [mou, setMou] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -202,7 +204,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
 
   const handleDownloadZip = async () => {
     try {
-      const filename = `mou_${mou?.mou_code || params.id}_attachments.zip`;
+      const filename = `mou_${params.id}_attachments.zip`;
       await apiClient.downloadFile(`/mou/${params.id}/download`, filename);
     } catch {
       Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: "ไม่สามารถดาวน์โหลดเอกสารได้" });
@@ -249,7 +251,6 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
     );
   }
 
-  const typeName = mou.mou_type?.name || "-";
   const levelName = mou.level === "university" ? "มหาวิทยาลัย" : mou.level === "faculty" ? "คณะ" : mou.level || "-";
   const scope = mou.is_international ? "ต่างประเทศ" : "ในประเทศ";
   const partnerOrg = mou.partners?.[0]?.partner_org || "-";
@@ -258,9 +259,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
   const coordinator = mou.coordinator
     ? [mou.coordinator.prefix || "", mou.coordinator.user_fname || "", mou.coordinator.user_lname || ""].filter(Boolean).join(" ")
     : "-";
-  const signedBy = mou.signed_by_user
-    ? [mou.signed_by_user.prefix || "", mou.signed_by_user.user_fname || "", mou.signed_by_user.user_lname || ""].filter(Boolean).join(" ")
-    : "-";
+  const signedBy = mou.signed_by || "-";
   const endDate = mou.end_date ? fmtDate(mou.end_date) : "-";
   const daysLeft = mou.end_date ? Math.ceil((new Date(mou.end_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
   const daysText = daysLeft !== null ? (daysLeft > 0 ? `${daysLeft} วัน` : "หมดอายุแล้ว") : "-";
@@ -275,164 +274,145 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
   return (
     <MouLayout subtitle="รายละเอียด MOU">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 shadow-sm flex items-center justify-center">
-            <FileText size={22} className="text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800" style={{ margin: 0 }}>
-              รายละเอียด MOU
-            </h1>
-          </div>
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 shadow-sm flex items-center justify-center">
+              <FileText size={22} className="text-blue-600" />
+            </div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-800" style={{ margin: 0 }}>
+                รายละเอียด MOU
+              </h1>
+              {mou?.mou_code && <span className="text-xl font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg">{mou.mou_code}</span>}
+            </div>
         </div>
         <div className="flex items-center gap-2.5">
-          <Link
+          <button
+            type="button"
             className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition shadow-sm"
-            href="/mou"
+            onClick={() => router.back()}
           >
             <ChevronLeft size={15} />
             กลับ
+          </button>
+          <Link
+            href={`/mou/admin_notification_settings?mou_id=${params.id}`}
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white hover:from-purple-700 hover:to-indigo-700 transition shadow-sm"
+          >
+            <Bell size={15} />
+            ตั้งค่าการแจ้งเตือน
           </Link>
-          {attachments.length > 0 && (
-            <button
-              onClick={handleDownloadZip}
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-700 hover:to-indigo-700 transition shadow-sm"
-            >
-              <Download size={15} />
-              ดาวน์โหลดทั้งหมด
-            </button>
-          )}
         </div>
       </div>
 
       <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-shadow hover:shadow-md">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
-                <Key size={15} className="text-white" />
-              </div>
-              <span className="text-sm font-semibold text-gray-800">{mou.mou_code}</span>
-              <span className={`ml-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${statusClass(statusName)}`}><span className={`w-2 h-2 rounded-full ${statusDot(statusName)}`} />{statusName}</span>
-            </div>
-            <div className="p-5 space-y-5 divide-y divide-gray-100">
-
-              {/* Section: ข้อมูล MOU */}
-              <div className="pt-0">
-                <div className="bg-gradient-to-br from-blue-50/70 to-indigo-50/30 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileText size={15} className="text-blue-600" />
-                    <span className="text-sm font-semibold text-gray-700">ข้อมูล MOU</span>
-                  </div>
-                  <InfoRow label="ชื่อ MOU" value={mou.title} borderColor="border-blue-100" />
-                  {mou.description && (
-                    <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
-                      <div className="flex gap-1.5">
-                        <AlignLeft size={12} className="text-gray-400 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs text-gray-500 mb-2">รายละเอียด</div>
-                          <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">{mou.description}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Section: ความร่วมมือ */}
-              <div className="pt-4">
-                <div className="bg-gradient-to-br from-blue-50/70 to-indigo-50/30 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Layers size={15} className="text-blue-600" />
-                    <span className="text-sm font-semibold text-gray-700">ความร่วมมือ</span>
-                  </div>
-                  <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <InfoRow label="ประเภท MOU" value={typeName} borderColor="border-blue-100" />
-                      <InfoRow label="ระดับ" value={levelName} borderColor="border-blue-100" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <InfoRow label="ขอบเขตความร่วมมือ" value={scope} borderColor="border-blue-100" />
-                    <InfoRow label="ประเทศ" value={countryName} borderColor="border-blue-100" />
-                  </div>
-                  {faculties.length > 0 && (
-                    <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
-                      <div className="flex gap-1.5">
-                        <Building2 size={12} className="text-gray-400 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs text-gray-500 mb-2">คณะที่เข้าร่วม</div>
-                          <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
-                            {faculties.map((fac) => (
-                              <FacultyItem key={fac.id} fac={fac} />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {externalOrgs.length > 0 && (
-                    <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
-                      <div className="flex gap-1.5">
-                        <Building2 size={12} className="text-gray-400 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs text-gray-500 mb-2">ผู้รับผิดชอบภายนอก</div>
-                          <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
-                            {externalOrgs.map((fac) => (
-                              <div key={fac.id} className="p-2 rounded-lg border border-blue-200">
-                                <div className="flex items-center gap-1.5 mb-1">
-                                  <Building2 size={13} className="text-blue-500 shrink-0" />
-                                  <span className="text-xs font-medium text-blue-900 truncate">{fac.external_org}</span>
-                                </div>
-                                <div className="text-[11px] text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {fac.external_name || "ไม่ระบุ"}</div>
-                                {fac.email && <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.email}</div>}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Section: คู่สัญญาและกำหนดการ */}
-              <div className="pt-4">
-                <div className="bg-gradient-to-br from-blue-50/70 to-indigo-50/30 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Handshake size={15} className="text-blue-600" />
-                    <span className="text-sm font-semibold text-gray-700">คู่สัญญาและกำหนดการ</span>
-                  </div>
-                  <InfoRow label="หน่วยงานคู่สัญญา" value={partnerOrg} borderColor="border-blue-100" />
-                  <InfoRow label="ประเภทคู่สัญญา" value={partnerType} borderColor="border-blue-100" />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <InfoRow label="ปีที่ลงนาม" value={yearOfSigning} borderColor="border-blue-100" />
-                    <InfoRow label="ลงนามโดย" value={signedBy} borderColor="border-blue-100" />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <InfoRow label="วันที่เริ่มต้น" value={fmtDate(mou.start_date)} borderColor="border-blue-100" />
-                    <InfoRow label="วันที่สิ้นสุด" value={endDate} borderColor="border-blue-100" />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <InfoRow label="ผู้ประสานงาน" value={coordinator} borderColor="border-blue-100" />
-                    <InfoRow label="แจ้งเตือนก่อนสิ้นสุด (จำนวนวัน)" value={notifyVal} borderColor="border-blue-100" />
-                  </div>
-                  {(mou.notes || "").trim() && (
-                    <InfoRow label="หมายเหตุ" value={mou.notes} borderColor="border-blue-100" />
-                  )}
-                </div>
-              </div>
-
-            </div>
+        {/* Card: ข้อมูล MOU */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+            <Key size={18} className="text-blue-600" />
+            <span className="text-sm font-semibold text-gray-700">ข้อมูล MOU</span>
+            <span className={`ml-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${statusClass(statusName)}`}><span className={`w-2 h-2 rounded-full ${statusDot(statusName)}`} />{statusName}</span>
           </div>
+          <div className="p-5 space-y-3">
+            <InfoRow label="ชื่อ MOU" value={mou.title} borderColor="border-blue-100" />
+            {mou.description && (
+              <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
+                <div className="flex gap-1.5">
+                  <AlignLeft size={12} className="text-gray-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs text-gray-500 mb-2">รายละเอียด</div>
+                    <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">{mou.description}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Card: ความร่วมมือ */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+            <Layers size={18} className="text-blue-600" />
+            <span className="text-sm font-semibold text-gray-700">ความร่วมมือ</span>
+          </div>
+          <div className="p-5 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <InfoRow label="ระดับ" value={levelName} borderColor="border-blue-100" />
+              <InfoRow label="ขอบเขตความร่วมมือ" value={scope} borderColor="border-blue-100" />
+              <InfoRow label="ประเทศ" value={countryName} borderColor="border-blue-100" />
+            </div>
+            {faculties.length > 0 && (
+              <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
+                <div className="flex gap-1.5">
+                  <Building2 size={12} className="text-gray-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs text-gray-500 mb-2">คณะที่เข้าร่วม</div>
+                    <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
+                      {faculties.map((fac) => (
+                        <FacultyItem key={fac.id} fac={fac} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {externalOrgs.length > 0 && (
+              <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
+                <div className="flex gap-1.5">
+                  <Building2 size={12} className="text-gray-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs text-gray-500 mb-2">ผู้รับผิดชอบภายนอก</div>
+                    <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
+                      {externalOrgs.map((fac) => (
+                        <div key={fac.id} className="p-2 rounded-lg border border-blue-200">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Building2 size={13} className="text-blue-500 shrink-0" />
+                            <span className="text-xs font-medium text-blue-900 truncate">{fac.external_org}</span>
+                          </div>
+                          <div className="text-[11px] text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {fac.external_name || "ไม่ระบุ"}</div>
+                          {fac.email && <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.email}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Card: คู่สัญญาและกำหนดการ */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+            <Handshake size={18} className="text-blue-600" />
+            <span className="text-sm font-semibold text-gray-700">คู่สัญญาและกำหนดการ</span>
+          </div>
+          <div className="p-5 space-y-3">
+            <InfoRow label="หน่วยงานคู่สัญญา" value={partnerOrg} borderColor="border-blue-100" />
+            <InfoRow label="ประเภทคู่สัญญา" value={partnerType} borderColor="border-blue-100" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <InfoRow label="ปีที่ลงนาม" value={yearOfSigning} borderColor="border-blue-100" />
+              <InfoRow label="ลงนามโดย" value={signedBy} borderColor="border-blue-100" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <InfoRow label="วันที่เริ่มต้น" value={fmtDate(mou.start_date)} borderColor="border-blue-100" />
+              <InfoRow label="วันที่สิ้นสุด" value={endDate} borderColor="border-blue-100" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <InfoRow label="ผู้ประสานงาน" value={coordinator} borderColor="border-blue-100" />
+              <InfoRow label="แจ้งเตือนก่อนสิ้นสุด (จำนวนวัน)" value={notifyVal} borderColor="border-blue-100" />
+            </div>
+            {(mou.notes || "").trim() && (
+              <InfoRow label="หมายเหตุ" value={mou.notes} borderColor="border-blue-100" />
+            )}
+          </div>
+        </div>
 
         {/* Files & History - 2 columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {attachments.length > 0 && (
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
-                  <Paperclip size={16} className="text-violet-600" />
-                </div>
+                <Paperclip size={18} className="text-violet-600" />
                 <span className="text-sm font-semibold text-gray-800">ไฟล์แนบ</span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 ml-auto">{attachments.length} ไฟล์</span>
               </div>
@@ -467,9 +447,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
 
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                <History size={16} className="text-gray-500" />
-              </div>
+              <History size={18} className="text-gray-500" />
               <span className="text-sm font-semibold text-gray-800">ประวัติ</span>
             </div>
             <div className="overflow-x-auto">

@@ -22,9 +22,9 @@ import { mouAPI } from "../../../lib/mou_api";
 import "./mou.css";
 
 const mouMenuItems = [
-  { id: "list", label: "รายการ MOU ทั้งหมด", icon: ClipboardList, href: "/mou" },
-  { id: "manage", label: "การจัดการประเภทของข้อมูล", icon: Settings, href: "/mou/admin_manage_type_okr" },
   { id: "dashboard", label: "รายงาน Dashboard", icon: LayoutDashboard, href: "/mou/admin_dashboard" },
+  { id: "list", label: "รายการ MOU ทั้งหมด", icon: ClipboardList, href: "/mou/mou_list" },
+  { id: "manage", label: "การจัดการประเภทของข้อมูล", icon: Settings, href: "/mou/admin_manage_type_okr" },
 ];
 
 function getDisplayName(user) {
@@ -124,8 +124,8 @@ export default function MouLayout({ children, title, subtitle }) {
   if (!isAuthenticated || (!hasRole(3) && !hasRole("admin"))) return null;
 
   const isActive = (href) => {
-    if (href === "/mou") {
-      return pathname === "/mou" ||
+    if (href === "/mou/mou_list") {
+      return pathname === "/mou/mou_list" || pathname === "/mou" ||
         pathname.startsWith("/mou/show_detail_mou/") ||
         pathname.startsWith("/mou/add_mou") ||
         pathname.startsWith("/mou/admin_edit_mou/") ||
@@ -224,7 +224,7 @@ export default function MouLayout({ children, title, subtitle }) {
                             >
                               <AlertTriangle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
                               <div className="min-w-0 flex-1">
-                                <div className="text-sm font-medium text-gray-900 truncate">{m.mou_code} - {m.title}</div>
+                                <div className="text-sm font-medium text-gray-900 truncate">{m.title}</div>
                                 <div className="text-xs text-red-600 mt-0.5">หมดอายุแล้ว</div>
                               </div>
                               <ExternalLink size={14} className="text-gray-400 flex-shrink-0 mt-1" />
@@ -246,7 +246,7 @@ export default function MouLayout({ children, title, subtitle }) {
                               >
                                 <Clock size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-sm font-medium text-gray-900 truncate">{m.mou_code} - {m.title}</div>
+                                  <div className="text-sm font-medium text-gray-900 truncate">{m.title}</div>
                                   <div className="text-xs text-amber-600 mt-0.5">เหลืออีก {days} วัน</div>
                                 </div>
                                 <ExternalLink size={14} className="text-gray-400 flex-shrink-0 mt-1" />

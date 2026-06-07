@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState, useRef, use, useMemo } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Activity, Calendar, MapPin, Users, FileText, AlignLeft,
@@ -493,13 +492,14 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
               กลับ
             </button>
           ) : (
-            <Link
+            <button
+              type="button"
+              onClick={() => router.back()}
               className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
-              href={`/mou/show_detail_mou/${activity.mou_id}`}
             >
               <ChevronLeft size={15} />
               กลับ
-            </Link>
+            </button>
           )}
           {!editing && (
             <button
@@ -533,7 +533,7 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
               </div>
               <div className={editing ? "bg-blue-50 rounded-lg p-3 -mx-1" : ""}>
                 <MouInfo label="MOU ที่เชื่อมโยง" icon={FileSignature}>
-                  {activity.mou ? `${activity.mou.mou_code} - ${activity.mou.title}` : `#${activity.mou_id}`}
+                  {activity.mou ? `${activity.mou.title}` : `#${activity.mou_id}`}
                 </MouInfo>
               </div>
               {editing ? (
@@ -836,8 +836,8 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
                 </div>
                 {editing && (
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-gray-400">สูงสุด 3 ไฟล์ (PDF, DOC, DOCX, TXT)</span>
-                    <input type="file" id="fileUpload" onChange={handleUploadFile} style={{ display: "none" }} accept=".pdf,.doc,.docx,.txt" />
+                    <span className="text-[10px] text-gray-400">สูงสุด 3 ไฟล์ (PDF)</span>
+                    <input type="file" id="fileUpload" onChange={handleUploadFile} style={{ display: "none" }} accept=".pdf" />
                     <button type="button" onClick={() => {
                       const currentFiles = activity.attachments || [];
                       if (currentFiles.length >= 3) {

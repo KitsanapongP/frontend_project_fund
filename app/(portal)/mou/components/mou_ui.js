@@ -140,10 +140,6 @@ function filters(dropdowns = {}) {
     ? dropdowns.status
     : [{ id: 1, name: "มีผลบังคับใช้" }, { id: 2, name: "ใกล้หมดอายุ" }, { id: 3, name: "หมดอายุ" }, { id: 4, name: "ยกเลิก" }, { id: 5, name: "รอดำเนินการ" }];
 
-  const typeData = dropdowns.mouType && dropdowns.mouType.length > 0
-    ? dropdowns.mouType
-    : [{ id: 1, name: "การแลกเปลี่ยน" }, { id: 2, name: "การวิจัย" }, { id: 3, name: "การพัฒนาหลักสูตร" }, { id: 4, name: "อื่นๆ" }];
-
   const levelData = dropdowns.level && dropdowns.level.length > 0
     ? dropdowns.level
     : [{ id: 1, name_th: "มหาวิทยาลัย" }, { id: 2, name_th: "คณะ" }];
@@ -153,7 +149,6 @@ function filters(dropdowns = {}) {
     : [{ id: 1, name_th: "ต่างประเทศ" }, { id: 2, name_th: "ในประเทศ" }];
 
   const statusOptions = statusData.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
-  const typeOptions = typeData.map((t) => `<option value="${t.id}">${t.name}</option>`).join("");
   const levelOptions = levelData.map((l) => `<option value="${l.id}">${l.name_th}</option>`).join("");
   const scopeOptions = scopeData.map((s) => `<option value="${s.id}">${s.name_th}</option>`).join("");
 
@@ -167,7 +162,6 @@ function filters(dropdowns = {}) {
         <button class="btn soft">ค้นหา</button>
         <div class="filterBreak">
           ${field("สถานะ", `<select><option value="">ทั้งหมด</option>${statusOptions}</select>`)}
-          ${field("ประเภท MOU", `<select><option value="">ทั้งหมด</option>${typeOptions}</select>`)}
           ${field("ระดับ", `<select><option value="">ทั้งหมด</option>${levelOptions}</select>`)}
           ${field("ขอบเขตความร่วมมือ", `<select><option value="">ทั้งหมด</option>${scopeOptions}</select>`)}
         </div>
@@ -345,7 +339,6 @@ function detailPageWithData(mou, role = "user") {
 
 function infoCardWithData(mou) {
   const statusName = mou.status?.name || "-";
-  const typeName = mou.mou_type?.name || "-";
   const levelName = mou.level === "university" ? "มหาวิทยาลัย" : mou.level === "faculty" ? "คณะ" : mou.level || "-";
   const scope = mou.is_international ? "ต่างประเทศ" : "ในประเทศ";
   const partnerOrg = mou.partners?.[0]?.partner_org || "-";
@@ -354,10 +347,10 @@ function infoCardWithData(mou) {
   const daysLeft = mou.end_date ? Math.ceil((new Date(mou.end_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
   const daysText = daysLeft !== null ? (daysLeft > 0 ? `${daysLeft} วัน` : "หมดอายุแล้ว") : "-";
   const pairs = [
-    ["รหัส MOU", mou.mou_code], ["ชื่อ MOU", mou.title],
+    ["ชื่อ MOU", mou.title],
     ["วันที่เริ่มต้น", fmtDate(mou.start_date)],
     ["หน่วยงานคู่ความร่วมมือ", partnerOrg], ["วันที่สิ้นสุด", endDate],
-    ["ประเภท MOU", tag(typeName)], ["สถานะ", tag(statusName)],
+    ["สถานะ", tag(statusName)],
     ["ระดับ", tag(levelName)], ["ขอบเขตความร่วมมือ", tag(scope)], ["ผู้ประสานงาน", coordinator], ["วันที่จะหมดอายุ", daysText],
   ];
   return `<div class="panel infoCard"><h2>ข้อมูลทั่วไป</h2><div class="infoGrid">${pairs.map(([l, value]) => `<div class="infoPair"><span>${l}</span><span class="infoValue">${value}</span></div>`).join("")}</div><div class="detailCopy"><h3>รายละเอียด</h3><p>${mou.description || "ไม่มีรายละเอียด"}</p></div></div>`;

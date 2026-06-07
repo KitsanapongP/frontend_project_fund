@@ -2,10 +2,9 @@
 
 import React, { useEffect, use, useRef, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createPortal } from "react-dom";
 import Swal from "sweetalert2";
-import { ChevronLeft, ChevronDown, FileText, Upload, Layers, User, Handshake, Plus, Briefcase, UserPlus, MinusCircle } from "lucide-react";
+import { ChevronLeft, ChevronDown, FileText, Upload, Layers, User, Handshake, Plus, Briefcase, UserPlus, MinusCircle, Key } from "lucide-react";
 import apiClient from "../../../../lib/api";
 import { mouAPI } from "../../../../lib/mou_api";
 import { useAuth } from "../../../../contexts/AuthContext";
@@ -236,7 +235,6 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
   const redirectTimerRef = useRef(null);
 
   const [mou, setMou] = useState(null);
-  const [mouTypes, setMouTypes] = useState([]);
   const [partnerTypes, setPartnerTypes] = useState([]);
   const [countries, setCountries] = useState([]);
   const [users, setUsers] = useState([]);
@@ -263,11 +261,10 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
-    mou_code: "",
     title: "",
+    mou_code: "",
     description: "",
     level: "",
-    mou_type_id: "",
     status_id: "",
     is_international: "",
     start_date: "",
@@ -301,9 +298,8 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [mouRes, typesRes, countriesRes, usersRes, facultiesRes, statusesRes, partnerTypesRes] = await Promise.all([
+      const [mouRes, countriesRes, usersRes, facultiesRes, statusesRes, partnerTypesRes] = await Promise.all([
         mouAPI.getMouDetail(params.id),
-        mouAPI.getMouTypes(),
         mouAPI.getCountries(),
         apiClient.get("/users"),
         mouAPI.getFaculties(),
@@ -342,11 +338,10 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
         setFacultyExternalNames(facultyExtNameMap);
         setFacultyExternalOrgs(facultyExtOrgMap);
         setFormData({
-          mou_code: mouRes.mou_code || "",
           title: mouRes.title || "",
+          mou_code: mouRes.mou_code || "",
           description: mouRes.description || "",
           level: mouRes.level || "",
-          mou_type_id: mouRes.mou_type_id ? String(mouRes.mou_type_id) : "",
           status_id: mouRes.status_id ? String(mouRes.status_id) : "",
           is_international: mouRes.is_international ? "true" : "false",
           start_date: formatDateForInput(mouRes.start_date),
@@ -358,13 +353,12 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
           faculty_ids: existingFacultyIds,
           coordinator_id: mouRes.coordinator_id ? String(mouRes.coordinator_id) : "",
           coordinator_name: "",
-          signed_by: mouRes.signed_by ? String(mouRes.signed_by) : "",
+          signed_by: mouRes.signed_by || "",
           notes: mouRes.notes || "",
           notify_days_before: mouRes.notifications?.[0]?.days_before ?? 0,
         });
         setCurrentStatusName(mouRes.status?.name || "");
       }
-      setMouTypes(typesRes || []);
       setCountries(countriesRes || []);
       setUsers(usersRes?.users || []);
       setFaculties(facultiesRes || []);
@@ -497,14 +491,14 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
     setSuccess("");
 
     try {
-      if (!formData.mou_code || !formData.title || !formData.mou_type_id || !formData.start_date || !formData.end_date || !formData.partner_name) {
+      if (!formData.title || !formData.start_date || !formData.end_date || !formData.partner_name) {
         setError("กรุณากรอกข้อมูลที่จำเป็นทั้งหมด");
         return;
       }
 
       const newStatusId = formData.status_id ? parseInt(formData.status_id, 10) : null;
-      if (newStatusId === 3 && (!formData.year_of_signing || !formData.signed_by)) {
-        setError("กรุณากรอกปีที่ลงนามและผู้ลงนามก่อนเปลี่ยนสถานะเป็น 'มีผลบังคับใช้'");
+      if (newStatusId === 2 && (!formData.year_of_signing || !formData.signed_by)) {
+        setError("กรุณากรอกวันเดือนปีที่ลงนามและผู้ลงนามก่อนเปลี่ยนสถานะเป็น 'มีผลบังคับใช้'");
         return;
       }
 
@@ -538,23 +532,22 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
       });
 
       const mouPayload = {
-        mou_code: formData.mou_code,
         title: formData.title,
+        mou_code: formData.mou_code || null,
         description: formData.description,
         level: formData.level,
-        mou_type_id: parseInt(formData.mou_type_id, 10),
         status_id: formData.status_id ? parseInt(formData.status_id) : null,
         is_international: formData.is_international === "true",
         start_date: formData.start_date ? formData.start_date.split("-").reverse().join("/") : "",
         end_date: formData.end_date ? formData.end_date.split("-").reverse().join("/") : "",
-        year_of_signing: formData.year_of_signing ? parseInt(formData.year_of_signing, 10) : null,
+        year_of_signing: formData.year_of_signing || null,
         partner_name: formData.partner_name,
         partner_type_id: formData.partner_type_id ? parseInt(formData.partner_type_id, 10) : null,
         country_id: formData.country_id ? parseInt(formData.country_id, 10) : null,
         faculties: facultiesArr,
         coordinator_id: formData.coordinator_id ? parseInt(formData.coordinator_id, 10) : null,
         coordinator_name: selectedUser ? `${selectedUser.user_fname || ""} ${selectedUser.user_lname || ""}`.trim() : "",
-        signed_by: formData.signed_by ? parseInt(formData.signed_by, 10) : null,
+        signed_by: formData.signed_by || null,
         notes: formData.notes || null,
         notify_days_before: formData.notify_days_before ? parseInt(formData.notify_days_before, 10) : null,
         removed_attachment_ids: removedAttachmentIds,
@@ -611,22 +604,18 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
             แก้ไข MOU
           </h1>
         </div>
-        <Link className="btn inline-flex items-center gap-2" href="/mou">
+        <button type="button" className="btn inline-flex items-center gap-2" onClick={() => router.back()}>
           <ChevronLeft size={16} />
           กลับ
-        </Link>
+        </button>
       </div>
 
-      {(error || success) && (
-        <div className="panel" style={{ marginBottom: "18px" }}>
-          {error && <div style={{ color: "#dc2626" }}>{error}</div>}
-          {success && <div style={{ color: "#16a34a" }}>{success}</div>}
-        </div>
-      )}
-
       <form onSubmit={handleSubmit}>
-        <div className="panel formSection afu" style={{ animationDelay: "0ms", position: "relative" }}>
-            <div style={{ position: "absolute", top: "24px", right: "24px", display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="panel formSection afu" style={{ animationDelay: "0ms" }}>
+          <div className="sectionHead">
+            <FileText size={18} className="text-blue-500" />
+            <h3>ข้อมูล MOU</h3>
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "14px", color: "var(--mou-muted)", fontWeight: 500 }}>สถานะ</span>
               <div style={{ position: "relative", minWidth: "160px" }}>
                 {(() => {
@@ -651,17 +640,12 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                 })()}
               </div>
             </div>
-          <div className="sectionHead">
-            <FileText size={18} className="text-blue-500" />
-            <h3>ข้อมูล MOU</h3>
           </div>
 
           <div className="formGrid">
             <div className="field">
-              <label>
-                รหัส MOU <span className="required">*</span>
-              </label>
-              <input type="text" name="mou_code" value={formData.mou_code} onChange={handleChange} placeholder="เช่น MOU-67-001" required />
+              <label><Key size={14} className="shrink-0" />รหัส MOU <span className="required">*</span></label>
+              <input type="text" name="mou_code" value={formData.mou_code} onChange={handleChange} placeholder="ระบุรหัส MOU" />
             </div>
 
             <div className="field">
@@ -682,31 +666,38 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                 <button type="button" onClick={(e) => { e.stopPropagation(); handleAISummary(); }} disabled={aiLoading} style={{ position: "absolute", top: "8px", right: "8px", zIndex: 1, fontSize: "12px", padding: "4px 8px", border: "1px solid var(--mou-primary)", borderRadius: "4px", background: "var(--mou-primary-soft)", color: "var(--mou-primary)", cursor: "pointer", whiteSpace: "nowrap", lineHeight: 1.2 }}>
                   {aiLoading ? "กำลังวิเคราะห์..." : "AI สรุปรายละเอียดอัตโนมัติ"}
                 </button>
-                <input ref={fileInputRef} type="file" onChange={handleFileChange} style={{ display: "none" }} accept=".pdf,.doc,.docx,.txt" multiple />
+                <input ref={fileInputRef} type="file" onChange={handleFileChange} style={{ display: "none" }} accept=".pdf" multiple />
                 {totalAttachments > 0 ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", width: "100%" }}>
                     {existingAttachments.map((att) => (
-                      <div key={att.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", background: "#fff", borderRadius: "4px", fontSize: "13px" }}>
-                        <a href={att.file_path} target="_blank" rel="noopener noreferrer" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, color: "var(--mou-primary)", textDecoration: "none" }} title={att.file_name}>
-                          {att.file_name}
+                      <div key={att.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", padding: "12px 16px 10px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", minWidth: "110px", position: "relative" }}>
+                        <a href={att.file_path} target="_blank" rel="noopener noreferrer" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", textDecoration: "none", color: "inherit" }}>
+                          <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "#fee2e2", borderRadius: 10, color: "#dc2626", fontSize: 13, fontWeight: 700, letterSpacing: "0.5px" }}>PDF</div>
+                          <span style={{ fontSize: "11px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{att.file_name}</span>
                         </a>
-                        <span style={{ margin: "0 6px", color: "#6b7280", whiteSpace: "nowrap" }}>{att.mime_type || "-"}</span>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); removeExistingAttachment(att.id); }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "16px", lineHeight: 1, padding: "0 4px", fontWeight: "bold" }} title="ลบ">×</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); removeExistingAttachment(att.id); }} style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0, boxShadow: "0 2px 4px rgba(239,68,68,0.3)" }} title="ลบ">×</button>
                       </div>
                     ))}
                     {files.map((f, i) => (
-                      <div key={`new-${i}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", background: "#fff", borderRadius: "4px", fontSize: "13px" }}>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{f.name}</span>
-                        <span style={{ margin: "0 6px", color: "#6b7280", whiteSpace: "nowrap" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "16px", lineHeight: 1, padding: "0 4px", fontWeight: "bold" }} title="ลบ">×</button>
+                      <div key={`new-${i}`} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", padding: "12px 16px 10px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", minWidth: "110px", position: "relative" }}>
+                        <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "#fee2e2", borderRadius: 10, color: "#dc2626", fontSize: 13, fontWeight: 700, letterSpacing: "0.5px" }}>PDF</div>
+                        <span style={{ fontSize: "11px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{f.name}</span>
+                        <span style={{ fontSize: "10px", color: "#9ca3af" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0, boxShadow: "0 2px 4px rgba(239,68,68,0.3)" }} title="ลบ">×</button>
                       </div>
                     ))}
-                    <span style={{ fontSize: "12px", color: "#6b7280", textAlign: "center", marginTop: "2px" }}>คลิกเพื่อเพิ่มไฟล์ (สูงสุด 3 ไฟล์)</span>
+                    <div onClick={() => fileInputRef.current?.click()} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px", padding: "12px 16px 10px", background: "#f9fafb", borderRadius: "10px", border: "1px dashed #d1d5db", minWidth: "110px", cursor: "pointer", color: "#6b7280", transition: "all 0.15s" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.color = "#3b82f6"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b7280"; }}>
+                      <span style={{ fontSize: 24, fontWeight: 300, lineHeight: 1, color: "inherit" }}>+</span>
+                      <span style={{ fontSize: "11px", textAlign: "center", color: "inherit" }}>เพิ่มไฟล์</span>
+                    </div>
+                    <span style={{ fontSize: "12px", color: "#6b7280", width: "100%", textAlign: "center", marginTop: "2px" }}>คลิกเพื่อเพิ่มไฟล์ (สูงสุด 3 ไฟล์)</span>
                   </div>
                 ) : (
                   <>
                     <span className="fileDropIcon">+</span>
-                    <span className="fileDropText">วางไฟล์ PDF / DOC / TXT (สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB)</span>
+                    <span className="fileDropText">วางไฟล์ PDF (สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB)</span>
                   </>
                 )}
               </div>
@@ -729,18 +720,6 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                 <option value="">เลือกระดับ</option>
                 <option value="university">มหาวิทยาลัย</option>
                 <option value="faculty">คณะ</option>
-              </select>
-            </div>
-
-            <div className="field">
-              <label>
-                ประเภท MOU <span className="required">*</span>
-              </label>
-              <select name="mou_type_id" value={formData.mou_type_id} onChange={handleChange} required>
-                <option value="">เลือกประเภท</option>
-                {mouTypes.map((type) => (
-                  <option key={type.id} value={type.id}>{type.name}</option>
-                ))}
               </select>
             </div>
 
@@ -844,8 +823,9 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                         {fac?.name_th || `#${fid}`}
                       </span>
                     </div>
-                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                       <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>ชื่อผู้รับผิดชอบ <span className="required">*</span></label>
                         {isComputing ? (
                           <input
                             list={`faculty-user-${fid}`}
@@ -868,8 +848,11 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                           </datalist>
                         )}
                       </div>
-                      <input type="email" value={facultyEmails[fid] || ""} onChange={(e) => handleFacultyEmailChange(fid, e.target.value)}
-                        placeholder="อีเมล" style={{ width: "220px" }} />
+                      <div>
+                        <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>อีเมล <span className="required">*</span></label>
+                        <input type="email" value={facultyEmails[fid] || ""} onChange={(e) => handleFacultyEmailChange(fid, e.target.value)}
+                          placeholder="อีเมล" style={{ width: "220px" }} />
+                      </div>
                     </div>
                   </div>
                 );
@@ -890,16 +873,16 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                     </button>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                       <div className="field" style={{ margin: 0 }}>
-                        <label style={{ fontSize: 13 }}>ชื่อผู้รับผิดชอบภายนอก</label>
-                        <input type="text" value={p.name} onChange={(e) => updateExternalPerson(p.id, "name", e.target.value)} placeholder="ชื่อ" />
+                        <label style={{ fontSize: 13 }}><UserPlus size={13} className="shrink-0" />ชื่อผู้รับผิดชอบภายนอก <span className="required">*</span></label>
+                        <input type="text" value={p.name} onChange={(e) => updateExternalPerson(p.id, "name", e.target.value)} placeholder="ชื่อ" required />
                       </div>
                       <div className="field" style={{ margin: 0 }}>
-                        <label style={{ fontSize: 13 }}>หน่วยงาน</label>
-                        <input type="text" value={p.org} onChange={(e) => updateExternalPerson(p.id, "org", e.target.value)} placeholder="หน่วยงาน" />
+                        <label style={{ fontSize: 13 }}><Briefcase size={13} className="shrink-0" />หน่วยงาน <span className="required">*</span></label>
+                        <input type="text" value={p.org} onChange={(e) => updateExternalPerson(p.id, "org", e.target.value)} placeholder="หน่วยงาน" required />
                       </div>
                       <div className="field" style={{ margin: 0 }}>
-                        <label style={{ fontSize: 13 }}>อีเมล</label>
-                        <input type="email" value={p.email} onChange={(e) => updateExternalPerson(p.id, "email", e.target.value)} placeholder="อีเมล" />
+                        <label style={{ fontSize: 13 }}><FileText size={13} className="shrink-0" />อีเมล <span className="required">*</span></label>
+                        <input type="email" value={p.email} onChange={(e) => updateExternalPerson(p.id, "email", e.target.value)} placeholder="อีเมล" required />
                       </div>
                     </div>
                   </div>
@@ -938,20 +921,13 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
             </div>
 
             <div className="field">
-              <label>ปีที่ลงนาม (ค.ศ.)</label>
-              <input type="number" name="year_of_signing" value={formData.year_of_signing || ""} onChange={handleChange} min="1900" max="2155" placeholder="เช่น 2024" />
+              <label>วันเดือนปีที่ลงนาม</label>
+              <input type="date" name="year_of_signing" value={formData.year_of_signing || ""} onChange={handleChange} placeholder="เช่น 2024-06-01" />
             </div>
 
             <div className="field">
               <label>ลงนามโดย</label>
-              <select name="signed_by" value={formData.signed_by} onChange={handleChange}>
-                <option value="">เลือกผู้ลงนาม</option>
-                {users.map((user) => (
-                  <option key={user.user_id} value={user.user_id}>
-                    {user.prefix || ""} {user.user_fname} {user.user_lname}
-                  </option>
-                ))}
-              </select>
+              <input type="text" name="signed_by" value={formData.signed_by || ""} onChange={handleChange} placeholder="ชื่อผู้ลงนาม" />
             </div>
 
             <div className="field">
@@ -992,15 +968,78 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
         </div>
 
         <div className="footerActions">
-          <button type="button" className="btn" onClick={() => router.push("/mou")}>
+          <button type="button" className="btn" onClick={() => router.back()}>
             ยกเลิก
           </button>
           <button type="submit" className="btn primary" disabled={saving === "save"}>
             {saving === "save" ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
           </button>
         </div>
+
+        {(error || success) && (
+          <div style={{ marginTop: "18px", animation: "slideUpAlert 0.35s ease-out" }}>
+            {error && (
+              <div style={{
+                display: "flex", alignItems: "flex-start", gap: "12px",
+                padding: "14px 18px", borderRadius: "12px",
+                background: "#fef2f2", border: "1px solid #fecaca",
+                boxShadow: "0 4px 16px rgba(220,38,38,0.1)",
+              }}>
+                <div style={{
+                  width: "22px", height: "22px", borderRadius: "50%",
+                  background: "#dc2626", color: "#fff", fontSize: "13px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: "700", flexShrink: 0, marginTop: "1px",
+                }}>!</div>
+                <div style={{ flex: 1, fontSize: "14px", color: "#991b1b", lineHeight: "1.5" }}>
+                  {error}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setError("")}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "#fca5a5", fontSize: "18px", lineHeight: 1, padding: "2px",
+                    flexShrink: 0,
+                  }}
+                >×</button>
+              </div>
+            )}
+            {success && (
+              <div style={{
+                display: "flex", alignItems: "flex-start", gap: "12px",
+                padding: "14px 18px", borderRadius: "12px",
+                background: "#f0fdf4", border: "1px solid #bbf7d0",
+                boxShadow: "0 4px 16px rgba(22,163,74,0.1)",
+              }}>
+                <div style={{
+                  width: "22px", height: "22px", borderRadius: "50%",
+                  background: "#16a34a", color: "#fff", fontSize: "13px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: "700", flexShrink: 0, marginTop: "1px",
+                }}>✓</div>
+                <div style={{ flex: 1, fontSize: "14px", color: "#166534", lineHeight: "1.5" }}>
+                  {success}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSuccess("")}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "#86efac", fontSize: "18px", lineHeight: 1, padding: "2px",
+                    flexShrink: 0,
+                  }}
+                >×</button>
+              </div>
+            )}
+          </div>
+        )}
       </form>
       <style>{`
+        @keyframes slideUpAlert {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         @keyframes csIn {
           from { opacity: 0; transform: translateY(-8px) scaleY(0.95); }
           to { opacity: 1; transform: translateY(0) scaleY(1); }

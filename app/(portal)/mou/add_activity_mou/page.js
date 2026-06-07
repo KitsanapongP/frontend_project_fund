@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useMemo } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Activity, Calendar, MapPin, Users, FileText, AlignLeft,
   StickyNote, Paperclip, Download, X, Check, Building2, Target,
-  ChevronLeft, Search, Plus, Tag, Upload, Sparkles, FileSignature,
-  Clock
+  ChevronLeft, ChevronDown, Search, Plus, Tag, Upload, Sparkles, FileSignature,
+  Clock, Bookmark, Handshake, Layers, ChevronRight, Eye
 } from "lucide-react";
 import apiClient from "../../../lib/api";
 import { mouAPI } from "../../../lib/mou_api";
@@ -41,6 +40,17 @@ export default function AddActivityMouPage() {
   const [okrSearch, setOkrSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [mouCardOpen, setMouCardOpen] = useState(false);
+
+  const fmtDate = (d) => {
+    if (!d) return "-";
+    try {
+      return new Date(d).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
+    } catch {
+      return d;
+    }
+  };
   const [files, setFiles] = useState([]);
   const fileInputRef = useRef(null);
   const coorRef = useRef(null);
@@ -210,13 +220,16 @@ export default function AddActivityMouPage() {
       <style>{`
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes asd { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spinner { to { transform: rotate(360deg); } }
         .afu { animation: fadeInUp 0.35s ease-out both; }
         .asd { animation: asd 0.3s ease-out both; }
-        .formSection .field label { font-weight: 500 !important; }
+        .mouRoot .field label { font-weight: 600 !important; color: #374151 !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; flex-wrap: wrap !important; }
         .mouRoot .field input:not([type="date"]), .mouRoot .field textarea { color: #111827 !important; }
         .mouRoot .field input::placeholder, .mouRoot .field textarea::placeholder { color: #9ca3af !important; }
         .mouRoot .field input[type="date"]:required:invalid { color: #9ca3af !important; }
         .mouRoot .field input[type="date"]:valid { color: #111827 !important; }
+        .mouRoot .field select { color: #9ca3af !important; }
+        .mouRoot .field select:focus, .mouRoot .field select:has(option:checked:not([value=""])) { color: #111827 !important; }
       `}</style>
 
       {/* Page Title */}
@@ -232,10 +245,10 @@ export default function AddActivityMouPage() {
             <p className="text-sm text-gray-500 mt-0.5">บันทึกกิจกรรมใหม่ภายใต้บันทึกข้อตกลงความร่วมมือ</p>
           </div>
         </div>
-        <Link className="btn inline-flex items-center gap-2" href="/mou">
+        <button type="button" className="btn inline-flex items-center gap-2" onClick={() => router.back()}>
           <ChevronLeft size={16} />
           กลับ
-        </Link>
+        </button>
       </div>
       {(error) && (
         <div className="panel asd" style={{ marginBottom: "18px", display: "flex", alignItems: "center", gap: 8 }}>
@@ -244,65 +257,235 @@ export default function AddActivityMouPage() {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* Section 1: ข้อมูลกิจกรรม */}
+
+        {/* MOU */}
+        <div className="panel formSection afu" style={{ animationDelay: "0ms", padding: 0, overflow: "hidden" }}>
+          <div className="px-5 py-3 flex items-center gap-3" style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)" }}>
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+              <FileText size={15} color="#fff" />
+            </div>
+            <span className="text-sm font-semibold text-blue-800">MOU ที่เชื่อมโยง {selectedMou?.mou_code}</span>
+          </div>
+          <input type="hidden" name="mou_id" value={formData.mou_id} />
+          {selectedMou ? (
+            <>
+              {!mouCardOpen && (
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-base font-bold text-gray-800">{selectedMou.title}</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    {selectedMou.partners?.length > 0 && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+                        <Building2 size={14} className="text-gray-400 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">หน่วยงาน</div>
+                          <div className="text-xs font-medium text-gray-700 truncate">{selectedMou.partners.map(p => p.partner_org).join(", ")}</div>
+                        </div>
+                      </div>
+                    )}
+                    {selectedMou.country?.name_th && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+                        <MapPin size={14} className="text-gray-400 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">ประเทศ</div>
+                          <div className="text-xs font-medium text-gray-700">{selectedMou.country.name_th}</div>
+                        </div>
+                      </div>
+                    )}
+                    {selectedMou.level && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+                        <Tag size={14} className="text-gray-400 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">ระดับ</div>
+                          <div className="text-xs font-medium text-gray-700">{selectedMou.level === "university" ? "มหาวิทยาลัย" : selectedMou.level === "faculty" ? "คณะ" : selectedMou.level}</div>
+                        </div>
+                      </div>
+                    )}
+                    {selectedMou.start_date && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+                        <Calendar size={14} className="text-gray-400 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">ระยะเวลา</div>
+                          <div className="text-xs font-medium text-gray-700">{fmtDate(selectedMou.start_date)} - {selectedMou.end_date ? fmtDate(selectedMou.end_date) : "ปัจจุบัน"}</div>
+                        </div>
+                      </div>
+                    )}
+                    {selectedMou.status?.name && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+                        <Bookmark size={14} className="text-gray-400 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">สถานะ</div>
+                          <div className="text-xs font-medium text-gray-700">{selectedMou.status.name}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setMouCardOpen(true)}
+                    className="w-full inline-flex items-center justify-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-lg transition"
+                  >
+                    <ChevronDown size={15} />
+                    ดูข้อมูลเพิ่มเติม
+                  </button>
+                </div>
+              )}
+
+              {mouCardOpen && (
+                <div className="p-5 space-y-5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-bold text-gray-800">{selectedMou.title}</span>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50/70 to-indigo-50/30 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText size={15} className="text-blue-600" />
+                      <span className="text-sm font-semibold text-gray-700">ข้อมูล MOU</span>
+                    </div>
+                    <FullInfoRow label="ชื่อ MOU" value={selectedMou.title} />
+                    {selectedMou.description && (
+                      <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
+                        <div className="flex gap-1.5">
+                          <AlignLeft size={12} className="text-gray-400 shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs text-gray-500 mb-2">รายละเอียด</div>
+                            <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">{selectedMou.description}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50/70 to-indigo-50/30 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Layers size={15} className="text-blue-600" />
+                      <span className="text-sm font-semibold text-gray-700">ความร่วมมือ</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <FullInfoRow label="ระดับ" value={selectedMou.level === "university" ? "มหาวิทยาลัย" : selectedMou.level === "faculty" ? "คณะ" : selectedMou.level || "-"} />
+                      <FullInfoRow label="ขอบเขตความร่วมมือ" value={selectedMou.is_international ? "ต่างประเทศ" : "ในประเทศ"} />
+                    </div>
+                    {selectedMou.country?.name_th && (
+                      <FullInfoRow label="ประเทศ" value={selectedMou.country.name_th} />
+                    )}
+                    {(selectedMou.faculties || []).filter((f) => f.faculty_id).length > 0 && (
+                      <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
+                        <div className="flex gap-1.5">
+                          <Building2 size={12} className="text-gray-400 shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs text-gray-500 mb-2">คณะที่เข้าร่วม</div>
+                            <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto pr-1">
+                              {(selectedMou.faculties || []).filter((f) => f.faculty_id).map((fac) => (
+                                <div key={fac.id} className="p-2 rounded-lg border border-indigo-100">
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <Building2 size={13} className="text-indigo-500 shrink-0" />
+                                    <span className="text-xs font-medium text-indigo-900 truncate">{fac.faculty?.name_th || "-"}</span>
+                                  </div>
+                                  {fac.user && (
+                                    <div className="text-[11px] text-gray-500 truncate pl-5">
+                                      ผู้รับผิดชอบ: {[fac.user.prefix || "", fac.user.user_fname || "", fac.user.user_lname || ""].filter(Boolean).join(" ")}
+                                    </div>
+                                  )}
+                                  {(fac.user?.email || fac.email) && (
+                                    <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.user?.email || fac.email}</div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50/70 to-indigo-50/30 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Handshake size={15} className="text-blue-600" />
+                      <span className="text-sm font-semibold text-gray-700">คู่สัญญาและกำหนดการ</span>
+                    </div>
+                    <FullInfoRow label="หน่วยงานคู่สัญญา" value={selectedMou.partners?.[0]?.partner_org || "-"} />
+                    <FullInfoRow label="ประเภทคู่สัญญา" value={selectedMou.partners?.[0]?.partner_type?.name_th || "-"} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <FullInfoRow label="ปีที่ลงนาม" value={selectedMou.year_of_signing || "-"} />
+                      <FullInfoRow label="ลงนามโดย" value={selectedMou.signed_by || "-"} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <FullInfoRow label="วันที่เริ่มต้น" value={fmtDate(selectedMou.start_date)} />
+                      <FullInfoRow label="วันที่สิ้นสุด" value={selectedMou.end_date ? fmtDate(selectedMou.end_date) : "-"} />
+                    </div>
+                    <FullInfoRow label="ผู้ประสานงาน" value={selectedMou.coordinator ? [selectedMou.coordinator.prefix || "", selectedMou.coordinator.user_fname || "", selectedMou.coordinator.user_lname || ""].filter(Boolean).join(" ") : "-"} />
+                    {(selectedMou.notes || "").trim() && (
+                      <FullInfoRow label="หมายเหตุ" value={selectedMou.notes} />
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setMouCardOpen(false)}
+                    className="w-full inline-flex items-center justify-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition"
+                  >
+                    แสดงน้อยลง
+                    <ChevronDown size={15} style={{ transform: "rotate(180deg)" }} />
+                  </button>
+                </div>
+              )}
+            </>
+          ) : formData.mou_id ? (
+            <div className="p-5 flex items-center gap-3">
+              <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid #d1d5db", borderTopColor: "#3b82f6", animation: "spinner 0.6s linear infinite" }} />
+              <span className="text-sm text-gray-500">กำลังโหลด...</span>
+            </div>
+          ) : (
+            <div className="p-5 text-center text-sm text-gray-400">
+              ไม่ได้ระบุ MOU — เลือก MOU จากหน้ารายการก่อน
+            </div>
+          )}
+        </div>
+
+        {/* ข้อมูลกิจกรรม */}
         <div className="panel formSection afu" style={{ animationDelay: "80ms" }}>
           <div className="sectionHead">
-            <FileText size={18} className="text-blue-500" />
+            <Activity size={18} className="text-blue-500" />
             <h3>ข้อมูลกิจกรรม</h3>
           </div>
           <div className="formGrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            {/* MOU */}
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <label><FileSignature size={14} className="shrink-0" />MOU ที่เชื่อมโยง</label>
-              <input type="hidden" name="mou_id" value={formData.mou_id} />
-              <div className="mouReadonlyField" style={{ color: "#2563eb", background: "#eff6ff", borderColor: "#bfdbfe" }}>
-                {selectedMou ? `${selectedMou.mou_code} - ${selectedMou.title}` : formData.mou_id ? "กำลังโหลด..." : "-"}
-              </div>
-            </div>
-
-            {/* Title */}
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label><Activity size={14} className="shrink-0" />ชื่อกิจกรรม <span className="required">*</span></label>
               <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="ระบุชื่อกิจกรรม" required />
             </div>
-
-            {/* Objective */}
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label><Target size={14} className="shrink-0" />วัตถุประสงค์</label>
               <textarea name="objective" value={formData.objective} onChange={handleChange} placeholder="ระบุวัตถุประสงค์..." rows={2} />
             </div>
-
-            {/* Description */}
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label><AlignLeft size={14} className="shrink-0" />รายละเอียด</label>
               <textarea name="description" value={formData.description} onChange={handleChange} placeholder="ระบุรายละเอียด..." rows={3} />
             </div>
-
-            {/* Plan */}
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label><FileText size={14} className="shrink-0" />แผนงาน</label>
               <textarea name="plan" value={formData.plan} onChange={handleChange} placeholder="ระบุแผนงาน..." rows={2} />
             </div>
+          </div>
+        </div>
 
-            {/* Start date */}
+        {/* วันเวลาและสถานที่ */}
+        <div className="panel formSection afu" style={{ animationDelay: "120ms" }}>
+          <div className="sectionHead">
+            <Calendar size={18} className="text-blue-500" />
+            <h3>วันเวลาและสถานที่</h3>
+          </div>
+          <div className="formGrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div className="field">
               <label><Calendar size={14} className="shrink-0" />วันที่เริ่มจัดกิจกรรม <span className="required">*</span></label>
               <input type="date" name="activity_start" value={formData.activity_start} onChange={handleChange} required />
             </div>
-
-            {/* End date */}
             <div className="field">
               <label><Calendar size={14} className="shrink-0" />วันที่สิ้นสุดจัดกิจกรรม <span className="required">*</span></label>
               <input type="date" name="activity_end" value={formData.activity_end} onChange={handleChange} required />
             </div>
-
-            {/* Location */}
             <div className="field">
               <label><MapPin size={14} className="shrink-0" />สถานที่จัดกิจกรรม <span className="required">*</span></label>
               <input type="text" name="location" value={formData.location} onChange={handleChange} placeholder="ระบุสถานที่" required />
             </div>
-
-            {/* Participants */}
             <div className="field">
               <label><Users size={14} className="shrink-0" />จำนวนผู้เข้าร่วม</label>
               <div className="inputGroup">
@@ -310,8 +493,16 @@ export default function AddActivityMouPage() {
                 <span className="inputSuffix">คน</span>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Coordinator */}
+        {/* ผู้รับผิดชอบ */}
+        <div className="panel formSection afu" style={{ animationDelay: "160ms" }}>
+          <div className="sectionHead">
+            <Users size={18} className="text-blue-500" />
+            <h3>ผู้รับผิดชอบ</h3>
+          </div>
+          <div className="formGrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div className="field">
               <label><Users size={14} className="shrink-0" />ผู้ประสานงาน <span className="required">*</span></label>
               <div className="relative" ref={coorRef}>
@@ -324,7 +515,6 @@ export default function AddActivityMouPage() {
                   }}
                   onFocus={() => setCoorOpen(true)}
                   placeholder="ค้นหาหรือพิมพ์ชื่อผู้ประสานงาน"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
                 {coorOpen && filteredUsers.length > 0 && (
                   <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
@@ -345,119 +535,62 @@ export default function AddActivityMouPage() {
                 )}
               </div>
             </div>
-
-            {/* Coordinator Org */}
             <div className="field">
               <label><Building2 size={14} className="shrink-0" />หน่วยงานผู้ประสานงาน</label>
               <input type="text" name="coordinator_org" value={formData.coordinator_org} onChange={handleChange} placeholder="ระบุหน่วยงาน" />
             </div>
-
-            {/* Notes */}
-            <div className="field">
+            <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label><StickyNote size={14} className="shrink-0" />หมายเหตุ</label>
               <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="ระบุหมายเหตุ..." rows={3} />
             </div>
           </div>
         </div>
 
-        {/* Section 2: ประเภทย่อย */}
-        <div className="panel formSection afu" style={{ animationDelay: "140ms" }}>
+        {/* ประเภทย่อย */}
+        <div className="panel formSection afu" style={{ animationDelay: "200ms" }}>
           <div className="sectionHead">
             <Tag size={18} className="text-blue-500" />
             <h3>ประเภทย่อย</h3>
           </div>
           <div className="formGrid" style={{ gridTemplateColumns: "1fr" }}>
-            {/* Activity Type */}
             <div className="field" style={{ marginBottom: "8px" }}>
               <label><Tag size={14} className="shrink-0" />ประเภทกิจกรรม <span className="required">*</span></label>
-              <div style={{ display: "flex", gap: "12px" }}>
-                <div style={{ flex: "0 0 50%", border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-field)", overflow: "hidden" }}>
-                  <div style={{ padding: "6px 10px", borderBottom: "1px solid var(--mou-line)", background: "#fff", display: "flex", alignItems: "center", gap: 6 }}>
-                    <Search size={14} className="text-gray-400" />
-                    <input type="text" placeholder="ค้นหาประเภท..." value={typeSearch} onChange={(e) => setTypeSearch(e.target.value)}
-                      style={{ width: "100%", border: "none", outline: "none", fontSize: "14px", background: "transparent" }} />
-                  </div>
-                  <div style={{ maxHeight: "140px", overflowY: "auto", padding: "4px" }}>
-                    {filteredTypes.length > 0 ? filteredTypes.map((t) => (
-                      <label key={t.id} className="multiSelectItem" style={{ padding: "6px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", borderRadius: "4px" }}>
-                        <input type="checkbox" checked={selectedTypeIds.includes(t.id)} onChange={() => toggleType(t.id)}
-                          style={{ width: "16px", height: "16px", accentColor: "var(--mou-primary)", flexShrink: 0 }} />
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
-                      </label>
-                    )) : (
-                      <div style={{ padding: "12px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>ไม่มีประเภทกิจกรรม</div>
-                    )}
-                  </div>
+              <div style={{ border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-field)", overflow: "hidden" }}>
+                <div style={{ padding: "6px 10px", borderBottom: "1px solid var(--mou-line)", background: "#fff", display: "flex", alignItems: "center", gap: 6 }}>
+                  <Search size={14} className="text-gray-400" />
+                  <input type="text" placeholder="ค้นหาประเภท..." value={typeSearch} onChange={(e) => setTypeSearch(e.target.value)}
+                    style={{ width: "100%", border: "none", outline: "none", fontSize: "14px", background: "transparent" }} />
                 </div>
-                <div style={{ flex: 1, minHeight: "80px", border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-surface)", padding: "8px" }}>
-                  <div style={{ fontSize: "12px", color: "var(--mou-muted)", marginBottom: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}>
-                    <Check size={12} />เลือกแล้ว {selectedTypeIds.length} รายการ
-                  </div>
-                  {selectedTypeIds.length > 0 ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                      {selectedTypeIds.slice(0, 5).map((id) => {
-                        const type = activityTypes.find((t) => t.id === id);
-                        return (
-                          <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "3px 6px", borderRadius: "4px", background: "var(--mou-primary-soft)", fontSize: "12px" }}>
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{type?.name || `#${id}`}</span>
-                            <button type="button" onClick={() => toggleType(id)} style={{ background: "none", border: "none", color: "var(--mou-primary)", cursor: "pointer", padding: "0 2px", flexShrink: 0 }} title="ลบ"><X size={10} /></button>
-                          </div>
-                        );
-                      })}
-                      {selectedTypeIds.length > 5 && (
-                        <div style={{ fontSize: "11px", color: "var(--mou-muted)", textAlign: "center", padding: "2px" }}>+{selectedTypeIds.length - 5} รายการ</div>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: "12px", color: "var(--mou-muted-soft)", textAlign: "center", padding: "16px 0" }}>ยังไม่เลือก</div>
+                <div style={{ maxHeight: "140px", overflowY: "auto" }}>
+                  {filteredTypes.length > 0 ? filteredTypes.map((t) => (
+                    <label key={t.id} className="multiSelectItem" style={{ display: "block", width: "100%", padding: "8px 10px", fontSize: "14px", cursor: "pointer", borderRadius: "4px" }}>
+                      <input type="checkbox" checked={selectedTypeIds.includes(t.id)} onChange={() => toggleType(t.id)}
+                        style={{ width: "16px", height: "16px", accentColor: "var(--mou-primary)", verticalAlign: "middle", marginRight: "8px" }} />
+                      <span style={{ verticalAlign: "middle" }}>{t.name}</span>
+                    </label>
+                  )) : (
+                    <div style={{ padding: "12px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>ไม่มีประเภทกิจกรรม</div>
                   )}
                 </div>
               </div>
             </div>
-
-            {/* OKR */}
             <div className="field">
               <label><Target size={14} className="shrink-0" />สอดคล้องกับ OKR</label>
-              <div style={{ display: "flex", gap: "12px" }}>
-                <div style={{ flex: "0 0 50%", border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-field)", overflow: "hidden" }}>
-                  <div style={{ padding: "6px 10px", borderBottom: "1px solid var(--mou-line)", background: "#fff", display: "flex", alignItems: "center", gap: 6 }}>
-                    <Search size={14} className="text-gray-400" />
-                    <input type="text" placeholder="ค้นหา OKR..." value={okrSearch} onChange={(e) => setOkrSearch(e.target.value)}
-                      style={{ width: "100%", border: "none", outline: "none", fontSize: "14px", background: "transparent" }} />
-                  </div>
-                  <div style={{ maxHeight: "140px", overflowY: "auto", padding: "4px" }}>
-                    {filteredOkrs.length > 0 ? filteredOkrs.map((o) => (
-                      <label key={o.id} className="multiSelectItem" style={{ padding: "6px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", borderRadius: "4px" }}>
-                        <input type="checkbox" checked={selectedOkrIds.includes(o.id)} onChange={() => toggleOkr(o.id)}
-                          style={{ width: "16px", height: "16px", accentColor: "var(--mou-primary)", flexShrink: 0 }} />
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.title}</span>
-                      </label>
-                    )) : (
-                      <div style={{ padding: "12px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>ไม่มี OKR</div>
-                    )}
-                  </div>
+              <div style={{ border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-field)", overflow: "hidden" }}>
+                <div style={{ padding: "6px 10px", borderBottom: "1px solid var(--mou-line)", background: "#fff", display: "flex", alignItems: "center", gap: 6 }}>
+                  <Search size={14} className="text-gray-400" />
+                  <input type="text" placeholder="ค้นหา OKR..." value={okrSearch} onChange={(e) => setOkrSearch(e.target.value)}
+                    style={{ width: "100%", border: "none", outline: "none", fontSize: "14px", background: "transparent" }} />
                 </div>
-                <div style={{ flex: 1, minHeight: "80px", border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-surface)", padding: "8px" }}>
-                  <div style={{ fontSize: "12px", color: "var(--mou-muted)", marginBottom: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}>
-                    <Check size={12} />เลือกแล้ว {selectedOkrIds.length} รายการ
-                  </div>
-                  {selectedOkrIds.length > 0 ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                      {selectedOkrIds.slice(0, 5).map((id) => {
-                        const okr = okrs.find((o) => o.id === id);
-                        return (
-                          <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "3px 6px", borderRadius: "4px", background: "#eef2ff", fontSize: "12px" }}>
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{okr?.title || `#${id}`}</span>
-                            <button type="button" onClick={() => toggleOkr(id)} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", padding: "0 2px", flexShrink: 0 }} title="ลบ"><X size={10} /></button>
-                          </div>
-                        );
-                      })}
-                      {selectedOkrIds.length > 5 && (
-                        <div style={{ fontSize: "11px", color: "var(--mou-muted)", textAlign: "center", padding: "2px" }}>+{selectedOkrIds.length - 5} รายการ</div>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: "12px", color: "var(--mou-muted-soft)", textAlign: "center", padding: "16px 0" }}>ยังไม่เลือก</div>
+                <div style={{ maxHeight: "140px", overflowY: "auto" }}>
+                  {filteredOkrs.length > 0 ? filteredOkrs.map((o) => (
+                    <label key={o.id} className="multiSelectItem" style={{ display: "block", width: "100%", padding: "8px 10px", fontSize: "14px", cursor: "pointer", borderRadius: "4px" }}>
+                      <input type="checkbox" checked={selectedOkrIds.includes(o.id)} onChange={() => toggleOkr(o.id)}
+                        style={{ width: "16px", height: "16px", accentColor: "var(--mou-primary)", verticalAlign: "middle", marginRight: "8px" }} />
+                      <span style={{ verticalAlign: "middle" }}>{o.title}</span>
+                    </label>
+                  )) : (
+                    <div style={{ padding: "12px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>ไม่มี OKR</div>
                   )}
                 </div>
               </div>
@@ -465,18 +598,17 @@ export default function AddActivityMouPage() {
           </div>
         </div>
 
-        {/* Section 3: เอกสารแนบ */}
-        <div className="panel formSection afu" style={{ animationDelay: "200ms" }}>
+        {/* เอกสารแนบ */}
+        <div className="panel formSection afu" style={{ animationDelay: "240ms" }}>
           <div className="sectionHead">
             <Paperclip size={18} className="text-blue-500" />
             <h3>เอกสารแนบ</h3>
           </div>
           <div className="formGrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            {/* File attachments */}
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label><Paperclip size={14} className="shrink-0" />ไฟล์แนบ</label>
               <div className="fileDrop" onClick={() => fileInputRef.current?.click()} style={{ position: "relative", cursor: "pointer", justifyContent: files.length > 0 ? "flex-start" : "center", paddingTop: files.length > 0 ? "36px" : "16px", minHeight: "80px" }}>
-                <input ref={fileInputRef} type="file" onChange={handleFileChange} style={{ display: "none" }} accept=".pdf,.doc,.docx,.txt" multiple />
+                <input ref={fileInputRef} type="file" onChange={handleFileChange} style={{ display: "none" }} accept=".pdf" multiple />
                 {files.length > 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%" }}>
                     {files.map((f, i) => (
@@ -489,12 +621,11 @@ export default function AddActivityMouPage() {
                         <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0 4px" }} title="ลบ"><X size={14} /></button>
                       </div>
                     ))}
-                    <span style={{ fontSize: "12px", color: "#6b7280", textAlign: "center" }}>คลิกเพื่อเพิ่มไฟล์ (สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB)</span>
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
                     <Upload size={22} style={{ color: "var(--mou-primary)" }} />
-                    <span style={{ color: "#6b7280", fontSize: "13px" }}>PDF / DOC / TXT สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB</span>
+                    <span style={{ color: "#6b7280", fontSize: "13px" }}>PDF สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB</span>
                   </div>
                 )}
               </div>
@@ -503,7 +634,7 @@ export default function AddActivityMouPage() {
         </div>
 
         <div className="footerActions afu" style={{ animationDelay: "300ms" }}>
-          <button type="button" className="btn inline-flex items-center gap-2" onClick={() => router.push("/mou")}>
+          <button type="button" className="btn inline-flex items-center gap-2" onClick={() => router.back()}>
             <X size={16} />ยกเลิก
           </button>
           <button type="submit" className="btn primary inline-flex items-center gap-2" disabled={loading}>
@@ -516,5 +647,18 @@ export default function AddActivityMouPage() {
         </div>
       </form>
     </MouLayout>
+  );
+}
+
+function FullInfoRow({ label, value }) {
+  return (
+    <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
+      <div className="flex gap-1.5">
+        <div className="min-w-0 flex-1">
+          <div className="text-xs text-gray-500 mb-2">{label}</div>
+          <div className="text-sm font-medium text-gray-900 break-words">{value || "-"}</div>
+        </div>
+      </div>
+    </div>
   );
 }
