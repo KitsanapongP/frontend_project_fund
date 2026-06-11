@@ -1,4 +1,5 @@
 "use client";
+import { useState, useEffect } from "react";
 import ResearcherLinks from "./ResearcherLinks";
 
 const InstructorPrefix = [
@@ -13,7 +14,6 @@ const InstructorPrefix = [
   { id: "9", label: "รศ.ดร." },
   { id: "10", label: "ศ.ดร." },
   { id: "11", label: "อ." },
-
 ];
 
 const InstructorPosition = [
@@ -25,39 +25,35 @@ const InstructorPosition = [
   { id: "6", label: "อื่นๆ" },
 ];
 
-const InstructorCourseList = [
-  {
-    label: "ระดับปริญญาตรี",
-    courses: [
-      { course_id: "1", course_name: "หลักสูตรวิทยาศาสตรบัณฑิต สาขาวิชาเทคโนโลยีสารสนเทศและนวัตกรรมอัจฉริยะ" },
-      { course_id: "2", course_name: "หลักสูตรวิทยาศาสตรบัณฑิต สาขาวิชาวิทยาการคอมพิวเตอร์" },
-      { course_id: "3", course_name: "หลักสูตรวิทยาศาสตรบัณฑิต สาขาวิชาภูมิสารสนเทศศาสตร์" },
-      { course_id: "4", course_name: "หลักสูตรวิทยาศาสตรบัณฑิต สาขาวิชาปัญญาประดิษฐ์" },
-      { course_id: "5", course_name: "หลักสูตรวิทยาศาสตรบัณฑิต สาขาวิชาความมั่นคงปลอดภัยไซเบอร์" },
-    ]
-  },
-  {
-    label: "ระดับปริญญาโท",
-    courses: [
-      { course_id: "6", course_name: "หลักสูตรวิทยาศาสตรมหาบัณฑิต สาขาวิชาวิทยาการคอมพิวเตอร์และเทคโนโลยีสารสนเทศ" },
-      { course_id: "7", course_name: "หลักสูตรวิทยาศาสตรมหาบัณฑิต สาขาวิชาวิทยาการข้อมูลและปัญญาประดิษฐ์ (นานาชาติ)" },
-      { course_id: "8", course_name: "หลักสูตรวิทยาศาสตรมหาบัณฑิต สาขาวิชาภูมิสารสนเทศศาสตร์" },
-    ]
-  },
-  {
-    label: "ระดับปริญญาเอก",
-    courses: [
-      { course_id: "9", course_name: "หลักสูตรปรัชญาดุษฎีบัณฑิต สาขาวิชาวิทยาการคอมพิวเตอร์และเทคโนโลยีสารสนเทศ (นานาชาติ)" },
-      { course_id: "10", course_name: "หลักสูตรปรัชญาดุษฎีบัณฑิต สาขาวิชาภูมิสารสนเทศศาสตร์" }
-    ]
-  }
-];
+const DEGREE_LABELS = { 1: "ระดับปริญญาตรี", 2: "ระดับปริญญาโท", 3: "ระดับปริญญาเอก" };
 
 export default function ResearcherProfile({ formData, handleInputChange, targetUserId, setFormData }) {
+  const [courseList, setCourseList] = useState([]);   // raw list จาก API
+  const [courseLoading, setCourseLoading] = useState(true);
+
+  // ดึงหลักสูตรจาก DB 
+  useEffect(() => {
+    const token = localStorage.getItem("access_token") || localStorage.getItem("token") || "";
+    fetch("http://localhost:8080/api/v1/admin/courses", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => setCourseList(Array.isArray(data) ? data : data?.data ?? []))
+      .catch(() => setCourseList([]))
+      .finally(() => setCourseLoading(false));
+  }, []);
+
+  // จัดกลุ่มตาม degree_id
+  const groupedCourses = [1, 2, 3].map((degId) => ({
+    degreeId: degId,
+    label: DEGREE_LABELS[degId],
+    courses: courseList.filter((c) => Number(c.degree_id) === degId),
+  })).filter((g) => g.courses.length > 0);
+
   return (
     <div className="space-y-8">
 
-      {/* ส่วนที่ 1: ข้อมูลส่วนตัวพื้นฐาน */}
+      {/*ข้อมูลส่วนตัวพื้นฐาน */}
       <div>
         <h3 className="text-base font-bold text-slate-800 mb-4">ข้อมูลส่วนตัวทั่วไป</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
@@ -66,20 +62,20 @@ export default function ResearcherProfile({ formData, handleInputChange, targetU
           <EditableInfoItem label="ชื่อภาษาไทย " value={formData.user_fname} onChange={(val) => handleInputChange("user_fname", val)} />
           <EditableInfoItem label="นามสกุลภาษาไทย" value={formData.user_lname} onChange={(val) => handleInputChange("user_lname", val)} />
           <EditableInfoItem label="ชื่อ-นามสกุลภาษาอังกฤษ" value={formData.Name_en || formData.name_en} onChange={(val) => handleInputChange("Name_en", val)} />
-          <EditableInfoItem label="อีเมล " value={formData.email}  onChange={(val) => handleInputChange("email", val)} />
-          <EditableInfoItem 
-            label="เบอร์โทรศัพท์ " 
-            value={formData.tel}  
+          <EditableInfoItem label="อีเมล " value={formData.email} onChange={(val) => handleInputChange("email", val)} />
+          <EditableInfoItem
+            label="เบอร์โทรศัพท์ "
+            value={formData.tel}
             onChange={(val) => {
               const digits = val.replace(/\D/g, "").slice(0, 10);
               handleInputChange("tel", digits);
-            }} 
+            }}
           />
           <EditableInfoItem label="วันที่บรรจุงาน " value={formData.date_of_employment} inputType="date" onChange={(val) => handleInputChange("date_of_employment", val)} />
         </div>
       </div>
 
-      {/* ส่วนที่ 2: เว็บไซต์และฐานข้อมูลวิจัย */}
+      {/*เว็บไซต์และฐานข้อมูลวิจัย */}
       <div>
         <h3 className="text-base font-bold text-slate-800 mb-4">เว็บไซต์และฐานข้อมูลวิจัย</h3>
         <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
@@ -87,39 +83,41 @@ export default function ResearcherProfile({ formData, handleInputChange, targetU
         </div>
       </div>
 
-      {/* ส่วนที่ 3: หลักสูตรที่รับผิดชอบ */}
+      {/*หลักสูตรที่รับผิดชอบ */}
       <div>
-  <h3 className="text-base font-bold text-slate-800 mb-4">หลักสูตรที่รับผิดชอบ</h3>
-  <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100 space-y-4">
-    
-    <select
-      value={formData.instructor_course_responsibility?.[0]?.course_id || ""}
-      onChange={(e) => {
-        const val = e.target.value;
-        if (!val) {
-          setFormData(prev => ({ ...prev, instructor_course_responsibility: [] }));
-        } else {
-          setFormData(prev => ({
-            ...prev,
-            instructor_course_responsibility: [{ user_id: Number(targetUserId), course_id: Number(val) }]
-          }));
-        }
-      }}
-      className="w-full bg-white border border-gray-200 text-sm font-medium text-gray-800 rounded-xl px-4 py-2.5 outline-none transition-all focus:border-green-400 focus:ring-2 focus:ring-green-50/50 cursor-pointer"
-    >
-      <option value="">--- กรุณาเลือกหลักสูตร ---</option>
-      {InstructorCourseList.map((group) => (
-        <optgroup key={group.label} label={group.label} className="font-bold">
-          {group.courses.map((course) => (
-            <option key={course.course_id} value={course.course_id} className="font-normal">
-              {course.course_name}
+        <h3 className="text-base font-bold text-slate-800 mb-4">หลักสูตรที่รับผิดชอบ</h3>
+        <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
+          <select
+            value={formData.instructor_course_responsibility?.[0]?.course_id || ""}
+            disabled={courseLoading}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (!val) {
+                setFormData((prev) => ({ ...prev, instructor_course_responsibility: [] }));
+              } else {
+                setFormData((prev) => ({
+                  ...prev,
+                  instructor_course_responsibility: [{ user_id: Number(targetUserId), course_id: Number(val) }],
+                }));
+              }
+            }}
+            className="w-full bg-white border border-gray-200 text-sm font-medium text-gray-800 rounded-xl px-4 py-2.5 outline-none transition-all focus:border-green-400 focus:ring-2 focus:ring-green-50/50 cursor-pointer disabled:opacity-60"
+          >
+            <option value="">
+              {courseLoading ? "กำลังโหลดหลักสูตร..." : "--- กรุณาเลือกหลักสูตร ---"}
             </option>
-          ))}
-        </optgroup>
-      ))}
-    </select>
-  </div>
-</div>
+            {groupedCourses.map((group) => (
+              <optgroup key={group.degreeId} label={group.label} className="font-bold">
+                {group.courses.map((course) => (
+                  <option key={course.course_id} value={course.course_id} className="font-normal">
+                    {course.course_name_th}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+      </div>
 
     </div>
   );

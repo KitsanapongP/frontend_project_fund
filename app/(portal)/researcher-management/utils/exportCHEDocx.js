@@ -1,7 +1,7 @@
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-  WidthType, UnderlineType, TableLayoutType
-} from "docx";
+  WidthType, UnderlineType, TableLayoutType, ExternalHyperlink
+} from "docx"; // เพิ่ม ExternalHyperlink เข้ามาใช้งาน
 import { saveAs } from "file-saver";
 
 const prefixMap = {
@@ -24,10 +24,10 @@ const ipTypeMap = {
   "copyright": "ลิขสิทธิ์ (Copyright)"
 };
 
-// ─── ตัวช่วยตรวจสอบว่าข้อความเป็นภาษาไทยหรือไม่ ───────────────────────────
+// ตัวช่วยตรวจสอบว่าข้อความเป็นภาษาไทยหรือไม่ 
 const isThaiText = (text = "") => /[\u0e00-\u0e7f]/.test(text);
 
-// ─── ตัดข้อความเป็น segment ไทย/อังกฤษ ─────────────────────────────────────
+//ตัดข้อความเป็น segment ไทย/อังกฤษ 
 function splitByLanguage(text) {
   if (!text) return [];
   const segments = [];
@@ -39,6 +39,30 @@ function splitByLanguage(text) {
     segments.push({ text: seg, isThai: isThaiText(seg) });
   }
   return segments;
+}
+
+// ─── ฟังก์ชันช่วยต่อ URL อัตโนมัติให้กับ Author IDs ของ CHE ─────────────────
+function formatAuthorUrl(key, value) {
+  if (!value || value.trim() === "" || value.trim() === "-") return null;
+  
+  const cleanId = value.trim();
+  
+  if (cleanId.toLowerCase().startsWith("http://") || cleanId.toLowerCase().startsWith("https://")) {
+    return cleanId;
+  }
+
+  switch (key) {
+    case "scopus_id": {
+      const scopusClean = cleanId.replace(/^SCOPUS_ID:/i, "").trim();
+      return `https://www.scopus.com/authid/detail.uri?authorId=${scopusClean}`;
+    }
+    case "scholar_author_id":
+      return `https://scholar.google.com/citations?user=${cleanId}&hl=th`;
+    case "thaijo_author_id":
+      return `https://www.tci-thaijo.org/en/authors/${cleanId}`;
+    default:
+      return null;
+  }
 }
 
 // weightMaster จะถูกส่งเข้ามาจากภายนอก
@@ -60,7 +84,6 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
   const ownerLname = (header?.user_lname || "").trim();
   const fullOwnerName = `${ownerFname} ${ownerLname}`.trim();
 
-  // ─── TextRun factory ──────────────────────────────────────────────────────
   const makeRun = (text, extra = {}) => {
     const lang = isThaiText(text)
       ? { value: "th-TH", eastAsia: "th-TH" }
@@ -68,7 +91,7 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
     return new TextRun({ text, font: fontName, size: baseFontSize, language: lang, ...extra });
   };
 
-  // ─── Paragraph จาก text ธรรมดา ───────────────────────────────────────────
+  // Paragraph จาก text ธรรมดา
   const createParagraph = (text, isBold = false, size = baseFontSize) => {
     const segs = splitByLanguage(text);
     const runs = segs.length > 0
@@ -86,7 +109,35 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
     return new Paragraph({ children: runs, spacing: { after: 120 } });
   };
 
-  // ─── runs array พร้อม style ───────────────────────────────────────────────
+  const createHyperlinkParagraph = (label, url) => {
+    if (!url || url === "-") {
+      return new Paragraph({
+        children: [makeRun(`${label}: -`)],
+        spacing: { after: 120 }
+      });
+    }
+
+    return new Paragraph({
+      children: [
+        makeRun(`${label}: `),
+        new ExternalHyperlink({
+          link: url,
+          children: [
+            new TextRun({
+              text: url,
+              font: fontName,
+              size: baseFontSize,
+              color: "000000",
+              bold: true,
+              underline: { type: UnderlineType.SINGLE }, // ขีดเส้นใต้ลิงก์
+            }),
+          ],
+        }),
+      ],
+      spacing: { after: 120 },
+    });
+  };
+
   const makeStyledRuns = (text, extra = {}) => {
     const segs = splitByLanguage(text);
     if (segs.length === 0) return [makeRun(text, extra)];
@@ -127,7 +178,7 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
     return new Paragraph({ children: runs, spacing: { after: 120 } });
   };
 
-  // ─── ตารางการศึกษา ────────────────────────────────────────────────────────
+  //ตารางการศึกษา 
   const degreeLabel = { 1: "ปริญญาตรี", 2: "ปริญญาโท", 3: "ปริญญาเอก" };
 
   const educationRows = [
@@ -165,7 +216,7 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
     layout: TableLayoutType.AUTOFIT,
   });
 
-  // ─── เริ่มประกอบเอกสาร ────────────────────────────────────────────────────
+  //ประกอบเอกสาร 
   const documentChildren = [
     createParagraph(`${header?.prefix || ""}${header?.user_fname || ""} ${header?.user_lname || ""}`, true, 40),
     createParagraph(`${prefixMap[header?.prefix?.trim()] || header?.prefix || ""} ${header?.Name_en || ""}`),
@@ -174,13 +225,17 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
     createParagraph("ประวัติการศึกษา:", true),
     eduTable,
     new Paragraph({ text: "" }),
-    createParagraph(`Link Scopus: ${header?.scopus_id || "-"}`),
-    createParagraph(`Link Google Scholar: ${header?.scholar_author_id || "-"}`),
+    
+    //เปลี่ยนมาใช้ฟังก์ชัน createHyperlinkParagraph เพื่อแทรกลิงก์
+    createHyperlinkParagraph("Link Scopus", formatAuthorUrl("scopus_id", header?.scopus_id)),
+    createHyperlinkParagraph("Link Google Scholar", formatAuthorUrl("scholar_author_id", header?.scholar_author_id)),
+    createHyperlinkParagraph("Link TCI", formatAuthorUrl("thaijo_author_id", header?.thaijo_author_id)),
+    
     new Paragraph({ text: "" }),
     createParagraph(`ผลงานทางวิชาการ (ผลงาน 5 ปี ย้อนหลัง ค.ศ. ${startFiveYearsAgo}-${currentYear})`, true, 36),
     new Paragraph({ text: "" }),
 
-    // ── หมวด 1: ตำรา ──────────────────────────────────────────────────────────
+    //ตำรา 
     createParagraph("ตำรา หนังสือ และเอกสารประกอบการสอน", true),
   ];
 
@@ -207,7 +262,7 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
 
   documentChildren.push(new Paragraph({ text: "" }));
 
-  // ── หมวด 2: งานวิจัย ────────────────────────────────────────────────────────
+  //งานวิจัย 
   documentChildren.push(createParagraph("งานวิจัย และบทความทางวิชาการ", true));
 
   const validResearches = (researches || []).filter((res) => {
@@ -217,27 +272,6 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
   });
 
   if (validResearches.length > 0) {
-    const formatConferenceDate = (startDate, endDate) => {
-      if (!startDate) return "";
-      const MONTHS = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December",
-      ];
-      const [, sm, sd] = startDate.split("T")[0].split("-");
-      const sMonth = parseInt(sm, 10) - 1;
-      const sDay = parseInt(sd, 10);
-      const monthName = MONTHS[sMonth];
-
-      if (!endDate) return sDay === 1 ? monthName : `${monthName} ${sDay}`;
-
-      const [, em, ed] = endDate.split("T")[0].split("-");
-      const eMonth = parseInt(em, 10) - 1;
-      const eDay = parseInt(ed, 10);
-
-      if (sMonth !== eMonth) return `${monthName} ${sDay}–${MONTHS[eMonth]} ${eDay}`;
-      return sDay === 1 ? monthName : `${monthName} ${sDay}–${eDay}`;
-    };
-
     const parseAuthors = (authorsHtml) => {
       if (!authorsHtml) return "";
       const thRegex = /[\u0e00-\u0e7f]/;
@@ -295,7 +329,6 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
       const matchedName = findOwnerInAuthors(cleanAuthors);
       const highlight = { bold: true, underline: { type: UnderlineType.SINGLE } };
 
-      // 1. ใส่รายชื่อผู้แต่ง และ Highlight ชื่อของอาจารย์เจ้าของประวัติ
       if (matchedName) {
         const before = cleanAuthors.slice(0, cleanAuthors.indexOf(matchedName));
         const after = cleanAuthors.slice(cleanAuthors.indexOf(matchedName) + matchedName.length);
@@ -306,56 +339,36 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
         runs.push(...makeStyledRuns(cleanAuthors));
       }
 
-      // 2. ส่วนของ ปี และ วันที่จัดแสดง (ดึงมาจาก cover_display_date ตามโจทย์)
       if (res.is_conference) {
         if (res.cover_display_date) {
-          // ถ้ามีข้อมูลในคอลัมน์ cover_display_date ให้นำมาใส่ต่อท้ายปี ค.ศ. ทันที
-          // เช่น คอลัมน์เก็บ "Feb 26-March 1, 2025" หรือ "October 2025"
-          // ระบบจะจัดรูปแบบออกมาเป็น (2025, Feb 26-March 1) หรือ (2025, October) ตามค่าใน DB
-          
           let displayDate = res.cover_display_date.trim();
-          
-          // ตัวช่วยกรณีที่ในคอลัมน์เก็บปีพ่วงมาด้วย (เช่น "October 2025") 
-          // ให้ตัดเอาเฉพาะข้อความเดือน/วัน เพื่อไม่ให้เลขปีซ้ำซ้อนในวงเล็บ
           const yearStr = String(res.publish_year);
           if (displayDate.includes(yearStr)) {
-            // ตัดเลขปีและเครื่องหมายจุลภาคคั่นออกไป เหลือแค่ชื่อเดือน/วัน
             displayDate = displayDate.replace(yearStr, "").replace(/,\s*$/, "").trim();
           }
-
           if (displayDate) {
             runs.push(makeRun(` (${res.publish_year}, ${displayDate}).`));
           } else {
             runs.push(makeRun(` (${res.publish_year}).`));
           }
         } else {
-          // เผื่อกรณีข้อมูลใน cover_display_date เป็นค่าว่าง ให้ถอยกลับมาใช้ปีอย่างเดียว
           runs.push(makeRun(` (${res.publish_year}).`));
         }
       } else {
-        // ถ้าเป็นวารสาร (Journal) ใส่แค่ปี ค.ศ. ปกติในวงเล็บตามหลัก APA 7th
         runs.push(makeRun(` (${res.publish_year}).`));
       }
 
-      // 3. ชื่อบทความวิจัย (Title) ปรับเป็น Sentence case ตัวธรรมดา ไม่เอียง ไม่หนา
       const rawTitle = res.title || "";
       const sentenceCaseTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
       runs.push(...makeStyledRuns(` ${sentenceCaseTitle}.`));
 
-      // 4. การจัดรูปแบบแยกประเภทเนื้อหา (Conference vs Journal)
       if (res.is_conference) {
         if (res.conference_name) {
-          runs.push(makeRun(" In ")); // คำว่า In ตัวธรรมดา ไม่เอียง
-          
-          // ชื่อการประชุมย่อย/หลัก ต้องเป็น [ตัวเอียง]
+          runs.push(makeRun(" In "));
           runs.push(...makeStyledRuns(res.conference_name, { italics: true }));
-          
-          // หน้า (pp.) ย้ายมาอยู่ติดกับชื่อการประชุมภายในวงเล็บ
           if (res.pages) {
             runs.push(makeRun(` (pp. ${res.pages})`));
           }
-          
-          // สถานที่จัดงานประชุมวิชาการ (เมือง, ประเทศ)
           const loc = [res.city, res.country].filter(Boolean).join(", ");
           if (loc) {
             runs.push(makeRun(`, ${loc}`));
@@ -376,7 +389,6 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
         }
       }
 
-      // 5. ลิงก์เชื่อมโยง DOI (แสดงผลรูปแบบ URL เต็มตามหลักเกณฑ์ APA 7th)
       if (res.doi) {
         let cleanDoi = res.doi.trim();
         if (cleanDoi.toLowerCase().startsWith("doi:")) {
@@ -437,7 +449,7 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
 
   documentChildren.push(new Paragraph({ text: "" }));
 
-  // ── หมวด 3: ทรัพย์สินทางปัญญา ──────────────────────────────────────────────
+  //ทรัพย์สินทางปัญญา
   documentChildren.push(createParagraph("ผลงานวิชาการด้านอื่น ๆ (สิทธิบัตร, อนุสิทธิบัตร, ลิขสิทธิ์)", true));
 
   const validIPs = (intellectualProperties || []).filter((ip) => {
@@ -452,31 +464,11 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
 
     const ipHeaderRow = new TableRow({
       children: [
-        new TableCell({
-          children: [createParagraph("ประเภท", true)],
-          width: { size: 20, type: WidthType.PERCENTAGE },
-          margins: cellMargins,
-        }),
-        new TableCell({
-          children: [createParagraph("ชื่อผลงานวิชาการ / ทรัพย์สินทางปัญญา", true)],
-          width: { size: 35, type: WidthType.PERCENTAGE },
-          margins: cellMargins,
-        }),
-        new TableCell({
-          children: [createParagraph("เลขทะเบียน / เลขที่สิทธิบัตร", true)],
-          width: { size: 20, type: WidthType.PERCENTAGE },
-          margins: cellMargins,
-        }),
-        new TableCell({
-          children: [createParagraph("ค่าน้ำหนัก", true)],
-          width: { size: 10, type: WidthType.PERCENTAGE },
-          margins: cellMargins,
-        }),
-        new TableCell({
-          children: [createParagraph("ปีที่ได้รับอนุมัติ", true)],
-          width: { size: 15, type: WidthType.PERCENTAGE },
-          margins: cellMargins,
-        }),
+        new TableCell({ children: [createParagraph("ประเภท", true)], width: { size: 20, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+        new TableCell({ children: [createParagraph("ชื่อผลงานวิชาการ / ทรัพย์สินทางปัญญา", true)], width: { size: 35, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+        new TableCell({ children: [createParagraph("เลขทะเบียน / เลขที่สิทธิบัตร", true)], width: { size: 20, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+        new TableCell({ children: [createParagraph("ค่าน้ำหนัก", true)], width: { size: 10, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+        new TableCell({ children: [createParagraph("ปีที่ได้รับอนุมัติ", true)], width: { size: 15, type: WidthType.PERCENTAGE }, margins: cellMargins }),
       ],
     });
 
@@ -485,44 +477,22 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
       const displayYear = (yr > 2400 ? yr - 543 : yr).toString();
       const ipTypeName = ipTypeMap[ip.type] || "ทรัพย์สินทางปัญญา";
 
-      // ดึงค่าน้ำหนักจาก tier_details ก่อน แล้ว fallback ไปหา weightMaster
       const weight = ip.tier_details?.weight != null
         ? Number(ip.tier_details.weight).toFixed(1)
         : weightMaster[ip.type]?.weight != null
           ? Number(weightMaster[ip.type].weight).toFixed(1)
           : "-";
 
-      // [แก้ไข] ไม่ใส่ชื่อผู้อ้างอิง และแสดงชื่อสิทธิบัตรที่มีเครื่องหมายคำพูดครอบตามในรูปภาพตัวอย่าง
       const displayTitle = `"${ip.title || ""}"`;
       const ipTitleRuns = makeStyledRuns(displayTitle);
 
       return new TableRow({
         children: [
-          new TableCell({
-            children: [new Paragraph({ children: makeStyledRuns(ipTypeName), spacing: { after: 120 } })],
-            width: { size: 20, type: WidthType.PERCENTAGE },
-            margins: cellMargins,
-          }),
-          new TableCell({
-            children: [new Paragraph({ children: ipTitleRuns, spacing: { after: 120 } })],
-            width: { size: 35, type: WidthType.PERCENTAGE },
-            margins: cellMargins,
-          }),
-          new TableCell({
-            children: [createParagraph(ip.registration_number || "-")],
-            width: { size: 20, type: WidthType.PERCENTAGE },
-            margins: cellMargins,
-          }),
-          new TableCell({
-            children: [createParagraph(weight)],
-            width: { size: 10, type: WidthType.PERCENTAGE },
-            margins: cellMargins,
-          }),
-          new TableCell({
-            children: [createParagraph(displayYear)],
-            width: { size: 15, type: WidthType.PERCENTAGE },
-            margins: cellMargins,
-          }),
+          new TableCell({ children: [new Paragraph({ children: makeStyledRuns(ipTypeName), spacing: { after: 120 } })], width: { size: 20, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+          new TableCell({ children: [new Paragraph({ children: ipTitleRuns, spacing: { after: 120 } })], width: { size: 35, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+          new TableCell({ children: [createParagraph(ip.registration_number || "-")], width: { size: 20, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+          new TableCell({ children: [createParagraph(weight)], width: { size: 10, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+          new TableCell({ children: [createParagraph(displayYear)], width: { size: 15, type: WidthType.PERCENTAGE }, margins: cellMargins }),
         ],
       });
     });
@@ -540,7 +510,7 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
 
   documentChildren.push(new Paragraph({ text: "" }));
 
-  // ── หมวด 4: โครงการวิจัย ─────────────────────────────────────────────────────
+  //โครงการวิจัย 
   documentChildren.push(createParagraph("โครงการวิจัย", true));
 
   const formatToCEDate = (dateStr) => {
@@ -562,36 +532,15 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
 
     const projHeaderRow = new TableRow({
       children: [
-        new TableCell({
-          children: [createParagraph("ปีงบประมาณ", true)],
-          width: { size: 12, type: WidthType.PERCENTAGE },
-          margins: cellMargins,
-        }),
-        new TableCell({
-          children: [createParagraph("ชื่อโครงการ (TH / EN)", true)],
-          width: { size: 35, type: WidthType.PERCENTAGE },
-          margins: cellMargins,
-        }),
-        new TableCell({
-          children: [createParagraph("แหล่งทุน", true)],
-          width: { size: 20, type: WidthType.PERCENTAGE },
-          margins: cellMargins,
-        }),
-        new TableCell({
-          children: [createParagraph("ระยะเวลาโครงการ", true)],
-          width: { size: 20, type: WidthType.PERCENTAGE },
-          margins: cellMargins,
-        }),
-        new TableCell({
-          children: [createParagraph("งบประมาณ (บาท)", true)],
-          width: { size: 13, type: WidthType.PERCENTAGE },
-          margins: cellMargins,
-        }),
+        new TableCell({ children: [createParagraph("ปีงบประมาณ", true)], width: { size: 12, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+        new TableCell({ children: [createParagraph("ชื่อโครงการ (TH / EN)", true)], width: { size: 35, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+        new TableCell({ children: [createParagraph("แหล่งทุน", true)], width: { size: 20, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+        new TableCell({ children: [createParagraph("ระยะเวลาโครงการ", true)], width: { size: 20, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+        new TableCell({ children: [createParagraph("งบประมาณ (บาท)", true)], width: { size: 13, type: WidthType.PERCENTAGE }, margins: cellMargins }),
       ],
     });
 
     const projDataRows = validProjects.map((proj, idx) => {
-      // ปีงบประมาณ: ดึงจาก fiscal_year หรือคำนวณจาก start_date
       const fiscalYear = proj.fiscal_year
         ? String(proj.fiscal_year)
         : (() => {
@@ -599,7 +548,6 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
             return yr ? String(yr > 2400 ? yr - 543 : yr) : "-";
           })();
 
-      // [แก้ไข] นำ `${idx + 1}. ` ออกเพื่อไม่ให้รันตัวเลขด้านหน้าโครงการวิจัย
       const projectNameTH = proj.project_name_th || "-";
       const projectNameEN = proj.project_name_en ? `(${proj.project_name_en})` : "";
       const duration = `${formatToCEDate(proj.start_date)} ถึง ${formatToCEDate(proj.end_date)}`;
@@ -607,36 +555,18 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
 
       return new TableRow({
         children: [
-          new TableCell({
-            children: [createParagraph(fiscalYear)],
-            width: { size: 12, type: WidthType.PERCENTAGE },
-            margins: cellMargins,
-          }),
+          new TableCell({ children: [createParagraph(fiscalYear)], width: { size: 12, type: WidthType.PERCENTAGE }, margins: cellMargins }),
           new TableCell({
             children: [
               new Paragraph({ children: makeStyledRuns(projectNameTH), spacing: { after: 60 } }),
-              ...(projectNameEN
-                ? [new Paragraph({ children: makeStyledRuns(projectNameEN), spacing: { after: 120 } })]
-                : []),
+              ...(projectNameEN ? [new Paragraph({ children: makeStyledRuns(projectNameEN), spacing: { after: 120 } })] : []),
             ],
             width: { size: 35, type: WidthType.PERCENTAGE },
             margins: cellMargins,
           }),
-          new TableCell({
-            children: [createParagraph(proj.source_of_fund || "-")],
-            width: { size: 20, type: WidthType.PERCENTAGE },
-            margins: cellMargins,
-          }),
-          new TableCell({
-            children: [createParagraph(duration)],
-            width: { size: 20, type: WidthType.PERCENTAGE },
-            margins: cellMargins,
-          }),
-          new TableCell({
-            children: [createParagraph(budget)],
-            width: { size: 13, type: WidthType.PERCENTAGE },
-            margins: cellMargins,
-          }),
+          new TableCell({ children: [createParagraph(proj.source_of_fund || "-")], width: { size: 20, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+          new TableCell({ children: [createParagraph(duration)], width: { size: 20, type: WidthType.PERCENTAGE }, margins: cellMargins }),
+          new TableCell({ children: [createParagraph(budget)], width: { size: 13, type: WidthType.PERCENTAGE }, margins: cellMargins }),
         ],
       });
     });
@@ -654,7 +584,7 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
 
   documentChildren.push(new Paragraph({ text: "" }));
 
-  // ── หมวด 5: ความเชี่ยวชาญ ───────────────────────────────────────────────────
+  //ความเชี่ยวชาญ
   documentChildren.push(createParagraph("ความเชี่ยวชาญ / Research Interests", true));
 
   if (expertises && expertises.length > 0) {
@@ -673,7 +603,7 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
     documentChildren.push(createParagraph("- ไม่มีข้อมูลความเชี่ยวชาญ -"));
   }
 
-  // ─── Export ──────────────────────────────────────────────────────────────────
+  //Export
   const doc = new Document({
     styles: {
       default: {

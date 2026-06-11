@@ -1,6 +1,7 @@
 "use client";
 import { Plus, X } from "lucide-react";
 import api from "../../../lib/api";
+import Swal from "sweetalert2";
 
 export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
   
@@ -15,23 +16,60 @@ export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
     setData(prev => ({ ...prev, educations: updatedEdus }));
   };
 
+  //ปรับปรุงฟังก์ชันการลบข้อมูลประวัติการศึกษาด้วย SweetAlert2
   const handleRemoveEdu = async (index) => {
     const target = data.educations[index];
 
+    // กรณีข้อมูลเดิมที่มี id อยู่แล้ว (ต้องการลบออกจากฐานข้อมูลหลังบ้าน)
     if (target.id && target.id !== 0) {
-      const isConfirmed = window.confirm(`คุณต้องการลบประวัติการศึกษา "${target.degree_title_th || 'นี้'}" ออกจากระบบใช่หรือไม่?`);
-      if (!isConfirmed) return;
+      
+      // แสดงกล่องแจ้งเตือนยืนยันของ SweetAlert2
+      const result = await Swal.fire({
+        title: "ยืนยันการลบประวัติการศึกษา?",
+        text: `คุณต้องการลบประวัติการศึกษา "${target.degree_title_th || 'นี้'}" ออกจากระบบใช่หรือไม่?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#0284c7", // สีฟ้าครามธีมหลักของระบบ
+        cancelButtonColor: "#94a3b8",  // สีเทา Slate
+        confirmButtonText: "ใช่, ต้องการลบ",
+        cancelButtonText: "ยกเลิก",
+        customClass: {
+          popup: "rounded-2xl"
+        }
+      });
+
+      // ถ้าผู้ใช้กด ยกเลิก (Cancel) ให้หยุดทำงานทันที
+      if (!result.isConfirmed) return;
 
       try {
         await api.delete(`/admin/instructor-educations/${target.id}`);
-        alert("ลบข้อมูลจากฐานข้อมูลสำเร็จ");
+        
+        // แจ้งเตือนเมื่อลบสำเร็จแบบ Auto-close 1.5 วินาที
+        Swal.fire({
+          title: "ลบสำเร็จ!",
+          text: "ลบข้อมูลประวัติการศึกษาออกจากระบบเรียบร้อยแล้ว",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+          customClass: { popup: "rounded-2xl" }
+        });
+
       } catch (err) {
         console.error("Error deleting education:", err);
-        alert(`เกิดข้อผิดพลาด: ไม่สามารถลบข้อมูลได้ (${err.message})`);
-        return;
+        
+        // แจ้งเตือนเมื่อระบบหลังบ้านเกิด Error
+        Swal.fire({
+          title: "เกิดข้อผิดพลาด!",
+          text: `ไม่สามารถลบข้อมูลได้ (${err.message})`,
+          icon: "error",
+          confirmButtonColor: "#0284c7",
+          customClass: { popup: "rounded-2xl" }
+        });
+        return; // ออกจากฟังก์ชัน ไม่ตัดแถวบนหน้าจอ
       }
     }
 
+    // กรณีเป็นแถวสร้างใหม่บนหน้าจอ หรือลบหลังบ้านสำเร็จแล้ว ให้กรองแถวนั้นออกทันที
     setData(prev => ({ ...prev, educations: prev.educations.filter((_, i) => i !== index) }));
   };
 
@@ -40,6 +78,7 @@ export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
       <div className="flex justify-between items-center">
         <h3 className="text-base font-bold text-slate-800">รายการประวัติการศึกษา</h3>
         <button 
+          type="button"
           onClick={handleAddEducation} 
           className="inline-flex items-center gap-1 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100"
         >
@@ -65,7 +104,7 @@ export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
                   <select 
                     value={edu.degree_id} 
                     onChange={(e) => handleEduChange(i, "degree_id", e.target.value)} 
-                    className="w-full rounded-lg border-0 bg-transparent p-2 text-slate-700 outline-none focus:text-cyan-600"
+                    className="w-full rounded-lg border-0 bg-transparent p-2 text-slate-700 outline-none focus:text-cyan-600 cursor-pointer"
                   >
                     {DEGREE_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
                   </select>
@@ -103,12 +142,14 @@ export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
                     })()}
                   </select>
                 </td>
-                <td className="p-2 text-center">
+                
+                <td className="p-2 align-middle text-center">
                   <button 
+                    type="button"
                     onClick={() => handleRemoveEdu(i)} 
-                    className="inline-flex items-center gap-1 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100"
-                >
-                  <X size={18} />
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-xl border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100"
+                  >
+                    <X size={16} />
                   </button>
                 </td>
               </tr>
