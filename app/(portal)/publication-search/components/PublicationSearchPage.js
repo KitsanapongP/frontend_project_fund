@@ -223,20 +223,92 @@ export default function PublicationSearchPage() {
       if (!json.success || !json.data?.length) return;
 
       const rows = json.data;
-      const headers = ['ชื่อเรื่อง', 'ผู้เขียน', 'แหล่งที่มา', 'ปี', 'ประเภทผลงาน', 'คุณภาพ', 'DOI/Link'];
-      const csvRows = [headers.join(',')];
+      const title = (v) => `"${(v || '').replace(/"/g, '""')}"`;
+      const TRACK_NAMES_MAP = { 'ag': 'คณะเกษตรศาสตร์', 'cola': 'วิทยาลัยการปกครองท้องถิ่น', 'cp': 'วิทยาลัยการคอมพิวเตอร์', 'kkbs': 'คณะบริหารธุรกิจและการบัญชี', 'md': 'คณะแพทยศาสตร์' };
 
-      for (const r of rows) {
-        const title = `"${(r.title || '').replace(/"/g, '""')}"`;
-        const authors = `"${(r.authors || []).join(', ').replace(/"/g, '""')}"`;
-        csvRows.push([title, authors, r.source_name, r.publication_year, r.detail_type || '', r.journal_quartile || r.journal_tier || '', r.url || ''].join(','));
+      const fmtLong = (d) => {
+        const s = d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const i = s.search(/\d{2}:\d{2}$/);
+        return i !== -1 ? s.slice(0, i).trim() + ' เวลา ' + s.slice(i) : s;
+      };
+      const fmtShort = (d) => new Date(d.finished_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      const meta = [`# ส่งออกเมื่อ: ${fmtLong(new Date())}`];
+      const hasSource = filters.sources?.length;
+      const hasType = filters.aggTypes?.length;
+      const hasQuartile = filters.quartiles?.length;
+      const hasTier = filters.tciTiers?.length;
+      const hasProjectType = filters.projectTypes?.length;
+      const hasTrack = filters.tracks?.length;
+      const hasYear = filters.yearStart || filters.yearEnd;
+      const hasAny = hasSource || hasType || hasQuartile || hasTier || hasProjectType || hasTrack || hasYear;
+      meta.push('# กรองตาม');
+      if (hasAny) {
+        if (hasSource) meta.push(`#  - แหล่งที่มา: ${filters.sources.map(s => ({ scopus: 'Scopus', thaijo: 'TCI-ThaiJO', ai_showcase: 'AI Showcase' }[s] || s)).join(', ')}`);
+        if (hasType) meta.push(`#  - ประเภทผลงาน: ${filters.aggTypes.join(', ')}`);
+        if (hasQuartile) meta.push(`#  - คุณภาพวารสาร: ${filters.quartiles.join(', ')}`);
+        if (hasTier) meta.push(`#  - กลุ่ม TCI: ${filters.tciTiers.map(t => ({ '1': 'TCI กลุ่ม 1', '2': 'TCI กลุ่ม 2', '3': 'TCI กลุ่ม 3', 'not_in_tci': 'ไม่อยู่ใน TCI' }[t] || t)).join(', ')}`);
+        if (hasProjectType) meta.push(`#  - ประเภทโครงงาน: ${filters.projectTypes.join(', ')}`);
+        if (hasTrack) meta.push(`#  - ภาคีเครือข่าย: ${filters.tracks.map(t => TRACK_NAMES_MAP[t] || t).join(', ')}`);
+        if (hasYear) meta.push(`#  - ปี: ${filters.yearStart || '...'} - ${filters.yearEnd || '...'}`);
+      } else {
+        meta.push('#  - แสดงข้อมูลทั้งหมด');
+      }
+      if (query) {
+        meta.push(`#  - คำค้นหา: ${query}`);
+        const fieldLabels = { all: 'ชื่อเรื่อง ชื่อผู้เขียน คำสำคัญ บทคัดย่อ', title: 'ชื่อเรื่อง', author: 'ชื่อผู้เขียน', keywords: 'คำสำคัญ', abstract: 'บทคัดย่อ' };
+        if (searchField && fieldLabels[searchField]) meta.push(`#  - ค้นหาจาก: ${fieldLabels[searchField]}`);
+      }
+      meta.push(`# จำนวนผลลัพธ์: ${json.total} รายการ`);
+      if (lastImportDates.length > 0) {
+        const importStr = lastImportDates.map(d => `${d.source}: ${fmtShort(d)}`).join(', ');
+        meta.push(`# อัปเดตข้อมูลล่าสุด: ${importStr}`);
+      }
+
+      meta.push('');
+      let csvRows = [...meta];
+
+      if (tab === 'teacher') {
+        csvRows.push(['ลำดับ', 'ชื่อเรื่อง', 'ผู้เขียน', 'แหล่งที่มา', 'ปี', 'ประเภทผลงาน', 'คุณภาพ', 'DOI/Link'].join(','));
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          csvRows.push([
+            `="${i + 1}"`,
+            title(r.title),
+            title((r.authors || []).join(', ')),
+            r.source_name,
+            r.publication_year,
+            r.detail_type || '',
+            r.journal_quartile || r.journal_tier || '',
+            r.source_name !== 'ai_showcase' ? (r.url || '') : ''
+          ].join(','));
+        }
+      } else {
+        csvRows.push(['ลำดับ', 'ชื่อโครงงาน (ภาษาไทย)', 'ชื่อโครงงาน (ภาษาอังกฤษ)', 'ผู้จัดทำ', 'อาจารย์ที่ปรึกษา', 'บทคัดย่อ', 'ภาคีเครือข่าย', 'ปี', 'แหล่งที่มา', 'เว็บไซต์', 'โปสเตอร์'].join(','));
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          csvRows.push([
+            `="${i + 1}"`,
+            title(r.title),
+            title(r.title_en || ''),
+            title((r.authors || []).join(', ')),
+            title((r.advisors || []).join(', ')),
+            title(r.abstract || ''),
+            TRACK_NAMES_MAP[r.track_id] || '',
+            r.publication_year,
+            r.source_name,
+            r.url || '',
+            r.poster_url || ''
+          ].join(','));
+        }
       }
 
       const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `publications-${new Date().toISOString().slice(0, 10)}.csv`;
+      const prefix = tab === 'student' ? 'student-projects' : 'publications';
+      a.download = `${prefix}-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -277,9 +349,9 @@ export default function PublicationSearchPage() {
                     key={t.key}
                     onClick={() => handleTabChange(t.key)}
                     className={`w-[140px] px-3 py-2 rounded-md text-sm font-semibold border transition-all ${
-                      tab === t.key
+                       tab === t.key
                         ? "bg-white text-[#7F77DD] border-[#7F77DD]/20 shadow-sm"
-                        : "bg-transparent text-gray-500 border-transparent hover:text-gray-700"
+                        : "bg-transparent text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200 hover:bg-gray-50"
                     }`}
                   >
                     {t.label}
@@ -381,10 +453,10 @@ export default function PublicationSearchPage() {
                   className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
                     filters.sources.length === 0
                       ? "bg-white text-gray-800 border-gray-200 shadow-sm"
-                      : "bg-transparent text-gray-500 border-transparent hover:text-gray-700"
-                  }`}
+                      : "bg-transparent text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200 hover:bg-gray-50"
+                   }`}
                 >
-                  {filters.sources.length === 0 && <span className="mr-1">✓</span>}ทั้งหมด
+                   {filters.sources.length === 0 && <span className="mr-1">✓</span>}ทั้งหมด
                 </button>
 
                 {tab === "teacher" && (
@@ -394,7 +466,7 @@ export default function PublicationSearchPage() {
                       className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
                         filters.sources.length === 1 && filters.sources[0] === "scopus"
                           ? "bg-white text-sky-700 border-sky-300 shadow-sm"
-                          : "bg-transparent text-gray-500 border-transparent hover:text-gray-700"
+                          : "bg-transparent text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200 hover:bg-gray-50"
                       }`}
                     >
                       {filters.sources.length === 1 && filters.sources[0] === "scopus" && <span className="mr-1">✓</span>}Scopus
@@ -404,7 +476,7 @@ export default function PublicationSearchPage() {
                       className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
                         filters.sources.length === 1 && filters.sources[0] === "thaijo"
                           ? "bg-white text-emerald-700 border-emerald-300 shadow-sm"
-                          : "bg-transparent text-gray-500 border-transparent hover:text-gray-700"
+                          : "bg-transparent text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200 hover:bg-gray-50"
                       }`}
                     >
                       {filters.sources.length === 1 && filters.sources[0] === "thaijo" && <span className="mr-1">✓</span>}TCI-ThaiJO
@@ -419,7 +491,7 @@ export default function PublicationSearchPage() {
                       className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
                         filters.sources.length === 1 && filters.sources[0] === "ai_showcase"
                           ? "bg-white text-purple-700 border-purple-300 shadow-sm"
-                          : "bg-transparent text-gray-500 border-transparent hover:text-gray-700"
+                          : "bg-transparent text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200 hover:bg-gray-50"
                       }`}
                     >
                       {filters.sources.length === 1 && filters.sources[0] === "ai_showcase" && <span className="mr-1">✓</span>}AI Showcase

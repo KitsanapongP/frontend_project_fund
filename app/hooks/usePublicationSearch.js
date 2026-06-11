@@ -92,6 +92,10 @@ export function usePublicationSearch() {
       setSearchField(sf);
       setPage(1);
     }
+    const trackParam = searchParams.get('track');
+    if (trackParam) {
+      setFilters(f => ({ ...f, tracks: [trackParam] }));
+    }
   }, [searchParams]);
 
   useEffect(() => {

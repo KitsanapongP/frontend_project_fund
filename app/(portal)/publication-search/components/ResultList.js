@@ -136,7 +136,7 @@ export default function ResultList({ results, total, page, onPageChange, loading
       {tab === "student" ? (
         <div className="hidden md:flex px-5 py-3 gap-4 bg-gray-50/50 rounded-t-xl border-x border-t border-gray-100 text-xs font-bold text-gray-500">
           <div className="w-[40px] text-center">ลำดับ</div>
-          <div className="flex-1">เรื่อง</div>
+          <div className="flex-1">ชื่อเรื่อง</div>
           <div className="w-[180px] text-center">อาจารย์ที่ปรึกษา</div>
           <div className="w-[110px] text-center">
             <SortHeader label="ภาคีเคลือข่าย" field="track_id" currentField={sortField} direction={sortDirection} onSort={handleSort} />

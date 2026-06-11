@@ -1,7 +1,6 @@
-$ProjectRoot = Split-Path -Parent $PSScriptRoot
+$ProjectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $LogFile = Join-Path $ProjectRoot "logs\sync-csv.log"
 
-# ensure logs dir exists
 if (-not (Test-Path (Split-Path -Parent $LogFile))) {
     New-Item -ItemType Directory -Path (Split-Path -Parent $LogFile) -Force | Out-Null
 }
