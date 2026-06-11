@@ -4,6 +4,17 @@ const nextConfig = {
 
   devIndicators: false,
 
+  // MOU: proxy /api/v1/* → Go backend (:8080) ป้องกัน CORS ตอน Dev
+  async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: `${apiUrl.replace(/\/+$/, '')}/:path*`,
+      },
+    ];
+  },
+
   async redirects() {
     return [
       {

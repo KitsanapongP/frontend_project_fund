@@ -231,6 +231,7 @@ export default function MouListPage() {
   const [totalRecords, setTotalRecords] = useState(0);
   const [statsData, setStatsData] = useState({ active: 0, nearExpiry: 0, expired: 0, pending: 0 });
   const [exporting, setExporting] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const limit = 10;
 
   const loadMous = async (p = page, filterOverrides) => {
@@ -303,16 +304,18 @@ export default function MouListPage() {
     { key: "expired", label: "หมดอายุแล้ว", value: stats.expired, icon: AlertCircle, gradient: "from-red-500 to-red-600" },
   ];
 
-  const handleExportCSV = async () => {
+  const handleExportCSV = async (mode) => {
+    setShowExportModal(false);
     setExporting(true);
     try {
+      const exportFilters = mode === "all" ? {} : filters;
       const allMous = [];
       let currentPage = 1;
       let totalPages = 1;
       const exportLimit = 100;
 
       while (currentPage <= totalPages) {
-        const response = await mouAPI.getMous({ ...filters, page: currentPage, limit: exportLimit });
+        const response = await mouAPI.getMous({ ...exportFilters, page: currentPage, limit: exportLimit });
         const data = response.data || [];
         allMous.push(...data);
         const total = response.total || 0;
@@ -348,7 +351,7 @@ export default function MouListPage() {
         if (Number.isNaN(date.getTime())) return value;
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear() + 543;
+        const year = String(date.getFullYear() + 543);
         return `${day}/${month}/${year}`;
       };
 
@@ -367,7 +370,7 @@ export default function MouListPage() {
             escapeCSV(partnerType), escapeCSV(level), "",
             escapeCSV(mou.country?.name_th || ""), escapeCSV(scope),
             formatDateForCSV(mou.start_date), formatDateForCSV(mou.end_date),
-            escapeCSV(mou.year_of_signing), escapeCSV(mou.signed_by),
+            formatDateForCSV(mou.year_of_signing), escapeCSV(mou.signed_by),
             escapeCSV(mou.status?.name || ""), escapeCSV(coordinator),
             escapeCSV(faculties), escapeCSV(mou.notes)
           ]);
@@ -379,7 +382,7 @@ export default function MouListPage() {
               escapeCSV(partner.partner_org || ""),
               escapeCSV(mou.country?.name_th || ""), escapeCSV(scope),
               formatDateForCSV(mou.start_date), formatDateForCSV(mou.end_date),
-              escapeCSV(mou.year_of_signing), escapeCSV(mou.signed_by),
+              formatDateForCSV(mou.year_of_signing), escapeCSV(mou.signed_by),
               escapeCSV(mou.status?.name || ""), escapeCSV(coordinator),
               escapeCSV(faculties), escapeCSV(mou.notes)
             ]);
@@ -551,7 +554,7 @@ export default function MouListPage() {
           </Link>
           <button
             className="btn secondary inline-flex items-center gap-2"
-            onClick={handleExportCSV}
+            onClick={() => setShowExportModal(true)}
             disabled={exporting || loading}
           >
             <Download size={18} />
@@ -590,6 +593,33 @@ export default function MouListPage() {
           );
         })}
       </div>
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.4)" }}>
+          <div className="panel" style={{ width: 400, maxWidth: "90vw", padding: "24px" }}>
+            <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600 }}>ส่งออก CSV</h3>
+            <p style={{ margin: "0 0 20px", color: "#6b7280", fontSize: 14 }}>เลือกขอบเขตข้อมูลที่ต้องการส่งออก</p>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: 6, border: "1px solid #e5e7eb", cursor: "pointer", marginBottom: 6, fontSize: 14 }}>
+              <input type="radio" name="exportScope" defaultChecked style={{ width: 14, height: 14, margin: 0, cursor: "pointer" }} />
+              ส่งออกเฉพาะที่กรอง
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: 6, border: "1px solid #e5e7eb", cursor: "pointer", fontSize: 14 }}>
+              <input type="radio" name="exportScope" style={{ width: 14, height: 14, margin: 0, cursor: "pointer" }} />
+              ส่งออกทุกรายการ
+            </label>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+              <button className="btn ghost" onClick={() => setShowExportModal(false)}>ยกเลิก</button>
+              <button className="btn primary" onClick={() => {
+                const radios = document.querySelectorAll('input[name="exportScope"]');
+                let mode = "filtered";
+                radios.forEach((r, i) => { if (r.checked && i === 1) mode = "all"; });
+                handleExportCSV(mode);
+              }}>ยืนยัน</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="panel searchPanel animate-fadeInUp" style={{ animationDelay: "150ms", marginBottom: "14px" }}>

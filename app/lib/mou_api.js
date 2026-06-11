@@ -321,7 +321,7 @@ export const mouAPI = {
   async updateNotificationSettings(data) {
     try {
       const response = await apiClient.put('/mou/notification-settings', data);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Error updating notification settings:', error);
       throw error;

@@ -199,7 +199,7 @@ export default function AddActivityMouPage() {
       setSelectedOkrIds([]);
       setFiles([]);
 
-      router.replace("/mou");
+      router.back();
     } catch (err) {
       console.error("Error creating activity:", err);
       setError(err.message || "เกิดข้อผิดพลาดในการบันทึก");
@@ -361,13 +361,11 @@ export default function AddActivityMouPage() {
                       <Layers size={15} className="text-blue-600" />
                       <span className="text-sm font-semibold text-gray-700">ความร่วมมือ</span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                       <FullInfoRow label="ระดับ" value={selectedMou.level === "university" ? "มหาวิทยาลัย" : selectedMou.level === "faculty" ? "คณะ" : selectedMou.level || "-"} />
                       <FullInfoRow label="ขอบเขตความร่วมมือ" value={selectedMou.is_international ? "ต่างประเทศ" : "ในประเทศ"} />
+                      <FullInfoRow label="ประเทศ" value={selectedMou.country?.name_th || selectedMou.country?.name || "-"} />
                     </div>
-                    {selectedMou.country?.name_th && (
-                      <FullInfoRow label="ประเทศ" value={selectedMou.country.name_th} />
-                    )}
                     {(selectedMou.faculties || []).filter((f) => f.faculty_id).length > 0 && (
                       <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
                         <div className="flex gap-1.5">
@@ -396,6 +394,28 @@ export default function AddActivityMouPage() {
                         </div>
                       </div>
                     )}
+                    {(selectedMou.faculties || []).filter((f) => f.external_org).length > 0 && (
+                      <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
+                        <div className="flex gap-1.5">
+                          <Building2 size={12} className="text-gray-400 shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs text-gray-500 mb-2">ผู้รับผิดชอบภายนอก</div>
+                            <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
+                              {(selectedMou.faculties || []).filter((f) => f.external_org).map((fac) => (
+                                <div key={fac.id} className="p-2 rounded-lg border border-blue-200">
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <Building2 size={13} className="text-blue-500 shrink-0" />
+                                    <span className="text-xs font-medium text-blue-900 truncate">{fac.external_org || "ไม่ระบุ"}</span>
+                                  </div>
+                                  <div className="text-[11px] text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {fac.external_name || "ไม่ระบุ"}</div>
+                                  {fac.email && <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.email}</div>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="bg-gradient-to-br from-blue-50/70 to-indigo-50/30 rounded-xl p-4 space-y-3">
@@ -413,7 +433,10 @@ export default function AddActivityMouPage() {
                       <FullInfoRow label="วันที่เริ่มต้น" value={fmtDate(selectedMou.start_date)} />
                       <FullInfoRow label="วันที่สิ้นสุด" value={selectedMou.end_date ? fmtDate(selectedMou.end_date) : "-"} />
                     </div>
-                    <FullInfoRow label="ผู้ประสานงาน" value={selectedMou.coordinator ? [selectedMou.coordinator.prefix || "", selectedMou.coordinator.user_fname || "", selectedMou.coordinator.user_lname || ""].filter(Boolean).join(" ") : "-"} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <FullInfoRow label="ผู้ประสานงาน" value={selectedMou.coordinator ? [selectedMou.coordinator.prefix || "", selectedMou.coordinator.user_fname || "", selectedMou.coordinator.user_lname || ""].filter(Boolean).join(" ") : "-"} />
+                      <FullInfoRow label="แจ้งเตือนก่อนสิ้นสุด (จำนวนวัน)" value={selectedMou.notify_days_before != null ? String(selectedMou.notify_days_before) : "-"} />
+                    </div>
                     {(selectedMou.notes || "").trim() && (
                       <FullInfoRow label="หมายเหตุ" value={selectedMou.notes} />
                     )}
@@ -552,7 +575,7 @@ export default function AddActivityMouPage() {
             <Tag size={18} className="text-blue-500" />
             <h3>ประเภทย่อย</h3>
           </div>
-          <div className="formGrid" style={{ gridTemplateColumns: "1fr" }}>
+          <div className="formGrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div className="field" style={{ marginBottom: "8px" }}>
               <label><Tag size={14} className="shrink-0" />ประเภทกิจกรรม <span className="required">*</span></label>
               <div style={{ border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-field)", overflow: "hidden" }}>
@@ -610,17 +633,22 @@ export default function AddActivityMouPage() {
               <div className="fileDrop" onClick={() => fileInputRef.current?.click()} style={{ position: "relative", cursor: "pointer", justifyContent: files.length > 0 ? "flex-start" : "center", paddingTop: files.length > 0 ? "36px" : "16px", minHeight: "80px" }}>
                 <input ref={fileInputRef} type="file" onChange={handleFileChange} style={{ display: "none" }} accept=".pdf" multiple />
                 {files.length > 0 ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", width: "100%" }}>
                     {files.map((f, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "#fff", borderRadius: "6px", fontSize: "13px" }}>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
-                          <Upload size={12} className="shrink-0" style={{ color: "#6b7280" }} />
-                          {f.name}
-                        </span>
-                        <span style={{ margin: "0 8px", color: "#6b7280", whiteSpace: "nowrap" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0 4px" }} title="ลบ"><X size={14} /></button>
+                      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", padding: "12px 16px 10px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", minWidth: "110px", position: "relative" }}>
+                        <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "#fee2e2", borderRadius: 10, color: "#dc2626", fontSize: 13, fontWeight: 700, letterSpacing: "0.5px" }}>PDF</div>
+                        <span style={{ fontSize: "11px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{f.name}</span>
+                        <span style={{ fontSize: "10px", color: "#9ca3af" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0, boxShadow: "0 2px 4px rgba(239,68,68,0.3)" }} title="ลบ">×</button>
                       </div>
                     ))}
+                    <div onClick={() => fileInputRef.current?.click()} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px", padding: "12px 16px 10px", background: "#f9fafb", borderRadius: "10px", border: "1px dashed #d1d5db", minWidth: "110px", cursor: "pointer", color: "#6b7280", transition: "all 0.15s" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.color = "#3b82f6"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b7280"; }}>
+                      <span style={{ fontSize: 24, fontWeight: 300, lineHeight: 1, color: "inherit" }}>+</span>
+                      <span style={{ fontSize: "11px", textAlign: "center", color: "inherit" }}>เพิ่มไฟล์</span>
+                    </div>
+                    <span style={{ fontSize: "12px", color: "#6b7280", width: "100%", textAlign: "center", marginTop: "2px" }}>คลิกเพื่อเพิ่มไฟล์ (สูงสุด 3 ไฟล์)</span>
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>

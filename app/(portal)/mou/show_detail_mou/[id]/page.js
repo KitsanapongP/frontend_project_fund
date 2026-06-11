@@ -282,7 +282,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
               <h1 className="text-2xl font-bold text-gray-800" style={{ margin: 0 }}>
                 รายละเอียด MOU
               </h1>
-              {mou?.mou_code && <span className="text-xl font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg">{mou.mou_code}</span>}
+              {mou?.mou_code && <span className="text-xl font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg shadow-sm">{mou.mou_code}</span>}
             </div>
         </div>
         <div className="flex items-center gap-2.5">
@@ -296,9 +296,10 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
           </button>
           <Link
             href={`/mou/admin_notification_settings?mou_id=${params.id}`}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white hover:from-purple-700 hover:to-indigo-700 transition shadow-sm"
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-700 hover:to-indigo-700 transition shadow-sm"
+            style={{ color: "#fff" }}
           >
-            <Bell size={15} />
+            <Bell size={15} style={{ color: "#fff" }} />
             ตั้งค่าการแจ้งเตือน
           </Link>
         </div>

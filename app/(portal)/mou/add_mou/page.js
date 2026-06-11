@@ -147,7 +147,7 @@ function Select({ value, onChange, options, placeholder = "เลือก", nam
     <div ref={ref} className="csWrap" onKeyDown={onKeyDown}>
       {searchable ? (
         <div ref={triggerRef} className={`csBtn${open ? " open" : ""}${value ? " hasVal" : ""}`} style={{ padding: 0, overflow: "hidden", alignItems: "stretch" }}>
-          <input ref={inputRef} type="text" className="csInput" value={query || displayLabel} onChange={handleInputChange} onFocus={() => setOpen(true)} placeholder={placeholder} />
+          <input ref={inputRef} type="text" className="csInput" value={query || (searchable ? (value || "") : displayLabel)} onChange={handleInputChange} onFocus={() => setOpen(true)} placeholder={placeholder} />
           <div style={{ display: "flex", alignItems: "center", paddingRight: 8, cursor: "pointer" }} onClick={toggle}>
             <ChevronDown size={18} className={`csArrow${open ? " open" : ""}`} />
           </div>
@@ -430,7 +430,7 @@ export default function AddMouPage() {
         title: formData.title,
         description: formData.description,
         level: formData.level,
-        status_id: asDraft ? 1 : 2,
+        status_id: asDraft ? 1 : (formData.year_of_signing && formData.signed_by ? 2 : 5),
         is_international: formData.is_international === "true",
         start_date: formData.start_date ? formData.start_date.split("-").reverse().join("/") : "",
         end_date: formData.end_date ? formData.end_date.split("-").reverse().join("/") : "",
@@ -487,7 +487,7 @@ export default function AddMouPage() {
       setFacultyEmails({});
       setExternalPersons([]);
       externalPersonIdCounter.current = 0;
-      router.replace("/mou");
+      router.replace("/mou/mou_list");
     } catch (err) {
       console.error("Error creating MOU:", err);
       setError(err.message || "เกิดข้อผิดพลาดในการบันทึก");
@@ -599,12 +599,12 @@ export default function AddMouPage() {
           </div>
           <div className="formGrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div className="field">
-              <label><FileText size={14} className="shrink-0" />ชื่อ MOU <span className="required">*</span></label>
-              <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="ระบุชื่อ MOU" required />
+              <label><Key size={14} className="shrink-0" />รหัส MOU <span className="required">*</span></label>
+              <input type="text" name="mou_code" value={formData.mou_code} onChange={handleChange} placeholder="ระบุรหัส MOU" />
             </div>
             <div className="field">
-              <label><Key size={14} className="shrink-0" />รหัส MOU</label>
-              <input type="text" name="mou_code" value={formData.mou_code} onChange={handleChange} placeholder="ระบุรหัส MOU" />
+              <label><FileText size={14} className="shrink-0" />ชื่อ MOU <span className="required">*</span></label>
+              <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="ระบุชื่อ MOU" required />
             </div>
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label><AlignLeft size={14} className="shrink-0" />รายละเอียด</label>
@@ -619,18 +619,22 @@ export default function AddMouPage() {
                 </button>
                 <input ref={fileInputRef} type="file" onChange={handleFileChange} style={{ display: "none" }} accept=".pdf" multiple />
                 {files.length > 0 ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", width: "100%" }}>
                     {files.map((f, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "#fff", borderRadius: "6px", fontSize: "13px" }}>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
-                          <Upload size={12} className="shrink-0" style={{ color: "#6b7280" }} />
-                          {f.name}
-                        </span>
-                        <span style={{ margin: "0 8px", color: "#6b7280", whiteSpace: "nowrap" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0 4px" }} title="ลบ"><X size={14} /></button>
+                      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", padding: "12px 16px 10px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", minWidth: "110px", position: "relative" }}>
+                        <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "#fee2e2", borderRadius: 10, color: "#dc2626", fontSize: 13, fontWeight: 700, letterSpacing: "0.5px" }}>PDF</div>
+                        <span style={{ fontSize: "11px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{f.name}</span>
+                        <span style={{ fontSize: "10px", color: "#9ca3af" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0, boxShadow: "0 2px 4px rgba(239,68,68,0.3)" }} title="ลบ">×</button>
                       </div>
                     ))}
-                    <span style={{ fontSize: "12px", color: "#6b7280", textAlign: "center" }}>คลิกเพื่อเพิ่มไฟล์ (สูงสุด 3 ไฟล์)</span>
+                    <div onClick={() => fileInputRef.current?.click()} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px", padding: "12px 16px 10px", background: "#f9fafb", borderRadius: "10px", border: "1px dashed #d1d5db", minWidth: "110px", cursor: "pointer", color: "#6b7280", transition: "all 0.15s" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.color = "#3b82f6"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b7280"; }}>
+                      <span style={{ fontSize: 24, fontWeight: 300, lineHeight: 1, color: "inherit" }}>+</span>
+                      <span style={{ fontSize: "11px", textAlign: "center", color: "inherit" }}>เพิ่มไฟล์</span>
+                    </div>
+                    <span style={{ fontSize: "12px", color: "#6b7280", width: "100%", textAlign: "center", marginTop: "2px" }}>คลิกเพื่อเพิ่มไฟล์ (สูงสุด 3 ไฟล์)</span>
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
@@ -648,7 +652,7 @@ export default function AddMouPage() {
             <Layers size={18} className="text-blue-500" />
             <h3>ความร่วมมือ</h3>
           </div>
-          <div className="formGrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          <div className="formGrid" style={{ gridTemplateColumns: formData.is_international === "true" ? "1fr 1fr 1fr" : "1fr 1fr" }}>
             <div className="field">
               <label><Layers size={14} className="shrink-0" />ระดับ <span className="required">*</span></label>
               <Select name="level" value={formData.level} onChange={handleChange} placeholder="เลือกระดับ" options={[
@@ -739,8 +743,9 @@ export default function AddMouPage() {
                         {isComputing ? `คณะ${fac?.name_th || `#${fid}`}` : fac?.name_th || `#${fid}`}
                       </span>
                     </div>
-                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                       <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>ชื่อผู้รับผิดชอบ <span className="required">*</span></label>
                         {isComputing ? (
                           <Select value={facultyUsers[fid] || ""} onChange={(e) => handleFacultyUserChange(fid, e.target.value)}
                             placeholder="เลือกหรือพิมพ์ชื่อผู้รับผิดชอบ" searchable
@@ -749,9 +754,19 @@ export default function AddMouPage() {
                           <input type="text" value={facultyUsers[fid] || ""} onChange={(e) => handleFacultyUserChange(fid, e.target.value)}
                             placeholder="ระบุชื่อผู้รับผิดชอบ" required />
                         )}
+                        {isComputing && (
+                          <datalist id={`faculty-user-${fid}`}>
+                            {users.map((u) => (
+                              <option key={u.user_id} value={`${u.prefix || ""} ${u.user_fname || ""} ${u.user_lname || ""}`.trim()} />
+                            ))}
+                          </datalist>
+                        )}
                       </div>
-                      <input type="email" value={facultyEmails[fid] || ""} onChange={(e) => handleFacultyEmailChange(fid, e.target.value)}
-                        placeholder="อีเมล" style={{ width: "220px" }} />
+                      <div>
+                        <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>อีเมล <span className="required">*</span></label>
+                        <input type="email" value={facultyEmails[fid] || ""} onChange={(e) => handleFacultyEmailChange(fid, e.target.value)}
+                          placeholder="อีเมล" style={{ width: "220px" }} />
+                      </div>
                     </div>
                   </div>
                 );
@@ -775,8 +790,8 @@ export default function AddMouPage() {
                         <input type="text" value={p.name} onChange={(e) => updateExternalPerson(p.id, "name", e.target.value)} placeholder="ชื่อ" required />
                       </div>
                       <div className="field" style={{ margin: 0 }}>
-                        <label style={{ fontSize: 13 }}><Briefcase size={13} className="shrink-0" />หน่วยงาน</label>
-                        <input type="text" value={p.org} onChange={(e) => updateExternalPerson(p.id, "org", e.target.value)} placeholder="หน่วยงาน" />
+                        <label style={{ fontSize: 13 }}><Briefcase size={13} className="shrink-0" />หน่วยงาน <span className="required">*</span></label>
+                        <input type="text" value={p.org} onChange={(e) => updateExternalPerson(p.id, "org", e.target.value)} placeholder="หน่วยงาน" required />
                       </div>
                       <div className="field" style={{ margin: 0 }}>
                         <label style={{ fontSize: 13 }}><FileText size={13} className="shrink-0" />อีเมล <span className="required">*</span></label>

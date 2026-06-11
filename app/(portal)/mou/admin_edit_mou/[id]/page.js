@@ -346,7 +346,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
           is_international: mouRes.is_international ? "true" : "false",
           start_date: formatDateForInput(mouRes.start_date),
           end_date: formatDateForInput(mouRes.end_date),
-          year_of_signing: mouRes.year_of_signing ? String(mouRes.year_of_signing) : "",
+          year_of_signing: formatDateForInput(mouRes.year_of_signing),
           partner_name: mouRes.partners?.[0]?.partner_org || "",
           partner_type_id: mouRes.partners?.[0]?.partner_type_id || "",
           country_id: mouRes.country_id ? String(mouRes.country_id) : "",
@@ -568,7 +568,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
         confirmButtonColor: "#2563eb",
         timer: 1500,
       });
-      router.replace("/mou");
+      router.replace("/mou/mou_list");
     } catch (err) {
       console.error("Error updating MOU:", err);
       setError(err.message || "เกิดข้อผิดพลาดในการบันทึก");

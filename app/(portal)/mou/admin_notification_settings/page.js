@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { Save, Bell, Eye, EyeOff, Users, RefreshCw, Mail, Clock, FileText, ChevronLeft, ChevronDown, Building2, Tag, MapPin, Calendar, Bookmark, FileSignature, Check, AlignLeft, Layers, Handshake } from "lucide-react";
 import { mouAPI } from "../../../lib/mou_api";
@@ -15,8 +16,8 @@ const fmtDate = (d) => {
 };
 
 export default function AdminNotificationSettingsPage() {
+  const router = useRouter();
   const [settings, setSettings] = useState(null);
-  const [recipients, setRecipients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [previewMou, setPreviewMou] = useState(null);
@@ -67,7 +68,7 @@ export default function AdminNotificationSettingsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      await Promise.all([fetchSettings(), fetchRecipients(), fetchMouList()]);
+      await Promise.all([fetchSettings(), fetchMouList()]);
     } catch {
       Swal.fire("ผิดพลาด", "ไม่สามารถโหลดข้อมูลได้", "error");
     }
@@ -79,29 +80,9 @@ export default function AdminNotificationSettingsPage() {
     if (res?.success) setSettings(res.data);
   };
 
-  const fetchRecipients = async () => {
-    const res = await mouAPI.listNotificationRecipients();
-    if (res?.success) setRecipients(res.data);
-  };
-
   const fetchMouList = async () => {
     const res = await mouAPI.getMous({ limit: 50 });
     if (res?.data) setMouList(res.data);
-  };
-
-  const gatherSelectedRecipients = () => {
-    if (!settings) return [];
-    const selected = [];
-    if (settings.notify_coordinator) {
-      recipients.filter((r) => r.type === "coordinator").forEach((r) => selected.push(r));
-    }
-    if (settings.notify_faculty_responsible) {
-      recipients.filter((r) => r.type === "faculty").forEach((r) => selected.push(r));
-    }
-    if (settings.notify_external) {
-      recipients.filter((r) => r.type === "external").forEach((r) => selected.push(r));
-    }
-    return selected;
   };
 
   const categories = {
@@ -192,7 +173,8 @@ export default function AdminNotificationSettingsPage() {
       const res = await mouAPI.updateNotificationSettings(payload);
       if (res?.success) {
         setSettings(res.data);
-        Swal.fire("บันทึกสำเร็จ", "ตั้งค่าการแจ้งเตือน MOU ได้รับการอัปเดตแล้ว", "success");
+        await Swal.fire("บันทึกสำเร็จ", "ตั้งค่าการแจ้งเตือน MOU ได้รับการอัปเดตแล้ว", "success");
+        router.back();
       }
     } catch {
       Swal.fire("ผิดพลาด", "ไม่สามารถบันทึกการตั้งค่าได้", "error");
@@ -200,11 +182,37 @@ export default function AdminNotificationSettingsPage() {
     setSaving(false);
   };
 
-  const recipientGroups = {
-    coordinator: (recipients || []).filter((r) => r.type === "coordinator"),
-    faculty: (recipients || []).filter((r) => r.type === "faculty"),
-    external: (recipients || []).filter((r) => r.type === "external"),
-  };
+  const recipientGroups = useMemo(() => {
+    if (!mouDetail) return { coordinator: [], faculty: [], external: [] };
+    return {
+      coordinator: mouDetail.coordinator?.user_id
+        ? [{
+            id: `coordinator-${mouDetail.coordinator.user_id}`,
+            name: [mouDetail.coordinator.prefix || "", mouDetail.coordinator.user_fname || "", mouDetail.coordinator.user_lname || ""].filter(Boolean).join(" "),
+            email: mouDetail.coordinator.email || "",
+          }]
+        : [],
+      faculty: (mouDetail.faculties || [])
+        .filter((f) => f.faculty_id)
+        .map((fac) => {
+          const userName = [fac.user?.prefix, fac.user?.user_fname, fac.user?.user_lname].filter(Boolean).join(" ");
+          return {
+            id: `faculty-${fac.id}`,
+            name: userName || fac.external_name || "",
+            email: fac.user?.email || fac.email || "",
+            faculty_name: fac.faculty?.name_th || "",
+          };
+        }),
+      external: (mouDetail.faculties || [])
+        .filter((f) => f.external_org)
+        .map((fac) => ({
+          id: `external-${fac.id}`,
+          name: fac.external_name || "ไม่ระบุ",
+          email: fac.email || "",
+          org_name: fac.external_org || "ไม่ระบุหน่วยงาน",
+        })),
+    };
+  }, [mouDetail]);
 
   return (
     <>
@@ -253,13 +261,12 @@ export default function AdminNotificationSettingsPage() {
                   <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
                     <FileText size={15} color="#fff" />
                   </div>
-                  <span className="text-sm font-semibold text-blue-800">MOU ที่เลือก</span>
+                  <span className="text-sm font-semibold text-blue-800">{mouDetail?.mou_code || "MOU ที่เลือก"}</span>
                 </div>
                 <div className="p-5">
                   {!showFullDetail && (
                     <>
                       <div className="flex items-center gap-2 mb-4">
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-700">{mouDetail.mou_code}</span>
                         <span className="text-base font-bold text-gray-800">{mouDetail.title}</span>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -321,7 +328,6 @@ export default function AdminNotificationSettingsPage() {
                   {showFullDetail && (
                     <div className="space-y-5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-700">{mouDetail.mou_code}</span>
                         <span className="text-base font-bold text-gray-800">{mouDetail.title}</span>
                       </div>
 
@@ -351,13 +357,11 @@ export default function AdminNotificationSettingsPage() {
                           <Layers size={15} className="text-blue-600" />
                           <span className="text-sm font-semibold text-gray-700">ความร่วมมือ</span>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                           <FullInfoRow label="ระดับ" value={mouDetail.level === "university" ? "มหาวิทยาลัย" : mouDetail.level === "faculty" ? "คณะ" : mouDetail.level || "-"} />
                           <FullInfoRow label="ขอบเขตความร่วมมือ" value={mouDetail.is_international ? "ต่างประเทศ" : "ในประเทศ"} />
+                          <FullInfoRow label="ประเทศ" value={mouDetail.country?.name_th || mouDetail.country?.name || "-"} />
                         </div>
-                        {mouDetail.country?.name_th && (
-                          <FullInfoRow label="ประเทศ" value={mouDetail.country.name_th} />
-                        )}
                         {(mouDetail.faculties || []).filter((f) => f.faculty_id).length > 0 && (
                           <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
                             <div className="flex gap-1.5">
@@ -371,14 +375,40 @@ export default function AdminNotificationSettingsPage() {
                                         <Building2 size={13} className="text-indigo-500 shrink-0" />
                                         <span className="text-xs font-medium text-indigo-900 truncate">{fac.faculty?.name_th || "-"}</span>
                                       </div>
-                                      {fac.user && (
-                                        <div className="text-[11px] text-gray-500 truncate pl-5">
-                                          ผู้รับผิดชอบ: {[fac.user.prefix || "", fac.user.user_fname || "", fac.user.user_lname || ""].filter(Boolean).join(" ")}
-                                        </div>
-                                      )}
+                                      {(() => {
+                                        const userName = [fac.user?.prefix, fac.user?.user_fname, fac.user?.user_lname].filter(Boolean).join(" ");
+                                        const responsibleName = userName || fac.external_name;
+                                        return responsibleName ? (
+                                          <div className="text-[11px] text-gray-500 truncate pl-5">
+                                            ผู้รับผิดชอบ: {responsibleName}
+                                          </div>
+                                        ) : null;
+                                      })()}
                                       {(fac.user?.email || fac.email) && (
                                         <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.user?.email || fac.email}</div>
                                       )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {(mouDetail.faculties || []).filter((f) => f.external_org).length > 0 && (
+                          <div className="bg-white rounded-lg px-4 py-3 border border-blue-100">
+                            <div className="flex gap-1.5">
+                              <Building2 size={12} className="text-gray-400 shrink-0 mt-0.5" />
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs text-gray-500 mb-2">ผู้รับผิดชอบภายนอก</div>
+                                <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
+                                  {(mouDetail.faculties || []).filter((f) => f.external_org).map((fac) => (
+                                    <div key={fac.id} className="p-2 rounded-lg border border-blue-200">
+                                      <div className="flex items-center gap-1.5 mb-1">
+                                        <Building2 size={13} className="text-blue-500 shrink-0" />
+                                        <span className="text-xs font-medium text-blue-900 truncate">{fac.external_org || "ไม่ระบุ"}</span>
+                                      </div>
+                                      <div className="text-[11px] text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {fac.external_name || "ไม่ระบุ"}</div>
+                                      {fac.email && <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.email}</div>}
                                     </div>
                                   ))}
                                 </div>
@@ -404,7 +434,10 @@ export default function AdminNotificationSettingsPage() {
                           <FullInfoRow label="วันที่เริ่มต้น" value={fmtDate(mouDetail.start_date)} />
                           <FullInfoRow label="วันที่สิ้นสุด" value={mouDetail.end_date ? fmtDate(mouDetail.end_date) : "-"} />
                         </div>
-                        <FullInfoRow label="ผู้ประสานงาน" value={mouDetail.coordinator ? [mouDetail.coordinator.prefix || "", mouDetail.coordinator.user_fname || "", mouDetail.coordinator.user_lname || ""].filter(Boolean).join(" ") : "-"} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <FullInfoRow label="ผู้ประสานงาน" value={mouDetail.coordinator?.user_id ? [mouDetail.coordinator.prefix || "", mouDetail.coordinator.user_fname || "", mouDetail.coordinator.user_lname || ""].filter(Boolean).join(" ") : "-"} />
+                          <FullInfoRow label="แจ้งเตือนก่อนสิ้นสุด (จำนวนวัน)" value={mouDetail.notify_days_before != null ? String(mouDetail.notify_days_before) : "-"} />
+                        </div>
                         {(mouDetail.notes || "").trim() && (
                           <FullInfoRow label="หมายเหตุ" value={mouDetail.notes} />
                         )}
@@ -440,11 +473,6 @@ export default function AdminNotificationSettingsPage() {
                     />
                   </div>
                   <span className="text-sm text-gray-500">วัน</span>
-                  {mouDetail.notify_days_before ? (
-                    <span className="text-xs text-emerald-600 font-medium">(ตั้งไว้ {mouDetail.notify_days_before} วัน)</span>
-                  ) : (
-                    <span className="text-xs text-gray-400">(ยังไม่ได้ตั้งค่า — จะใช้ค่าเริ่มต้น {settings.default_days_before} วัน)</span>
-                  )}
                   <button
                     onClick={handleSaveNotifyDays}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition shadow-sm"
