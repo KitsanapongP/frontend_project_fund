@@ -14,7 +14,7 @@ function PortalPlaceholderPageContent({ title, description }) {
 
         <Link
           href="/"
-          className="mt-8 inline-flex items-center rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+          className="inline-flex items-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-blue-300 hover:text-blue-700"
         >
           กลับหน้าหลัก
         </Link>
