@@ -124,11 +124,11 @@ async function upsertProject(pool, project) {
     await pool.execute(
       `UPDATE ai_showcase_projects SET
         title_th = ?, title_en = ?, abstract = ?, description = ?,
-        project_type = ?, track_id = ?, ai_showcase_link = ?, updated_at = NOW()
+        project_type = ?, track_id = ?, ai_showcase_link = ?, poster_url = ?, updated_at = NOW()
       WHERE id = ?`,
       [
         project.title_th, project.title_en, project.abstract, project.description,
-        project.project_type, project.track_id, project.ai_showcase_link,
+        project.project_type, project.track_id, project.ai_showcase_link, project.poster_url,
         projectId,
       ]
     );
