@@ -2,42 +2,43 @@
 import { Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "../../../lib/api";
+import Swal from "sweetalert2"; 
 
 export default function IntellectualPropertyTab({ formData, handleInputChange }) {
   const intellectualProperties = formData.instructor_intellectual_properties || [];
   const [weightMaster, setWeightMaster] = useState({});
 
   useEffect(() => {
-  const fetchWeights = async () => {
-    try {
-      const res = await api.get("/admin/ranking-weights");
-      const rawData = Array.isArray(res) ? res : (res?.data ?? []);
+    const fetchWeights = async () => {
+      try {
+        const res = await api.get("/admin/ranking-weights");
+        const rawData = Array.isArray(res) ? res : (res?.data ?? []);
 
-      if (rawData.length > 0) {
-        const mapping = {};
-        rawData.forEach(item => {
-  if (item.source_id !== 1 && item.source_id !== 2) {
-    mapping[item.tier_code] = item;
-  }
-});
-        if (Object.keys(mapping).length > 0) {
-          setWeightMaster(mapping);
-          return;
+        if (rawData.length > 0) {
+          const mapping = {};
+          rawData.forEach(item => {
+            if (item.source_id !== 1 && item.source_id !== 2) {
+              mapping[item.tier_code] = item;
+            }
+          });
+          if (Object.keys(mapping).length > 0) {
+            setWeightMaster(mapping);
+            return;
+          }
         }
+      } catch (err) {
+        console.error("โหลด ranking-weights ไม่ได้:", err);
       }
-    } catch (err) {
-      console.error("โหลด ranking-weights ไม่ได้:", err);
-    }
-    // Fallback
-    setWeightMaster({
-      "patent":       { tier_code: "patent",      tier_name: "Patent",       weight: 1.0, source_id: 2 },
-      "petty_patent": { tier_code: "petty_patent", tier_name: "Petty Patent", weight: 0.4, source_id: 2 },
-    });
-  };
-  fetchWeights();
-}, []);
+      // Fallback
+      setWeightMaster({
+        "patent":       { tier_code: "patent",       tier_name: "Patent",       weight: 1.0, source_id: 2 },
+        "petty_patent": { tier_code: "petty_patent", tier_name: "Petty Patent", weight: 0.4, source_id: 2 },
+      });
+    };
+    fetchWeights();
+  }, []);
 
-  // 2. Sync type ที่โหลดจาก DB ให้ตรงกับ key ใน weightMaster
+  //Sync type ที่โหลดจาก DB ให้ตรงกับ key ใน weightMaster
   useEffect(() => {
     if (Object.keys(weightMaster).length === 0) return;
 
@@ -58,11 +59,17 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
     handleInputChange("instructor_intellectual_properties", synced);
   }, [weightMaster]);
 
-  // 3. เพิ่มรายการใหม่
+  //เพิ่มรายการใหม่
   const handleAddProperty = () => {
     const availableTypes = Object.keys(weightMaster);
     if (availableTypes.length === 0) {
-      alert("ยังไม่ได้โหลดข้อมูลเกณฑ์น้ำหนัก กรุณารอสักครู่");
+      Swal.fire({
+        title: "กรุณารอสักครู่",
+        text: "ระบบกำลังโหลดข้อมูลเกณฑ์น้ำหนักคะแนน...",
+        icon: "info",
+        confirmButtonColor: "#0284c7",
+        customClass: { popup: "rounded-2xl" }
+      });
       return;
     }
     const defaultType = availableTypes[0];
@@ -98,8 +105,56 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
     handleInputChange("instructor_intellectual_properties", newList);
   };
 
-  const handleRemoveProperty = (index) => {
-    if (!window.confirm("คุณต้องการลบรายการทรัพย์สินทางปัญญานี้ใช่หรือไม่?")) return;
+  //ปรับปรุงการลบรายการด้วย SweetAlert2
+  const handleRemoveProperty = async (index) => {
+    const target = intellectualProperties[index];
+    
+    const result = await Swal.fire({
+      title: "ยืนยันการลบผลงาน?",
+      text: `คุณต้องการลบผลงานทรัพย์สินทางปัญญา "${target.title || 'นี้'}" ใช่หรือไม่?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#0284c7", // สีฟ้าครามธีมหลัก
+      cancelButtonColor: "#94a3b8",  // สีเทา Slate
+      confirmButtonText: "ใช่, ต้องการลบ",
+      cancelButtonText: "ยกเลิก",
+      customClass: {
+        popup: "rounded-2xl"
+      }
+    });
+
+     // ถ้าผู้ใช้กด ยกเลิก (Cancel) ให้หยุดทำงานทันที
+      if (!result.isConfirmed) return;
+
+      try {
+        await api.delete(`/admin/instructor-intellectual-properties/${target.id}`);
+        
+        // แจ้งเตือนเมื่อลบสำเร็จแบบ Auto-close 1.5 วินาที
+        Swal.fire({
+          title: "ลบสำเร็จ!",
+          text: "ลบข้อมูลผลงานทรัพย์สินทางปัญญาออกจากระบบเรียบร้อยแล้ว",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+          customClass: { popup: "rounded-2xl" }
+        });
+
+      } catch (err) {
+        console.error("Error deleting intellectual property:", err);
+        
+        // แจ้งเตือนเมื่อระบบหลังบ้านเกิด Error
+        Swal.fire({
+          title: "เกิดข้อผิดพลาด!",
+          text: `ไม่สามารถลบข้อมูลได้ (${err.message})`,
+          icon: "error",
+          confirmButtonColor: "#0284c7",
+          customClass: { popup: "rounded-2xl" }
+        });
+        return; // ออกจากฟังก์ชัน ไม่ตัดแถวบนหน้าจอ
+      }
+    
+
+    // ทำการตัดข้อมูลออกจาก State หลังจากกดยืนยันสำเร็จ
     handleInputChange(
       "instructor_intellectual_properties",
       intellectualProperties.filter((_, i) => i !== index)
@@ -113,7 +168,7 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
         <button
           onClick={handleAddProperty}
           type="button"
-          className="inline-flex items-center gap-1 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 hover:bg-cyan-100"
+          className="inline-flex items-center gap-1 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100"
         >
           <Plus size={16} /> เพิ่มผลงาน
         </button>
@@ -121,7 +176,7 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
         <table className="w-full text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-slate-900 font-bold text-xs uppercase">
+          <thead className="border-b border-slate-200 bg-slate-50 text-slate-900 font-bold text-xs uppercase tracking-wide">
             <tr>
               <th className="p-4 text-left w-1/4">ประเภท</th>
               <th className="p-4 text-left w-1/3">ชื่อผลงานวิชาการ / ทรัพย์สินทางปัญญา</th>
@@ -144,12 +199,12 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
                   : (matchedMaster ? matchedMaster.weight.toFixed(1) : "0.0");
 
                 return (
-                  <tr key={property.id || index} className="bg-white hover:bg-slate-50/60">
+                  <tr key={property.id || index} className="bg-white hover:bg-slate-50/60 transition-colors">
                     <td className="p-2">
                       <select
                         value={currentTypeKey}
                         onChange={(e) => handlePropertyFieldChange(index, "type", e.target.value)}
-                        className="w-full rounded-lg border-0 bg-transparent p-2 text-slate-700 outline-none font-medium cursor-pointer"
+                        className="w-full rounded-lg border-0 bg-transparent p-2 text-slate-700 outline-none font-medium cursor-pointer focus:text-cyan-600"
                       >
                         {Object.keys(weightMaster).map((key) => (
                           <option key={key} value={key}>
@@ -164,7 +219,7 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
                         value={property.title || ""}
                         onChange={(e) => handlePropertyFieldChange(index, "title", e.target.value)}
                         placeholder="กรอกชื่อผลงาน"
-                        className="w-full bg-transparent p-2 outline-none"
+                        className="w-full bg-transparent p-2 outline-none text-slate-700 placeholder:text-slate-300"
                       />
                     </td>
                     <td className="p-2">
@@ -173,7 +228,7 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
                         value={property.registration_number || ""}
                         onChange={(e) => handlePropertyFieldChange(index, "registration_number", e.target.value)}
                         placeholder="เช่น 123456"
-                        className="w-full bg-transparent p-2 outline-none"
+                        className="w-full bg-transparent p-2 outline-none text-slate-700 placeholder:text-slate-300"
                       />
                     </td>
                     <td className="p-2 text-center">
@@ -185,7 +240,7 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
                       <select
                         value={property.granted_year || ""}
                         onChange={(e) => handlePropertyFieldChange(index, "granted_year", e.target.value)}
-                        className="w-full bg-transparent p-2 outline-none text-center cursor-pointer"
+                        className="w-full bg-transparent p-2 outline-none text-center cursor-pointer text-slate-700 focus:text-cyan-600"
                       >
                         <option value="">เลือกปี พ.ศ.</option>
                         {(() => {
@@ -199,11 +254,12 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
                         })()}
                       </select>
                     </td>
-                    <td className="p-2 text-center">
+                    
+                    <td className="p-2 align-middle text-center">
                       <button
                         type="button"
                         onClick={() => handleRemoveProperty(index)}
-                        className="text-cyan-700 bg-cyan-50 p-2 rounded-xl border border-cyan-200 hover:bg-cyan-100"
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-xl border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100 shrink-0"
                       >
                         <X size={16} />
                       </button>

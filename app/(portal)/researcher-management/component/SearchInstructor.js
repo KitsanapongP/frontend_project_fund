@@ -1,72 +1,86 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-//Import useRouter เข้ามาจาก 'next/navigation'
-import { useRouter } from "next/navigation"; 
-import { Search, User, ChevronRight, UserCircle, Clock, ArrowLeft, Settings, Database } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, User, ChevronRight, UserCircle, Clock, ArrowLeft, Settings, Database, BookOpen, ClipboardList  } from "lucide-react";
 
 export default function SearchInstructor() {
-  // ประกาศใช้งานตัวแปร router ไว้ด้านบนสุดภายในฟังก์ชัน
-  const router = useRouter(); 
+  const router = useRouter();
 
   const [instructors, setInstructors] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
   const handleBackToPortal = () => {
-    window.location.href = "/"; 
+    window.location.href = "/";
   };
-  
+
   const handleGoToWeightsPage = () => {
-    // ตรงนี้ใช้งาน router.push ได้อย่างปลอดภัยแล้วครับ ไม่ระเบิดแน่นอน
-    router.push("/researcher-management/weights"); 
+    router.push("/researcher-management/weights");
   };
 
-   const renderContentWithBack = (content) => (
-      <div className="space-y-3">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={handleBackToPortal}
-            className="inline-flex items-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-blue-300 hover:text-blue-700"
-          >
-            <ArrowLeft size={16} className="me-2" />
-            กลับหน้าหลัก
-          </button>
+  const renderContentWithBack = (content) => (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={handleBackToPortal}
+          className="inline-flex items-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-blue-300 hover:text-blue-700"
+        >
+          <ArrowLeft size={16} className="me-2" />
+          กลับหน้าหลัก
+        </button>
 
-          <button
-            onClick={handleGoToWeightsPage}
-            className="inline-flex items-center rounded-full border border-slate-300 bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 shadow-sm"
-          >
-            <Settings size={16} className="me-2" />
-            ตั้งค่าค่าน้ำหนักผลงาน
-          </button>
+        <button
+          onClick={handleGoToWeightsPage}
+          className="inline-flex items-center rounded-full border border-slate-300 bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 shadow-sm"
+        >
+          <Settings size={16} className="me-2" />
+          ตั้งค่าค่าน้ำหนักผลงาน
+        </button>
 
-          <button
-        onClick={() => router.push("/researcher-management/sources")}
-        className="inline-flex items-center rounded-full border border-slate-300 bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 shadow-sm"
-      >
-        <Database size={16} className="me-2" /> {/* อย่าลืมเพิ่ม Database ในการ Import lucide-react ด้วยนะครับ */}
-        ตั้งค่าแหล่งข้อมูลฐานอ้างอิง
-      </button>
+        <button
+          onClick={() => router.push("/researcher-management/sources")}
+          className="inline-flex items-center rounded-full border border-slate-300 bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 shadow-sm"
+        >
+          <Database size={16} className="me-2" />
+          ตั้งค่าฐานข้อมูลแหล่งอ้างอิง
+        </button>
 
-        </div>
-        {content}
+        {/* ── ปุ่มใหม่: จัดการหลักสูตร ── */}
+        <button
+          onClick={() => router.push("/researcher-management/courses")}
+          className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-600 shadow-sm"
+        >
+          <BookOpen size={16} className="me-2" />
+          จัดการฐานข้อมูลหลักสูตร
+        </button>
+        
+        <button
+          onClick={() => router.push("/researcher-management/audit")}
+          className="inline-flex items-center rounded-full border border-violet-300 bg-violet-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-600 shadow-sm"
+        >
+          <ClipboardList size={16} className="me-2" />
+          ประวัติการแก้ไข
+        </button>
+
       </div>
-    );
+      {content}
+    </div>
+  );
 
   useEffect(() => {
     const fetchInstructors = async () => {
       try {
         setLoading(true);
         const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-        
+
         if (!token) {
           setLoading(false);
           return;
         }
 
         const response = await fetch("http://localhost:8080/api/v1/admin/instructors", {
-          headers: { "Authorization": `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const data = await response.json();
@@ -103,13 +117,9 @@ export default function SearchInstructor() {
   return (
     <div className="p-6 bg-gray-100 min-h-screen font-sans">
       <div className="max-w-5xl mx-auto">
-        
         {renderContentWithBack(
           <>
-            {/* Header Section เหมือน PageLayout */}
             <div className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-100 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.42)]">
-
-              {/* Blur orbs */}
               <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-cyan-200/40 blur-3xl" />
               <div className="pointer-events-none absolute -left-12 bottom-0 h-56 w-56 rounded-full bg-blue-200/30 blur-3xl" />
 
@@ -128,7 +138,6 @@ export default function SearchInstructor() {
                   </span>
                 </div>
 
-                {/* Search Bar สไตล์เดียวกับ Scopus Filter */}
                 <div className="mt-4 rounded-2xl border border-cyan-100 bg-white/90 p-4 shadow-[0_12px_30px_-25px_rgba(6,95,70,0.45)]">
                   <div className="flex gap-3">
                     <div className="relative flex-1">
@@ -148,7 +157,6 @@ export default function SearchInstructor() {
                 </div>
               </div>
 
-              {/* Main Content Card */}
               <div className="relative p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
@@ -156,17 +164,16 @@ export default function SearchInstructor() {
                     รายชื่ออาจารย์ในระบบ
                   </h3>
                 </div>
-                
+
                 <div className="space-y-3">
                   {loading ? (
-                    // Skeleton Loading
                     [...Array(3)].map((_, i) => (
                       <div key={i} className="h-[72px] animate-pulse rounded-2xl border border-slate-200 bg-slate-100/80 w-full" />
                     ))
                   ) : filteredData.length > 0 ? (
                     filteredData.map((item) => (
-                      <div 
-                        key={item.user_id} 
+                      <div
+                        key={item.user_id}
                         className="group flex items-center justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:px-5 transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_18px_34px_-28px_rgba(14,116,144,0.45)]"
                       >
                         <div className="flex items-center gap-4">
@@ -179,17 +186,16 @@ export default function SearchInstructor() {
                             </span>
                             <span className="text-xs text-slate-500">
                               {item.position || "อาจารย์ประจำวิทยาลัย"}
-                              
                               {(() => {
-                                const responsibilities = 
-                                  item.instructor_course_responsibility || 
+                                const responsibilities =
+                                  item.instructor_course_responsibility ||
                                   item.InstructorCourseResponsibility ||
                                   item.header?.instructor_course_responsibility ||
                                   item.header?.InstructorCourseResponsibility ||
                                   item.courses_data;
 
                                 const resp = Array.isArray(responsibilities) ? responsibilities[0] : null;
-                                  
+
                                 if (!resp) return " (ยังไม่ระบุหลักสูตร)";
 
                                 const courseName = resp.course?.course_name_th || resp.Course?.course_name_th;
@@ -199,15 +205,15 @@ export default function SearchInstructor() {
                                 } else if (resp.course_id) {
                                   return `, หลักสูตร ID: ${resp.course_id}`;
                                 }
-                                
+
                                 return " (ยังไม่ระบุหลักสูตร)";
                               })()}
                             </span>
                           </div>
                         </div>
-                        
-                        <button 
-                          onClick={() => window.location.href = `/researcher-management/edit/${item.user_id}`}
+
+                        <button
+                          onClick={() => (window.location.href = `/researcher-management/edit/${item.user_id}`)}
                           className="hidden sm:inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-700 transition group-hover:border-cyan-300 group-hover:bg-cyan-100"
                         >
                           จัดการข้อมูล
@@ -216,7 +222,6 @@ export default function SearchInstructor() {
                       </div>
                     ))
                   ) : (
-                    // Empty State
                     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
                       <User size={40} className="mx-auto text-slate-300 mb-3" />
                       <p className="text-sm text-slate-500">ไม่พบข้อมูลรายชื่ออาจารย์ที่ค้นหา</p>
@@ -225,7 +230,6 @@ export default function SearchInstructor() {
                 </div>
               </div>
 
-              {/* Footer Info */}
               <div className="relative mx-4 mb-5 sm:mx-6 rounded-xl border border-cyan-100 bg-cyan-50/60 px-4 py-3 text-sm text-cyan-800 flex items-center gap-2">
                 <Clock size={15} />
                 ข้อมูลบุคลากรถูกดึงมาจากระบบฐานข้อมูลส่วนกลางล่าสุด
@@ -233,7 +237,6 @@ export default function SearchInstructor() {
             </div>
           </>
         )}
-
       </div>
     </div>
   );
