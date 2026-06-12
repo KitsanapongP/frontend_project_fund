@@ -75,11 +75,30 @@ function cleanName(raw) {
 
 function parseMembers(text) {
   if (!text) return [];
-  const segments = text.split(/[,;\n\r]+/).map(s => s.trim()).filter(Boolean);
   const members = [];
+  const seenNames = new Set();
+  const parenGroups = text.match(/\(([^)]+)\)/g);
+  if (parenGroups && parenGroups.length > 0) {
+    for (const g of parenGroups) {
+      const content = g.slice(1, -1);
+      const parts = content.split(',').map(s => s.trim()).filter(Boolean);
+      if (parts.length === 0) continue;
+      const idPart = parts[0];
+      const ids = idPart.match(/\d{7,12}/);
+      const sid = ids ? ids[0] : null;
+      const name = parts.slice(1).join(', ').trim();
+      if (name && !seenNames.has(name)) {
+        seenNames.add(name);
+        members.push({ student_id: sid, name });
+      }
+    }
+    return members;
+  }
+
+  const segments = text.split(/[,;\n\r]+/).map(s => s.trim()).filter(Boolean);
   for (const seg of segments) {
     const ids = [...seg.matchAll(/\b(\d{7,12}(?:-\d+)?)\b/g)];
-    if (ids.length === 0) { const n = cleanName(seg); if (n) members.push({ student_id: null, name: n }); continue; }
+    if (ids.length === 0) { const n = cleanName(seg); if (n && !seenNames.has(n)) { seenNames.add(n); members.push({ student_id: null, name: n }); } continue; }
     for (let i = 0; i < ids.length; i++) {
       const m = ids[i];
       const prevEnd = i > 0 ? ids[i-1].index + ids[i-1][0].length : 0;
@@ -89,7 +108,10 @@ function parseMembers(text) {
       if (i > 0 && beforeText && beforeText === seg.slice(ids[i-1].index + ids[i-1][0].length, ids[i].index).trim()) continue;
       const rawName = (beforeText && !afterText) ? beforeText : (afterText || beforeText);
       const name = cleanName(rawName);
-      if (name) members.push({ student_id: m[1], name });
+      if (name && !seenNames.has(name)) {
+        seenNames.add(name);
+        members.push({ student_id: m[1], name });
+      }
     }
   }
   return members;
