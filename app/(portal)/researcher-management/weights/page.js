@@ -246,7 +246,7 @@ export default function RankingWeightsPage() {
                 className="inline-flex items-center rounded-full border border-slate-300 bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 shadow-sm"
               >
                 <Database size={16} className="me-2" /> 
-                ตั้งค่าแหล่งข้อมูลฐานอ้างอิง
+                ตั้งค่าฐานข้อมูลแหล่งอ้างอิง
               </button>
             </div>
 
@@ -313,7 +313,7 @@ export default function RankingWeightsPage() {
                         <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-bold text-xs uppercase tracking-wide whitespace-nowrap">
                           <th className="p-4 min-w-[200px]">ชื่อเรียก (Tier Name)</th>
                           <th className="p-4 min-w-[180px] bg-cyan-50/40 text-cyan-900 border-x border-slate-200/60">แหล่งข้อมูล (Sources)</th>
-                          <th className="p-4 w-[110px] text-center bg-cyan-50/20 text-cyan-950">Weight (น้ำหนัก)</th>
+                          <th className="p-4 w-[110px] text-center bg-cyan-50/20 text-cyan-950">น้ำหนัก (Weight)</th>
                           <th className="p-4 min-w-[260px]">คำอธิบาย (EN)</th>
                           <th className="p-4 min-w-[340px]">คำอธิบาย (TH)</th>
                           <th className="p-4 w-16 text-center"></th>

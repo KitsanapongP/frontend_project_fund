@@ -43,7 +43,7 @@ export default function SearchInstructor() {
           className="inline-flex items-center rounded-full border border-slate-300 bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 shadow-sm"
         >
           <Database size={16} className="me-2" />
-          ตั้งค่าแหล่งข้อมูลฐานอ้างอิง
+          ตั้งค่าฐานข้อมูลแหล่งอ้างอิง
         </button>
 
         {/* ── ปุ่มใหม่: จัดการหลักสูตร ── */}

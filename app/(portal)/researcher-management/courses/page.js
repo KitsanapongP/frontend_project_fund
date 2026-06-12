@@ -72,8 +72,10 @@ function CourseRow({ course, degreeId, editing, saving, onStartEdit, onCancelEdi
 
   return (
     <tr className={`border-b border-slate-100 transition-colors ${isEd ? "bg-emerald-50/60" : "hover:bg-slate-50/70"}`}>
-     {/* <td className="px-3 py-2.5 w-28">
-        {isEd ? (
+      
+      {/* ── คอลัมน์ระดับ: แสดงเป็น Dropdown เฉพาะตอนกดแก้ไขเท่านั้น ── */}
+      {isEd ? (
+        <td className="px-3 py-2.5 w-28">
           <select
             value={row.degree_id}
             onChange={(e) => onSetField(id, "degree_id", Number(e.target.value))}
@@ -81,12 +83,11 @@ function CourseRow({ course, degreeId, editing, saving, onStartEdit, onCancelEdi
           >
             {DEGREE_LEVELS.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
           </select>
-        ) : (
-          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold ${DEGREE_BADGE[degreeId]}`}>
-            {DEGREE_LEVELS.find((d) => d.id === Number(row.degree_id))?.short || row.degree_id}
-          </span>
-        )}
-      </td>*/}
+        </td>
+      ) : (
+        null // ตอนแสดงผลโหมดปกติ จะไม่เรนเดอร์คอลัมน์นี้ออกมาเลย
+      )}
+
       <td className="px-3 py-2.5">
         {isEd ? <Cell value={row.course_name_th} onChange={(v) => onSetField(id, "course_name_th", v)} placeholder="ชื่อหลักสูตร (ไทย) *" />
                : <span className="text-sm font-medium text-slate-800">{course.course_name_th}</span>}
@@ -279,6 +280,10 @@ export default function CoursesPage() {
     </tr>
   ) : null;
 
+  // ── ย้ายตำแหน่งการประกาศตัวแปรมาไว้ตรงนี้ เพื่อให้ทุกจุดในบล็อก return เรียกใช้ได้ถูกต้อง ──
+  const isUserInteracting = addingRow || Object.keys(editing).length > 0;
+  const currentCols = isUserInteracting ? 7 : 6;
+
   return (
     <div className="min-h-screen bg-gray-100 font-sans pb-12">
       {/* ── Header ── */}
@@ -288,7 +293,7 @@ export default function CoursesPage() {
       <main className="w-full pt-28 px-6">
         <div className="max-w-5xl mx-auto space-y-3">
           
-          {/* ── ส่วนกลุ่มปุ่มด้านบนสุด (ปรับโครงสร้างเป็น flex-wrap และ justify-between เพื่อดันปุ่มเพิ่มไว้ขวาสุด) ── */}
+          {/* ── ส่วนกลุ่มปุ่มด้านบนสุด ── */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <button
               onClick={() => router.push("/researcher-management")}
@@ -308,7 +313,7 @@ export default function CoursesPage() {
             </button>
           </div>
 
-          {/* ── กรอบชุดคอนเทนเนอร์หลัก (Gradient & Shadow สไตล์เดียวกับ SearchInstructor) ── */}
+          {/* ── กรอบชุดคอนเทนเนอร์หลัก ── */}
           <div className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-100 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.42)]">
             <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-emerald-200/40 blur-3xl" />
             <div className="pointer-events-none absolute -left-12 bottom-0 h-56 w-56 rounded-full bg-teal-200/30 blur-3xl" />
@@ -380,11 +385,14 @@ export default function CoursesPage() {
                     <table className="w-full border-collapse text-left">
                       <thead>
                         <tr className="border-b border-slate-200 bg-slate-50">
-                          {/* <th className="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide w-28">ระดับ</th> */}
+                          {/* ซ่อน/แสดง คอลัมน์หัวตาราง "ระดับ" ตามสถานะการแก้ไขหรือเพิ่มข้อมูล */}
+                          {isUserInteracting && (
+                            <th className="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide w-28">ระดับ</th>
+                          )}
                           <th className="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">ชื่อหลักสูตร (ไทย)</th>
                           <th className="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">ชื่อหลักสูตร (EN)</th>
-                          <th className="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden lg:table-cell">ปริญญาเต็ม (ไทย)</th>
-                          <th className="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden xl:table-cell w-36">ย่อ (ไทย)</th>
+                          <th className="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden lg:table-cell">ชื่อปริญญาเต็ม (ไทย)</th>
+                          <th className="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden xl:table-cell w-36">ชื่อปริญญาย่อ (ไทย)</th>
                           <th className="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden xl:table-cell w-36">Short (EN)</th>
                           <th className="px-3 py-3 w-20"></th>
                         </tr>
@@ -393,7 +401,7 @@ export default function CoursesPage() {
                         {newRowJSX}
                         {grouped.length === 0 && !addingRow ? (
                           <tr>
-                            <td colSpan={7} className="px-6 py-12 text-center">
+                            <td colSpan={currentCols} className="px-6 py-12 text-center">
                               <GraduationCap size={36} className="mx-auto text-slate-300 mb-2" />
                               <p className="text-sm text-slate-400">ไม่พบหลักสูตรที่ค้นหา</p>
                             </td>
@@ -402,7 +410,7 @@ export default function CoursesPage() {
                           grouped.map((group) => (
                             <React.Fragment key={group.id}>
                               <tr className={`border-b ${DEGREE_GROUP_HEADER[group.id]}`}>
-                                <td colSpan={7} className="px-3 py-2">
+                                <td colSpan={currentCols} className="px-3 py-2">
                                   <div className="flex items-center gap-2">
                                     <GraduationCap size={13} />
                                     <span className="text-xs font-bold">ระดับ{group.label}</span>

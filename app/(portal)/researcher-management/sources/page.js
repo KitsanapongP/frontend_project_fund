@@ -212,7 +212,7 @@ export default function RankingSourcesPage() {
                     </p>
                   </div>
                   <h1 className="mt-1 text-base sm:text-lg font-bold text-slate-800 flex items-center gap-1.5">
-                    <Edit3 size={18} className="text-cyan-600 inline sm:hidden"/> ฐานข้อมูลแหล่งอ้างอิง (ranking_sources)
+                    <Edit3 size={18} className="text-cyan-600 inline sm:hidden"/> ฐานข้อมูลแหล่งอ้างอิง (Ranking Sources)
                   </h1>
                 </div>
                 <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-sm">
