@@ -13,7 +13,9 @@ const fmtDate = (d) => {
   if (!d) return "-";
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
+  const day = String(dt.getDate()).padStart(2, "0");
+  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  return `${day} ${months[dt.getMonth()]} ${dt.getFullYear() + 543}`;
 };
 
 const fmtDateTime = (d) => {
@@ -154,7 +156,7 @@ export default function AdminDashboardPage() {
     const parts = renewDate.split("-");
     const buddhistDate = `${parts[2]}/${parts[1]}/${parseInt(parts[0]) + 543}`;
     try {
-      const res = await apiClient.put(`/mou/${renewTarget.id}/renew`, { new_end_date: buddhistDate });
+      const res = await mouAPI.renewMou(renewTarget.id, buddhistDate);
       if (res?.success) {
         Swal.fire({ icon: "success", title: "ต่ออายุสำเร็จ", timer: 1500, showConfirmButton: false });
         closeRenewModal();
@@ -326,13 +328,14 @@ export default function AdminDashboardPage() {
                 <span className="ml-auto text-xs text-gray-400">{nearExpiryMous.length} รายการ</span>
               </div>
               <div style={{ background: "#fffbeb", borderRadius: 8, overflow: "hidden" }}>
-                <div className="colHeaders" style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px 110px 120px 100px", gap: 4, padding: "8px 16px", background: "#fffbeb", borderBottom: "1px solid #fde68a", fontSize: 11, fontWeight: 600, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <div className="colHeaders" style={{ display: "grid", gridTemplateColumns: "130px 1fr 100px 100px 90px 100px 100px", gap: 4, padding: "8px 16px", background: "#fffbeb", borderBottom: "1px solid #fde68a", fontSize: 11, fontWeight: 600, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Key size={11} />รหัส MOU</span>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><FileText size={11} />ชื่อ MOU / หน่วยงาน</span>
                   <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Calendar size={11} />วันเริ่มต้น</span>
                   <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Calendar size={11} />วันสิ้นสุด</span>
-                  <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Bookmark size={11} />สถานะปัจจุบัน</span>
+                  <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Bookmark size={11} />สถานะ</span>
                   <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Clock size={11} />เหลือ</span>
+                  <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><AlertTriangle size={11} />แจ้งเตือน</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 4px" }}>
                   {nearExpiryMous.map((m) => {
@@ -342,7 +345,7 @@ export default function AdminDashboardPage() {
                         key={m.id}
                         onClick={() => window.location.href = `/mou/show_detail_mou/${m.id}`}
                         className="mouRow"
-                        style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px 110px 120px 100px", gap: 4, alignItems: "center", padding: "10px 12px", border: "1px solid #fde68a", borderRadius: 8, background: "#fff", cursor: "pointer", transition: "box-shadow 0.15s ease, background 0.15s ease" }}
+                        style={{ display: "grid", gridTemplateColumns: "130px 1fr 100px 100px 90px 100px 100px", gap: 4, alignItems: "center", padding: "10px 12px", border: "1px solid #fde68a", borderRadius: 8, background: "#fff", cursor: "pointer", transition: "box-shadow 0.15s ease, background 0.15s ease" }}
                         onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"; e.currentTarget.style.background = "#fffbeb"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.background = "#fff"; }}
                       >
@@ -358,6 +361,9 @@ export default function AdminDashboardPage() {
                         </span>
                         <span style={{ textAlign: "center", fontSize: 12, color: "#d97706", fontWeight: 600 }}>
                           {d !== null ? `เหลืออีก ${d} วัน` : "-"}
+                        </span>
+                        <span style={{ textAlign: "center", fontSize: 12, color: "#6b7280" }}>
+                          {m.notified ? "แจ้งเตือนสำเร็จ" : "ยังไม่แจ้งเตือน"}
                         </span>
                       </div>
                     );
@@ -381,12 +387,12 @@ export default function AdminDashboardPage() {
                 <span className="ml-auto text-xs text-gray-400">{renewMous.length} รายการ</span>
               </div>
               <div style={{ background: "#fef2f2", borderRadius: 8, overflow: "hidden" }}>
-                <div className="colHeaders" style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px 110px 120px", gap: 4, padding: "8px 16px", background: "#fef2f2", borderBottom: "1px solid #fecaca", fontSize: 11, fontWeight: 600, color: "#991b1b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <div className="colHeaders" style={{ display: "grid", gridTemplateColumns: "130px 1fr 100px 100px 90px", gap: 4, padding: "8px 16px", background: "#fef2f2", borderBottom: "1px solid #fecaca", fontSize: 11, fontWeight: 600, color: "#991b1b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Key size={11} />รหัส MOU</span>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><FileText size={11} />ชื่อ MOU / หน่วยงาน</span>
                   <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Calendar size={11} />วันเริ่มต้น</span>
                   <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Calendar size={11} />วันสิ้นสุด</span>
-                  <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Bookmark size={11} />สถานะปัจจุบัน</span>
+                  <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Bookmark size={11} />สถานะ</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 4px" }}>
                   {renewMous.map((m) => {
@@ -395,7 +401,7 @@ export default function AdminDashboardPage() {
                         key={m.id}
                         onClick={() => window.location.href = `/mou/show_detail_mou/${m.id}`}
                         className="mouRow"
-                        style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px 110px 120px", gap: 4, alignItems: "center", padding: "10px 12px", border: "1px solid #fecaca", borderRadius: 8, background: "#fff", cursor: "pointer", transition: "box-shadow 0.15s ease, background 0.15s ease" }}
+                        style={{ display: "grid", gridTemplateColumns: "130px 1fr 100px 100px 90px", gap: 4, alignItems: "center", padding: "10px 12px", border: "1px solid #fecaca", borderRadius: 8, background: "#fff", cursor: "pointer", transition: "box-shadow 0.15s ease, background 0.15s ease" }}
                         onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"; e.currentTarget.style.background = "#fef2f2"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.background = "#fff"; }}
                       >

@@ -9,7 +9,7 @@ import {
   MapPin, Building2, Paperclip, Download, ExternalLink,
   Tag, Activity, Users, FileSignature, History, ListChecks,
   ChevronLeft, Key, AlignLeft, Handshake, UserCheck, Tags, StickyNote,
-  Plus, Hash, UserCircle, X, Check, Edit3, Bell
+  Plus, Hash, UserCircle, X, Check, Edit3, Bell, Lock, Unlock
 } from "lucide-react";
 import MouLayout from "../../components/MouLayout";
 import { mouAPI } from "../../../../lib/mou_api";
@@ -37,7 +37,9 @@ const fmtDate = (d) => {
   if (!d) return "-";
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString("th-TH");
+  const day = String(dt.getDate()).padStart(2, "0");
+  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  return `${day} ${months[dt.getMonth()]} ${dt.getFullYear() + 543}`;
 };
 
 const infoIcon = {
@@ -225,6 +227,19 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
     }
   };
 
+  const handleToggleLock = async () => {
+    const newLock = !mou.lock_mou;
+    try {
+      const res = await apiClient.put(`/mou/${params.id}/lock`, { lock: newLock });
+      if (res?.success) {
+        setMou((prev) => ({ ...prev, lock_mou: newLock }));
+        Swal.fire({ icon: "success", title: newLock ? "ล็อก MOU สำเร็จ" : "ปลดล็อก MOU สำเร็จ", timer: 1500, showConfirmButton: false });
+      }
+    } catch {
+      Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: "ไม่สามารถเปลี่ยนสถานะล็อกได้" });
+    }
+  };
+
   if (loading) {
     return (
       <MouLayout subtitle="รายละเอียด MOU">
@@ -255,7 +270,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
   const scope = mou.is_international ? "ต่างประเทศ" : "ในประเทศ";
   const partnerOrg = mou.partners?.[0]?.partner_org || "-";
   const partnerType = mou.partners?.[0]?.partner_type?.name_th || "-";
-  const yearOfSigning = mou.year_of_signing || "-";
+  const yearOfSigning = mou.year_of_signing ? fmtDate(mou.year_of_signing) : "-";
   const coordinator = mou.coordinator
     ? [mou.coordinator.prefix || "", mou.coordinator.user_fname || "", mou.coordinator.user_lname || ""].filter(Boolean).join(" ")
     : "-";
@@ -282,7 +297,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
               <h1 className="text-2xl font-bold text-gray-800" style={{ margin: 0 }}>
                 รายละเอียด MOU
               </h1>
-              {mou?.mou_code && <span className="text-xl font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg shadow-sm">{mou.mou_code}</span>}
+              {mou?.mou_code && <span className="text-xl font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg shadow-sm inline-flex items-center gap-2">{mou.mou_code}{mou.lock_mou ? <Lock size={16} className="text-amber-600" title="ล็อกอยู่" /> : null}</span>}
             </div>
         </div>
         <div className="flex items-center gap-2.5">
@@ -293,6 +308,17 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
           >
             <ChevronLeft size={15} />
             กลับ
+          </button>
+          <button
+            type="button"
+            onClick={handleToggleLock}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition shadow-sm ${
+              mou.lock_mou
+                ? "border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800"
+            }`}
+          >
+            {mou.lock_mou ? <><Unlock size={15} />ปลดล็อก</> : <><Lock size={15} />ล็อก MOU</>}
           </button>
           <Link
             href={`/mou/admin_notification_settings?mou_id=${params.id}`}
@@ -530,23 +556,30 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
           </div>
         </div>
 
-        {/* Activities */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <ListChecks size={16} className="text-emerald-600" />
-            </div>
-            <span className="text-sm font-semibold text-gray-800">กิจกรรมภายใต้ MOU</span>
-            {activities.length > 0 && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">{activities.length} รายการ</span>
+          {/* Activities */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <ListChecks size={16} className="text-emerald-600" />
+              </div>
+              <span className="text-sm font-semibold text-gray-800">กิจกรรมภายใต้ MOU</span>
+              {activities.length > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">{activities.length} รายการ</span>
+              )}
+              {mou.lock_mou ? (
+                <span className="btn primary inline-flex items-center gap-2 ml-auto opacity-50 cursor-not-allowed" title="MOU ถูกล็อก ไม่สามารถเพิ่มกิจกรรมได้" onClick={() => Swal.fire({ icon: "warning", title: "MOU ถูกล็อก", text: "ไม่สามารถเพิ่มกิจกรรมได้เนื่องจาก MOU นี้ถูกล็อกอยู่" })}>
+                  <Plus size={16} />
+                  เพิ่มกิจกรรม
+                </span>
+            ) : (
+              <Link
+                href={`/mou/add_activity_mou?mou_id=${params.id}`}
+                className="btn primary inline-flex items-center gap-2 ml-auto"
+              >
+                <Plus size={16} />
+                เพิ่มกิจกรรม
+              </Link>
             )}
-            <Link
-              href={`/mou/add_activity_mou?mou_id=${params.id}`}
-              className="btn primary inline-flex items-center gap-2 ml-auto"
-            >
-              <Plus size={16} />
-              เพิ่มกิจกรรม
-            </Link>
           </div>
           {activities.length > 0 ? (
             <div style={{ overflowX: "auto", maxHeight: activities.length > 5 ? "320px" : "none", overflowY: activities.length > 5 ? "auto" : "visible" }}>

@@ -12,7 +12,9 @@ const fmtDate = (d) => {
   if (!d) return "-";
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString("th-TH");
+  const day = String(dt.getDate()).padStart(2, "0");
+  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  return `${day} ${months[dt.getMonth()]} ${dt.getFullYear() + 543}`;
 };
 
 export default function AdminNotificationSettingsPage() {
@@ -159,7 +161,6 @@ export default function AdminNotificationSettingsPage() {
     setSaving(true);
     try {
       const payload = {
-        default_days_before: settings.default_days_before,
         notify_coordinator: settings.notify_coordinator,
         notify_faculty_responsible: settings.notify_faculty_responsible,
         notify_external: settings.notify_external,
@@ -427,7 +428,7 @@ export default function AdminNotificationSettingsPage() {
                         <FullInfoRow label="หน่วยงานคู่สัญญา" value={mouDetail.partners?.[0]?.partner_org || "-"} />
                         <FullInfoRow label="ประเภทคู่สัญญา" value={mouDetail.partners?.[0]?.partner_type?.name_th || "-"} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          <FullInfoRow label="ปีที่ลงนาม" value={mouDetail.year_of_signing || "-"} />
+                          <FullInfoRow label="ปีที่ลงนาม" value={mouDetail.year_of_signing ? fmtDate(mouDetail.year_of_signing) : "-"} />
                           <FullInfoRow label="ลงนามโดย" value={mouDetail.signed_by || "-"} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -468,18 +469,11 @@ export default function AdminNotificationSettingsPage() {
                       max={365}
                       value={notifyDaysBefore}
                       onChange={(e) => setNotifyDaysBefore(e.target.value)}
-                      placeholder={mouDetail.notify_days_before ? String(mouDetail.notify_days_before) : String(settings.default_days_before)}
+                      placeholder={mouDetail.notify_days_before ? String(mouDetail.notify_days_before) : ""}
                       className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition"
                     />
                   </div>
                   <span className="text-sm text-gray-500">วัน</span>
-                  <button
-                    onClick={handleSaveNotifyDays}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition shadow-sm"
-                  >
-                    <Check size={14} />
-                    บันทึก
-                  </button>
                 </div>
               </SectionCard>
             )}

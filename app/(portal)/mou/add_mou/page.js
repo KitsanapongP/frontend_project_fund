@@ -224,6 +224,10 @@ export default function AddMouPage() {
   const [success, setSuccess] = useState("");
   const [files, setFiles] = useState([]);
   const [aiLoading, setAiLoading] = useState(false);
+  const [showRenewalModal, setShowRenewalModal] = useState(false);
+  const [expiredMous, setExpiredMous] = useState([]);
+  const [selectedParentMou, setSelectedParentMou] = useState(null);
+  const [loadingExpired, setLoadingExpired] = useState(false);
 
   useEffect(() => {
     loadReferenceData();
@@ -250,6 +254,32 @@ export default function AddMouPage() {
       console.error("Error loading reference data:", err);
       setError("ไม่สามารถโหลดข้อมูลได้");
     }
+  };
+
+  const loadExpiredMous = async () => {
+    setLoadingExpired(true);
+    try {
+      const res = await mouAPI.getExpiredMous();
+      setExpiredMous(res?.data || []);
+    } catch {
+      setExpiredMous([]);
+    }
+    setLoadingExpired(false);
+  };
+
+  const handleSelectParentMou = (mou) => {
+    setSelectedParentMou(mou);
+    setFormData((prev) => ({
+      ...prev,
+      title: prev.title || mou.title,
+      level: prev.level || mou.level,
+      partner_name: prev.partner_name || mou.partner,
+    }));
+    setShowRenewalModal(false);
+  };
+
+  const handleRemoveParentMou = () => {
+    setSelectedParentMou(null);
   };
 
   const handleChange = (e) => {
@@ -383,7 +413,7 @@ export default function AddMouPage() {
     setSuccess("");
 
     try {
-      if (!formData.title || !formData.start_date || !formData.end_date || !formData.partner_name) {
+      if (!formData.title || !formData.end_date || !formData.partner_name) {
         setError("กรุณากรอกข้อมูลที่จำเป็นทั้งหมด");
         return;
       }
@@ -427,6 +457,7 @@ export default function AddMouPage() {
 
       const mouPayload = {
         mou_code: formData.mou_code || null,
+        parent_mou_id: selectedParentMou?.id || null,
         title: formData.title,
         description: formData.description,
         level: formData.level,
@@ -487,6 +518,7 @@ export default function AddMouPage() {
       setFacultyEmails({});
       setExternalPersons([]);
       externalPersonIdCounter.current = 0;
+      setSelectedParentMou(null);
       router.replace("/mou/mou_list");
     } catch (err) {
       console.error("Error creating MOU:", err);
@@ -582,6 +614,33 @@ export default function AddMouPage() {
           <ChevronLeft size={16} />
           กลับ
         </button>
+      </div>
+
+      {/* Renewal from parent MOU */}
+      <div className="panel afu" style={{ marginBottom: "18px", animationDelay: "40ms", padding: selectedParentMou ? "12px 20px" : "8px 20px" }}>
+        {selectedParentMou ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: "#dbeafe", color: "#1d4ed8", fontSize: 13, fontWeight: 600 }}>
+              <FileText size={14} /> ต่ออายุ
+            </span>
+            <span style={{ fontSize: 14, color: "#374151" }}>
+              ต่ออายุจาก <strong>{selectedParentMou.mou_code || `#${selectedParentMou.id}`}</strong> — {selectedParentMou.title}
+            </span>
+            <button type="button" onClick={handleRemoveParentMou}
+              style={{ marginLeft: "auto", background: "none", border: "none", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 13, padding: "4px 8px", borderRadius: 6 }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#fee2e2"; e.currentTarget.style.color = "#dc2626"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#6b7280"; }}>
+              <X size={14} />ลบ
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => { loadExpiredMous(); setShowRenewalModal(true); }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "1px dashed #3b82f6", borderRadius: 8, padding: "6px 14px", color: "#3b82f6", cursor: "pointer", fontSize: 13, fontWeight: 500, transition: "all 0.15s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}>
+            <FileText size={15} /> ต่ออายุจาก MOU เก่า
+          </button>
+        )}
       </div>
 
       {(error || success) && (
@@ -869,6 +928,58 @@ export default function AddMouPage() {
           </button>
         </div>
       </form>
+
+      {/* Renewal modal */}
+      {showRenewalModal && createPortal(
+        <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, background: "rgba(0,0,0,0.4)", animation: "fadeIn 0.2s ease" }}
+          onClick={() => setShowRenewalModal(false)}>
+          <div style={{ background: "#fff", borderRadius: 16, width: 700, maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+            onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px", borderBottom: "1px solid #e5e7eb" }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>เลือก MOU ที่หมดอายุเพื่อต่ออายุ</h3>
+              <button type="button" onClick={() => setShowRenewalModal(false)}
+                style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", padding: 4, borderRadius: 6, display: "flex" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "#f3f4f6"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "none"}>
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px" }}>
+              {loadingExpired ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af" }}>กำลังโหลด...</div>
+              ) : expiredMous.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af" }}>
+                  <AlertTriangle size={32} style={{ margin: "0 auto 8px", opacity: 0.4 }} />
+                  <div>ไม่พบ MOU ที่หมดอายุ</div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {expiredMous.map((mou) => (
+                    <button type="button" key={mou.id} onClick={() => handleSelectParentMou(mou)}
+                      style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 16px", border: "1px solid #e5e7eb", borderRadius: 10, background: "#fff", cursor: "pointer", transition: "all 0.15s" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.background = "#fff"; e.currentTarget.style.boxShadow = "none"; }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#374151", background: "#f3f4f6", padding: "2px 8px", borderRadius: 4 }}>{mou.mou_code || "-"}</span>
+                        <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "#fef2f2", color: "#dc2626", fontWeight: 500 }}>{mou.end_date ? (() => { const d = new Date(mou.end_date); return isNaN(d.getTime()) ? mou.end_date : `${String(d.getDate()).padStart(2,"0")} ${["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."][d.getMonth()]} ${d.getFullYear()+543}`; })() : "-"}</span>
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: "#111827", marginBottom: 2 }}>{mou.title}</div>
+                      <div style={{ fontSize: 13, color: "#6b7280" }}>{mou.partner}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={{ padding: "12px 24px 16px", borderTop: "1px solid #e5e7eb", textAlign: "right" }}>
+              <button type="button" onClick={() => setShowRenewalModal(false)}
+                style={{ padding: "8px 20px", border: "1px solid #d1d5db", borderRadius: 8, background: "#fff", color: "#374151", cursor: "pointer", fontSize: 14 }}>
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </MouLayout>
   );
 }

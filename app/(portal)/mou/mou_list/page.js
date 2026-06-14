@@ -9,7 +9,7 @@ import {
   ChevronLeft, ChevronRight, Filter, X, FileSignature,
   Calendar, Clock, Bookmark, Layers,
   AlertCircle, RefreshCw, Key, ChevronDown,
-  Building2, Globe, Tags, MapPin, Settings, Download
+  Building2, Globe, Tags, MapPin, Settings, Download, Lock
 } from "lucide-react";
 import { mouAPI } from "../../../lib/mou_api";
 import MouLayout from "../components/MouLayout";
@@ -27,7 +27,9 @@ function formatDate(value) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("th-TH");
+  const day = String(date.getDate()).padStart(2, "0");
+  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  return `${day} ${months[date.getMonth()]} ${date.getFullYear() + 543}`;
 }
 
 function daysUntilEnd(endDate) {
@@ -653,13 +655,7 @@ export default function MouListPage() {
           </div>
           <div className="field">
             <label><MapPin size={13} />ประเทศ</label>
-            <div className="searchRow">
-              <input type="text" name="country" placeholder="ค้นหาประเทศ" value={filters.country} onChange={handleFilterChange} />
-              <button type="button" className="btn primary searchBtn" onClick={() => { setPage(1); loadMous(1); }}>
-                <Search size={15} />
-                ค้นหา
-              </button>
-            </div>
+            <input type="text" name="country" placeholder="ค้นหาประเทศ" value={filters.country} onChange={handleFilterChange} />
           </div>
         </div>
         <div className="filterBreak" style={{ marginTop: 12 }}>
@@ -678,8 +674,15 @@ export default function MouListPage() {
               { value: "false", label: "ในประเทศ" },
             ]} />
           </div>
+          <div className="field" style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+            <label style={{ visibility: "hidden" }}>&nbsp;</label>
+            <button type="button" className="btn primary searchBtn" onClick={() => { setPage(1); loadMous(1); }}>
+                <Search size={15} />
+                ค้นหา
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Cards */}
       {loading ? (
@@ -724,7 +727,7 @@ export default function MouListPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "16px 4px" }}>
             {mous.map((mou, idx) => (
               <div key={mou.id} className="mouRow" style={{ display: "grid", gridTemplateColumns: "120px 1fr 110px 115px 115px 130px 160px", gap: 8, alignItems: "center", padding: "16px 20px", border: "1px solid var(--mou-line)", borderRadius: 8, background: "var(--mou-surface)", cursor: "pointer", animation: `fadeInUp 0.3s ease-out ${idx * 0.04}s both`, transition: "box-shadow 0.15s ease, background 0.15s ease" }} onClick={(e) => handleRowClick(mou.id, e)} onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"; e.currentTarget.style.background = "#eff6ff"; }} onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.background = "var(--mou-surface)"; }}>
-                <span style={{ textAlign: "center", padding: "2px 10px", borderRadius: 5, background: "var(--mou-primary-soft)", color: "var(--mou-primary)", fontSize: 12, whiteSpace: "nowrap" }}>{mou.mou_code}</span>
+                <span style={{ textAlign: "center", padding: "2px 10px", borderRadius: 5, background: mou.lock_mou ? "#fef3c7" : "var(--mou-primary-soft)", color: mou.lock_mou ? "#92400e" : "var(--mou-primary)", fontSize: 12, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4, justifyContent: "center" }}>{mou.lock_mou && <Lock size={11} />}{mou.mou_code}</span>
                 <div style={{ minWidth: 0, paddingRight: 12 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "#111827", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mou.title}</div>
                   <div style={{ fontSize: 12, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mou.partners?.[0]?.partner_org || "-"}</div>
@@ -736,12 +739,24 @@ export default function MouListPage() {
                 <span style={{ fontSize: 12, color: "#6b7280", textAlign: "center" }}>{mou.end_date ? formatDate(mou.end_date) : "-"}</span>
                 <span style={{ textAlign: "center" }}><span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass(mou.status?.name)}`}>{mou.status?.name || "-"}</span></span>
                 <div className="rowActions" style={{ textAlign: "center", display: "flex", gap: 4, justifyContent: "center" }} onClick={(e) => e.stopPropagation()}>
-                  <Link className="btn small" href={`/mou/add_activity_mou?mou_id=${mou.id}`} style={{ fontSize: 12, padding: "4px 8px" }}>
-                    <Activity size={13} /> เพิ่มกิจกรรม
-                  </Link>
-                  <Link className="btn small" href={`/mou/admin_edit_mou/${mou.id}`} style={{ fontSize: 12, padding: "4px 8px" }}>
-                    <Edit3 size={13} />
-                  </Link>
+                  {mou.lock_mou ? (
+                    <span className="btn small" style={{ fontSize: 12, padding: "4px 8px", opacity: 0.5, cursor: "not-allowed", pointerEvents: "auto" }} onClick={() => Swal.fire({ icon: "warning", title: "MOU ถูกล็อก", text: "ไม่สามารถเพิ่มกิจกรรมได้เนื่องจาก MOU นี้ถูกล็อกอยู่" })}>
+                      <Activity size={13} /> เพิ่มกิจกรรม
+                    </span>
+                  ) : (
+                    <Link className="btn small" href={`/mou/add_activity_mou?mou_id=${mou.id}`} style={{ fontSize: 12, padding: "4px 8px" }}>
+                      <Activity size={13} /> เพิ่มกิจกรรม
+                    </Link>
+                  )}
+                  {mou.lock_mou ? (
+                    <span className="btn small" style={{ fontSize: 12, padding: "4px 8px", opacity: 0.5, cursor: "not-allowed", pointerEvents: "auto" }} onClick={() => Swal.fire({ icon: "warning", title: "MOU ถูกล็อก", text: "ไม่สามารถแก้ไข MOU ได้เนื่องจาก MOU นี้ถูกล็อกอยู่" })}>
+                      <Edit3 size={13} />
+                    </span>
+                  ) : (
+                    <Link className="btn small" href={`/mou/admin_edit_mou/${mou.id}`} style={{ fontSize: 12, padding: "4px 8px" }}>
+                      <Edit3 size={13} />
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}

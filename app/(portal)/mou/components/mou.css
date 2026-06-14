@@ -486,7 +486,7 @@
 .filterBreak {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(4, auto);
+  grid-template-columns: 1fr 1fr 1fr auto;
   gap: 16px;
 }
 

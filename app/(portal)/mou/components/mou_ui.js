@@ -317,7 +317,9 @@ function fmtDate(d) {
   if (!d) return "-";
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString("th-TH");
+  const day = String(dt.getDate()).padStart(2, "0");
+  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  return `${day} ${months[dt.getMonth()]} ${dt.getFullYear() + 543}`;
 }
 
 function creatorName(c) {
