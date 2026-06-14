@@ -14,6 +14,7 @@ import ResearcherEducation from "./ResearcherEducation";
 import ResearcherTextbook from "./ResearcherTextbook";
 import { exportToDocx } from "../utils/exportCHEDocx";
 import api from "../../../lib/api";
+import Swal from "sweetalert2"; 
 
 export default function Instructor({ currentPage, setCurrentPage, targetUserId }) {
   const [data, setData] = useState({ header: {}, educations: [] });
@@ -24,7 +25,7 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
   const router = useRouter();
 
   const TABS = [
-    { id: "profile",    label: "ข้อมูลส่วนตัว",      icon: <User size={18} /> },
+    { id: "profile",    label: "ข้อมูลส่วนตัว",    icon: <User size={18} /> },
     { id: "education",  label: "ประวัติการศึกษา",    icon: <GraduationCap size={18} /> },
     { id: "expertise",  label: "ความเชี่ยวชาญ",      icon: <User size={18} /> },
     { id: "project",    label: "โครงการวิจัย",        icon: <BookOpen size={18} /> },
@@ -46,7 +47,6 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // ─── computeDiff: คำนวณว่า added / updated / deleted คืออะไร ───────────────
   const computeDiff = (originalList, currentList) => {
     const safeOriginal = originalList || [];
     const safeCurrent  = currentList  || [];
@@ -77,23 +77,36 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
       setData(profileData);
 
       const merged = {
-        ...(profileData.header || {}),
-        date_of_employment: profileData.header?.date_of_employment
-          ? profileData.header.date_of_employment.split("T")[0] : "",
-        instructor_course_responsibility: (profileData.instructor_course_responsibility || []).map(c => ({
-          ...c, course_id: Number(c.course_id),
-        })),
-        expertises: profileData.expertises || [],
-        instructor_research_projects: (profileData.instructor_research_projects || []).map(p => ({
-          ...p,
-          start_date: p.start_date ? p.start_date.split("T")[0] : "",
-          end_date:   p.end_date   ? p.end_date.split("T")[0]   : "",
-        })),
-        instructor_intellectual_properties:
-          profileData.instructor_intellectual_properties ||
-          profileData.instructor_intelectual_properties || [],
-        textbooks: profileData.instructor_textbooks || [],
-      };
+  ...(profileData.header || {}),
+  date_of_employment: profileData.header?.date_of_employment
+    ? profileData.header.date_of_employment.split("T")[0]
+    : "",
+
+  educations: profileData.educations || [],
+
+  instructor_course_responsibility: (
+    profileData.instructor_course_responsibility || []
+  ).map(c => ({
+    ...c,
+    course_id: Number(c.course_id),
+  })),
+
+  expertises: profileData.expertises || [],
+
+  instructor_research_projects: (
+    profileData.instructor_research_projects || []
+  ).map(p => ({
+    ...p,
+    start_date: p.start_date ? p.start_date.split("T")[0] : "",
+    end_date: p.end_date ? p.end_date.split("T")[0] : "",
+  })),
+
+  instructor_intellectual_properties:
+    profileData.instructor_intellectual_properties ||
+    profileData.instructor_intelectual_properties || [],
+
+  textbooks: profileData.instructor_textbooks || [],
+};
 
       setFormData(merged);
       setOriginalData(merged);
@@ -117,10 +130,28 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
   };
 
   const handleSave = async () => {
-    if (normalizedRole !== "admin") return alert("คุณไม่มีสิทธิ์แก้ไขข้อมูล");
-    if (!targetUserId) return alert("กรุณาเลือกอาจารย์ที่ต้องการแก้ไข");
+    //ตรวจสอบสิทธิ์ผู้ดูแลระบบ
+    if (normalizedRole !== "admin") {
+      return Swal.fire({
+        title: "สิทธิ์ไม่ถูกต้อง!",
+        text: "คุณไม่มีสิทธิ์แก้ไขข้อมูลระบบนี้",
+        icon: "error",
+        confirmButtonColor: "#0284c7",
+        customClass: { popup: "rounded-2xl" }
+      });
+    }
 
-    // แยก array fields ออกก่อนหา changedFields ของ header
+    //ตรวจสอบการเลือกอาจารย์
+    if (!targetUserId) {
+      return Swal.fire({
+        title: "ไม่พบข้อมูลอาจารย์!",
+        text: "กรุณาเลือกอาจารย์ที่ต้องการแก้ไขข้อมูล",
+        icon: "warning",
+        confirmButtonColor: "#0284c7",
+        customClass: { popup: "rounded-2xl" }
+      });
+    }
+
     const {
       instructor_course_responsibility: _c, expertises: _e,
       instructor_research_projects: _r, instructor_intellectual_properties: _ip,
@@ -134,7 +165,6 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
 
     const changedFields = getChangedFields(originalWithoutArrays, formDataWithoutArrays);
 
-    // คำนวณ diff ทั้ง 5 field
     const expertisesDiff  = computeDiff(originalData.expertises, formData.expertises);
     const educationsDiff  = computeDiff(originalData.educations, data.educations);
     const projectsDiff    = computeDiff(originalData.instructor_research_projects, formData.instructor_research_projects);
@@ -150,7 +180,16 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
       textbooksDiff.added.length   === 0 && textbooksDiff.updated.length   === 0 && textbooksDiff.deleted.length   === 0 &&
       propertiesDiff.added.length  === 0 && propertiesDiff.updated.length  === 0 && propertiesDiff.deleted.length  === 0;
 
-    if (noChange) return alert("ไม่มีข้อมูลที่เปลี่ยนแปลง");
+    //กรณีไม่มีการแก้ไขฟิลด์ข้อมูลใดๆ เลย
+    if (noChange) {
+      return Swal.fire({
+        title: "ไม่มีการเปลี่ยนแปลง",
+        text: "คุณยังไม่ได้ทำการแก้ไขข้อมูลในส่วนใดเลย",
+        icon: "info",
+        confirmButtonColor: "#0284c7",
+        customClass: { popup: "rounded-2xl" }
+      });
+    }
 
     const formatToBackendDate = (dateStr) => {
       if (!dateStr || dateStr === "") return null;
@@ -162,8 +201,6 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
     try {
       const payload = {
         header: { user_id: Number(targetUserId), ...changedFields },
-
-        // educations diff
         educations_diff: {
           added: educationsDiff.added.map(({ id, ID, ...rest }) => ({
             ...rest,
@@ -177,23 +214,19 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
           })),
           deleted: educationsDiff.deleted,
         },
-
-        // expertises diff
         expertises_diff: {
           added: expertisesDiff.added.map(e => ({
             user_id:   Number(targetUserId),
             expertise: typeof e === "object" ? e.expertise : e,
           })),
           updated: expertisesDiff.updated.map(e => ({
-            id:         e.id,
+            id:          e.id,
             updated_at: e.updated_at,
             user_id:    Number(targetUserId),
             expertise:  typeof e === "object" ? e.expertise : e,
           })),
           deleted: expertisesDiff.deleted,
         },
-
-        // research projects diff
         projects_diff: {
           added: projectsDiff.added.map(({ id, ID, ...rest }) => ({
             ...rest,
@@ -211,8 +244,6 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
           })),
           deleted: projectsDiff.deleted,
         },
-
-        // textbooks diff
         textbooks_diff: {
           added: textbooksDiff.added
             .filter(t => t.title?.trim())
@@ -230,8 +261,6 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
             })),
           deleted: textbooksDiff.deleted,
         },
-
-        // intellectual properties diff
         properties_diff: {
           added: propertiesDiff.added.map(({ id, ID, ...rest }) => ({
             ...rest,
@@ -247,8 +276,6 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
           })),
           deleted: propertiesDiff.deleted,
         },
-
-        // course ยังใช้แบบเดิม
         instructor_course_responsibility: (formData.instructor_course_responsibility || [])
           .filter(item => item.course_id)
           .map(item => ({
@@ -258,10 +285,35 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
       };
 
       await api.put(`/admin/instructors/${targetUserId}`, payload);
-      alert("บันทึกข้อมูลเรียบร้อยแล้ว");
+
+      //แจ้งเตือนบันทึกข้อมูลสำเร็จ
+      Swal.fire({
+        title: "บันทึกสำเร็จ!",
+        text: "ข้อมูลอาจารย์ได้รับการอัปเดตเรียบร้อยแล้ว",
+        icon: "success",
+        timer: 2200,
+        showConfirmButton: false,
+        customClass: { popup: "rounded-2xl" }
+      });
+
       fetchData();
     } catch (err) {
-      alert(err.message);
+      //กรณีบันทึกข้อมูลไม่สำเร็จเนื่องจากข้อมูลมีการทับซ้อน (Conflict) หรือข้อผิดพลาดอื่นๆ
+      const isConflict = err.message?.includes("แก้ไขโดยผู้ใช้อื่น") || err.message?.includes("refresh");
+      
+      Swal.fire({
+        title: isConflict ? "ข้อมูลมีการเปลี่ยนแปลง!" : "เกิดข้อผิดพลาด!",
+        text: isConflict ? `${err.message} ระบบจะทำการโหลดหน้าเว็บใหม่` : err.message,
+        icon: isConflict ? "warning" : "error",
+        confirmButtonColor: "#0284c7",
+        confirmButtonText: "ตกลง",
+        allowOutsideClick: !isConflict,
+        customClass: { popup: "rounded-2xl" }
+      }).then((result) => {
+        if (isConflict && result.isConfirmed) {
+          window.location.reload();
+        }
+      });
     } finally {
       setIsSaving(false);
     }
@@ -329,7 +381,15 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
                       });
                     } catch (error) {
                       console.error("Export error:", error);
-                      alert("เกิดข้อผิดพลาดในการเตรียมข้อมูลส่งออก");
+                      
+                      //แจ้งเตือนเมื่อเกิดข้อผิดพลาดในการ Export เอกสาร .docx
+                      Swal.fire({
+                        title: "ส่งออกข้อมูลไม่สำเร็จ!",
+                        text: "เกิดข้อผิดพลาดในการเตรียมหรือดึงข้อมูลโครงสร้างเอกสาร",
+                        icon: "error",
+                        confirmButtonColor: "#0284c7",
+                        customClass: { popup: "rounded-2xl" }
+                      });
                     }
                   }}
                   className="self-center inline-flex items-center gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold text-xs px-3 py-1.5 rounded-xl shadow-sm active:scale-95 transition-all duration-150 shrink-0"
@@ -342,9 +402,6 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
                 <Mail size={14} className="text-cyan-600" />
                 <span>อีเมล (Email): {formData.email || "-"}</span>
               </p>
-             {/* <a href={`/researcher-management/instructor/${targetUserId}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-xs text-cyan-600 hover:underline">
-                <ExternalLink size={13} /> ดูโปรไฟล์สาธารณะ (CHE)
-              </a>*/}
             </div>
           </div>
         </div>
