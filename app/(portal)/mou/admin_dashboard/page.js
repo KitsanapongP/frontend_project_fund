@@ -460,15 +460,16 @@ export default function AdminDashboardPage() {
                               </button>
                             )}
                           </div>
-                          <div className="px-4 py-3">
-                            {ev.mou?.title && (
-                              <div className="text-sm font-medium text-gray-800">{ev.mou.title}</div>
+                          <div className="px-4 py-3 grid grid-cols-[1fr_auto_auto] gap-4 items-center">
+                            {ev.mou?.title ? (
+                              <div className="text-sm font-medium text-gray-800 truncate min-w-0">{ev.mou.title}</div>
+                            ) : <div />}
+                            {actorName && (
+                              <span className="text-xs font-medium text-gray-500 whitespace-nowrap">{actorName}</span>
                             )}
-                            <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                              {actorName && <span className="font-medium text-gray-500">{actorName}</span>}
-                              {actorName && ev.sent_at && <span className="w-1 h-1 rounded-full bg-gray-300" />}
-                              {ev.sent_at && <span>{fmtDateTime(ev.sent_at)}</span>}
-                            </div>
+                            {ev.sent_at && (
+                              <span className="text-xs text-gray-400 whitespace-nowrap">{fmtDateTime(ev.sent_at)}</span>
+                            )}
                           </div>
                         </div>
                       </div>

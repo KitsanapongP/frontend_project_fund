@@ -708,7 +708,7 @@ export default function MouListPage() {
           </div>
         </div>
       ) : (
-        <div className="card tableCard animate-fadeInUp" style={{ animationDelay: "200ms", padding: 0, overflow: "hidden", background: "#f9fafb" }}>
+        <div className="card tableCard animate-fadeInUp" style={{ animationDelay: "200ms", padding: 0, overflow: "hidden", background: "var(--mou-surface)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 24px", borderBottom: "1px solid var(--mou-line)", background: "var(--mou-surface)" }}>
             <span style={{ fontSize: 15, fontWeight: 600, color: "#374151" }}>ผลลัพธ์การค้นหา <span style={{ fontWeight: 400, color: "#6b7280" }}>{totalRecords} รายการ</span></span>
             <button type="button" onClick={() => loadMous(page)} style={{ fontSize: 12, color: "#6b7280", background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 6px", borderRadius: 4 }}>
@@ -724,9 +724,9 @@ export default function MouListPage() {
             <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Bookmark size={11} />สถานะ</span>
             <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Settings size={11} />จัดการ</span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "16px 4px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 24, padding: "24px 16px" }}>
             {mous.map((mou, idx) => (
-              <div key={mou.id} className="mouRow" style={{ display: "grid", gridTemplateColumns: "120px 1fr 110px 115px 115px 130px 160px", gap: 8, alignItems: "center", padding: "16px 20px", border: "1px solid var(--mou-line)", borderRadius: 8, background: "var(--mou-surface)", cursor: "pointer", animation: `fadeInUp 0.3s ease-out ${idx * 0.04}s both`, transition: "box-shadow 0.15s ease, background 0.15s ease" }} onClick={(e) => handleRowClick(mou.id, e)} onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"; e.currentTarget.style.background = "#eff6ff"; }} onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.background = "var(--mou-surface)"; }}>
+              <div key={mou.id} className="mouRow" style={{ display: "grid", gridTemplateColumns: "120px 1fr 110px 115px 115px 130px 160px", gap: 8, alignItems: "center", padding: "24px 8px", border: "1px solid var(--mou-line)", borderRadius: 8, background: "var(--mou-surface)", boxShadow: "0 2px 6px rgba(0,0,0,0.06)", cursor: "pointer", animation: `fadeInUp 0.3s ease-out ${idx * 0.04}s both`, transition: "box-shadow 0.15s ease, background 0.15s ease" }} onClick={(e) => handleRowClick(mou.id, e)} onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"; e.currentTarget.style.background = "#eff6ff"; }} onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.06)"; e.currentTarget.style.background = "var(--mou-surface)"; }}>
                 <span style={{ textAlign: "center", padding: "2px 10px", borderRadius: 5, background: mou.lock_mou ? "#fef3c7" : "var(--mou-primary-soft)", color: mou.lock_mou ? "#92400e" : "var(--mou-primary)", fontSize: 12, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4, justifyContent: "center" }}>{mou.lock_mou && <Lock size={11} />}{mou.mou_code}</span>
                 <div style={{ minWidth: 0, paddingRight: 12 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "#111827", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mou.title}</div>

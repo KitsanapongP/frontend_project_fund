@@ -8,7 +8,8 @@ import {
   Plus, FileSignature, Hash, FileText, Building2, Globe, Calendar,
   User, AlertCircle, CheckCircle, X, ChevronLeft, Upload,
   Sparkles, Search, Users, Clock, Bookmark, Layers, Tag, ChevronDown,
-  AlignLeft, Tags, MapPin, UserPlus, Briefcase, Handshake, UserCheck, Key, StickyNote, MinusCircle
+  AlignLeft, Tags, MapPin, UserPlus, Briefcase, Handshake, UserCheck, Key, StickyNote, MinusCircle,
+  AlertTriangle
 } from "lucide-react";
 import apiClient from "../../../lib/api";
 import { mouAPI } from "../../../lib/mou_api";
@@ -610,15 +611,23 @@ export default function AddMouPage() {
             <p className="text-sm text-gray-500 mt-0.5">สร้างบันทึกข้อตกลงความร่วมมือฉบับใหม่</p>
           </div>
         </div>
-        <button type="button" className="btn inline-flex items-center gap-2" onClick={() => router.back()}>
-          <ChevronLeft size={16} />
-          กลับ
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button type="button" className="btn inline-flex items-center gap-2" onClick={() => router.back()}>
+            <ChevronLeft size={16} />
+            กลับ
+          </button>
+          {!selectedParentMou && (
+            <button type="button" onClick={() => { loadExpiredMous(); setShowRenewalModal(true); }}
+              className="btn primary inline-flex items-center gap-2">
+              <FileText size={15} /> ต่ออายุจาก MOU เก่า
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Renewal from parent MOU */}
-      <div className="panel afu" style={{ marginBottom: "18px", animationDelay: "40ms", padding: selectedParentMou ? "12px 20px" : "8px 20px" }}>
-        {selectedParentMou ? (
+      {selectedParentMou && (
+        <div className="panel afu" style={{ marginBottom: "18px", animationDelay: "40ms", padding: "12px 20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: "#dbeafe", color: "#1d4ed8", fontSize: 13, fontWeight: 600 }}>
               <FileText size={14} /> ต่ออายุ
@@ -633,15 +642,8 @@ export default function AddMouPage() {
               <X size={14} />ลบ
             </button>
           </div>
-        ) : (
-          <button type="button" onClick={() => { loadExpiredMous(); setShowRenewalModal(true); }}
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "1px dashed #3b82f6", borderRadius: 8, padding: "6px 14px", color: "#3b82f6", cursor: "pointer", fontSize: 13, fontWeight: 500, transition: "all 0.15s" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}>
-            <FileText size={15} /> ต่ออายุจาก MOU เก่า
-          </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {(error || success) && (
         <div className="panel asd" style={{ marginBottom: "18px", display: "flex", alignItems: "center", gap: 8 }}>
