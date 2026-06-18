@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePublicationSearch } from "@/app/hooks/usePublicationSearch";
 import ResultList from "./ResultList";
 import { Search, ChevronDown, FileSearch, FilterX, FileText, Presentation, BookOpen, Book, Award, CircleSlash, Trophy, CheckCircle2, User, Tag, Download, Sprout, Building2, Monitor, BarChart3, HeartPulse, X } from "lucide-react";
@@ -323,11 +324,18 @@ export default function PublicationSearchPage() {
       )}
       
       <div className="mb-8 space-y-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3">
           <h1 className="flex items-center gap-3 text-2xl font-bold text-gray-800 leading-tight sm:text-3xl">
             <FileSearch size={32} className="text-gray-600" />
             สืบค้นผลงาน
           </h1>
+          <Link
+            href="/"
+            className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors shrink-0"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            กลับหน้าหลัก
+          </Link>
         </div>
         <p className="text-sm text-gray-500 mt-1 leading-relaxed">
           ค้นหาและสำรวจผลงานจากฐานข้อมูล
