@@ -86,6 +86,17 @@ export const mouAPI = {
     }
   },
 
+  // Get expired MOUs for renewal selection
+  async getExpiredMous() {
+    try {
+      const response = await apiClient.get('/mou/expired');
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching expired MOUs:', error);
+      throw error;
+    }
+  },
+
   // Get MOU levels
   async getMouLevels() {
     try {
@@ -301,6 +312,18 @@ export const mouAPI = {
   // Send pending email notifications for expiring MOUs
   async sendMouNotifications() {
     const response = await apiClient.post('/mou/send-notifications');
+    return response.data;
+  },
+
+  // Renew an MOU with a new end date
+  async renewMou(id, newEndDate) {
+    const response = await apiClient.put(`/mou/${id}/renew`, { new_end_date: newEndDate });
+    return response.data;
+  },
+
+  // Refresh MOU statuses based on dates
+  async refreshStatuses() {
+    const response = await apiClient.post('/mou/refresh-statuses');
     return response.data;
   },
 

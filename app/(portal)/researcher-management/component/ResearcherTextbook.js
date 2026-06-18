@@ -1,27 +1,21 @@
 "use client";
 import { Plus, X } from "lucide-react";
 import api from "../../../lib/api"; 
+import Swal from "sweetalert2"; 
 
 export default function ResearcherTextbook({ formData, handleInputChange }) {
-  // รองรับข้อมูลเดิมที่เป็นออบเจกต์ หรือสร้างเป็นอาเรย์ว่าง
   const textbooks = formData.textbooks || [];
-
-  // สร้างรายการปีให้เลือก (ย้อนหลังจากปีปัจจุบัน 2026 ไป 60 ปี)
   const currentYear = new Date().getFullYear(); 
-
-  // ตัวเลือก Dropdown จะนับถอยหลังย้อนกลับไป 60 ปีจากปีปัจจุบัน ณ ขณะนั้นเสมอ
   const years = Array.from({ length: 60 }, (_, i) => currentYear - i);
+
   const handleTextbookChange = (index, field, value) => {
-  const updatedTextbooks = [...textbooks];
-
-  updatedTextbooks[index] = {
-    ...updatedTextbooks[index],
-    [field]: value,
+    const updatedTextbooks = [...textbooks];
+    updatedTextbooks[index] = {
+      ...updatedTextbooks[index],
+      [field]: value,
+    };
+    handleInputChange("textbooks", updatedTextbooks);
   };
-
-  handleInputChange("textbooks", updatedTextbooks);
-};
-
 
   const handleAddTextbook = () => {
     const newTextbook = {
@@ -33,30 +27,64 @@ export default function ResearcherTextbook({ formData, handleInputChange }) {
     handleInputChange("textbooks", [...textbooks, newTextbook]);
   };
 
+  //ปรับปรุงฟังก์ชันการลบข้อมูล
   const handleRemoveTextbook = async (index) => {
-  const targetTextbook = textbooks[index];
+    const targetTextbook = textbooks[index];
 
-  // 1. เช็คว่ามี id อยู่ในตารางแล้วหรือไม่ (ถ้ามี แปลว่ามาจากฐานข้อมูล)
-  if (targetTextbook.id && targetTextbook.id !== 0) {
-    const isConfirmed = window.confirm(`คุณต้องการลบตำราเรื่อง "${targetTextbook.title || 'นี้'}" ออกจากระบบใช่หรือไม่?`);
-    if (!isConfirmed) return; 
+    // กรณีที่ 1: มี id อยู่ในตารางแล้ว (ต้องการลบจากฐานข้อมูล)
+    if (targetTextbook.id && targetTextbook.id !== 0) {
+      
+      // แสดงกล่องยืนยันการลบแบบ SweetAlert2
+      const result = await Swal.fire({
+        title: "ยืนยันการลบข้อมูล?",
+        text: `คุณต้องการลบตำราเรื่อง "${targetTextbook.title || 'นี้'}" ออกจากระบบใช่หรือไม่?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#0284c7", // สีฟ้าครามธีมเดียวกับปุ่มเพิ่ม (Tailwind: bg-cyan-600)
+        cancelButtonColor: "#94a3b8",  // สีเทา (Tailwind: bg-slate-400)
+        confirmButtonText: "ใช่, ต้องการลบ",
+        cancelButtonText: "ยกเลิก",
+        customClass: {
+          popup: "rounded-2xl" // ปรับความโค้งของกล่องให้มนเหมือนสไตล์เว็บของคุณ
+        }
+      });
 
-    try {
-      await api.delete(`/admin/instructor-textbooks/${targetTextbook.id}`);
-      alert("ลบข้อมูลจากฐานข้อมูลสำเร็จ");
-    } catch (err) {
-      console.error("Error deleting textbook:", err);
-      alert(`เกิดข้อผิดพลาด: ไม่สามารถลบข้อมูลได้ (${err.message})`);
-      return; // ออกจากฟังก์ชัน ไม่ลบแถวบนหน้าจอ
+      // ถ้าผู้ใช้กด ยกเลิก (Cancel) ให้หยุดทำงาน
+      if (!result.isConfirmed) return; 
+
+      try {
+        // เริ่มส่ง API ลบข้อมูล
+        await api.delete(`/admin/instructor-textbooks/${targetTextbook.id}`);
+        
+        // แจ้งเตือนเมื่อลบสำเร็จ
+        Swal.fire({
+          title: "ลบสำเร็จ!",
+          text: "ข้อมูลตำราถูกลบออกจากฐานข้อมูลเรียบร้อยแล้ว",
+          icon: "success",
+          timer: 2000, // ปิดอัตโนมัติภายใน 2 วินาที
+          showConfirmButton: false
+        });
+
+      } catch (err) {
+        console.error("Error deleting textbook:", err);
+        
+        // แจ้งเตือนเมื่อเกิดข้อผิดพลาด
+        Swal.fire({
+          title: "เกิดข้อผิดพลาด!",
+          text: `ไม่สามารถลบข้อมูลได้ (${err.message})`,
+          icon: "error",
+          confirmButtonColor: "#0284c7"
+        });
+        return; // ออกจากฟังก์ชัน ไม่ลบแถวบนหน้าจอ
+      }
     }
-  }
 
-  // 2. ถ้าเป็นแถวเพิ่มใหม่ (ไม่มี id) หรือลบผ่าน API สำเร็จแล้ว ให้ลบออกจากหน้าจอทันที
-  handleInputChange(
-    "textbooks", 
-    textbooks.filter((_, i) => i !== index)
-  );
-};
+    // กรณีที่ 2: ถ้าเป็นแถวเพิ่มใหม่ (ไม่มี id) หรือลบผ่าน API สำเร็จแล้ว ให้เอาออกจากหน้าจอ
+    handleInputChange(
+      "textbooks", 
+      textbooks.filter((_, i) => i !== index)
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -86,7 +114,6 @@ export default function ResearcherTextbook({ formData, handleInputChange }) {
             {textbooks.length > 0 ? (
               textbooks.map((textbook, index) => (
                 <tr key={index} className="bg-white hover:bg-slate-50/60 transition-colors">
-                  {/* ชื่อตำรา (Title) */}
                   <td className="p-2">
                     <input
                       type="text"
@@ -97,7 +124,6 @@ export default function ResearcherTextbook({ formData, handleInputChange }) {
                     />
                   </td>
 
-                  {/* ปีที่เผยแพร่ (Year) */}
                   <td className="p-2">
                     <select
                       value={textbook.year || currentYear}
@@ -112,7 +138,6 @@ export default function ResearcherTextbook({ formData, handleInputChange }) {
                     </select>
                   </td>
 
-                  {/* สำนักพิมพ์ (Publisher) */}
                   <td className="p-2">
                     <input
                       type="text"
@@ -123,7 +148,6 @@ export default function ResearcherTextbook({ formData, handleInputChange }) {
                     />
                   </td>
 
-                  {/* ครั้งที่พิมพ์ (Edition) */}
                   <td className="p-2">
                     <input
                       type="text"
@@ -134,12 +158,11 @@ export default function ResearcherTextbook({ formData, handleInputChange }) {
                     />
                   </td>
 
-                  {/* ปุ่มลบรายการ */}
                   <td className="p-2 text-center">
                     <button
                       type="button"
                       onClick={() => handleRemoveTextbook(index)}
-                      className="inline-flex items-center gap-1 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100"
+                      className="inline-flex items-center gap-1 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
                     >
                       <X size={18} />
                     </button>

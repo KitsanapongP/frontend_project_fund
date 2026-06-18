@@ -46,7 +46,11 @@ export default function AddActivityMouPage() {
   const fmtDate = (d) => {
     if (!d) return "-";
     try {
-      return new Date(d).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return d;
+      const day = String(dt.getDate()).padStart(2, "0");
+      const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+      return `${day} ${months[dt.getMonth()]} ${dt.getFullYear() + 543}`;
     } catch {
       return d;
     }
@@ -426,7 +430,7 @@ export default function AddActivityMouPage() {
                     <FullInfoRow label="หน่วยงานคู่สัญญา" value={selectedMou.partners?.[0]?.partner_org || "-"} />
                     <FullInfoRow label="ประเภทคู่สัญญา" value={selectedMou.partners?.[0]?.partner_type?.name_th || "-"} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <FullInfoRow label="ปีที่ลงนาม" value={selectedMou.year_of_signing || "-"} />
+                      <FullInfoRow label="ปีที่ลงนาม" value={selectedMou.year_of_signing ? fmtDate(selectedMou.year_of_signing) : "-"} />
                       <FullInfoRow label="ลงนามโดย" value={selectedMou.signed_by || "-"} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
