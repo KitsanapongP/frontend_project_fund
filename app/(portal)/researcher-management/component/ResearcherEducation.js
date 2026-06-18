@@ -4,9 +4,10 @@ import api from "../../../lib/api";
 import Swal from "sweetalert2";
 
 export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
+  const currentYear = new Date().getFullYear();
   
   const handleAddEducation = () => {
-    const newEdu = { degree_id: "1", degree_title_th: "", university_th: "", grad_year: "" };
+    const newEdu = { degree_id: "1", degree_title_th: "", university_th: "", grad_year: String(currentYear) };
     setData(prev => ({ ...prev, educations: [...(prev.educations || []), newEdu] }));
   };
 
@@ -16,35 +17,26 @@ export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
     setData(prev => ({ ...prev, educations: updatedEdus }));
   };
 
-  //ปรับปรุงฟังก์ชันการลบข้อมูลประวัติการศึกษาด้วย SweetAlert2
   const handleRemoveEdu = async (index) => {
     const target = data.educations[index];
 
-    // กรณีข้อมูลเดิมที่มี id อยู่แล้ว (ต้องการลบออกจากฐานข้อมูลหลังบ้าน)
     if (target.id && target.id !== 0) {
-      
-      // แสดงกล่องแจ้งเตือนยืนยันของ SweetAlert2
       const result = await Swal.fire({
         title: "ยืนยันการลบประวัติการศึกษา?",
         text: `คุณต้องการลบประวัติการศึกษา "${target.degree_title_th || 'นี้'}" ออกจากระบบใช่หรือไม่?`,
         icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: "#0284c7", // สีฟ้าครามธีมหลักของระบบ
-        cancelButtonColor: "#94a3b8",  // สีเทา Slate
+        confirmButtonColor: "#0284c7",
+        cancelButtonColor: "#94a3b8",
         confirmButtonText: "ใช่, ต้องการลบ",
         cancelButtonText: "ยกเลิก",
-        customClass: {
-          popup: "rounded-2xl"
-        }
+        customClass: { popup: "rounded-2xl" }
       });
 
-      // ถ้าผู้ใช้กด ยกเลิก (Cancel) ให้หยุดทำงานทันที
       if (!result.isConfirmed) return;
 
       try {
         await api.delete(`/admin/instructor-educations/${target.id}`);
-        
-        // แจ้งเตือนเมื่อลบสำเร็จแบบ Auto-close 1.5 วินาที
         Swal.fire({
           title: "ลบสำเร็จ!",
           text: "ลบข้อมูลประวัติการศึกษาออกจากระบบเรียบร้อยแล้ว",
@@ -53,11 +45,8 @@ export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
           showConfirmButton: false,
           customClass: { popup: "rounded-2xl" }
         });
-
       } catch (err) {
         console.error("Error deleting education:", err);
-        
-        // แจ้งเตือนเมื่อระบบหลังบ้านเกิด Error
         Swal.fire({
           title: "เกิดข้อผิดพลาด!",
           text: `ไม่สามารถลบข้อมูลได้ (${err.message})`,
@@ -65,11 +54,10 @@ export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
           confirmButtonColor: "#0284c7",
           customClass: { popup: "rounded-2xl" }
         });
-        return; // ออกจากฟังก์ชัน ไม่ตัดแถวบนหน้าจอ
+        return;
       }
     }
 
-    // กรณีเป็นแถวสร้างใหม่บนหน้าจอ หรือลบหลังบ้านสำเร็จแล้ว ให้กรองแถวนั้นออกทันที
     setData(prev => ({ ...prev, educations: prev.educations.filter((_, i) => i !== index) }));
   };
 
@@ -93,7 +81,7 @@ export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
               <th className="p-4 text-left">ระดับ</th>
               <th className="p-4 text-left">ชื่อปริญญา / สาขา</th>
               <th className="p-4 text-left">ชื่อสถาบัน, ประเทศ</th>
-              <th className="p-4 text-center">ปีที่จบ</th>
+              <th className="p-4 text-center w-44">ปีที่จบ</th>
               <th className="p-4 w-12"></th>
             </tr>
           </thead>
@@ -127,18 +115,20 @@ export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
                 </td>
                 <td className="p-2">
                   <select
-                    value={edu.grad_year || ""}
+                    value={edu.grad_year || currentYear}
                     onChange={(e) => handleEduChange(i, "grad_year", e.target.value)}
-                    className="w-full rounded-lg border-0 bg-transparent p-2 text-slate-700 outline-none focus:text-cyan-600 cursor-pointer"
+                    className="w-full rounded-lg border-0 bg-transparent p-2 text-slate-700 outline-none focus:text-cyan-600 cursor-pointer text-center font-medium"
                   >
-                    <option value="">พ.ศ.</option>
                     {(() => {
-                      const currentYear = new Date().getFullYear() + 543;
-                      const years = [];
-                      for (let y = currentYear; y >= currentYear - 80; y--) {
-                        years.push(<option key={y} value={y}>{y}</option>);
+                      const options = [];
+                      for (let y = currentYear; y >= currentYear - 50; y--) {
+                        options.push(
+                          <option key={y} value={y}>
+                            {y} (พ.ศ. {y + 543})
+                          </option>
+                        );
                       }
-                      return years;
+                      return options;
                     })()}
                   </select>
                 </td>
