@@ -521,9 +521,17 @@ export const exportToDocx = async (profile, weightMaster = {}) => {
   };
 
   const validProjects = (researchProjects || []).filter((proj) => {
-    if (!proj.start_date) return false;
-    const yr = Number(proj.start_date.split("-")[0]);
-    const cleanYr = yr > 2400 ? yr - 543 : yr;
+    // ดึงค่าปีงบประมาณออกมา หากไม่มีจะลองแปลงจาก start_date เป็นตัวสำรอง
+    let projYear = proj.fiscal_year 
+      ? Number(proj.fiscal_year) 
+      : (proj.start_date ? Number(proj.start_date.split("-")[0]) : null);
+
+    if (!projYear) return false;
+
+    // แปลงปี พ.ศ. ให้เป็น ค.ศ. (ถ้าค่าที่เข้ามามากกว่า 2400)
+    const cleanYr = projYear > 2400 ? projYear - 543 : projYear;
+
+    // ตรวจสอบว่าอยู่ในช่วง 5 ปีหรือไม่
     return cleanYr >= startFiveYearsAgo && cleanYr <= currentYear;
   });
 

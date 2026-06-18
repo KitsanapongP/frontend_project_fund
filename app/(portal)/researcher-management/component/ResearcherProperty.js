@@ -8,6 +8,8 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
   const intellectualProperties = formData.instructor_intellectual_properties || [];
   const [weightMaster, setWeightMaster] = useState({});
 
+  const currentYear = new Date().getFullYear();
+
   useEffect(() => {
     const fetchWeights = async () => {
       try {
@@ -38,7 +40,6 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
     fetchWeights();
   }, []);
 
-  //Sync type ที่โหลดจาก DB ให้ตรงกับ key ใน weightMaster
   useEffect(() => {
     if (Object.keys(weightMaster).length === 0) return;
 
@@ -59,7 +60,6 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
     handleInputChange("instructor_intellectual_properties", synced);
   }, [weightMaster]);
 
-  //เพิ่มรายการใหม่
   const handleAddProperty = () => {
     const availableTypes = Object.keys(weightMaster);
     if (availableTypes.length === 0) {
@@ -80,7 +80,7 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
         type: defaultType,
         title: "",
         registration_number: "",
-        granted_year: null,
+        granted_year: currentYear,
         tier_details: { tier_name: currentMaster.tier_name, weight: currentMaster.weight }
       }
     ]);
@@ -105,7 +105,6 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
     handleInputChange("instructor_intellectual_properties", newList);
   };
 
-  //ปรับปรุงการลบรายการด้วย SweetAlert2
   const handleRemoveProperty = async (index) => {
     const target = intellectualProperties[index];
     
@@ -114,22 +113,18 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
       text: `คุณต้องการลบผลงานทรัพย์สินทางปัญญา "${target.title || 'นี้'}" ใช่หรือไม่?`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#0284c7", // สีฟ้าครามธีมหลัก
-      cancelButtonColor: "#94a3b8",  // สีเทา Slate
+      confirmButtonColor: "#0284c7",
+      cancelButtonColor: "#94a3b8",
       confirmButtonText: "ใช่, ต้องการลบ",
       cancelButtonText: "ยกเลิก",
-      customClass: {
-        popup: "rounded-2xl"
-      }
+      customClass: { popup: "rounded-2xl" }
     });
 
-     // ถ้าผู้ใช้กด ยกเลิก (Cancel) ให้หยุดทำงานทันที
-      if (!result.isConfirmed) return;
+    if (!result.isConfirmed) return;
 
+    if (target.id) {
       try {
         await api.delete(`/admin/instructor-intellectual-properties/${target.id}`);
-        
-        // แจ้งเตือนเมื่อลบสำเร็จแบบ Auto-close 1.5 วินาที
         Swal.fire({
           title: "ลบสำเร็จ!",
           text: "ลบข้อมูลผลงานทรัพย์สินทางปัญญาออกจากระบบเรียบร้อยแล้ว",
@@ -138,11 +133,8 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
           showConfirmButton: false,
           customClass: { popup: "rounded-2xl" }
         });
-
       } catch (err) {
         console.error("Error deleting intellectual property:", err);
-        
-        // แจ้งเตือนเมื่อระบบหลังบ้านเกิด Error
         Swal.fire({
           title: "เกิดข้อผิดพลาด!",
           text: `ไม่สามารถลบข้อมูลได้ (${err.message})`,
@@ -150,11 +142,10 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
           confirmButtonColor: "#0284c7",
           customClass: { popup: "rounded-2xl" }
         });
-        return; // ออกจากฟังก์ชัน ไม่ตัดแถวบนหน้าจอ
+        return;
       }
-    
+    }
 
-    // ทำการตัดข้อมูลออกจาก State หลังจากกดยืนยันสำเร็จ
     handleInputChange(
       "instructor_intellectual_properties",
       intellectualProperties.filter((_, i) => i !== index)
@@ -178,11 +169,13 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
         <table className="w-full text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-slate-900 font-bold text-xs uppercase tracking-wide">
             <tr>
-              <th className="p-4 text-left w-1/4">ประเภท</th>
+              {/* ปรับแก้ประเภทให้แคบลง จาก w-1/4 เป็น w-40 */}
+              <th className="p-4 text-left w-40">ประเภท</th>
               <th className="p-4 text-left w-1/3">ชื่อผลงานวิชาการ / ทรัพย์สินทางปัญญา</th>
               <th className="p-4 text-left">เลขทะเบียน / เลขที่สิทธิบัตร</th>
               <th className="p-4 text-center w-32">ค่าน้ำหนัก</th>
-              <th className="p-4 text-center w-36">ปีที่ได้รับอนุมัติ</th>
+              {/* ขยายคอลัมน์ปีที่ได้รับอนุมัติเพิ่มขึ้น จาก w-36 เป็น w-48 */}
+              <th className="p-4 text-center w-48">ปีที่ได้รับอนุมัติ</th>
               <th className="p-4 w-12"></th>
             </tr>
           </thead>
@@ -238,23 +231,23 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
                     </td>
                     <td className="p-2">
                       <select
-                        value={property.granted_year || ""}
+                        value={property.granted_year || currentYear}
                         onChange={(e) => handlePropertyFieldChange(index, "granted_year", e.target.value)}
-                        className="w-full bg-transparent p-2 outline-none text-center cursor-pointer text-slate-700 focus:text-cyan-600"
+                        className="w-full rounded-lg border-0 bg-transparent p-2 text-slate-700 outline-none focus:text-cyan-600 cursor-pointer text-center font-medium"
                       >
-                        <option value="">เลือกปี พ.ศ.</option>
                         {(() => {
-                          const currentYear = new Date().getFullYear();
-                          const years = [];
-                          for (let i = 0; i < 50; i++) {
-                            const yearCE = currentYear - i;
-                            years.push(<option key={yearCE} value={yearCE}>{yearCE + 543}</option>);
+                          const options = [];
+                          for (let y = currentYear; y >= currentYear - 50; y--) {
+                            options.push(
+                              <option key={y} value={y}>
+                                {y} (พ.ศ. {y + 543})
+                              </option>
+                            );
                           }
-                          return years;
+                          return options;
                         })()}
                       </select>
                     </td>
-                    
                     <td className="p-2 align-middle text-center">
                       <button
                         type="button"
