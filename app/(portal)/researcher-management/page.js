@@ -1,9 +1,8 @@
-// page.js
 "use client";
 import { useState, useEffect } from "react";
-import { useAuth } from "../../contexts/AuthContext"; // Import useAuth มาใช้
+import { useRouter } from "next/navigation";
+import { useAuth } from "../../contexts/AuthContext";
 import { normalizeRoleName } from "@/app/lib/access_routing";
-// ... (import อื่นๆ เหมือนเดิม)
 import Header from "./component/layout/Header";
 import Navigation from "./component/layout/Navigation";
 import ResearcherExpertise from "./component/ResearcherExpertise";
@@ -11,24 +10,25 @@ import SearchInstructor from "./component/SearchInstructor";
 import Instructor from "./component/Instructor";
 
 export default function ResearcherManagementPage() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
   const normalizedRole = normalizeRoleName(user?.role ?? user?.role_id);
-  
-  const [isOpen, setIsOpen] = useState(false);
-  
-  // กำหนด Default Page: ถ้าเป็น admin ให้ไปที่ search-instructor ถ้าไม่ใช่ให้ไปที่ edit-info
-  const [currentPage, setCurrentPage] = useState(
-    normalizedRole === "admin" ? "search-instructor" : "edit-instructor-info"
-  );
 
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState("search-instructor");
   const [selectedInstructorId, setSelectedInstructorId] = useState(null);
 
-  // ใช้ useEffect ช่วยกรณีที่ user object โหลดมาช้ากว่า component
+  // กัน role ที่ไม่ใช่ admin ออกจากหน้านี้ทันที
   useEffect(() => {
-    if (normalizedRole === "admin") {
-      setCurrentPage("search-instructor");
+    if (isLoading) return;
+    if (normalizedRole !== "admin") {
+      router.replace("/");
     }
-  }, [normalizedRole]);
+  }, [normalizedRole, isLoading, router]);
+
+  if (isLoading || normalizedRole !== "admin") {
+    return null; // หรือ loading spinner ระหว่างเช็ค/redirect
+  }
 
   const handleNavigate = (pageId) => {
     setCurrentPage(pageId);
