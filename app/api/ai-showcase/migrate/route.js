@@ -8,6 +8,7 @@ SELECT
     CONCAT('scopus_', d.id)                         AS id,
     'scopus' COLLATE utf8mb4_general_ci             AS source_name,
     COALESCE(d.title, 'Untitled')                   AS title,
+    NULL                                             AS title_en,
     d.abstract                                       AS abstract,
     'faculty' COLLATE utf8mb4_general_ci             AS publication_type,
     COALESCE(
@@ -83,6 +84,7 @@ SELECT
     CONCAT('thaijo_', d.id)                          AS id,
     'thaijo' COLLATE utf8mb4_general_ci              AS source_name,
     COALESCE(d.title_th, d.title_en, 'Untitled')     AS title,
+    NULL                                             AS title_en,
     COALESCE(d.abstract_th, d.abstract_en)           AS abstract,
     'faculty' COLLATE utf8mb4_general_ci             AS publication_type,
     d.year                                           AS publication_year,
@@ -111,6 +113,7 @@ SELECT
     CONCAT('ai_', p.id)                             AS id,
     'ai_showcase' COLLATE utf8mb4_general_ci        AS source_name,
     COALESCE(p.title_th, p.title_en, 'Untitled')   AS title,
+    p.title_en                                       AS title_en,
     p.abstract                                       AS abstract,
     'student' COLLATE utf8mb4_general_ci             AS publication_type,
     p.published_year                                 AS publication_year,

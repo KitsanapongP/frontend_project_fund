@@ -162,12 +162,13 @@ export default async function DetailPage({ params }) {
   let membersWithIds = null;
   if (item.source_name === 'ai_showcase') {
     const [grp] = await pool.execute(
-      `SELECT group_code, poster_url FROM ai_showcase_projects WHERE id = ? LIMIT 1`,
+      `SELECT group_code, poster_url, title_en FROM ai_showcase_projects WHERE id = ? LIMIT 1`,
       [item.source_id]
     );
     if (grp.length > 0) {
       groupCode = grp[0].group_code;
       posterUrl = grp[0].poster_url || (item.url?.startsWith('https://ai-dday.computing.kku.ac.th/') ? `${item.url}.webp` : null);
+      titleEn = grp[0].title_en;
     }
     const [memberRows] = await pool.execute(
       `SELECT name, student_id FROM ai_showcase_project_members WHERE project_id = ? AND role = 'student'`,
@@ -255,7 +256,7 @@ export default async function DetailPage({ params }) {
                           const name = entry.name || entry;
                           const sid = entry.student_id;
                           return (
-                            <Link key={idx} href={`/publication-search?q=${encodeURIComponent(name)}&search_field=author`}
+                            <Link key={idx} href={`/publication-search?q=${encodeURIComponent(name)}&search_field=author&tab=student`}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 text-xs rounded-xl border border-sky-200 font-medium hover:bg-sky-100 hover:border-sky-300 transition cursor-pointer">
                               <User size={12} className="text-sky-500 shrink-0" />
                               {sid ? `${name} (${sid})` : name}
@@ -283,10 +284,18 @@ export default async function DetailPage({ params }) {
                       <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-3 flex items-center gap-2">
                         <University size={16} className="text-gray-500" /> ภาคีเครือข่าย
                       </h2>
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 border-violet-200 text-xs rounded-xl border font-medium">
-                        <University size={12} className="text-violet-500 shrink-0" />
-                        {TRACK_NAMES[item.track_id] || item.track_id || "-"}
-                      </div>
+                      {item.track_id ? (
+                        <Link href={`/publication-search?tab=student&track=${item.track_id}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 border-violet-200 text-xs rounded-xl border font-medium hover:bg-violet-100 hover:border-violet-300 transition cursor-pointer">
+                          <University size={12} className="text-violet-500 shrink-0" />
+                          {TRACK_NAMES[item.track_id] || item.track_id}
+                        </Link>
+                      ) : (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 border-violet-200 text-xs rounded-xl border font-medium">
+                          <University size={12} className="text-violet-500 shrink-0" />
+                          -
+                        </div>
+                      )}
                     </section>
                   </div>
                 </div>

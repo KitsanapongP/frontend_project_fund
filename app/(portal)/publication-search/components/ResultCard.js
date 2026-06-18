@@ -97,7 +97,7 @@ export default function ResultCard({ item, tab, query, index }) {
         {authorText && (
           <div className="flex flex-wrap gap-1.5">
             {authorText.split(", ").map((name, i) => (
-              <Link key={i} href={`/publication-search?q=${encodeURIComponent(name)}&search_field=author`}
+              <Link key={i} href={`/publication-search?q=${encodeURIComponent(name)}&search_field=author${item.source_name === 'ai_showcase' ? '&tab=student' : ''}`}
                 className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 
                             bg-[#F3F8FF] text-[#4F8EF7] rounded-full border border-[#DCEBFF]
                             hover:bg-blue-100 hover:border-blue-300 transition cursor-pointer">

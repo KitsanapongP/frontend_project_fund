@@ -5,12 +5,13 @@ import Swal from "sweetalert2";
 
 export default function ResearcherProject({ formData, handleInputChange }) {
   const researchProjects = formData.instructor_research_projects || [];
+  const currentYear = new Date().getFullYear();
 
   const handleAddResearchProject = () => {
     handleInputChange("instructor_research_projects", [
       ...researchProjects,
       { 
-        fiscal_year: "", 
+        fiscal_year: String(currentYear + 543), // โดยปกติปีงบประมาณของไทยนิยมบันทึกเป็น พ.ศ.
         project_name_th: "", 
         project_name_en: "", 
         source_of_fund: "", 
@@ -27,62 +28,48 @@ export default function ResearcherProject({ formData, handleInputChange }) {
     handleInputChange("instructor_research_projects", newList);
   };
 
-  //ปรับปรุงฟังก์ชันการลบข้อมูลโครงการวิจัย
   const handleRemoveResearchProject = async (index) => {
     const target = researchProjects[index];
 
-    // กรณีที่ 1: มี id อยู่ในตารางแล้ว (ต้องการลบออกจากฐานข้อมูลหลังบ้าน)
     if (target.id && target.id !== 0) {
-      
-      // แสดงกล่องแจ้งเตือนยืนยันของ SweetAlert2
       const result = await Swal.fire({
         title: "ยืนยันการลบโครงการวิจัย?",
         text: `คุณต้องการลบโครงการวิจัย "${target.project_name_th || 'นี้'}" ออกจากระบบใช่หรือไม่?`,
         icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: "#0284c7", // สีฟ้าคราม (Tailwind: bg-cyan-600)
-        cancelButtonColor: "#94a3b8",  // สีเทา (Tailwind: bg-slate-400)
+        confirmButtonColor: "#0284c7",
+        cancelButtonColor: "#94a3b8",
         confirmButtonText: "ใช่, ต้องการลบ",
         cancelButtonText: "ยกเลิก",
-        customClass: {
-          popup: "rounded-2xl" // ปรับรูปทรงกล่องให้เข้ากับ UI ของคุณ
-        }
+        customClass: { popup: "rounded-2xl" }
       });
 
-      // ถ้าผู้ใช้กด ยกเลิก (Cancel) ให้หยุดการทำงานทันที
-      if (!result.isConfirmed) return;
+    if (!result.isConfirmed) return;
 
       try {
         await api.delete(`/admin/instructor-research-projects/${target.id}`);
-        
-        // แจ้งเตือนเมื่อลบข้อมูลสำเร็จ
         Swal.fire({
           title: "ลบสำเร็จ!",
           text: "ลบข้อมูลโครงการวิจัยออกจากฐานข้อมูลเรียบร้อยแล้ว",
           icon: "success",
-          timer: 2000, // ปิดอัตโนมัติภายใน 2 วินาที
+          timer: 2000,
           showConfirmButton: false
         });
-
       } catch (err) {
         console.error("Error deleting research project:", err);
-        
-        // แจ้งเตือนเมื่อระบบหลังบ้านเกิดข้อผิดพลาด
         Swal.fire({
           title: "เกิดข้อผิดพลาด!",
           text: `ไม่สามารถลบข้อมูลได้ (${err.message})`,
           icon: "error",
           confirmButtonColor: "#0284c7"
         });
-        return; // ออกจากฟังก์ชัน ไม่ลบแถวบนหน้าจอ
+        return;
       }
     }
 
-    // กรณีที่ 2: เป็นแถวสร้างใหม่ (ไม่มี id) หรือลบออกจากระบบหลังบ้านสำเร็จแล้ว ให้กรองแถวนั้นออกทันที
     handleInputChange("instructor_research_projects", researchProjects.filter((_, i) => i !== index));
   };
 
-  // ฟังก์ชันจัดฟอร์แมตข้อมูลก่อนใส่ลง Input
   const formatDateForInput = (dateValue) => {
     if (!dateValue || dateValue.startsWith("0001")) return "";
     return dateValue.split("T")[0];
@@ -105,11 +92,13 @@ export default function ResearcherProject({ formData, handleInputChange }) {
         <table className="w-full text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-slate-900 font-bold text-xs uppercase tracking-wide">
             <tr>
-              <th className="p-4 text-left w-32">ปีงบประมาณ</th>
+              {/* ปรับเพิ่มความกว้างของปีงบประมาณจาก w-36 เป็น w-48 */}
+              <th className="p-4 text-left w-48">ปีงบประมาณ</th>
               <th className="p-4 text-left min-w-[200px]">ชื่อโครงการ (TH / EN)</th>
               <th className="p-4 text-left w-48">แหล่งทุน</th>
               <th className="p-4 text-left w-64">ระยะเวลาโครงการ</th>
-              <th className="p-4 text-left w-40">งบประมาณ (บาท)</th>
+              {/* ปรับลดความกว้างของงบประมาณจาก w-40 เป็น w-32 */}
+              <th className="p-4 text-left w-32">งบประมาณ (บาท)</th>
               <th className="p-4 w-12"></th>
             </tr>
           </thead>
@@ -117,27 +106,26 @@ export default function ResearcherProject({ formData, handleInputChange }) {
             {researchProjects.length > 0 ? (
               researchProjects.map((project, index) => (
                 <tr key={index} className="bg-white hover:bg-slate-50/60 transition-colors">
-                  
-                  {/*ปีงบประมาณ */}
-                  <td className="p-2 align-top">
+                  <td className="p-2">
                     <select
-                      value={project.fiscal_year || ""}
+                      value={project.fiscal_year || currentYear}
                       onChange={(e) => handleProjectFieldChange(index, "fiscal_year", e.target.value)}
-                      className="w-full rounded-lg border-0 bg-transparent p-2 text-slate-700 outline-none focus:text-cyan-600 cursor-pointer text-sm"
+                      className="w-full rounded-lg border-0 bg-transparent p-2 text-slate-700 outline-none focus:text-cyan-600 cursor-pointer text-center font-medium"
                     >
-                      <option value="">เลือก พ.ศ.</option>
                       {(() => {
-                        const currentYear = new Date().getFullYear() + 543;
-                        const years = [];
-                        for (let y = currentYear + 3; y >= currentYear - 15; y--) {
-                          years.push(<option key={y} value={y}>{y}</option>);
+                        const options = [];
+                        for (let y = currentYear; y >= currentYear - 50; y--) {
+                          options.push(
+                            <option key={y} value={y}>
+                              {y} (พ.ศ. {y + 543})
+                            </option>
+                          );
                         }
-                        return years;
+                        return options;
                       })()}
                     </select>
                   </td>
 
-                  {/*ชื่อโครงการ */}
                   <td className="p-2 align-top space-y-2">
                     <input 
                       type="text" 
@@ -155,7 +143,6 @@ export default function ResearcherProject({ formData, handleInputChange }) {
                     />
                   </td>
 
-                  {/*แหล่งทุน */}
                   <td className="p-2 align-top">
                     <input 
                       type="text" 
@@ -166,7 +153,6 @@ export default function ResearcherProject({ formData, handleInputChange }) {
                     />
                   </td>
 
-                  {/*วันเริ่มต้น - วันสิ้นสุดโครงการ */}
                   <td className="p-2 align-top space-y-1">
                     <div className="flex items-center gap-1">
                       <span className="text-[10px] font-bold text-slate-400 w-8">เริ่ม:</span>
@@ -188,7 +174,6 @@ export default function ResearcherProject({ formData, handleInputChange }) {
                     </div>
                   </td>
 
-                  {/*งบประมาณ */}
                   <td className="p-2 align-top">
                     <input 
                       type="number" 
@@ -204,7 +189,6 @@ export default function ResearcherProject({ formData, handleInputChange }) {
                     />
                   </td>
 
-                  {/*ปุ่มลบแถว (ปรับเปลี่ยนเป็นธีมโทนแดงเพื่อความชัดเจน) */}
                   <td className="p-2 align-middle text-center">
                     <button 
                       type="button"
@@ -214,7 +198,6 @@ export default function ResearcherProject({ formData, handleInputChange }) {
                       <X size={16} />
                     </button>
                   </td>
-
                 </tr>
               ))
             ) : (
