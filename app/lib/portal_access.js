@@ -27,7 +27,7 @@ export const PORTAL_ITEM_ACCESS = {
   },
   researcherManagement: {
     ...DEFAULT_PORTAL_RULE,
-    allowedRoles: ["academic_designer"],
+    allowedRoles: ["academic_designer","admin"],
     allowedPermissions: [],
   },
 };
