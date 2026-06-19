@@ -131,7 +131,7 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
 
   const handleSave = async () => {
     //ตรวจสอบสิทธิ์ผู้ดูแลระบบ
-    if (normalizedRole !== "admin") {
+    if (normalizedRole !== "admin" && normalizedRole !== "academic_designer"){
       return Swal.fire({
         title: "สิทธิ์ไม่ถูกต้อง!",
         text: "คุณไม่มีสิทธิ์แก้ไขข้อมูลระบบนี้",
