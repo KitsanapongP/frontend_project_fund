@@ -1,6 +1,5 @@
 import { ExternalLink, Calendar, BookOpen, User, Tag, University, Globe, Award, Users, Hash, Download, Quote, Library, Medal, Trophy, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import pool from "../../../../lib/db-connection";
 import { notFound } from "next/navigation";
 
 const TRACK_NAMES = {
@@ -17,21 +16,18 @@ const parseKeywords = (raw) => {
 
   let text = String(raw).trim();
 
-  // 1. กรณีมี Object ภาษา (en_US, th_TH) หรือ JSON
   if (text.includes("en_US") || text.includes("th_TH") || text.startsWith("{")) {
-    
     text = text.replace(/['"]?(en_US|th_TH|en|th)['"]?\s*:\s*/gi, '');
     text = text.replace(/[{}[\]"']/g, '');
 
     let parts = text.split(',');
     if (parts.length === 1) {
-      parts = text.split(/\s+/); 
+      parts = text.split(/\s+/);
     }
 
     return parts.map(s => s.trim()).filter(w => w.length > 1);
   }
 
-  // 2. กรณี Array JSON ธรรมดา [...]
   if (text.startsWith("[")) {
     try {
       const parsed = JSON.parse(text.replace(/'/g, '"'));
@@ -39,7 +35,6 @@ const parseKeywords = (raw) => {
     } catch {}
   }
 
-  // 3. กรณี String ทั่วไป
   return text.split(",").map(s => s.replace(/["{}\[\]]/g, '').trim()).filter(Boolean);
 };
 
@@ -50,23 +45,46 @@ const getSourceLabel = (source) => {
   return source;
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://127.0.0.1:8080/api/v1';
+
+const fetchPublicationDetail = async (id) => {
+  let apiBase = 'http://127.0.0.1:8080';
+  let apiPath = '/api/v1';
+  try {
+    const u = new URL(API_URL);
+    apiBase = `${u.protocol}//${u.host}`;
+    apiPath = u.pathname || '/api/v1';
+  } catch {}
+
+  const joinURL = (base, path) =>
+    `${base.replace(/\/+$/, '')}/${String(path || '').replace(/^\/+/, '')}`;
+
+  const primaryURL = joinURL(joinURL(apiBase, apiPath || ''), `/publications/detail/${id}`);
+  const fallbackURL = joinURL(apiBase, `/publications/detail/${id}`);
+
+  try {
+    let resp = await fetch(primaryURL, { next: { revalidate: 0 } });
+    if (!resp.ok) {
+      resp = await fetch(fallbackURL, { next: { revalidate: 0 } });
+    }
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.success ? data.data : null;
+  } catch {
+    return null;
+  }
+};
+
 export default async function DetailPage({ params }) {
-  const { id } = await params; 
+  const { id } = await params;
 
-  const [contentRows] = await pool.execute(
-    `SELECT * FROM unified_search_contents WHERE id = ?`,
-    [id]
-  );
+  const detail = await fetchPublicationDetail(id);
+  if (!detail) notFound();
 
-  if (contentRows.length === 0) notFound();
-  const item = contentRows[0];
+  const item = detail.item;
+  const authors = detail.authors || [];
+  const advisors = detail.advisors || [];
 
-  const [authorRows] = await pool.execute(
-    `SELECT name, role FROM unified_search_authors WHERE unified_publication_id = ? ORDER BY author_seq ASC`,
-    [id]
-  );
-  const authors = authorRows.filter(a => a.role !== 'advisor').map(row => row.name);
-  const advisors = authorRows.filter(a => a.role === 'advisor').map(row => row.name);
   let journalName = null;
   let journalNameEn = null;
   let journalCategory = null;
@@ -88,70 +106,42 @@ export default async function DetailPage({ params }) {
   let scopusArticleNumber = null;
   let scopusIsbn = null;
 
-  if (item.source_name === 'scopus') {
-    const [sRows] = await pool.execute(
-      `SELECT doi, issn, eissn, volume, issue, page_range, article_number, aggregation_type, raw_json FROM scopus_documents WHERE id = ? LIMIT 1`,
-      [item.source_id]
-    );
-    if (sRows.length > 0) {
-      doi = sRows[0].doi;
-      scopusIssn = sRows[0].issn;
-      scopusEissn = sRows[0].eissn;
-      scopusVolume = sRows[0].volume;
-      scopusIssue = sRows[0].issue;
-      scopusPageRange = sRows[0].page_range;
-      scopusArticleNumber = sRows[0].article_number;
-      if (sRows[0].aggregation_type === 'Conference Proceeding' && sRows[0].raw_json) {
-        try {
-          const raw = typeof sRows[0].raw_json === 'string' ? JSON.parse(sRows[0].raw_json) : sRows[0].raw_json;
-          const isbnEntry = raw['prism:isbn'];
-          if (isbnEntry) {
-            const isbns = Array.isArray(isbnEntry) ? isbnEntry : [isbnEntry];
-            scopusIsbn = isbns.map(e => (e['$'] || e).replace(/^\[|\]$/g, '')).filter(Boolean).join(', ');
-          }
-        } catch {}
-      }
+  if (item.source_name === 'scopus' && detail.scopus_detail) {
+    const sd = detail.scopus_detail;
+    doi = sd.doi;
+    scopusIssn = sd.issn;
+    scopusEissn = sd.eissn;
+    scopusVolume = sd.volume;
+    scopusIssue = sd.issue;
+    scopusPageRange = sd.page_range;
+    scopusArticleNumber = sd.article_number;
+    if (sd.aggregation_type === 'Conference Proceeding' && sd.raw_json) {
+      try {
+        const raw = typeof sd.raw_json === 'string' ? JSON.parse(sd.raw_json) : sd.raw_json;
+        const isbnEntry = raw['prism:isbn'];
+        if (isbnEntry) {
+          const isbns = Array.isArray(isbnEntry) ? isbnEntry : [isbnEntry];
+          scopusIsbn = isbns.map(e => (e['$'] || e).replace(/^\[|\]$/g, '')).filter(Boolean).join(', ');
+        }
+      } catch {}
     }
   }
 
-  if (item.source_name === 'thaijo') {
-    const [jRows] = await pool.execute(
-      `SELECT 
-        j.name_th,
-        j.name_en,
-        j.category,
-        j.acronym,
-        j.online_issn,
-        j.print_issn,
-        j.tier,
-        j.tier_period,
-        j.path,
-        j.journal_url,
-        d.title_en,
-        d.pdf_url,
-        d.doi
-      FROM thaijo_documents d
-      JOIN thaijo_journals j ON d.journal_id = j.journal_id
-      WHERE d.id = ?
-      LIMIT 1`,
-      [item.source_id]
-    );
-
-    if (jRows.length > 0) {
-      journalName = jRows[0].name_th;
-      journalNameEn = jRows[0].name_en;
-      journalCategory = jRows[0].category;
-      journalAcronym = jRows[0].acronym;
-      onlineIssn = jRows[0].online_issn;
-      printIssn = jRows[0].print_issn;
-      journalTier = jRows[0].tier;
-      journalTierPeriod = jRows[0].tier_period;
-      journalPath = jRows[0].path;
-      journalUrl = jRows[0].journal_url;
-      titleEn = jRows[0].title_en;
-      pdfUrl = jRows[0].pdf_url;
-      doi = jRows[0].doi;
-    }
+  if (item.source_name === 'thaijo' && detail.thaijo_detail) {
+    const td = detail.thaijo_detail;
+    journalName = td.journal_name_th;
+    journalNameEn = td.journal_name_en;
+    journalCategory = td.journal_category;
+    journalAcronym = td.journal_acronym;
+    onlineIssn = td.online_issn;
+    printIssn = td.print_issn;
+    journalTier = td.journal_tier;
+    journalTierPeriod = td.tier_period;
+    journalPath = td.journal_path;
+    journalUrl = td.journal_url;
+    titleEn = td.title_en;
+    pdfUrl = td.pdf_url;
+    doi = td.doi;
   }
 
   const keywordsList = parseKeywords(item.keywords);
@@ -160,35 +150,25 @@ export default async function DetailPage({ params }) {
   let groupCode = null;
   let posterUrl = null;
   let membersWithIds = null;
-  if (item.source_name === 'ai_showcase') {
-    const [grp] = await pool.execute(
-      `SELECT group_code, poster_url, title_en FROM ai_showcase_projects WHERE id = ? LIMIT 1`,
-      [item.source_id]
-    );
-    if (grp.length > 0) {
-      groupCode = grp[0].group_code;
-      posterUrl = grp[0].poster_url || (item.url?.startsWith('https://ai-dday.computing.kku.ac.th/') ? `${item.url}.webp` : null);
-      titleEn = grp[0].title_en;
-    }
-    const [memberRows] = await pool.execute(
-      `SELECT name, student_id FROM ai_showcase_project_members WHERE project_id = ? AND role = 'student'`,
-      [item.source_id]
-    );
-    membersWithIds = memberRows;
+  if (item.source_name === 'ai_showcase' && detail.ai_detail) {
+    const ad = detail.ai_detail;
+    groupCode = ad.group_code;
+    posterUrl = ad.poster_url || (item.url?.startsWith('https://ai-dday.computing.kku.ac.th/') ? `${item.url}.webp` : null);
+    titleEn = ad.title_en;
+    membersWithIds = ad.members || [];
   }
 
-  const isAIDdayLink = item.url?.startsWith('https://ai-dday.computing.kku.ac.th/');
+  let isAIDdayLink = item.url?.startsWith('https://ai-dday.computing.kku.ac.th/');
 
   const getSourceLink = () => {
     if (item.source_name === 'ai_showcase') {
       return isAIDdayLink ? item.url : null;
     }
-    const directUrl = item.source_url || item.url || item.link || item.project_url;
+    const directUrl = item.url;
     if (directUrl) return directUrl;
 
     if (item.source_name === 'scopus') {
       if (doi) return `https://www.scopus.com/record/display.uri?doi=${doi}&origin=resultslist`;
-      return item.url || null;
     }
     if (item.source_name === 'thaijo') {
       return `https://tci-thaijo.org/index.php?keyword=${encodeURIComponent(item.title)}`;
@@ -197,7 +177,6 @@ export default async function DetailPage({ params }) {
   };
 
   const sourceLink = getSourceLink();
-  const infoCard = "rounded-xl border border-gray-200 bg-white p-4 hover:shadow-md hover:-translate-y-0.5 transition";
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -252,7 +231,7 @@ export default async function DetailPage({ params }) {
                         <User size={16} className="text-gray-500 shrink-0" /> ผู้จัดทำ
                       </h2>
                       <div className="flex flex-wrap gap-2">
-                        {membersWithIds.map((entry, idx) => {
+                        {(membersWithIds || []).map((entry, idx) => {
                           const name = entry.name || entry;
                           const sid = entry.student_id;
                           return (
@@ -307,16 +286,13 @@ export default async function DetailPage({ params }) {
                     <User size={16} className="text-gray-500 shrink-0" /> ผู้เขียน
                   </h2>
                   <div className="flex flex-wrap gap-2">
-                    {authors.map((entry, idx) => {
-                      const name = entry.name || entry;
-                      return (
-                        <Link key={idx} href={`/publication-search?q=${encodeURIComponent(name)}&search_field=author`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 text-xs rounded-xl border border-sky-200 font-medium hover:bg-sky-100 hover:border-sky-300 transition cursor-pointer">
-                          <User size={12} className="text-sky-500 shrink-0" />
-                          {name}
-                        </Link>
-                      );
-                    })}
+                    {authors.map((name, idx) => (
+                      <Link key={idx} href={`/publication-search?q=${encodeURIComponent(name)}&search_field=author`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 text-xs rounded-xl border border-sky-200 font-medium hover:bg-sky-100 hover:border-sky-300 transition cursor-pointer">
+                        <User size={12} className="text-sky-500 shrink-0" />
+                        {name}
+                      </Link>
+                    ))}
                   </div>
                 </section>
               )}

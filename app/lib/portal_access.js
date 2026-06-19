@@ -12,7 +12,7 @@ export const PORTAL_ITEM_ACCESS = {
     ...DEFAULT_PORTAL_RULE,
   },
   publicationSearch: {
-    ...DEFAULT_PORTAL_RULE,
+    requireAuth: false,
   },
   mou: {
     ...DEFAULT_PORTAL_RULE,
