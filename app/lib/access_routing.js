@@ -5,6 +5,7 @@ export const normalizeRoleName = (role) => {
     3: "admin",
     4: "dept_head",
     5: "executive",
+    6: "academic_designer",
   };
 
   if (role == null) return null;

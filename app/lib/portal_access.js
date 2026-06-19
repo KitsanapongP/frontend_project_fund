@@ -16,6 +16,7 @@ export const PORTAL_ITEM_ACCESS = {
   },
   mou: {
     ...DEFAULT_PORTAL_RULE,
+    allowedRoles: ["admin"],
   },
   links: {
     ...DEFAULT_PORTAL_RULE,
@@ -26,8 +27,7 @@ export const PORTAL_ITEM_ACCESS = {
   },
   researcherManagement: {
     ...DEFAULT_PORTAL_RULE,
-    // เตรียมไว้สำหรับ role ใหม่ในอนาคต เช่น allowedRoles: ['researcher_manager']
-    allowedRoles: [],
+    allowedRoles: ["academic_designer"],
     allowedPermissions: [],
   },
 };

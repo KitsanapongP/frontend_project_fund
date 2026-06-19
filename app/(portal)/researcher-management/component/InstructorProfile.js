@@ -157,7 +157,7 @@ export default function InstructorPublicProfile() {
                     try {
                       let researchData = [];
                       if (id) {
-                        const res = await api.get(`/admin/instructors/${id}/documents`);
+                        const res = await api.get(`/researcher-management/instructors/${id}/documents`);
                         researchData = res || []; 
                       }
 

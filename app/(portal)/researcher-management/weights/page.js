@@ -18,10 +18,10 @@ export default function RankingWeightsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const sourcesRes = await api.get("/admin/ranking-sources").catch(() => []);
+      const sourcesRes = await api.get("/researcher-management/ranking-sources").catch(() => []);
       setSources(sourcesRes || []);
 
-      const weightsRes = await api.get("/admin/ranking-weights");
+      const weightsRes = await api.get("/researcher-management/ranking-weights");
       const sanitizedData = (weightsRes || []).map(item => {
         const defaultSourceId = item.source_id || (sourcesRes[0]?.source_id || 1);
         
@@ -123,7 +123,7 @@ export default function RankingWeightsPage() {
       if (!result.isConfirmed) return;
 
       try {
-        await api.delete(`/admin/ranking-weights/${targetWeight.tier_weight_id}`);
+        await api.delete(`/researcher-management/ranking-weights/${targetWeight.tier_weight_id}`);
         
         await Swal.fire({
           icon: "success",
@@ -188,7 +188,7 @@ export default function RankingWeightsPage() {
         is_active:      Boolean(item.is_active)
       }));
 
-      const updatedWeights = await api.put("/admin/ranking-weights", { weights: payload });
+      const updatedWeights = await api.put("/researcher-management/ranking-weights", { weights: payload });
 
       if (updatedWeights && Array.isArray(updatedWeights)) {
         const sanitized = updatedWeights.map(item => ({

@@ -117,7 +117,7 @@ export default function AuditTrailPage() {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.get("/admin/audit-logs");
+      const data = await api.get("/researcher-management/audit-logs");
       const list = Array.isArray(data) ? data : (data?.data ?? []);
       setLogs(list);
       const uniqueTables = [...new Set(list.map((l) => l.table_name).filter(Boolean))];

@@ -123,14 +123,14 @@ const visibleMenuItems = isExecutive
         const hasBasePermission = canViewMenu(item);
         
         // 2. ถ้าเป็นเมนูในกลุ่ม researcher-management (ที่คุณสร้างใหม่ 6 รายการ)
-        // ต้องตรวจสอบเพิ่มว่าเป็น Role 'teacher' จริงๆ
+        // ต้องตรวจสอบเพิ่มว่าเป็น Role นักออกแบบวิชาการจริงๆ
         const researcherMenuIds = [
           'edit-instructor-info', 'related-websites', 'expertise', 
           'research-projects', 'academic-performance', 'verify-instructor-info'
         ];
         
         if (researcherMenuIds.includes(item.id)) {
-            return hasBasePermission && normalizedRole === "teacher";
+            return hasBasePermission && normalizedRole === "academic_designer";
         }
 
         return hasBasePermission;
@@ -139,8 +139,7 @@ const visibleMenuItems = isExecutive
     // Navigation.js
   
 
-  // แก้ไข: เอา staff และ dept_head ออก เพื่อให้เฉพาะอาจารย์เท่านั้นที่เข้าได้
-  const canAccessMemberPortal = ["teacher"].includes(normalizedRole);
+  const canAccessMemberPortal = ["academic_designer"].includes(normalizedRole);
   const memberShortcutItems = canAccessMemberPortal
     ? [
           { id: 'edit-instructor-info', label: 'แก้ไขข้อมูลอาจารย์', icon: User, route: '/researcher-management' },

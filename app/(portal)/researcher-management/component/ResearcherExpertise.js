@@ -42,7 +42,7 @@ export default function ResearcherExpertise({ formData, handleInputChange }) {
       if (!result.isConfirmed) return;
 
       try {
-        await api.delete(`/admin/instructor-expertises/${targetId}`);
+        await api.delete(`/researcher-management/instructor-expertises/${targetId}`);
         
         // แจ้งเตือนเมื่อลบสำเร็จแบบ Auto-close 1.5 วินาที
         Swal.fire({

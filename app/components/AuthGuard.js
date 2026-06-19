@@ -67,8 +67,7 @@ export default function AuthGuard({
     if (isAuthenticated && (allowedRoles.length > 0 || allowedPermissions.length > 0)) {
       const roleMatched = allowedRoles.length > 0 ? hasAnyRole(allowedRoles) : false;
       const permissionMatched = allowedPermissions.length > 0 ? hasAnyPermission(allowedPermissions) : false;
-      const pathMatched = canAccess(pathname, user);
-      if (!roleMatched && !permissionMatched && !pathMatched) {
+      if (!roleMatched && !permissionMatched) {
         setShowUnauthorized(true);
         return;
       }

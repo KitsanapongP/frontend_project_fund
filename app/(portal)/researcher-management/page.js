@@ -18,15 +18,15 @@ export default function ResearcherManagementPage() {
   const [currentPage, setCurrentPage] = useState("search-instructor");
   const [selectedInstructorId, setSelectedInstructorId] = useState(null);
 
-  // กัน role ที่ไม่ใช่ admin ออกจากหน้านี้ทันที
+  // กัน role ที่ไม่ใช่นักออกแบบวิชาการออกจากหน้านี้ทันที
   useEffect(() => {
     if (isLoading) return;
-    if (normalizedRole !== "admin") {
+    if (normalizedRole !== "academic_designer") {
       router.replace("/");
     }
   }, [normalizedRole, isLoading, router]);
 
-  if (isLoading || normalizedRole !== "admin") {
+  if (isLoading || normalizedRole !== "academic_designer") {
     return null; // หรือ loading spinner ระหว่างเช็ค/redirect
   }
 

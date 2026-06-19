@@ -47,7 +47,7 @@ export default function ResearcherProject({ formData, handleInputChange }) {
     if (!result.isConfirmed) return;
 
       try {
-        await api.delete(`/admin/instructor-research-projects/${target.id}`);
+        await api.delete(`/researcher-management/instructor-research-projects/${target.id}`);
         Swal.fire({
           title: "ลบสำเร็จ!",
           text: "ลบข้อมูลโครงการวิจัยออกจากฐานข้อมูลเรียบร้อยแล้ว",

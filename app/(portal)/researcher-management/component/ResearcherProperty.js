@@ -13,7 +13,7 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
   useEffect(() => {
     const fetchWeights = async () => {
       try {
-        const res = await api.get("/admin/ranking-weights");
+        const res = await api.get("/researcher-management/ranking-weights");
         const rawData = Array.isArray(res) ? res : (res?.data ?? []);
 
         if (rawData.length > 0) {
@@ -124,7 +124,7 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
 
     if (target.id) {
       try {
-        await api.delete(`/admin/instructor-intellectual-properties/${target.id}`);
+        await api.delete(`/researcher-management/instructor-intellectual-properties/${target.id}`);
         Swal.fire({
           title: "ลบสำเร็จ!",
           text: "ลบข้อมูลผลงานทรัพย์สินทางปัญญาออกจากระบบเรียบร้อยแล้ว",

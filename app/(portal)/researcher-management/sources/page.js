@@ -17,7 +17,7 @@ export default function RankingSourcesPage() {
   const fetchSources = async () => {
     setLoading(true);
     try {
-      const sourcesRes = await api.get("/admin/ranking-sources");
+      const sourcesRes = await api.get("/researcher-management/ranking-sources");
       setSources(sourcesRes || []);
     } catch (err) {
       console.error("Error fetching sources:", err);
@@ -86,7 +86,7 @@ export default function RankingSourcesPage() {
       if (!result.isConfirmed) return;
 
       try {
-        await api.delete(`/admin/ranking-sources/${targetSource.source_id}`);
+        await api.delete(`/researcher-management/ranking-sources/${targetSource.source_id}`);
         
         await Swal.fire({
           icon: "success",
@@ -134,7 +134,7 @@ export default function RankingSourcesPage() {
         is_active: Boolean(src.is_active)
       }));
 
-      await api.put("/admin/ranking-sources", { sources: payload });
+      await api.put("/researcher-management/ranking-sources", { sources: payload });
       
       await Swal.fire({
         icon: "success",

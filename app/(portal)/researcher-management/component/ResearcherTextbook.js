@@ -54,7 +54,7 @@ export default function ResearcherTextbook({ formData, handleInputChange }) {
 
       try {
         // เริ่มส่ง API ลบข้อมูล
-        await api.delete(`/admin/instructor-textbooks/${targetTextbook.id}`);
+        await api.delete(`/researcher-management/instructor-textbooks/${targetTextbook.id}`);
         
         // แจ้งเตือนเมื่อลบสำเร็จ
         Swal.fire({

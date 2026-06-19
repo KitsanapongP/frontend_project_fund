@@ -15,7 +15,7 @@ export default function ResearchDocsTab({ targetUserId, hideHeader = false }) {
       const fetchDocuments = async () => {
         setIsLoading(true);
         try {
-          const res = await api.get(`/admin/instructors/${targetUserId}/documents`);
+          const res = await api.get(`/researcher-management/instructors/${targetUserId}/documents`);
           setDocuments(res || []);
         } catch (err) {
           console.error("Error fetching docs:", err);

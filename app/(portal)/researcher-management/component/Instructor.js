@@ -72,7 +72,7 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
   const fetchData = useCallback(async () => {
     if (!targetUserId) { setLoading(false); return; }
     try {
-      const res = await api.get(`/admin/instructors/${targetUserId}`);
+      const res = await api.get(`/researcher-management/instructors/${targetUserId}`);
       const profileData = res;
       setData(profileData);
 
@@ -284,7 +284,7 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
           })),
       };
 
-      await api.put(`/admin/instructors/${targetUserId}`, payload);
+      await api.put(`/researcher-management/instructors/${targetUserId}`, payload);
 
       //แจ้งเตือนบันทึกข้อมูลสำเร็จ
       Swal.fire({
@@ -367,7 +367,7 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
                     try {
                       let researchData = [];
                       if (targetUserId) {
-                        const res = await api.get(`/admin/instructors/${targetUserId}/documents`);
+                        const res = await api.get(`/researcher-management/instructors/${targetUserId}/documents`);
                         researchData = res || [];
                       }
                       exportToDocx({

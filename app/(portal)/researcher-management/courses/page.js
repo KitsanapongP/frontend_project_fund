@@ -156,7 +156,7 @@ export default function CoursesPage() {
   const fetchCourses = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiFetch("/admin/courses");
+      const data = await apiFetch("/researcher-management/courses");
       setCourses(Array.isArray(data) ? data : data?.data ?? []);
     } catch (err) {
       console.error(err);
@@ -193,7 +193,7 @@ export default function CoursesPage() {
     }
     setSaving((p) => ({ ...p, [id]: true }));
     try {
-      await apiFetch(`/admin/courses/${id}`, { method: "PUT", body: JSON.stringify({ ...row, degree_id: Number(row.degree_id) }) });
+      await apiFetch(`/researcher-management/courses/${id}`, { method: "PUT", body: JSON.stringify({ ...row, degree_id: Number(row.degree_id) }) });
       cancelEdit(id);
       fetchCourses();
       Swal.fire({ icon: "success", title: "บันทึกสำเร็จ", text: "แก้ไขข้อมูลหลักสูตรเรียบร้อยแล้ว", confirmButtonColor: "#059669", confirmButtonText: "ตกลง" });
@@ -213,7 +213,7 @@ export default function CoursesPage() {
     });
     if (result.isConfirmed) {
       try {
-        await apiFetch(`/admin/courses/${id}`, { method: "DELETE" });
+        await apiFetch(`/researcher-management/courses/${id}`, { method: "DELETE" });
         fetchCourses();
         Swal.fire({ icon: "success", title: "ลบข้อมูลสำเร็จ", confirmButtonColor: "#059669", confirmButtonText: "ตกลง" });
       } catch (err) {
@@ -230,7 +230,7 @@ export default function CoursesPage() {
     setNewError("");
     setSavingNew(true);
     try {
-      await apiFetch("/admin/courses", { method: "POST", body: JSON.stringify({ ...newRow, degree_id: Number(newRow.degree_id) }) });
+      await apiFetch("/researcher-management/courses", { method: "POST", body: JSON.stringify({ ...newRow, degree_id: Number(newRow.degree_id) }) });
       setAddingRow(false);
       setNewRow({ ...EMPTY_ROW });
       fetchCourses();

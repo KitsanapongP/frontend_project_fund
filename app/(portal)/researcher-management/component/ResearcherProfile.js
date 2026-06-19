@@ -34,7 +34,7 @@ export default function ResearcherProfile({ formData, handleInputChange, targetU
   // ดึงหลักสูตรจาก DB 
   useEffect(() => {
     const token = localStorage.getItem("access_token") || localStorage.getItem("token") || "";
-    fetch("http://localhost:8080/api/v1/admin/courses", {
+    fetch("http://localhost:8080/api/v1/researcher-management/courses", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())

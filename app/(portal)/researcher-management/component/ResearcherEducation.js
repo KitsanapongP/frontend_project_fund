@@ -36,7 +36,7 @@ export default function ResearcherEducation({ data, setData, DEGREE_OPTIONS }) {
       if (!result.isConfirmed) return;
 
       try {
-        await api.delete(`/admin/instructor-educations/${target.id}`);
+        await api.delete(`/researcher-management/instructor-educations/${target.id}`);
         Swal.fire({
           title: "ลบสำเร็จ!",
           text: "ลบข้อมูลประวัติการศึกษาออกจากระบบเรียบร้อยแล้ว",
