@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { openSignedFileInNewTab } from '@/app/lib/file_access';
 import {
   ArrowLeft, FileText,
   CheckCircle, XCircle, AlertTriangle, Clock,
@@ -2486,9 +2487,8 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
                     <span className="text-gray-500 shrink-0">ประกาศหลักเกณฑ์:</span>
                     {mainAnn?.file_path ? (
                       <a
-                        href={getFileURL(mainAnn.file_path)}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(mainAnn.file_path); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={mainAnn?.title || mainAnn?.file_name || 'เปิดไฟล์ประกาศ'}
                       >
@@ -2521,9 +2521,8 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
                     <span className="text-gray-500 shrink-0">ประกาศสนับสนุนกิจกรรม:</span>
                     {activityAnn?.file_path ? (
                       <a
-                        href={getFileURL(activityAnn.file_path)}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(activityAnn.file_path); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={activityAnn?.title || activityAnn?.file_name || 'เปิดไฟล์ประกาศ'}
                       >
@@ -2802,9 +2801,8 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
                                               </>
                                             ) : file.file_path ? (
                                               <a
-                                                href={getFileURL(file.file_path)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                                href="#"
+                                                onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(file.file_path); }}
                                                 className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 underline"
                                                 title={titleLabel}
                                               >

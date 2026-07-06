@@ -62,3 +62,23 @@ export async function getSignedFileUrl(input, { purpose } = {}) {
     return '';
   }
 }
+
+// Open an uploaded file in a new tab via a signed URL. Opens a blank tab
+// synchronously (so the browser doesn't block the popup after the async sign),
+// then navigates it once the signed URL resolves. Use this to replace
+// `<a href={getFileURL(path)} target="_blank">` links.
+export async function openSignedFileInNewTab(input, { purpose } = {}) {
+  if (!input) return;
+  const win = typeof window !== 'undefined' ? window.open('', '_blank') : null;
+  if (win) win.opener = null;
+  const signed = await getSignedFileUrl(input, { purpose });
+  if (signed) {
+    if (win) {
+      win.location.href = signed;
+    } else if (typeof window !== 'undefined') {
+      window.open(signed, '_blank', 'noopener,noreferrer');
+    }
+  } else if (win) {
+    win.close();
+  }
+}

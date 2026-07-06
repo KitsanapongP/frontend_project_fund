@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { openSignedFileInNewTab } from "@/app/lib/file_access";
 import {
   ArrowDownUp,
   Download,
@@ -608,8 +609,9 @@ export default function AdminImportExportPage() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2 text-sm">
                           <a
-                            href={getFileURL(template.file_path)}
-                            className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 font-medium text-blue-700 transition hover:bg-blue-100 hover:text-blue-800"
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(template.file_path); }}
+                            className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 font-medium text-blue-700 transition hover:bg-blue-100 hover:text-blue-800 cursor-pointer"
                           >
                             <Download size={16} />
                             ดาวน์โหลด

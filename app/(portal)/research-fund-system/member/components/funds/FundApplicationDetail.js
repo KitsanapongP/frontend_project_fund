@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { openSignedFileInNewTab } from "@/app/lib/file_access";
 import {
   ArrowLeft,
   FileText,
@@ -474,12 +475,12 @@ const resolveAnnouncementInfo = (value, fallbackLabel) => {
 
     return {
       label,
-      href: filePath ? getFileURL(filePath) : null,
+      filePath: filePath || null,
     };
   }
 
   const label = typeof value === "string" && value.trim() !== "" ? value.trim() : String(value);
-  return { label, href: null };
+  return { label, filePath: null };
 };
 
 const sanitizeAnnouncementId = (value) => {
@@ -1199,11 +1200,10 @@ export default function FundApplicationDetail({
                 {mainAnnouncement && (
                   <div className="flex items-start gap-2 lg:col-span-2 xl:col-span-3">
                     <span className="text-gray-500 shrink-0">ประกาศหลักเกณฑ์:</span>
-                    {mainAnnouncement.href ? (
+                    {mainAnnouncement.filePath ? (
                       <a
-                        href={mainAnnouncement.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(mainAnnouncement.filePath); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={mainAnnouncement.label}
                       >
@@ -1219,11 +1219,10 @@ export default function FundApplicationDetail({
                 {activityAnnouncement && (
                   <div className="flex items-start gap-2 lg:col-span-2 xl:col-span-3">
                     <span className="text-gray-500 shrink-0">ประกาศสนับสนุนกิจกรรม:</span>
-                    {activityAnnouncement.href ? (
+                    {activityAnnouncement.filePath ? (
                       <a
-                        href={activityAnnouncement.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(activityAnnouncement.filePath); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={activityAnnouncement.label}
                       >

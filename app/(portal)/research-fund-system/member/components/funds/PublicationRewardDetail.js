@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { openSignedFileInNewTab } from "@/app/lib/file_access";
 import { toast } from "react-hot-toast";
 import { PDFDocument } from "pdf-lib";
 import { 
@@ -396,12 +397,12 @@ const resolveAnnouncementInfo = (value, fallbackLabel) => {
 
     return {
       label,
-      href: filePath ? getFileURL(filePath) : null,
+      filePath: filePath || null,
     };
   }
 
   const label = typeof value === "string" && value.trim() !== "" ? value.trim() : String(value);
-  return { label, href: null };
+  return { label, filePath: null };
 };
 
 const sanitizeAnnouncementId = (value) => {
@@ -1247,11 +1248,10 @@ export default function PublicationRewardDetail({
                 {mainAnnouncement && (
                   <div className="flex items-start gap-2 lg:col-span-3">
                     <span className="text-gray-500 shrink-0">ประกาศหลักเกณฑ์:</span>
-                    {mainAnnouncement.href ? (
+                    {mainAnnouncement.filePath ? (
                       <a
-                        href={mainAnnouncement.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(mainAnnouncement.filePath); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={mainAnnouncement.label}
                       >
@@ -1265,11 +1265,10 @@ export default function PublicationRewardDetail({
                 {rewardAnnouncement && (
                   <div className="flex items-start gap-2 lg:col-span-3">
                     <span className="text-gray-500 shrink-0">ประกาศเงินรางวัล:</span>
-                    {rewardAnnouncement.href ? (
+                    {rewardAnnouncement.filePath ? (
                       <a
-                        href={rewardAnnouncement.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(rewardAnnouncement.filePath); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={rewardAnnouncement.label}
                       >

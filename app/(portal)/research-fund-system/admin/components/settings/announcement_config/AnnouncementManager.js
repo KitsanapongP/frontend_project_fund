@@ -408,7 +408,9 @@ export default function AnnouncementManager() {
 
   function getFileAccessMeta(row, entity) {
     const filePath = extractFilePath(row?.file_path);
-    const directURL = getFileURL(filePath);
+    // Legacy /uploads fallback removed (it was never fetched — view/download use the
+    // authed /announcements|/fund-forms/:id/view|download endpoints below).
+    const directURL = null;
     const base = getApiBaseURL();
     const id =
       entity === "announcement" ? getAnnouncementId(row) : getFormId(row);

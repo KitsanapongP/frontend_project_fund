@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { openSignedFileInNewTab } from '@/app/lib/file_access';
 import {
   ArrowLeft, FileText,
     User,
@@ -1293,9 +1294,8 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
               <span className="text-gray-500 shrink-0">ประกาศหลักเกณฑ์:</span>
               {mainAnn?.file_path ? (
                 <a
-                  href={getFileURL(mainAnn.file_path)}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(mainAnn.file_path); }}
                   className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                   title={mainAnn?.title || mainAnn?.file_name || `#${detail?.main_annoucement}`}
                 >
@@ -1313,9 +1313,8 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
               <span className="text-gray-500 shrink-0">ประกาศกิจกรรม:</span>
               {activityAnn?.file_path ? (
                 <a
-                  href={getFileURL(activityAnn.file_path)}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(activityAnn.file_path); }}
                   className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                   title={activityAnn?.title || activityAnn?.file_name || `#${detail?.activity_support_announcement}`}
                 >

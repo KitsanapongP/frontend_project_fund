@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { openSignedFileInNewTab, getSignedFileUrl } from '@/app/lib/file_access';
 import {
   ArrowLeft,
   FileText,
@@ -1986,7 +1987,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
   const fetchBlobByPath = async (filePath) => {
     if (!filePath) throw new Error('missing file path');
     const token = apiClient.getToken();
-    const url = getFileURL(filePath);
+    const url = await getSignedFileUrl(filePath);
     const resp = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
     if (!resp.ok) {
       const err = new Error('File not found');
@@ -2581,9 +2582,8 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                   <span className="text-gray-500 shrink-0">ประกาศหลักเกณฑ์:</span>
                   {mainAnn?.file_path ? (
                     <a
-                      href={getFileURL(mainAnn.file_path)}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(mainAnn.file_path); }}
                       className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                       title={mainAnn?.title || mainAnn?.file_name || 'เปิดไฟล์ประกาศ'}
                     >
@@ -2601,9 +2601,8 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                   <span className="text-gray-500 shrink-0">ประกาศเงินรางวัล:</span>
                   {rewardAnn?.file_path ? (
                     <a
-                      href={getFileURL(rewardAnn.file_path)}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(rewardAnn.file_path); }}
                       className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                       title={rewardAnn?.title || rewardAnn?.file_name || 'เปิดไฟล์ประกาศ'}
                     >
