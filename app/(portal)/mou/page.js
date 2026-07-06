@@ -1,11 +1,14 @@
-import PortalPlaceholderPage from "../../components/public/PortalPlaceholderPage";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function MouPage() {
-  return (
-    <PortalPlaceholderPage
-      accessKey="mou"
-      title="MOU"
-      description="ข้อมูลบันทึกข้อตกลงและความร่วมมือทางวิชาการ"
-    />
-  );
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/mou/admin_dashboard");
+  }, [router]);
+
+  return null;
 }

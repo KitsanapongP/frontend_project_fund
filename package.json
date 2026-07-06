@@ -27,7 +27,7 @@
     "datatables.net": "^2.2.2",
     "datatables.net-dt": "^2.2.2",
     "datatables.net-react": "^1.0.0",
-    "docx": "^9.3.0",
+    "docx": "^9.7.1",
     "file-saver": "^2.0.5",
     "flowbite": "^3.1.2",
     "jquery": "^3.7.1",
@@ -48,7 +48,8 @@
     "react-select": "^5.10.1",
     "react-switch": "^7.1.0",
     "swal": "^0.1.0",
-    "sweetalert2": "^11.22.2",
+    "sweetalert2": "^11.26.25",
+    "sweetalert2-react-content": "^5.1.2",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {

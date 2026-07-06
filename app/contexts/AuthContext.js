@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import Image from 'next/image';
 import { authAPI, AuthError, NetworkError } from '../lib/api';
+import { normalizeRoleName } from '../lib/access_routing';
 
 // Auth states
 const AUTH_ACTIONS = {
@@ -354,7 +355,7 @@ export function AuthProvider({ children }) {
     
     const userRoleRaw = state.user.role_id ?? state.user.role;
     const userRoleNumber = Number(userRoleRaw);
-    const userRoleName = String(state.user.role ?? userRoleRaw ?? '').toLowerCase();
+    const userRoleName = normalizeRoleName(state.user.role ?? userRoleRaw) || String(userRoleRaw ?? '').toLowerCase();
     
     if (typeof role === 'string') {
       return userRoleName === role.toLowerCase();
@@ -427,11 +428,13 @@ export function AuthProvider({ children }) {
       3: 'ผู้ดูแลระบบ',
       4: 'หัวหน้าสาขา',
       5: 'ผู้บริหาร',
+      6: 'นักออกแบบวิชาการ',
       teacher: 'อาจารย์',
       staff: 'เจ้าหน้าที่',
       admin: 'ผู้ดูแลระบบ',
       dept_head: 'หัวหน้าสาขา',
       executive: 'ผู้บริหาร',
+      academic_designer: 'นักออกแบบวิชาการ',
     };
 
     const userRole = state.user.role_id || state.user.role;
