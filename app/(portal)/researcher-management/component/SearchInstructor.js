@@ -79,7 +79,7 @@ export default function SearchInstructor() {
           return;
         }
 
-        const response = await fetch("http://localhost:8080/api/v1/researcher-management/instructors", {
+        const response = await fetch("/api/v1/researcher-management/instructors", {
           headers: { Authorization: `Bearer ${token}` },
         });
 

@@ -37,7 +37,7 @@ const EMPTY_ROW = {
   degree_short_en: "",
 };
 
-const BASE = "http://localhost:8080/api/v1";
+const BASE = "/api/v1";
 
 function authHeaders() {
   const token = localStorage.getItem("access_token") || localStorage.getItem("token") || "";
