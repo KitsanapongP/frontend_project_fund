@@ -20,6 +20,7 @@ import EmptyState from "../common/EmptyState";
 import LoadingSpinner from "../common/LoadingSpinner";
 import projectAPI from "@/app/lib/project_api";
 import { apiClient } from "@/app/lib/api";
+import { getSignedFileUrl } from "@/app/lib/file_access";
 
 const formatDate = (value) => {
   if (!value) return "-";
@@ -464,16 +465,19 @@ export default function ProjectsList() {
         return;
       }
 
-      window.open(resolvedUrl, "_blank", "noopener,noreferrer");
+      // Fallback (no managed file_id): resolvedUrl points at the old /uploads path,
+      // which now requires a signed URL. Sign it before opening.
+      const signedFallback = await getSignedFileUrl(resolvedUrl);
+      if (signedFallback) {
+        window.open(signedFallback, "_blank", "noopener,noreferrer");
+      } else {
+        throw new Error("ไม่สามารถเปิดไฟล์แนบได้ กรุณาลองใหม่อีกครั้ง");
+      }
     } catch (openError) {
       console.error("Failed to open project attachment", openError);
       setAttachmentError(
         openError?.message || "ไม่สามารถเปิดไฟล์แนบได้ กรุณาลองใหม่อีกครั้ง"
       );
-
-      if (resolvedUrl && !isRelativeEndpoint && typeof window !== "undefined") {
-        window.open(resolvedUrl, "_blank", "noopener,noreferrer");
-      }
     } finally {
       setActiveAttachmentKey(null);
     }

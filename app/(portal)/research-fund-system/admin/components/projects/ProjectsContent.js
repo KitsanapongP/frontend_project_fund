@@ -22,6 +22,7 @@ import Swal from "sweetalert2";
 import PageLayout from "@/app/(portal)/research-fund-system/admin/components/common/PageLayout";
 import adminAPI from "@/app/lib/admin_api";
 import apiClient from "@/app/lib/api";
+import { getSignedFileUrl } from "@/app/lib/file_access";
 
 const Toast = Swal.mixin({
   toast: true,
@@ -386,10 +387,12 @@ function ProjectsTable({ projects, onEdit, onDelete }) {
                 <div className="flex items-center justify-center gap-3">
                   {project.attachments?.length ? (
                     <a
-                      href={buildAttachmentUrl(project.attachments[0])}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700"
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openSignedAttachment(project.attachments[0]);
+                      }}
+                      className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 cursor-pointer"
                     >
                       <FileText size={16} />
                       ดูไฟล์
@@ -775,6 +778,26 @@ function buildAttachmentUrl(attachment) {
   }
 }
 
+// Open an attachment via a short-lived signed URL (the old /uploads path now
+// requires a signature). A blank tab is opened synchronously so the popup is not
+// blocked, then navigated once the signed URL resolves.
+async function openSignedAttachment(attachment) {
+  const rawUrl = buildAttachmentUrl(attachment);
+  if (!rawUrl || rawUrl === "#") return;
+  const win = typeof window !== "undefined" ? window.open("", "_blank") : null;
+  if (win) win.opener = null;
+  const signed = await getSignedFileUrl(rawUrl);
+  if (signed) {
+    if (win) {
+      win.location.href = signed;
+    } else if (typeof window !== "undefined") {
+      window.open(signed, "_blank", "noopener,noreferrer");
+    }
+  } else if (win) {
+    win.close();
+  }
+}
+
 function ProjectForm({
   open,
   formData,
@@ -1044,10 +1067,12 @@ function ProjectForm({
               <div className="flex flex-wrap items-center gap-2">
                 <Paperclip size={16} className="text-gray-400" />
                 <a
-                  href={buildAttachmentUrl(existingAttachment)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="truncate text-blue-600 hover:underline"
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openSignedAttachment(existingAttachment);
+                  }}
+                  className="truncate text-blue-600 hover:underline cursor-pointer"
                   title={existingAttachment.original_name || existingAttachment.stored_path}
                 >
                   ไฟล์ที่บันทึกล่าสุด: {existingAttachment.original_name || existingAttachment.stored_path}

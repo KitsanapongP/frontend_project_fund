@@ -15,6 +15,7 @@ import { useStatusMap } from '@/app/hooks/useStatusMap';
 import SubmissionExportModal from './SubmissionExportModal';
 import { downloadXlsx } from '@/app/(portal)/research-fund-system/admin/utils/xlsxExporter';
 import apiClient from '@/app/lib/api';
+import { getSignedFileUrl } from '@/app/lib/file_access';
 
 // ----------- CONFIG -----------
 const PAGE_SIZE  = 10;        // how many rows to show at a time
@@ -75,29 +76,9 @@ const formatDateTime = (value) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-const resolveFileURL = (filePath) => {
-  if (!filePath) return '';
-  if (/^https?:\/\//i.test(filePath)) return filePath;
-
-  const normalized = String(filePath).trim().replace(/\\/g, '/');
-  let apiViewPath = normalized;
-
-  const uploadsSegmentIndex = normalized.toLowerCase().indexOf('/uploads/');
-  if (uploadsSegmentIndex >= 0) {
-    apiViewPath = normalized.slice(uploadsSegmentIndex + 1);
-  }
-
-  apiViewPath = apiViewPath.replace(/^\.+\//, '').replace(/^\/+/, '');
-  if (!apiViewPath.toLowerCase().startsWith('uploads/')) {
-    apiViewPath = `uploads/${apiViewPath}`;
-  }
-
-  try {
-    return new URL(`/api/v1/view/${apiViewPath}`, apiClient.getBackendBaseURL()).href;
-  } catch {
-    return filePath;
-  }
-};
+// File view URLs are now minted via signed URLs (see @/app/lib/file_access).
+// getMergedDocumentExportValue returns the raw stored path; handleExportConfirm signs
+// it (purpose:'export', long-lived) so the link works when the .xlsx is opened later.
 
 const extractMergedDocumentMeta = (source) => {
   if (!source || typeof source !== 'object') return null;
@@ -149,14 +130,14 @@ const getMergedDocumentExportValue = (...sources) => {
   for (const source of sources) {
     const meta = extractMergedDocumentMeta(source);
     if (meta) {
-      const url = resolveFileURL(meta.filePath);
-      if (url) {
+      if (meta.filePath) {
+        // Return the raw path; it is signed asynchronously before export.
         return {
           text: meta.displayName || 'เปิดไฟล์',
-          hyperlink: url,
+          filePath: meta.filePath,
         };
       }
-      return url;
+      return '';
     }
   }
   return '';
@@ -1416,6 +1397,23 @@ export default function SubmissionsManagement() {
 
         const detailLookup = { ...detailsMap, ...fetchedDetails };
         const dataset = rows.map((row) => buildExportRow(row, detailLookup));
+
+        // Sign merged-document links (long-lived, so they still open when the user
+        // opens the downloaded spreadsheet later). Degrade to plain text on failure.
+        await Promise.all(
+          dataset.map(async (r) => {
+            const cell = r.mergedSubmissionPdf;
+            if (cell && typeof cell === 'object' && cell.filePath) {
+              const signed = await getSignedFileUrl(cell.filePath, { purpose: 'export' });
+              if (signed) {
+                cell.hyperlink = signed;
+                delete cell.filePath;
+              } else {
+                r.mergedSubmissionPdf = cell.text || '';
+              }
+            }
+          })
+        );
 
         const yearInfo = getSelectedYearInfo();
         const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];

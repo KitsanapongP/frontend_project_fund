@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FileText, Eye, Download, Bell, BookOpen, CalendarClock } from "lucide-react";
 import apiClient, { announcementAPI, fundFormAPI, systemAPI } from "../../../../../lib/api";
+import { getSignedFileUrl } from "../../../../../lib/file_access";
 import { systemConfigAPI } from "../../../../../lib/system_config_api";
 import { fundInstallmentAPI } from "../../../../../lib/fund_installment_api";
 import DataTable from "../../../admin/components/common/DataTable";
@@ -454,14 +455,15 @@ export default function AnnouncementPage() {
     return baseUrl.replace(/\/$/, '');
   };
 
-  const resolveFileURL = (filePath) => {
+  // Fallback file URL (used only when the authed /announcements/:id/view route is
+  // unavailable). Now a signed URL so it works against the secured backend.
+  const resolveFileURL = async (filePath) => {
     if (!filePath) return null;
-
     try {
-      const base = getApiBaseURL() || window.location.origin;
-      return new URL(filePath, base).href;
+      const signed = await getSignedFileUrl(filePath);
+      return signed || null;
     } catch (error) {
-      console.error('Failed to resolve file URL', { filePath, error });
+      console.error('Failed to resolve signed file URL', { filePath, error });
       return null;
     }
   };
@@ -538,7 +540,7 @@ export default function AnnouncementPage() {
 
   const handleViewFile = async (row, entity = 'announcement') => {
     const filePath = row?.file_path ?? row;
-    const fallbackUrl = resolveFileURL(filePath);
+    const fallbackUrl = await resolveFileURL(filePath);
     const apiViewUrl =
       entity === 'announcement'
         ? getAnnouncementViewURL(row)
@@ -603,7 +605,7 @@ export default function AnnouncementPage() {
 
   const handleDownloadFile = async (row, entity = 'announcement') => {
     const filePath = row?.file_path ?? row;
-    const fallbackUrl = resolveFileURL(filePath);
+    const fallbackUrl = await resolveFileURL(filePath);
     const apiDownloadUrl =
       entity === 'announcement'
         ? getAnnouncementDownloadURL(row)
