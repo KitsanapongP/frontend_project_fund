@@ -19,7 +19,7 @@ import PublicHeader from "../components/public/PublicHeader";
 import MemberHeader from "./research-fund-system/member/components/layout/Header";
 import { getSupportFundMappings } from "../lib/support_fundmapping_api";
 import { canAccessPortalRule, getPortalItemAccess } from "../lib/portal_access";
-import { hasAdminPortalAccess, hasMemberPortalAccess, normalizeRoleName } from "../lib/access_routing";
+import { hasAdminPortalAccess, hasMemberPortalAccess, isPrimaryAdmin, normalizeRoleName } from "../lib/access_routing";
 import { BRANDING } from "../config/branding";
 
 const PORTAL_ITEMS = [
@@ -108,12 +108,19 @@ function getResearchFundPathByUser(user) {
     return "/research-fund-system/executive/dashboard";
   }
 
-  if (hasAdminPortalAccess(user)) {
+  // Member-first: a teacher/staff/dept_head who was merely GRANTED a few admin pages should
+  // still land on their own member portal. Only true (primary) admins go to the admin portal.
+  if (isPrimaryAdmin(user)) {
     return "/research-fund-system/admin/research-fund";
   }
 
   if (hasMemberPortalAccess(user) || ["teacher", "staff", "dept_head"].includes(roleName)) {
     return "/research-fund-system/member/research-fund";
+  }
+
+  // Grant-only user with no member role at all — fall back to the admin portal.
+  if (hasAdminPortalAccess(user)) {
+    return "/research-fund-system/admin/research-fund";
   }
 
   return "";

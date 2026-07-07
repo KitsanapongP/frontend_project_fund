@@ -62,6 +62,21 @@ export const hasAdminPortalAccess = (user) => {
   return false;
 };
 
+// A "primary" admin is a real administrator (the admin ROLE) — as opposed to a member who
+// was merely GRANTED a few admin pages via /access-control. Used to decide landing: primary
+// admins land on the admin portal; delegated members land on the member portal.
+// NOTE: this is role-based ONLY. Permission codes like `dashboard.view.admin` / `access.manage`
+// can be delegated to a teacher via /access-control, so they must NOT be treated as
+// "primary admin" markers (doing so would send delegated teachers back to the admin portal).
+export const isPrimaryAdmin = (user) =>
+  normalizeRoleName(user?.role ?? user?.role_id) === "admin";
+
+// True for a member (teacher/staff/dept_head) who holds some delegated ui.page.admin.* grant
+// but is NOT a full admin — i.e. someone who should land on the member portal yet needs a way
+// to reach the specific admin page(s) they were granted.
+export const hasDelegatedAdminAccess = (user) =>
+  hasAdminPortalAccess(user) && !isPrimaryAdmin(user);
+
 export const hasMemberPortalAccess = (user) => {
   const roleValue = user?.role ?? user?.role_id;
   const roleName = normalizeRoleName(roleValue);
