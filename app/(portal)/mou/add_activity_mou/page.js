@@ -57,6 +57,8 @@ export default function AddActivityMouPage() {
   };
   const [files, setFiles] = useState([]);
   const fileInputRef = useRef(null);
+  const [links, setLinks] = useState([]);
+  const linkIdCounter = useRef(0);
   const coorRef = useRef(null);
   const [coorQuery, setCoorQuery] = useState("");
   const [coorOpen, setCoorOpen] = useState(false);
@@ -133,6 +135,19 @@ export default function AddActivityMouPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const addLink = () => {
+    linkIdCounter.current += 1;
+    setLinks((prev) => [...prev, { id: linkIdCounter.current, url: "" }]);
+  };
+
+  const updateLink = (id, value) => {
+    setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, url: value } : l)));
+  };
+
+  const removeLink = (id) => {
+    setLinks((prev) => prev.filter((l) => l.id !== id));
+  };
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setLoading(true);
@@ -167,6 +182,7 @@ export default function AddActivityMouPage() {
         coordinator_id: formData.coordinator_id ? parseInt(formData.coordinator_id, 10) : null,
         coordinator_other: formData.coordinator_other,
         coordinator_org: formData.coordinator_org,
+        links: links.map((l) => l.url).filter(Boolean),
       };
 
       if (files.length > 0) {
@@ -202,6 +218,8 @@ export default function AddActivityMouPage() {
       setSelectedTypeIds([]);
       setSelectedOkrIds([]);
       setFiles([]);
+      setLinks([]);
+      linkIdCounter.current = 0;
 
       router.back();
     } catch (err) {
@@ -660,6 +678,20 @@ export default function AddActivityMouPage() {
                     <span style={{ color: "#6b7280", fontSize: "13px" }}>PDF สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB</span>
                   </div>
                 )}
+              </div>
+            </div>
+            <div className="field" style={{ gridColumn: "1 / -1", marginTop: 12 }}>
+              <label><FileText size={14} className="shrink-0" />ลิงก์อ้างอิง</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {links.map((l) => (
+                  <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="url" value={l.url} onChange={(e) => updateLink(l.id, e.target.value)} placeholder="https://example.com" style={{ flex: 1 }} />
+                    <button type="button" onClick={() => removeLink(l.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 4, fontSize: 18, lineHeight: 1 }} title="ลบลิงก์">&times;</button>
+                  </div>
+                ))}
+                <button type="button" onClick={addLink} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", border: "1px dashed var(--mou-primary)", borderRadius: 8, background: "var(--mou-primary-soft)", color: "var(--mou-primary)", cursor: "pointer", fontSize: 13, fontWeight: 500, width: "fit-content" }}>
+                  <Plus size={15} /> เพิ่มลิงก์
+                </button>
               </div>
             </div>
           </div>

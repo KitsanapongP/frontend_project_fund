@@ -148,7 +148,7 @@ function Select({ value, onChange, options, placeholder = "เลือก", nam
     <div ref={ref} className="csWrap" onKeyDown={onKeyDown}>
       {searchable ? (
         <div ref={triggerRef} className={`csBtn${open ? " open" : ""}${value ? " hasVal" : ""}`} style={{ padding: 0, overflow: "hidden", alignItems: "stretch" }}>
-          <input ref={inputRef} type="text" className="csInput" value={query || (searchable ? (value || "") : displayLabel)} onChange={handleInputChange} onFocus={() => setOpen(true)} placeholder={placeholder} />
+          <input ref={inputRef} type="text" className="csInput" value={query || (value ? displayLabel : "")} onChange={handleInputChange} onFocus={() => setOpen(true)} placeholder={placeholder} />
           <div style={{ display: "flex", alignItems: "center", paddingRight: 8, cursor: "pointer" }} onClick={toggle}>
             <ChevronDown size={18} className={`csArrow${open ? " open" : ""}`} />
           </div>
@@ -203,6 +203,7 @@ export default function AddMouPage() {
     country_id: null,
     faculty_ids: [],
     coordinator_id: "",
+    coordinator_other: "",
     coordinator_name: "",
     signed_by: "",
     notes: "",
@@ -229,6 +230,25 @@ export default function AddMouPage() {
   const [expiredMous, setExpiredMous] = useState([]);
   const [selectedParentMou, setSelectedParentMou] = useState(null);
   const [loadingExpired, setLoadingExpired] = useState(false);
+  const coorRef = useRef(null);
+  const [coorQuery, setCoorQuery] = useState("");
+  const [coorOpen, setCoorOpen] = useState(false);
+
+  const filteredCoorUsers = coorQuery.trim()
+    ? users.filter(u =>
+        [u.prefix || "", u.user_fname || "", u.user_lname || ""].filter(Boolean).join(" ").toLowerCase().includes(coorQuery.toLowerCase())
+      )
+    : users;
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (coorRef.current && !coorRef.current.contains(e.target)) {
+        setCoorOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   useEffect(() => {
     loadReferenceData();
@@ -293,7 +313,7 @@ export default function AddMouPage() {
 
   const handleFileChange = (e) => {
     const MAX_FILES = 3;
-    const MAX_SIZE = 20 * 1024 * 1024;
+    const MAX_SIZE = 50 * 1024 * 1024;
     const selected = Array.from(e.target.files);
     if (files.length + selected.length > MAX_FILES) {
         Swal.fire({ icon: "warning", title: "ไฟล์เกินจำนวน", text: `สามารถแนบไฟล์ได้สูงสุด ${MAX_FILES} ไฟล์` });
@@ -414,12 +434,19 @@ export default function AddMouPage() {
     setSuccess("");
 
     try {
-      if (!formData.title || !formData.end_date || !formData.partner_name) {
-        setError("กรุณากรอกข้อมูลที่จำเป็นทั้งหมด");
-        return;
+      if (asDraft) {
+        if (!formData.mou_code) {
+          setError("กรุณากรอกรหัส MOU");
+          return;
+        }
+      } else {
+        if (!formData.title || !formData.end_date || !formData.partner_name) {
+          setError("กรุณากรอกข้อมูลที่จำเป็นทั้งหมด");
+          return;
+        }
       }
 
-      if (formData.faculty_ids.length > 0) {
+      if (!asDraft && formData.faculty_ids.length > 0) {
         const missing = formData.faculty_ids.filter((fid) => !facultyUsers[fid]);
         if (missing.length > 0) {
           setError("กรุณาเลือกผู้รับผิดชอบทุกคณะที่เข้าร่วม");
@@ -462,7 +489,7 @@ export default function AddMouPage() {
         title: formData.title,
         description: formData.description,
         level: formData.level,
-        status_id: asDraft ? 1 : (formData.year_of_signing && formData.signed_by ? 2 : 5),
+        status_id: asDraft ? 5 : (formData.start_date && new Date(formData.start_date) <= new Date(new Date().toDateString()) ? 2 : 5),
         is_international: formData.is_international === "true",
         start_date: formData.start_date ? formData.start_date.split("-").reverse().join("/") : "",
         end_date: formData.end_date ? formData.end_date.split("-").reverse().join("/") : "",
@@ -472,6 +499,7 @@ export default function AddMouPage() {
         country_id: formData.country_id ? parseInt(formData.country_id, 10) : null,
         faculties: facultiesArr,
         coordinator_id: formData.coordinator_id ? parseInt(formData.coordinator_id, 10) : null,
+        coordinator_other: formData.coordinator_other || (selectedUser ? "" : null),
         coordinator_name: selectedUser ? `${selectedUser.user_fname || ""} ${selectedUser.user_lname || ""}`.trim() : "",
         signed_by: formData.signed_by || null,
         notes: formData.notes,
@@ -507,6 +535,7 @@ export default function AddMouPage() {
         country_id: null,
         faculty_ids: [],
         coordinator_id: "",
+        coordinator_other: "",
         coordinator_name: "",
         signed_by: "",
         notes: "",
@@ -652,7 +681,7 @@ export default function AddMouPage() {
         </div>
       )}
 
-      <form onSubmit={(e) => handleSubmit(e, true)}>
+      <form onSubmit={(e) => handleSubmit(e, true)} noValidate>
         <div className="panel formSection afu" style={{ animationDelay: "80ms" }}>
           <div className="sectionHead">
             <FileText size={18} className="text-blue-500" />
@@ -731,7 +760,7 @@ export default function AddMouPage() {
             {formData.is_international === "true" && (
               <div className="field">
                 <label><MapPin size={14} className="shrink-0" />ประเทศ</label>
-                <Select name="country_id" value={formData.country_id || ""} onChange={handleChange} placeholder="เลือกประเทศ" options={countries.map((c) => ({ value: c.id, label: c.name_th }))} />
+                <Select name="country_id" value={formData.country_id || ""} onChange={handleChange} placeholder="เลือกประเทศ" searchable options={countries.map((c) => ({ value: c.id, label: c.name_th }))} />
               </div>
             )}
             {formData.level === "university" && (
@@ -902,7 +931,35 @@ export default function AddMouPage() {
             </div>
             <div className="field">
               <label><UserCheck size={14} className="shrink-0" />ผู้ประสานงาน <span className="required">*</span></label>
-              <Select name="coordinator_id" value={formData.coordinator_id} onChange={handleChange} placeholder="เลือกผู้ประสานงาน" options={users.map((u) => ({ value: u.user_id, label: getUserFullName(u) }))} />
+              <div className="relative" ref={coorRef}>
+                <input
+                  value={coorQuery}
+                  onChange={(e) => {
+                    setCoorQuery(e.target.value);
+                    setCoorOpen(true);
+                    setFormData((prev) => ({ ...prev, coordinator_id: "", coordinator_other: e.target.value }));
+                  }}
+                  onFocus={() => setCoorOpen(true)}
+                  placeholder="ค้นหาหรือพิมพ์ชื่อผู้ประสานงาน"
+                />
+                {coorOpen && filteredCoorUsers.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {filteredCoorUsers.map((u) => (
+                      <div
+                        key={u.user_id}
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 ${u.user_id === parseInt(formData.coordinator_id) ? "bg-blue-50 text-blue-700" : "text-gray-900"}`}
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, coordinator_id: u.user_id, coordinator_other: "" }));
+                          setCoorQuery(`${u.prefix || ""} ${u.user_fname || ""} ${u.user_lname || ""}`.trim());
+                          setCoorOpen(false);
+                        }}
+                      >
+                        {u.prefix || ""} {u.user_fname || ""} {u.user_lname || ""}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="field">
               <label><Clock size={14} className="shrink-0" />แจ้งเตือนก่อนสิ้นสุด</label>

@@ -37,9 +37,8 @@ const statusStyle = (name) => {
   if (name.includes("ใกล้หมดอายุ") || name.includes("ใกล้หมด") || name.includes("ใกล้")) return "bg-amber-100 text-amber-600";
   if (name.includes("หมดอายุ")) return "bg-red-100 text-red-600";
   if (name.includes("มีผล")) return "bg-green-100 text-green-600";
-  if (name.includes("รอดำเนินการ")) return "bg-blue-100 text-blue-600";
+  if (name.includes("กำลังดำเนินการ")) return "bg-blue-100 text-blue-600";
   if (name.includes("ยกเลิก")) return "bg-gray-100 text-gray-500";
-  if (name.includes("ร่าง")) return "bg-purple-100 text-purple-600";
   if (name.includes("ต่ออายุ")) return "bg-teal-100 text-teal-600";
   return "bg-gray-100 text-gray-600";
 };
@@ -57,8 +56,7 @@ const statusBadge = (name) => {
   if (v.includes("มีผล") || v.includes("active")) return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300";
   if (v.includes("ใกล้")) return "bg-amber-50 text-amber-700 ring-1 ring-amber-300";
   if (v.includes("หมดอายุ")) return "bg-red-50 text-red-700 ring-1 ring-red-300";
-  if (v.includes("รอดำเนินการ")) return "bg-blue-50 text-blue-700 ring-1 ring-blue-300";
-  if (v.includes("ร่าง")) return "bg-purple-50 text-purple-700 ring-1 ring-purple-300";
+  if (v.includes("กำลังดำเนินการ")) return "bg-blue-50 text-blue-700 ring-1 ring-blue-300";
   return "bg-gray-50 text-gray-600 ring-1 ring-gray-300";
 };
 
