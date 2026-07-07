@@ -33,6 +33,9 @@ export default function LoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  // Set true after a successful manual (email/password) login so the redirect effect is
+  // not blocked by a stale ?error= param left over from a rejected SSO attempt.
+  const [manualAuth, setManualAuth] = useState(false);
   const [mode, setMode] = useState('login');
   const [globalMessage, setGlobalMessage] = useState('');
 
@@ -50,7 +53,9 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (ssoErrorCode) {
+    // An SSO error in the URL suppresses auto-redirect so the error stays visible — but
+    // once the user has logged in manually, allow the redirect to proceed.
+    if (ssoErrorCode && !manualAuth) {
       return;
     }
 
@@ -61,7 +66,7 @@ export default function LoginPage() {
         router.replace(targetPath);
       }, 100);
     }
-  }, [isAuthenticated, user, redirecting, ssoErrorCode, nextPath, router]);
+  }, [isAuthenticated, user, redirecting, ssoErrorCode, manualAuth, nextPath, router]);
 
   useEffect(() => {
     if (!ssoErrorCode || typeof window === 'undefined') {
@@ -94,6 +99,9 @@ export default function LoginPage() {
 
     try {
       await login(formData.email, formData.password);
+      // Manual login succeeded — allow the redirect effect to run even if a stale SSO
+      // ?error= is still present in the URL.
+      setManualAuth(true);
 
       // เธญเธขเนเธฒเธ—เธณเธเธฒเธฃ redirect เธ—เธตเนเธเธตเน เนเธซเน useEffect เธเธฑเธ”เธเธฒเธฃ
       // เน€เธเธฃเธฒเธฐ login function เธเธฐ update isAuthenticated เนเธฅเธฐ user state
