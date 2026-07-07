@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, LogOut, ShieldCheck } from "lucide-react";
 import { HiMenu } from "react-icons/hi";
 import { RxCross2 } from "react-icons/rx";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { BRANDING } from "../../../../../config/branding";
 import NotificationBell from "@/app/components/notifications/NotificationBell";
+import { hasDelegatedAdminAccess } from "@/app/lib/access_routing";
 
 const roleLabels = {
   teacher: "อาจารย์",
@@ -139,6 +140,13 @@ export default function Header({
   const displayName = useMemo(() => getDisplayName(user), [user]);
   const roleLabel = useMemo(() => resolveRoleLabel(user), [user]);
   const initials = useMemo(() => getInitials(displayName), [displayName]);
+  // A member who was granted some admin pages via /access-control (but is not a full admin).
+  const canSwitchToAdmin = useMemo(() => hasDelegatedAdminAccess(user), [user]);
+
+  const goToAdmin = () => {
+    setShowUserMenu(false);
+    router.push("/research-fund-system/admin");
+  };
 
   const handleLogout = async () => {
     try {
@@ -245,6 +253,15 @@ export default function Header({
                     <BellIcon size={16} />
                     <span>การแจ้งเตือน</span>
                   </button>
+                  {canSwitchToAdmin && (
+                    <button
+                      onClick={goToAdmin}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-blue-700 hover:bg-blue-50"
+                    >
+                      <ShieldCheck size={16} />
+                      <span>จัดการระบบ (โหมดผู้ดูแล)</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setShowUserMenu(false);
@@ -292,6 +309,15 @@ export default function Header({
                 <NotificationBell onViewAll={goToNotifications} />
                 <span className="text-sm text-gray-700">การแจ้งเตือน</span>
               </div>
+              {canSwitchToAdmin && (
+                <button
+                  onClick={goToAdmin}
+                  className="w-full text-left text-sm text-blue-700 hover:text-blue-800 flex items-center gap-2 mb-3"
+                >
+                  <ShieldCheck size={14} />
+                  จัดการระบบ (โหมดผู้ดูแล)
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="w-full text-left text-sm text-red-600 hover:text-red-700 flex items-center gap-2"
