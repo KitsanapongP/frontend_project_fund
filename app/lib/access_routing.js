@@ -71,12 +71,6 @@ export const hasAdminPortalAccess = (user) => {
 export const isPrimaryAdmin = (user) =>
   normalizeRoleName(user?.role ?? user?.role_id) === "admin";
 
-// True for a member (teacher/staff/dept_head) who holds some delegated ui.page.admin.* grant
-// but is NOT a full admin — i.e. someone who should land on the member portal yet needs a way
-// to reach the specific admin page(s) they were granted.
-export const hasDelegatedAdminAccess = (user) =>
-  hasAdminPortalAccess(user) && !isPrimaryAdmin(user);
-
 export const hasMemberPortalAccess = (user) => {
   const roleValue = user?.role ?? user?.role_id;
   const roleName = normalizeRoleName(roleValue);
