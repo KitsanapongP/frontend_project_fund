@@ -115,7 +115,8 @@ function getResearchFundPathByUser(user) {
   }
 
   if (hasMemberPortalAccess(user) || ["teacher", "staff", "dept_head"].includes(roleName)) {
-    return "/research-fund-system/member/research-fund";
+    // Members enter the member portal on their profile page (ข้อมูลส่วนตัว).
+    return "/research-fund-system/member/profile";
   }
 
   // Grant-only user with no member role at all — fall back to the admin portal.
