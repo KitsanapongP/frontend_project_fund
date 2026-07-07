@@ -10,6 +10,10 @@
 // See also the React hook `useSignedFileUrl` in app/hooks/useSignedFileUrl.js.
 import apiClient from './api';
 
+// Folders under uploads/ that hold PUBLIC documents — served directly (no login/signature).
+// Must stay in sync with the public static mounts in the backend (cmd/api/main.go).
+const PUBLIC_UPLOAD_FOLDERS = ['announcements/', 'fund_forms/', 'import_templates/', 'email_assets/'];
+
 // Convert a stored file path OR an existing /uploads// or /api/v1/view/ URL into
 // the upload-relative path the backend signer expects. Returns null if invalid.
 export function toUploadRelPath(input) {
@@ -48,6 +52,12 @@ export async function getSignedFileUrl(input, { purpose } = {}) {
 
   const relPath = toUploadRelPath(input);
   if (!relPath) return '';
+
+  // Public documents (announcements, fund forms, templates, email assets) are served
+  // directly without a signature so they can be viewed without logging in.
+  if (PUBLIC_UPLOAD_FOLDERS.some((f) => relPath.toLowerCase().startsWith(f))) {
+    return `${apiClient.getBackendBaseURL()}/uploads/${relPath}`;
+  }
 
   const params = { path: relPath };
   if (purpose) params.purpose = purpose;
