@@ -4869,6 +4869,16 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
       return Number.isNaN(numericId) ? '' : getDocumentTypeName(numericId);
     };
 
+    // "เอกสารอื่นๆ" (Other Documents) must carry a concrete document_type_id
+    // (default 11) so save-draft can attach them — backend requires DocumentTypeID.
+    const otherDocumentTypeId = (() => {
+      const matched = Array.isArray(documentTypes)
+        ? documentTypes.find((dt) => dt?.name === 'เอกสารอื่นๆ')
+        : null;
+      const resolved = matched?.id != null ? Number(matched.id) : 11;
+      return Number.isNaN(resolved) ? 11 : resolved;
+    })();
+
     const pushServerDocument = (doc) => {
       if (!doc || doc.pendingRemoval) {
         return;
@@ -4982,7 +4992,10 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
 
     (otherDocuments || []).forEach((file, index) => {
       if (!file) return;
-      const typeName = resolveDocumentTypeName('other') || 'เอกสารอื่นๆ';
+      const typeName =
+        resolveDocumentTypeName(otherDocumentTypeId) ||
+        resolveDocumentTypeName('other') ||
+        'เอกสารอื่นๆ';
       allFiles.push({
         id: `other-${index}`,
         name: file.name || 'ไม่ระบุชื่อ',
@@ -4992,7 +5005,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         source: 'other',
         canDelete: true,
         index,
-        document_type_id: null,
+        document_type_id: otherDocumentTypeId,
         document_type_name: typeName,
       });
     });
