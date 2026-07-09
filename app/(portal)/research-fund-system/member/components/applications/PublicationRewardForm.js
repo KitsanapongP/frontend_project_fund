@@ -1601,6 +1601,9 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
   const externalFundingsRef = useRef([]);
   const serverDocumentsRef = useRef([]);
   const serverExternalFundingFilesRef = useRef([]);
+  // Current-environment document_type_id for well-known concepts, mirrored from
+  // the docTypeIds memo so useCallback bodies can read it without stale closures.
+  const docTypeIdsRef = useRef({ externalFunding: 12, otherDocuments: 11 });
 
   const [formData, setFormData] = useState({
     // Basic submission info
@@ -2051,6 +2054,55 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
   useEffect(() => {
     serverExternalFundingFilesRef.current = serverExternalFundingFiles;
   }, [serverExternalFundingFiles]);
+
+  // Resolve well-known document types to the id assigned by the CURRENT database,
+  // instead of hardcoding numeric literals. documentTypes comes from the same DB,
+  // so this self-corrects across environments. Match by stable `code` first, then
+  // Thai name, then legacy code; fall back to the historical id only if not found.
+  const docTypeIds = useMemo(() => {
+    const list = Array.isArray(documentTypes) ? documentTypes : [];
+    const resolve = (matchers, fallback) => {
+      for (const match of matchers) {
+        const found = list.find(match);
+        const id = found?.id ?? found?.document_type_id;
+        if (id != null && !Number.isNaN(Number(id))) {
+          return Number(id);
+        }
+      }
+      return fallback;
+    };
+    return {
+      externalFunding: resolve(
+        [
+          (dt) => dt?.code === 'external_funding',
+          (dt) => dt?.name === 'เอกสารเบิกจ่ายภายนอก',
+          (dt) => dt?.document_type_name === 'เอกสารเบิกจ่ายภายนอก',
+          (dt) => dt?.code === 'เอกสารเบิกจ่ายภายนอก',
+        ],
+        12
+      ),
+      otherDocuments: resolve(
+        [
+          (dt) => dt?.code === 'other_documents',
+          (dt) => dt?.name === 'เอกสารอื่นๆ',
+          (dt) => dt?.document_type_name === 'เอกสารอื่นๆ',
+          (dt) => dt?.code === 'เอกสารอื่นๆ',
+        ],
+        11
+      ),
+    };
+  }, [documentTypes]);
+
+  useEffect(() => {
+    docTypeIdsRef.current = docTypeIds;
+  }, [docTypeIds]);
+
+  // Plain helpers (reactive via docTypeIds) for render / non-memoized functions.
+  // Inside useCallback bodies, compare against docTypeIdsRef.current instead.
+  const isExternalFundingType = (id) =>
+    id != null && Number(id) === docTypeIds.externalFunding;
+  const isOtherDocumentsType = (id) =>
+    id != null && Number(id) === docTypeIds.otherDocuments;
 
   const attachmentSignature = useMemo(() => {
     const parts = [];
@@ -4032,7 +4084,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     const resolvedDocumentTypeName =
       documentTypeName ||
       (documentTypeId != null ? getDocumentTypeName(documentTypeId) : null) ||
-      (documentTypeId === 12 ? 'เอกสารเบิกจ่ายภายนอก' : null);
+      (isExternalFundingType(documentTypeId) ? 'เอกสารเบิกจ่ายภายนอก' : null);
 
     return {
       document_id: resolvedDocumentId,
@@ -4090,7 +4142,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         const nextExternalDocs = [];
 
         normalized.forEach((doc) => {
-          const isExternalDocument = doc.document_type_id === 12 || doc.external_funding_id != null;
+          const isExternalDocument = doc.document_type_id === docTypeIdsRef.current.externalFunding || doc.external_funding_id != null;
           if (isExternalDocument) {
             let matchedFunding = null;
             if (doc.external_funding_id != null) {
@@ -4361,7 +4413,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         });
 
         filesArray.forEach((fileData) => {
-          if (!fileData || fileData.document_type_id !== 12) {
+          if (!fileData || fileData.document_type_id !== docTypeIdsRef.current.externalFunding) {
             return;
           }
 
@@ -4404,7 +4456,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         });
 
         filesArray.forEach((fileData) => {
-          if (fileData && fileData.document_type_id === 12) {
+          if (fileData && fileData.document_type_id === docTypeIdsRef.current.externalFunding) {
             fileData.external_funding_id = null;
           }
         });
@@ -4423,7 +4475,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
 
       const filesToUpload = Array.isArray(filesOverride)
         ? filesOverride
-        : getAllAttachedFiles();
+        : buildUploadPayloads();
       const detachIds = [...detachedDocumentIds];
       const pendingExternalUploads = new Map();
 
@@ -4435,7 +4487,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
 
         uploadableFiles.push(doc);
 
-        if (doc.document_type_id !== 12) {
+        if (doc.document_type_id !== docTypeIdsRef.current.externalFunding) {
           return;
         }
 
@@ -4506,7 +4558,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
               display_order: index + 1,
             };
 
-            if (fileData.document_type_id === 12 && fileData.external_funding_id) {
+            if (fileData.document_type_id === docTypeIdsRef.current.externalFunding && fileData.external_funding_id) {
               attachPayload.external_funding_id = fileData.external_funding_id;
             }
 
@@ -4582,7 +4634,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     [
       detachedDocumentIds,
       externalFundingFiles,
-      getAllAttachedFiles,
+      buildUploadPayloads,
       refreshSubmissionDocuments,
       setUploadedFiles,
       setOtherDocuments,
@@ -4869,16 +4921,6 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
       return Number.isNaN(numericId) ? '' : getDocumentTypeName(numericId);
     };
 
-    // "เอกสารอื่นๆ" (Other Documents) must carry a concrete document_type_id
-    // (default 11) so save-draft can attach them — backend requires DocumentTypeID.
-    const otherDocumentTypeId = (() => {
-      const matched = Array.isArray(documentTypes)
-        ? documentTypes.find((dt) => dt?.name === 'เอกสารอื่นๆ')
-        : null;
-      const resolved = matched?.id != null ? Number(matched.id) : 11;
-      return Number.isNaN(resolved) ? 11 : resolved;
-    })();
-
     const pushServerDocument = (doc) => {
       if (!doc || doc.pendingRemoval) {
         return;
@@ -4908,7 +4950,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         return;
       }
 
-      const typeName = resolveDocumentTypeName(12) || doc.document_type_name || 'เอกสารเบิกจ่ายภายนอก';
+      const typeName = resolveDocumentTypeName(docTypeIds.externalFunding) || doc.document_type_name || 'เอกสารเบิกจ่ายภายนอก';
       const matchFunding = externalFundings.find((funding) => {
         if (!funding) return false;
         const matchesClient =
@@ -4938,7 +4980,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         file_id: doc.file_id ?? null,
         source: 'server',
         canDelete: false,
-        document_type_id: 12,
+        document_type_id: docTypeIds.externalFunding,
         document_type_name: typeName,
         document_id: doc.document_id,
         external_funding_id: doc.external_funding_id ?? null,
@@ -4949,7 +4991,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     if (Array.isArray(documentTypes) && documentTypes.length > 0) {
       documentTypes.forEach((docType) => {
         if (!docType) return;
-        if (docType.name === 'เอกสารอื่นๆ' || Number(docType.id) === 12) {
+        if (isOtherDocumentsType(docType.id) || isExternalFundingType(docType.id)) {
           return;
         }
         const file = uploadedFiles?.[docType.id] || uploadedFiles?.[String(docType.id)];
@@ -4993,7 +5035,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     (otherDocuments || []).forEach((file, index) => {
       if (!file) return;
       const typeName =
-        resolveDocumentTypeName(otherDocumentTypeId) ||
+        resolveDocumentTypeName(docTypeIds.otherDocuments) ||
         resolveDocumentTypeName('other') ||
         'เอกสารอื่นๆ';
       allFiles.push({
@@ -5005,7 +5047,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         source: 'other',
         canDelete: true,
         index,
-        document_type_id: otherDocumentTypeId,
+        document_type_id: docTypeIds.otherDocuments,
         document_type_name: typeName,
       });
     });
@@ -5021,7 +5063,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     (externalFundingFiles || []).forEach((doc) => {
       if (!doc?.file) return;
       const funding = externalFundings.find(f => f.clientId === doc.funding_client_id);
-      const typeName = resolveDocumentTypeName(12) || 'เอกสารเบิกจ่ายภายนอก';
+      const typeName = resolveDocumentTypeName(docTypeIds.externalFunding) || 'เอกสารเบิกจ่ายภายนอก';
       const resolvedExternalId = doc.external_fund_id ?? funding?.externalFundId ?? null;
       allFiles.push({
         id: `external-${doc.funding_client_id}`,
@@ -5031,7 +5073,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         file: doc.file,
         source: 'external',
         canDelete: false,
-        document_type_id: 12,
+        document_type_id: docTypeIds.externalFunding,
         document_type_name: typeName,
         external_funding_client_id: doc.funding_client_id,
         external_funding_id: resolvedExternalId,
@@ -5039,6 +5081,56 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     });
 
     return allFiles;
+  }
+
+  // Single source of truth for turning in-memory attachments into attach-document
+  // payloads. Used by BOTH save-draft and submit so the two paths never drift.
+  // Returns only files that still need uploading (those carrying a File blob);
+  // server-side documents are already attached and are handled via detach/refresh.
+  // IMPORTANT: callers must invoke this ONCE per action and pass the SAME array to
+  // both applyExternalFundingServerIds (which mutates external_funding_id in place)
+  // and syncSubmissionDocuments.
+  function buildUploadPayloads() {
+    const payloads = [];
+
+    // 1. Main documents — document_type_id comes from the uploadedFiles key
+    //    (keyed by real document type id; never holds other/external types).
+    Object.entries(uploadedFiles || {}).forEach(([docTypeId, file]) => {
+      if (!file) return;
+      const numericId = Number(docTypeId);
+      if (Number.isNaN(numericId)) return;
+      payloads.push({
+        file,
+        document_type_id: numericId,
+        description: `${file.name} (${getDocumentTypeName(numericId)})`,
+      });
+    });
+
+    // 2. Other documents ("เอกสารอื่นๆ")
+    (otherDocuments || []).forEach((entry, index) => {
+      const file = entry?.file || entry;
+      if (!file) return;
+      payloads.push({
+        file,
+        document_type_id: docTypeIds.otherDocuments,
+        description: entry?.description || `เอกสารอื่นๆ ${index + 1}: ${file.name}`,
+      });
+    });
+
+    // 3. External funding documents ("เอกสารเบิกจ่ายภายนอก")
+    (externalFundingFiles || []).forEach((doc) => {
+      if (!doc?.file) return;
+      const funding = externalFundings.find((f) => f.clientId === doc.funding_client_id);
+      payloads.push({
+        file: doc.file,
+        document_type_id: docTypeIds.externalFunding,
+        description: `เอกสารเบิกจ่ายภายนอก: ${funding?.fundName || 'ไม่ระบุ'}`,
+        external_funding_client_id: doc.funding_client_id,
+        external_funding_id: doc.external_fund_id ?? funding?.externalFundId ?? null,
+      });
+    });
+
+    return payloads;
   }
 
   const attachedFiles = useMemo(
@@ -5880,7 +5972,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         reward_announcement: announcementLock.reward_announcement ?? null,
       };
 
-      const pendingUploads = getAllAttachedFiles();
+      const pendingUploads = buildUploadPayloads();
 
       const response = await publicationDetailsAPI.add(submissionId, publicationData, {
         mode: 'draft',
@@ -5896,7 +5988,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
       applyExternalFundingServerIds(savedExternalFunds, { targetFiles: pendingUploads });
 
       const unresolvedExternalFile = pendingUploads.some(
-        (fileData) => fileData.document_type_id === 12 && !fileData.external_funding_id
+        (fileData) => isExternalFundingType(fileData.document_type_id) && !fileData.external_funding_id
       );
 
       if (unresolvedExternalFile) {
@@ -6435,48 +6527,8 @@ const showSubmissionConfirmation = async () => {
       });
 
       let submissionId = currentSubmissionId;
-      const allFiles = [];
-
-      // 1. Add main document files (document_type_id 1-10)
-      Object.entries(uploadedFiles).forEach(([docTypeId, file]) => {
-        if (file) {
-          allFiles.push({
-            file: file,
-            document_type_id: parseInt(docTypeId),
-            description: `${file.name} (ประเภท ${docTypeId})`
-          });
-        }
-      });
-
-      // 2. Add other documents (document_type_id = 11)
-      if (otherDocuments && otherDocuments.length > 0) {
-        otherDocuments.forEach((doc, index) => {
-          const file = doc.file || doc;
-          if (file) {
-            allFiles.push({
-              file: file,
-              document_type_id: 11,
-              description: doc.description || `เอกสารอื่นๆ ${index + 1}: ${file.name}`
-            });
-          }
-        });
-      }
-
-      // 3. Add external funding documents from externalFundingFiles (ใช้ externalFundingFiles)
-      if (externalFundingFiles && externalFundingFiles.length > 0) {
-        externalFundingFiles.forEach(doc => {
-          const funding = externalFundings.find(f => f.clientId === doc.funding_client_id);
-          if (doc.file) {
-            allFiles.push({
-              file: doc.file,
-              document_type_id: 12,
-              description: `เอกสารเบิกจ่ายภายนอก: ${funding?.fundName || 'ไม่ระบุ'}`,
-              external_funding_client_id: doc.funding_client_id,
-              external_funding_id: doc.external_fund_id ?? funding?.externalFundId ?? null
-            });
-          }
-        });
-      }
+      // Same builder as save-draft — keeps the two paths from drifting.
+      const allFiles = buildUploadPayloads();
 
       // Create submission if not exists
       if (!submissionId) {
@@ -6709,7 +6761,7 @@ const showSubmissionConfirmation = async () => {
         applyExternalFundingServerIds(savedExternalFunds, { targetFiles: allFiles });
 
         const unresolvedExternalFile = allFiles.some(
-          (fileData) => fileData.document_type_id === 12 && !fileData.external_funding_id
+          (fileData) => isExternalFundingType(fileData.document_type_id) && !fileData.external_funding_id
         );
 
         if (unresolvedExternalFile) {
@@ -7972,7 +8024,7 @@ const showSubmissionConfirmation = async () => {
                                     file_id: funding.serverFileId ?? null,
                                     original_name:
                                       funding.serverFileName || (funding.serverDocumentId ? 'ไฟล์จากระบบ' : null),
-                                    document_type_id: 12,
+                                    document_type_id: docTypeIds.externalFunding,
                                     document_type_name: 'เอกสารเบิกจ่ายภายนอก',
                                     pendingRemoval: Boolean(fundingPendingReason && funding.serverDocumentId),
                                     pendingRemovalReason: fundingPendingReason,
@@ -8300,7 +8352,7 @@ const showSubmissionConfirmation = async () => {
               <>
                 {documentTypes.map((docType) => {
                   // Special handling for "Other documents"
-                  if (docType.name === 'เอกสารอื่นๆ') {
+                  if (isOtherDocumentsType(docType.id)) {
                     const pendingOtherDocs = (serverDocuments || []).filter(
                       (doc) => doc.document_type_id === parseIntegerOrNull(docType.id)
                     );
@@ -8374,7 +8426,7 @@ const showSubmissionConfirmation = async () => {
                   }
                   
                   // Special handling for "เอกสารเบิกจ่ายภายนอก"
-                  if (Number(docType.id) === 12) {
+                  if (isExternalFundingType(docType.id)) {
                     return (
                       <div key={docType.id} className="border border-gray-200 rounded-lg p-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
