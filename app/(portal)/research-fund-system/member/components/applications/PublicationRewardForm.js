@@ -968,6 +968,52 @@ const getDocumentTypeName = (documentTypeId) => {
   return typeMap[documentTypeId] || `เอกสารประเภท ${documentTypeId}`;
 };
 
+// แปลง error (จาก axios / throw) เป็นข้อความภาษาไทยที่ผู้ใช้อ่านเข้าใจ
+// กันไม่ให้สตริงเชิงเทคนิคหลุดถึงผู้ใช้ เช่น
+//   "Key: 'AttachDocumentRequest.DocumentTypeID' Error:Field validation ... 'required' tag"
+//   "Request failed with status code 400"
+// ซึ่งเป็น "ภาษาโค้ด" ที่ไม่ได้บอกสาเหตุจริง
+const describeApiError = (error, fallback = 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง') => {
+  if (!error) return fallback;
+
+  const status = error?.response?.status ?? error?.status ?? null;
+  const raw = String(
+    error?.response?.data?.error ||
+    error?.response?.data?.message ||
+    (typeof error?.message === 'string' ? error.message : '') ||
+    ''
+  ).trim();
+
+  // สาเหตุที่รู้จัก → ข้อความเฉพาะเจาะจง
+  if (/document[_ ]?type[_ ]?id/i.test(raw) && /required|validation/i.test(raw)) {
+    return 'ระบบไม่พบ "ประเภทของเอกสาร" ที่แนบ กรุณาลบไฟล์นั้นแล้วแนบใหม่อีกครั้ง';
+  }
+  if (/external[_ ]?funding[_ ]?id/i.test(raw) && /required|validation/i.test(raw)) {
+    return 'กรุณาบันทึกข้อมูลทุนภายนอกก่อน แล้วจึงแนบไฟล์หลักฐาน';
+  }
+  // สตริงตรวจสอบข้อมูลแบบ Go / axios ที่เป็นภาษาโค้ด → ไม่โชว์ดิบ ๆ
+  const looksTechnical =
+    /Key:\s*'.*'\s*Error:|validation for '.*' failed|on the '.*' tag/i.test(raw) ||
+    /Request failed with status code/i.test(raw) ||
+    /\b(TypeError|undefined is not|null is not|Cannot read|at\s+\w+\s*\()/i.test(raw) ||
+    /[{}<>]/.test(raw);
+
+  if (/Network Error|Failed to fetch|ERR_NETWORK|ETIMEDOUT|timeout/i.test(raw)) {
+    return 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่';
+  }
+  if (status === 401 || status === 403) return 'เซสชันหมดอายุหรือไม่มีสิทธิ์ กรุณาเข้าสู่ระบบใหม่แล้วลองอีกครั้ง';
+  if (status === 404) return 'ไม่พบข้อมูลที่ต้องการบนเซิร์ฟเวอร์';
+  if (status === 413) return 'ไฟล์มีขนาดใหญ่เกินกำหนด กรุณาเลือกไฟล์ที่เล็กลง';
+  if (status != null && status >= 500) return 'เซิร์ฟเวอร์ขัดข้อง กรุณาลองใหม่อีกครั้งภายหลัง';
+  if (status === 400 && looksTechnical) return 'ข้อมูลที่ส่งไม่ถูกต้องหรือไม่ครบถ้วน กรุณาตรวจสอบแล้วลองใหม่';
+
+  // ถ้าเป็นข้อความไทย/อ่านง่ายจากเซิร์ฟเวอร์หรือที่เรา throw เอง → ใช้ตามนั้น
+  if (raw && !looksTechnical && raw.length <= 200) {
+    return raw;
+  }
+  return fallback;
+};
+
 
 // =================================================================
 // REWARD CALCULATION
@@ -3845,7 +3891,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
 
     } catch (error) {
       console.error('Error loading initial data:', error);
-      alert('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message);
+      alert('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + describeApiError(error, 'ไม่สามารถโหลดข้อมูลได้ กรุณารีเฟรชหน้าแล้วลองใหม่'));
     } finally {
       setLoading(false);
       setInitialDataReady(true);
@@ -4534,7 +4580,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
             }
 
             console.error('Failed to detach document:', docId, error);
-            const message = `ไม่สามารถลบไฟล์เดิม (ID ${docId}) ได้: ${error?.message || 'ไม่ทราบสาเหตุ'}`;
+            const message = `ไม่สามารถลบไฟล์เดิมได้: ${describeApiError(error, 'ไม่ทราบสาเหตุ กรุณาลองใหม่อีกครั้ง')}`;
             errors.push(message);
           }
         }
@@ -4570,7 +4616,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
           } catch (error) {
             console.error('Failed to upload or attach document:', fileData, error);
             const friendlyName = fileData?.file?.name || fileData?.document_type_name || 'ไฟล์ไม่ทราบชื่อ';
-            const message = `อัปโหลดไฟล์ "${friendlyName}" ไม่สำเร็จ: ${error?.message || 'ไม่ทราบสาเหตุ'}`;
+            const message = `อัปโหลดไฟล์ "${friendlyName}" ไม่สำเร็จ: ${describeApiError(error, 'ไม่ทราบสาเหตุ กรุณาลองแนบไฟล์ใหม่อีกครั้ง')}`;
             errors.push(message);
           }
         }
@@ -6027,7 +6073,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
       Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
-        text: error?.message || 'ไม่สามารถบันทึกร่างได้ โปรดลองอีกครั้ง',
+        text: describeApiError(error, 'ไม่สามารถบันทึกร่างได้ โปรดลองอีกครั้ง'),
         confirmButtonColor: '#d33'
       });
     } finally {
@@ -6661,7 +6707,7 @@ const showSubmissionConfirmation = async () => {
           Toast.fire({
             icon: 'warning',
             title: 'จัดการผู้แต่งไม่สมบูรณ์',
-            text: `Warning: ${error.message}`
+            text: describeApiError(error, 'เพิ่มรายชื่อผู้แต่งบางส่วนไม่สำเร็จ แต่ระบบยังดำเนินการต่อให้')
           });
         }
       }
@@ -6777,40 +6823,17 @@ const showSubmissionConfirmation = async () => {
           console.error('Error response headers:', error.response.headers);
         }
         
-        let errorMessage = 'เกิดข้อผิดพลาดที่ server';
-        
-        if (error.response?.status === 400) {
-          errorMessage = error.response.data?.message || 'ข้อมูลที่ส่งไปไม่ถูกต้อง';
-        } else if (error.response?.status === 500) {
-          errorMessage = 'Server error - อาจมีปัญหากับ database หรือ backend logic';
-          
-          // Log สำหรับ debug
+        // เก็บ log เชิงเทคนิคไว้ใน console สำหรับผู้พัฒนา — ไม่แสดงต่อผู้ใช้
+        if (error.response?.status === 500) {
           console.error('=== Debug Info for 500 Error ===');
           console.error('Data that caused error:', publicationData);
-          console.error('Data types:', Object.entries(publicationData).map(([k, v]) => ({
-            field: k,
-            type: typeof v,
-            value: v
-          })));
         }
-        
+
         Swal.fire({
           icon: 'error',
           title: 'ไม่สามารถบันทึกรายละเอียดบทความได้',
-          html: `
-            <div class="text-left">
-              <p><strong>Error:</strong> ${errorMessage}</p>
-              <p class="text-sm text-gray-600 mt-2">Submission ID: ${submissionId}</p>
-              <details class="mt-3">
-                <summary class="cursor-pointer text-sm text-blue-600">ดูรายละเอียด</summary>
-                <pre class="text-xs bg-gray-100 p-2 mt-2 rounded overflow-auto max-h-40">
-      ${JSON.stringify(publicationData, null, 2)}
-                </pre>
-              </details>
-            </div>
-          `,
-          confirmButtonColor: '#ef4444',
-          width: '600px'
+          text: describeApiError(error, 'บันทึกรายละเอียดบทความไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองใหม่อีกครั้ง'),
+          confirmButtonColor: '#ef4444'
         });
         return;
       }
@@ -6951,7 +6974,7 @@ const showSubmissionConfirmation = async () => {
       Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
-        text: error.message || 'ไม่สามารถส่งคำร้องได้ กรุณาลองใหม่อีกครั้ง',
+        text: describeApiError(error, 'ไม่สามารถส่งคำร้องได้ กรุณาลองใหม่อีกครั้ง'),
         confirmButtonColor: '#ef4444'
       });
     } finally {
