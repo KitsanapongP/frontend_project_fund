@@ -235,7 +235,7 @@ export default function AdminScopusResearchDashboard() {
     rows: [],
     total: 0,
     page: 1,
-    pageSize: 25,
+    pageSize: 10,
     totalPages: 1,
   });
   const [optionsError, setOptionsError] = useState("");
@@ -614,19 +614,6 @@ export default function AdminScopusResearchDashboard() {
     setSelectedOverviewMetricsRow((prev) => (prev === rowKey ? "" : rowKey));
   }, []);
 
-  const handleOverviewCellClick = useCallback((yearType, yearBE, bucket, bucketLabel) => {
-    const targetYear = Number(yearBE || 0);
-    if (!targetYear || !bucket) return;
-    setDrilldownScrollTick((prev) => prev + 1);
-    loadOverviewDrilldown({
-      yearType,
-      yearBE: targetYear,
-      bucket,
-      bucketLabel,
-      page: 1,
-    });
-  }, [loadOverviewDrilldown]);
-
   const isOverviewCellActive = useCallback(
     (yearType, yearBE, bucket) => (
       drilldownPanelOpen
@@ -636,6 +623,24 @@ export default function AdminScopusResearchDashboard() {
     ),
     [drilldownPanelOpen, drilldownState.yearType, drilldownState.yearBE, drilldownState.bucket]
   );
+
+  const handleOverviewCellClick = useCallback((yearType, yearBE, bucket, bucketLabel) => {
+    const targetYear = Number(yearBE || 0);
+    if (!targetYear || !bucket) return;
+    // คลิกช่องที่กำลังเปิดอยู่ซ้ำ → ปิดและเอา highlight ออก (คลิกอีกครั้งค่อยเปิดใหม่)
+    if (isOverviewCellActive(yearType, targetYear, bucket)) {
+      setDrilldownPanelOpen(false);
+      return;
+    }
+    setDrilldownScrollTick((prev) => prev + 1);
+    loadOverviewDrilldown({
+      yearType,
+      yearBE: targetYear,
+      bucket,
+      bucketLabel,
+      page: 1,
+    });
+  }, [isOverviewCellActive, loadOverviewDrilldown]);
 
   const kpi = summary?.kpi || {};
   const qualityBreakdown = Array.isArray(summary?.quality_breakdown) ? summary.quality_breakdown : [];
@@ -713,7 +718,7 @@ export default function AdminScopusResearchDashboard() {
 
   useEffect(() => {
     if (drilldownPanelOpen && drilldownPanelRef.current) {
-      drilldownPanelRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      drilldownPanelRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [drilldownPanelOpen, drilldownScrollTick]);
   const topPublicationSources = Array.isArray(summary?.top_publication_sources) ? summary.top_publication_sources : [];
@@ -2714,8 +2719,8 @@ export default function AdminScopusResearchDashboard() {
                   </div>
                   <p className="mt-3 text-xs text-slate-500">อัปเดตล่าสุด: <span className="font-medium text-slate-700">{latestScopusPullLabel}</span></p>
                   {drilldownPanelOpen && (
-                    <div ref={drilldownPanelRef} className="mt-3 scroll-mt-4 rounded-xl border-2 border-sky-300 bg-white p-3 shadow-lg ring-2 ring-sky-100">
-                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div className="mt-3 rounded-xl border-2 border-sky-300 bg-white p-3 shadow-lg ring-2 ring-sky-100">
+                      <div ref={drilldownPanelRef} className="mb-2 flex flex-wrap items-center justify-between gap-2">
                         <p className="text-sm font-semibold text-slate-800">
                           ตรวจสอบรายการที่ถูกนับ: {drilldownState.bucketLabel || "-"} • ปี{drilldownState.yearType === "fiscal" ? "งบประมาณ" : "ปฏิทิน"} {drilldownState.yearBE || "-"}
                         </p>
