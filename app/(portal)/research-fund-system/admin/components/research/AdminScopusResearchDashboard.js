@@ -2766,6 +2766,7 @@ export default function AdminScopusResearchDashboard() {
                                 <tr className="bg-slate-100 text-slate-700">
                                   <th className="border border-slate-200 px-2 py-2 text-left">ชื่อผลงาน</th>
                                   <th className="border border-slate-200 px-2 py-2 text-left">อาจารย์ในคณะ</th>
+                                  <th className="border border-slate-200 px-2 py-2 text-center">ประเภทผลงาน</th>
                                   <th className="border border-slate-200 px-2 py-2 text-center">ปีตีพิมพ์ (พ.ศ.)</th>
                                   <th className="border border-slate-200 px-2 py-2 text-center">ปี CiteScore ที่ใช้</th>
                                   <th className="border border-slate-200 px-2 py-2 text-center">สถานะ CiteScore</th>
@@ -2777,6 +2778,9 @@ export default function AdminScopusResearchDashboard() {
                                   <tr key={`${row.document_id || idx}-${idx}`} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                                     <td className="border border-slate-200 px-2 py-2 text-slate-800">{row.title || "-"}</td>
                                     <td className="border border-slate-200 px-2 py-2 text-slate-700">{row.owners_in_system || "-"}</td>
+                                    <td className="border border-slate-200 px-2 py-2 text-center">
+                                      <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">{row.aggregation_type || "-"}</span>
+                                    </td>
                                     <td className="border border-slate-200 px-2 py-2 text-center text-slate-700">{row.publication_year_be || "-"}</td>
                                     <td className="border border-slate-200 px-2 py-2 text-center text-slate-700">
                                       {row.metric_year_selected ? (
