@@ -98,6 +98,8 @@ const PERSON_MATRIX_STICKY_WIDTHS = {
 };
 const PERSON_MATRIX_RANK_WIDTH = 72;
 const OVERVIEW_METRICS_LABEL_WIDTH = 410;
+const DRILLDOWN_PAGE_SIZE = 10; // แถวต่อหน้าฝั่ง client
+const DRILLDOWN_FETCH_SIZE = 200; // ดึงทั้งช่องมาครั้งเดียวแล้วแบ่งหน้าใน browser (1 ช่องปกติมีไม่กี่สิบรายการ)
 
 const PERSON_ALL_COLUMNS = [
   ...PERSON_BASE_COLUMNS,
@@ -235,7 +237,7 @@ export default function AdminScopusResearchDashboard() {
     rows: [],
     total: 0,
     page: 1,
-    pageSize: 10,
+    pageSize: DRILLDOWN_PAGE_SIZE,
     totalPages: 1,
   });
   const [optionsError, setOptionsError] = useState("");
@@ -595,17 +597,18 @@ export default function AdminScopusResearchDashboard() {
     await loadSummary(reset);
   };
 
-  const loadOverviewDrilldown = useCallback(async ({ yearType, yearBE, bucket, bucketLabel, page = 1 }) => {
+  const loadOverviewDrilldown = useCallback(async ({ yearType, yearBE, bucket, bucketLabel }) => {
     setDrilldownLoading(true);
     setDrilldownError("");
     try {
+      // ดึงทั้งช่องมาครั้งเดียว แล้วแบ่งหน้าใน browser -> เปลี่ยนหน้าได้ทันที ไม่ยิง server ซ้ำ
       const payload = {
         ...filterToQueryParams(appliedFilters),
         year_type: yearType,
         year_be: yearBE,
         bucket,
-        page,
-        page_size: drilldownState.pageSize,
+        page: 1,
+        page_size: DRILLDOWN_FETCH_SIZE,
       };
       const response = await adminAPI.getScopusDashboardDrilldown(payload);
       const data = response?.data || {};
@@ -617,9 +620,8 @@ export default function AdminScopusResearchDashboard() {
         bucketLabel,
         rows: Array.isArray(data.rows) ? data.rows : [],
         total: Number(data.total || 0),
-        page: Number(data.page || page),
-        pageSize: Number(data.page_size || prev.pageSize),
-        totalPages: Number(data.total_pages || 1),
+        page: 1,
+        pageSize: DRILLDOWN_PAGE_SIZE,
       }));
       setDrilldownPanelOpen(true);
     } catch (error) {
@@ -628,7 +630,18 @@ export default function AdminScopusResearchDashboard() {
     } finally {
       setDrilldownLoading(false);
     }
-  }, [appliedFilters, drilldownState.pageSize]);
+  }, [appliedFilters]);
+
+  const drilldownTotalPages = useMemo(() => {
+    const size = drilldownState.pageSize || DRILLDOWN_PAGE_SIZE;
+    return Math.max(1, Math.ceil(drilldownState.rows.length / size));
+  }, [drilldownState.rows, drilldownState.pageSize]);
+
+  const drilldownPageRows = useMemo(() => {
+    const size = drilldownState.pageSize || DRILLDOWN_PAGE_SIZE;
+    const start = (drilldownState.page - 1) * size;
+    return drilldownState.rows.slice(start, start + size);
+  }, [drilldownState.rows, drilldownState.page, drilldownState.pageSize]);
 
   const toggleOverviewMetricsRow = useCallback((rowKey) => {
     setSelectedOverviewMetricsRow((prev) => (prev === rowKey ? "" : rowKey));
@@ -2774,7 +2787,7 @@ export default function AdminScopusResearchDashboard() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {drilldownState.rows.map((row, idx) => (
+                                {drilldownPageRows.map((row, idx) => (
                                   <tr key={`${row.document_id || idx}-${idx}`} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                                     <td className="border border-slate-200 px-2 py-2 text-slate-800">{row.title || "-"}</td>
                                     <td className="border border-slate-200 px-2 py-2 text-slate-700">{row.owners_in_system || "-"}</td>
@@ -2800,29 +2813,17 @@ export default function AdminScopusResearchDashboard() {
                           <div className="mt-2 flex items-center justify-end gap-2">
                             <button
                               type="button"
-                              onClick={() => loadOverviewDrilldown({
-                                yearType: drilldownState.yearType,
-                                yearBE: drilldownState.yearBE,
-                                bucket: drilldownState.bucket,
-                                bucketLabel: drilldownState.bucketLabel,
-                                page: Math.max(1, drilldownState.page - 1),
-                              })}
-                              disabled={drilldownLoading || drilldownState.page <= 1}
+                              onClick={() => setDrilldownState((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                              disabled={drilldownState.page <= 1}
                               className="rounded-md border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                             >
                               ก่อนหน้า
                             </button>
-                            <span className="text-xs text-slate-600">หน้า {drilldownState.page} / {drilldownState.totalPages}</span>
+                            <span className="text-xs text-slate-600">หน้า {drilldownState.page} / {drilldownTotalPages}</span>
                             <button
                               type="button"
-                              onClick={() => loadOverviewDrilldown({
-                                yearType: drilldownState.yearType,
-                                yearBE: drilldownState.yearBE,
-                                bucket: drilldownState.bucket,
-                                bucketLabel: drilldownState.bucketLabel,
-                                page: Math.min(drilldownState.totalPages, drilldownState.page + 1),
-                              })}
-                              disabled={drilldownLoading || drilldownState.page >= drilldownState.totalPages}
+                              onClick={() => setDrilldownState((prev) => ({ ...prev, page: Math.min(drilldownTotalPages, prev.page + 1) }))}
+                              disabled={drilldownState.page >= drilldownTotalPages}
                               className="rounded-md border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                             >
                               ถัดไป
