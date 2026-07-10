@@ -714,6 +714,16 @@ export const adminAPI = {
     }
   },
 
+  async getScopusDashboardDrilldown(params = {}) {
+    try {
+      const response = await apiClient.get('/admin/scopus/dashboard/drilldown', params);
+      return response;
+    } catch (error) {
+      console.error('Error fetching scopus dashboard drilldown:', error);
+      throw error;
+    }
+  },
+
   // Get budget overview
   async getBudgetOverview(yearId) {
     try {

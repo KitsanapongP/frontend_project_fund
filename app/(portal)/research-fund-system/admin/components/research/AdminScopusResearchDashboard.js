@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   BarChart3,
@@ -10,6 +10,8 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  MousePointerClick,
+  X,
 } from "lucide-react";
 
 import PageLayout from "../common/PageLayout";
@@ -222,8 +224,24 @@ export default function AdminScopusResearchDashboard() {
   const [documentChartView, setDocumentChartView] = useState("bar");
   const [quartileChartView, setQuartileChartView] = useState("donut");
   const [publicationSourceSort, setPublicationSourceSort] = useState("desc");
+  const [drilldownLoading, setDrilldownLoading] = useState(false);
+  const [drilldownError, setDrilldownError] = useState("");
+  const [drilldownPanelOpen, setDrilldownPanelOpen] = useState(false);
+  const [drilldownState, setDrilldownState] = useState({
+    yearType: "calendar",
+    yearBE: 0,
+    bucket: "",
+    bucketLabel: "",
+    rows: [],
+    total: 0,
+    page: 1,
+    pageSize: 25,
+    totalPages: 1,
+  });
   const [optionsError, setOptionsError] = useState("");
   const [summaryError, setSummaryError] = useState("");
+  const drilldownPanelRef = useRef(null);
+  const [drilldownScrollTick, setDrilldownScrollTick] = useState(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -543,6 +561,8 @@ export default function AdminScopusResearchDashboard() {
 
   const handleApplyFilters = async () => {
     setAppliedFilters(draftFilters);
+    setDrilldownPanelOpen(false);
+    setSelectedOverviewMetricsRow("");
     await loadSummary(draftFilters);
   };
 
@@ -550,8 +570,72 @@ export default function AdminScopusResearchDashboard() {
     const reset = withDefaultYearRange(DEFAULT_FILTERS, options);
     setDraftFilters(reset);
     setAppliedFilters(reset);
+    setDrilldownPanelOpen(false);
+    setSelectedOverviewMetricsRow("");
     await loadSummary(reset);
   };
+
+  const loadOverviewDrilldown = useCallback(async ({ yearType, yearBE, bucket, bucketLabel, page = 1 }) => {
+    setDrilldownLoading(true);
+    setDrilldownError("");
+    try {
+      const payload = {
+        ...filterToQueryParams(appliedFilters),
+        year_type: yearType,
+        year_be: yearBE,
+        bucket,
+        page,
+        page_size: drilldownState.pageSize,
+      };
+      const response = await adminAPI.getScopusDashboardDrilldown(payload);
+      const data = response?.data || {};
+      setDrilldownState((prev) => ({
+        ...prev,
+        yearType,
+        yearBE,
+        bucket,
+        bucketLabel,
+        rows: Array.isArray(data.rows) ? data.rows : [],
+        total: Number(data.total || 0),
+        page: Number(data.page || page),
+        pageSize: Number(data.page_size || prev.pageSize),
+        totalPages: Number(data.total_pages || 1),
+      }));
+      setDrilldownPanelOpen(true);
+    } catch (error) {
+      setDrilldownError(error?.message || "ไม่สามารถโหลดข้อมูลตรวจสอบได้");
+      setDrilldownPanelOpen(true);
+    } finally {
+      setDrilldownLoading(false);
+    }
+  }, [appliedFilters, drilldownState.pageSize]);
+
+  const toggleOverviewMetricsRow = useCallback((rowKey) => {
+    setSelectedOverviewMetricsRow((prev) => (prev === rowKey ? "" : rowKey));
+  }, []);
+
+  const handleOverviewCellClick = useCallback((yearType, yearBE, bucket, bucketLabel) => {
+    const targetYear = Number(yearBE || 0);
+    if (!targetYear || !bucket) return;
+    setDrilldownScrollTick((prev) => prev + 1);
+    loadOverviewDrilldown({
+      yearType,
+      yearBE: targetYear,
+      bucket,
+      bucketLabel,
+      page: 1,
+    });
+  }, [loadOverviewDrilldown]);
+
+  const isOverviewCellActive = useCallback(
+    (yearType, yearBE, bucket) => (
+      drilldownPanelOpen
+      && drilldownState.yearType === yearType
+      && Number(drilldownState.yearBE) === Number(yearBE)
+      && drilldownState.bucket === bucket
+    ),
+    [drilldownPanelOpen, drilldownState.yearType, drilldownState.yearBE, drilldownState.bucket]
+  );
 
   const kpi = summary?.kpi || {};
   const qualityBreakdown = Array.isArray(summary?.quality_breakdown) ? summary.quality_breakdown : [];
@@ -626,6 +710,12 @@ export default function AdminScopusResearchDashboard() {
       setInternalCollabPage(internalCollabTotalPages);
     }
   }, [internalCollabPage, internalCollabTotalPages]);
+
+  useEffect(() => {
+    if (drilldownPanelOpen && drilldownPanelRef.current) {
+      drilldownPanelRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [drilldownPanelOpen, drilldownScrollTick]);
   const topPublicationSources = Array.isArray(summary?.top_publication_sources) ? summary.top_publication_sources : [];
   const fundingSponsorBreakdown = Array.isArray(summary?.funding_sponsor_breakdown) ? summary.funding_sponsor_breakdown : [];
   const facultyQuartileHistory = Array.isArray(summary?.faculty_quartile_history) ? summary.faculty_quartile_history : [];
@@ -886,6 +976,7 @@ export default function AdminScopusResearchDashboard() {
         journal: Number(row?.journal || 0),
         conference: Number(row?.conference || 0),
         unique_documents: Number(row?.unique_documents || 0),
+        cited_by_total: Number(row?.cited_by_total || 0),
       };
     });
     return map;
@@ -906,6 +997,7 @@ export default function AdminScopusResearchDashboard() {
         journal: Number(row?.journal || 0),
         conference: Number(row?.conference || 0),
         unique_documents: Number(row?.unique_documents || 0),
+        cited_by_total: Number(row?.cited_by_total || 0),
       };
     });
     return map;
@@ -923,6 +1015,7 @@ export default function AdminScopusResearchDashboard() {
       const tci = Number(bucket.tci || 0);
       const conference = Number(bucket.conference || 0);
       const uniqueDocuments = Number(bucket.unique_documents || 0);
+      const citedByTotal = Number(bucket.cited_by_total || 0);
       const groupedTotal = t1 + q1 + q2 + q3 + q4;
       const worksWithQ = groupedTotal;
       const allNoTCI = groupedTotal + conference;
@@ -939,6 +1032,8 @@ export default function AdminScopusResearchDashboard() {
         tci,
         journal: Number(bucket.journal || 0),
         conference,
+        uniqueDocuments,
+        citedByTotal,
         groupedTotal,
         worksWithQ,
         allNoTCI,
@@ -972,6 +1067,24 @@ export default function AdminScopusResearchDashboard() {
     () => buildOverviewYearMetrics(fiscalHistoryByYear),
     [buildOverviewYearMetrics, fiscalHistoryByYear]
   );
+
+  const overviewKpiByYearType = useMemo(() => {
+    const calendar = overviewYearsBE.reduce((acc, year) => {
+      const row = overviewYearMetricsCalendar[year] || {};
+      acc.uniqueDocuments += Number(row.uniqueDocuments || 0);
+      acc.totalCitations += Number(row.citedByTotal || 0);
+      return acc;
+    }, { uniqueDocuments: 0, totalCitations: 0 });
+
+    const fiscal = overviewYearsBE.reduce((acc, year) => {
+      const row = overviewYearMetricsFiscal[year] || {};
+      acc.uniqueDocuments += Number(row.uniqueDocuments || 0);
+      acc.totalCitations += Number(row.citedByTotal || 0);
+      return acc;
+    }, { uniqueDocuments: 0, totalCitations: 0 });
+
+    return { calendar, fiscal };
+  }, [overviewYearMetricsCalendar, overviewYearMetricsFiscal, overviewYearsBE]);
 
   const formatRatio = useCallback((value) => Number(value || 0).toFixed(2), []);
 
@@ -1256,6 +1369,66 @@ export default function AdminScopusResearchDashboard() {
     };
   }, [quartileRows, quartileChartView, ratioText]);
 
+  const overviewLabelStickyStyle = {
+    position: "sticky",
+    left: "0px",
+    zIndex: 20,
+    minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+    width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+    maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+  };
+
+  // แถวตัวนับ (T1-Q4, Conference) ที่คลิกตัวเลขแต่ละช่องเพื่อ drill ดูรายการผลงานได้
+  const renderOverviewCountRow = (rowKey, label, bucket) => {
+    const selected = selectedOverviewMetricsRow === rowKey;
+    return (
+      <tr
+        key={rowKey}
+        onClick={() => toggleOverviewMetricsRow(rowKey)}
+        className={`transition-colors ${selected ? "bg-amber-100" : "hover:bg-sky-50"}`}
+      >
+        <td
+          className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selected ? "bg-amber-100" : "bg-slate-50"}`}
+          style={overviewLabelStickyStyle}
+        >
+          {label}
+        </td>
+        {overviewYearsBE.map((year) => {
+          const active = isOverviewCellActive("calendar", year, bucket);
+          return (
+            <td
+              key={`cal-${bucket}-${year}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleOverviewCellClick("calendar", year, bucket, label);
+              }}
+              title="คลิกเพื่อดูรายการผลงานที่ถูกนับในช่องนี้"
+              className={`cursor-pointer border border-blue-100 px-3 py-2 text-right transition-colors hover:bg-sky-200/70 ${active ? "bg-amber-200 font-semibold ring-2 ring-inset ring-amber-400" : "bg-blue-50/30"}`}
+            >
+              {formatNumber(overviewYearMetricsCalendar[year]?.[bucket] || 0)}
+            </td>
+          );
+        })}
+        {overviewYearsBE.map((year) => {
+          const active = isOverviewCellActive("fiscal", year, bucket);
+          return (
+            <td
+              key={`fy-${bucket}-${year}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleOverviewCellClick("fiscal", year, bucket, label);
+              }}
+              title="คลิกเพื่อดูรายการผลงานที่ถูกนับในช่องนี้"
+              className={`cursor-pointer border border-emerald-100 px-3 py-2 text-right transition-colors hover:bg-emerald-200/70 ${active ? "bg-amber-200 font-semibold ring-2 ring-inset ring-amber-400" : "bg-emerald-50/30"}`}
+            >
+              {formatNumber(overviewYearMetricsFiscal[year]?.[bucket] || 0)}
+            </td>
+          );
+        })}
+      </tr>
+    );
+  };
+
   return (
     <PageLayout
       title="แดชบอร์ดงานวิจัย"
@@ -1313,7 +1486,14 @@ export default function AdminScopusResearchDashboard() {
                     <div className="flex items-center gap-2">
                       <select
                         value={draftFilters.yearStartBE}
-                        onChange={(event) => setDraftFilters((prev) => ({ ...prev, yearStartBE: event.target.value }))}
+                        onChange={(event) => setDraftFilters((prev) => {
+                          const nextStart = event.target.value;
+                          const next = { ...prev, yearStartBE: nextStart };
+                          if (nextStart && prev.yearEndBE && Number(nextStart) > Number(prev.yearEndBE)) {
+                            next.yearEndBE = nextStart;
+                          }
+                          return next;
+                        })}
                         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
                         disabled={loadingOptions}
                       >
@@ -1325,7 +1505,14 @@ export default function AdminScopusResearchDashboard() {
                       <span className="text-slate-400">-</span>
                       <select
                         value={draftFilters.yearEndBE}
-                        onChange={(event) => setDraftFilters((prev) => ({ ...prev, yearEndBE: event.target.value }))}
+                        onChange={(event) => setDraftFilters((prev) => {
+                          const nextEnd = event.target.value;
+                          const next = { ...prev, yearEndBE: nextEnd };
+                          if (nextEnd && prev.yearStartBE && Number(nextEnd) < Number(prev.yearStartBE)) {
+                            next.yearStartBE = nextEnd;
+                          }
+                          return next;
+                        })}
                         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
                         disabled={loadingOptions}
                       >
@@ -2118,11 +2305,17 @@ export default function AdminScopusResearchDashboard() {
                 </div>
                 <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
                   <p className="text-xs text-indigo-700">จำนวนผลงานทั้งหมด (Unique Document)</p>
-                  <p className="mt-2 text-right text-2xl font-semibold text-indigo-900">{formatNumber(kpi.total_documents || 0)}</p>
+                  <div className="mt-2 space-y-1 text-right">
+                    <p className="text-[11px] text-indigo-700">ปีปฏิทิน: <span className="text-base font-semibold text-indigo-900">{formatNumber(overviewKpiByYearType.calendar.uniqueDocuments || 0)}</span></p>
+                    <p className="text-[11px] text-indigo-700">ปีงบประมาณ: <span className="text-base font-semibold text-indigo-900">{formatNumber(overviewKpiByYearType.fiscal.uniqueDocuments || 0)}</span></p>
+                  </div>
                 </div>
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                   <p className="text-xs text-amber-700">จำนวน Citation ทั้งหมด (Total Citation)</p>
-                  <p className="mt-2 text-right text-2xl font-semibold text-amber-900">{formatNumber(kpi.total_citations || 0)}</p>
+                  <div className="mt-2 space-y-1 text-right">
+                    <p className="text-[11px] text-amber-700">ปีปฏิทิน: <span className="text-base font-semibold text-amber-900">{formatNumber(overviewKpiByYearType.calendar.totalCitations || 0)}</span></p>
+                    <p className="text-[11px] text-amber-700">ปีงบประมาณ: <span className="text-base font-semibold text-amber-900">{formatNumber(overviewKpiByYearType.fiscal.totalCitations || 0)}</span></p>
+                  </div>
                 </div>
                 <div className="rounded-lg border border-sky-200 bg-sky-50 p-4">
                   <p className="text-xs text-sky-700">ช่วงปีผลงาน (Publication Year Range)</p>
@@ -2131,9 +2324,13 @@ export default function AdminScopusResearchDashboard() {
               </div>
 
               <div className="rounded-xl border border-slate-200 p-4">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-slate-800">จำนวนบทความที่เผยแพร่</p>
                 </div>
+                <p className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-sky-50 px-2 py-1 text-xs text-sky-700">
+                  <MousePointerClick size={13} className="text-sky-500" />
+                  คลิกที่ตัวเลขในแถว T1–Q4 และ Conference เพื่อดูรายการผลงานที่ถูกนับในช่องนั้น
+                </p>
                 {overviewYearsBE.length === 0 ? (
                   <p className="text-sm text-slate-500">ไม่พบข้อมูลรายปี</p>
                 ) : (
@@ -2183,126 +2380,11 @@ export default function AdminScopusResearchDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr
-                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "t1" ? "" : "t1"))}
-                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "t1" ? "bg-amber-100" : "hover:bg-sky-50"}`}
-                        >
-                          <td
-                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "t1" ? "bg-amber-100" : "bg-slate-50"}`}
-                            style={{
-                              position: "sticky",
-                              left: "0px",
-                              zIndex: 20,
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                            }}
-                          >
-                            T1 (90-100)
-                          </td>
-                          {overviewYearsBE.map((year) => (
-                            <td key={`cal-t1-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.t1 || 0)}</td>
-                          ))}
-                          {overviewYearsBE.map((year) => (
-                            <td key={`fy-t1-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.t1 || 0)}</td>
-                          ))}
-                        </tr>
-                        <tr
-                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "q1" ? "" : "q1"))}
-                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "q1" ? "bg-amber-100" : "hover:bg-sky-50"}`}
-                        >
-                          <td
-                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "q1" ? "bg-amber-100" : "bg-slate-50"}`}
-                            style={{
-                              position: "sticky",
-                              left: "0px",
-                              zIndex: 20,
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                            }}
-                          >
-                            Q1 (75-89)
-                          </td>
-                          {overviewYearsBE.map((year) => (
-                            <td key={`cal-q1-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.q1 || 0)}</td>
-                          ))}
-                          {overviewYearsBE.map((year) => (
-                            <td key={`fy-q1-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.q1 || 0)}</td>
-                          ))}
-                        </tr>
-                        <tr
-                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "q2" ? "" : "q2"))}
-                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "q2" ? "bg-amber-100" : "hover:bg-sky-50"}`}
-                        >
-                          <td
-                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "q2" ? "bg-amber-100" : "bg-slate-50"}`}
-                            style={{
-                              position: "sticky",
-                              left: "0px",
-                              zIndex: 20,
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                            }}
-                          >
-                            Q2 (50-74)
-                          </td>
-                          {overviewYearsBE.map((year) => (
-                            <td key={`cal-q2-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.q2 || 0)}</td>
-                          ))}
-                          {overviewYearsBE.map((year) => (
-                            <td key={`fy-q2-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.q2 || 0)}</td>
-                          ))}
-                        </tr>
-                        <tr
-                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "q3" ? "" : "q3"))}
-                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "q3" ? "bg-amber-100" : "hover:bg-sky-50"}`}
-                        >
-                          <td
-                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "q3" ? "bg-amber-100" : "bg-slate-50"}`}
-                            style={{
-                              position: "sticky",
-                              left: "0px",
-                              zIndex: 20,
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                            }}
-                          >
-                            Q3 (25-49)
-                          </td>
-                          {overviewYearsBE.map((year) => (
-                            <td key={`cal-q3-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.q3 || 0)}</td>
-                          ))}
-                          {overviewYearsBE.map((year) => (
-                            <td key={`fy-q3-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.q3 || 0)}</td>
-                          ))}
-                        </tr>
-                        <tr
-                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "q4" ? "" : "q4"))}
-                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "q4" ? "bg-amber-100" : "hover:bg-sky-50"}`}
-                        >
-                          <td
-                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "q4" ? "bg-amber-100" : "bg-slate-50"}`}
-                            style={{
-                              position: "sticky",
-                              left: "0px",
-                              zIndex: 20,
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                            }}
-                          >
-                            Q4 (0-24)
-                          </td>
-                          {overviewYearsBE.map((year) => (
-                            <td key={`cal-q4-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.q4 || 0)}</td>
-                          ))}
-                          {overviewYearsBE.map((year) => (
-                            <td key={`fy-q4-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.q4 || 0)}</td>
-                          ))}
-                        </tr>
+                        {renderOverviewCountRow("t1", "T1 (90-100)", "t1")}
+                        {renderOverviewCountRow("q1", "Q1 (75-89)", "q1")}
+                        {renderOverviewCountRow("q2", "Q2 (50-74)", "q2")}
+                        {renderOverviewCountRow("q3", "Q3 (25-49)", "q3")}
+                        {renderOverviewCountRow("q4", "Q4 (0-24)", "q4")}
                         <tr
                           onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "tci" ? "" : "tci"))}
                           className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "tci" ? "bg-amber-100" : "hover:bg-sky-50"}`}
@@ -2327,30 +2409,7 @@ export default function AdminScopusResearchDashboard() {
                             <td key={`fy-tci-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.tci || 0)}</td>
                           ))}
                         </tr>
-                        <tr
-                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "conference" ? "" : "conference"))}
-                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "conference" ? "bg-amber-100" : "hover:bg-sky-50"}`}
-                        >
-                          <td
-                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "conference" ? "bg-amber-100" : "bg-slate-50"}`}
-                            style={{
-                              position: "sticky",
-                              left: "0px",
-                              zIndex: 20,
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                            }}
-                          >
-                            Conference Proceeding
-                          </td>
-                          {overviewYearsBE.map((year) => (
-                            <td key={`cal-conf-${year}`} className="border border-blue-100 bg-blue-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.conference || 0)}</td>
-                          ))}
-                          {overviewYearsBE.map((year) => (
-                            <td key={`fy-conf-${year}`} className="border border-emerald-100 bg-emerald-50/30 px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.conference || 0)}</td>
-                          ))}
-                        </tr>
+                        {renderOverviewCountRow("conference", "Conference Proceeding", "conference")}
                         <tr
                           onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "total" ? "" : "total"))}
                           className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "total" ? "bg-amber-100" : "bg-indigo-50 hover:bg-indigo-100/70"}`}
@@ -2654,6 +2713,96 @@ export default function AdminScopusResearchDashboard() {
                     </table>
                   </div>
                   <p className="mt-3 text-xs text-slate-500">อัปเดตล่าสุด: <span className="font-medium text-slate-700">{latestScopusPullLabel}</span></p>
+                  {drilldownPanelOpen && (
+                    <div ref={drilldownPanelRef} className="mt-3 scroll-mt-4 rounded-xl border-2 border-sky-300 bg-white p-3 shadow-lg ring-2 ring-sky-100">
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-800">
+                          ตรวจสอบรายการที่ถูกนับ: {drilldownState.bucketLabel || "-"} • ปี{drilldownState.yearType === "fiscal" ? "งบประมาณ" : "ปฏิทิน"} {drilldownState.yearBE || "-"}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setDrilldownPanelOpen(false)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 shadow-sm transition hover:bg-rose-100 hover:text-rose-800"
+                        >
+                          <X size={16} />
+                          ปิดหน้าต่างตรวจสอบ
+                        </button>
+                      </div>
+                      {drilldownError ? (
+                        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{drilldownError}</p>
+                      ) : drilldownLoading ? (
+                        <p className="text-sm text-slate-500">กำลังโหลดข้อมูล...</p>
+                      ) : (
+                        <>
+                          <p className="mb-2 text-xs text-slate-600">ทั้งหมด {formatNumber(drilldownState.total || 0)} รายการ</p>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-[980px] border-collapse text-xs">
+                              <thead>
+                                <tr className="bg-slate-100 text-slate-700">
+                                  <th className="border border-slate-200 px-2 py-2 text-left">ชื่อผลงาน</th>
+                                  <th className="border border-slate-200 px-2 py-2 text-left">อาจารย์ในคณะ</th>
+                                  <th className="border border-slate-200 px-2 py-2 text-center">ปีตีพิมพ์ (พ.ศ.)</th>
+                                  <th className="border border-slate-200 px-2 py-2 text-center">ปี CiteScore ที่ใช้</th>
+                                  <th className="border border-slate-200 px-2 py-2 text-center">สถานะ CiteScore</th>
+                                  <th className="border border-slate-200 px-2 py-2 text-center">ที่มาของปี CiteScore</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {drilldownState.rows.map((row, idx) => (
+                                  <tr key={`${row.document_id || idx}-${idx}`} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                                    <td className="border border-slate-200 px-2 py-2 text-slate-800">{row.title || "-"}</td>
+                                    <td className="border border-slate-200 px-2 py-2 text-slate-700">{row.owners_in_system || "-"}</td>
+                                    <td className="border border-slate-200 px-2 py-2 text-center text-slate-700">{row.publication_year_be || "-"}</td>
+                                    <td className="border border-slate-200 px-2 py-2 text-center text-slate-700">
+                                      {row.metric_year_selected ? (
+                                        <div className="flex flex-col leading-tight">
+                                          <span>{Number(row.metric_year_selected) + 543}</span>
+                                          <span className="text-[10px] text-slate-400">({row.metric_year_selected})</span>
+                                        </div>
+                                      ) : "-"}
+                                    </td>
+                                    <td className="border border-slate-200 px-2 py-2 text-center text-slate-700">{row.metric_status || "-"}</td>
+                                    <td className="border border-slate-200 px-2 py-2 text-center text-slate-700">{row.metric_pick_reason || "-"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div className="mt-2 flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => loadOverviewDrilldown({
+                                yearType: drilldownState.yearType,
+                                yearBE: drilldownState.yearBE,
+                                bucket: drilldownState.bucket,
+                                bucketLabel: drilldownState.bucketLabel,
+                                page: Math.max(1, drilldownState.page - 1),
+                              })}
+                              disabled={drilldownLoading || drilldownState.page <= 1}
+                              className="rounded-md border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                            >
+                              ก่อนหน้า
+                            </button>
+                            <span className="text-xs text-slate-600">หน้า {drilldownState.page} / {drilldownState.totalPages}</span>
+                            <button
+                              type="button"
+                              onClick={() => loadOverviewDrilldown({
+                                yearType: drilldownState.yearType,
+                                yearBE: drilldownState.yearBE,
+                                bucket: drilldownState.bucket,
+                                bucketLabel: drilldownState.bucketLabel,
+                                page: Math.min(drilldownState.totalPages, drilldownState.page + 1),
+                              })}
+                              disabled={drilldownLoading || drilldownState.page >= drilldownState.totalPages}
+                              className="rounded-md border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                            >
+                              ถัดไป
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                   </>
                 )}
               </div>
