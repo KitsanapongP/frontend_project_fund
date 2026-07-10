@@ -242,6 +242,26 @@ export default function AdminScopusResearchDashboard() {
   const [summaryError, setSummaryError] = useState("");
   const drilldownPanelRef = useRef(null);
   const [drilldownScrollTick, setDrilldownScrollTick] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(1280);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // ความกว้างคอลัมน์ที่ freeze ปรับตามจอ เพื่อไม่ให้บังทั้งจอบนมือถือ
+  const overviewLabelWidth = viewportWidth < 480 ? 190 : viewportWidth < 768 ? 260 : OVERVIEW_METRICS_LABEL_WIDTH;
+  const isCompactViewport = viewportWidth < 640;
+  const personMatrixRankWidth = isCompactViewport ? 44 : PERSON_MATRIX_RANK_WIDTH;
+  const personMatrixStickyWidths = useMemo(
+    () => (isCompactViewport
+      ? { user_name: 150, user_email: 150, user_scopus_id: 120 }
+      : PERSON_MATRIX_STICKY_WIDTHS),
+    [isCompactViewport]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -844,14 +864,14 @@ export default function AdminScopusResearchDashboard() {
   );
 
   const personMatrixStickyLeftByKey = useMemo(() => {
-    let left = PERSON_MATRIX_RANK_WIDTH;
+    let left = personMatrixRankWidth;
     const result = {};
     visiblePersonMatrixIdentityColumns.forEach((col) => {
       result[col.key] = left;
-      left += PERSON_MATRIX_STICKY_WIDTHS[col.key] || 180;
+      left += personMatrixStickyWidths[col.key] || 180;
     });
     return result;
-  }, [visiblePersonMatrixIdentityColumns]);
+  }, [visiblePersonMatrixIdentityColumns, personMatrixRankWidth, personMatrixStickyWidths]);
 
   const personMatrixVisibleYears = useMemo(() => {
     const start = Number(personMatrixYearStart || 0);
@@ -1378,9 +1398,9 @@ export default function AdminScopusResearchDashboard() {
     position: "sticky",
     left: "0px",
     zIndex: 20,
-    minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-    width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-    maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+    minWidth: `${overviewLabelWidth}px`,
+    width: `${overviewLabelWidth}px`,
+    maxWidth: `${overviewLabelWidth}px`,
   };
 
   // แถวตัวนับ (T1-Q4, Conference) ที่คลิกตัวเลขแต่ละช่องเพื่อ drill ดูรายการผลงานได้
@@ -1533,7 +1553,7 @@ export default function AdminScopusResearchDashboard() {
                 <div className="grid gap-3 xl:grid-cols-2">
                   <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">ประเภทผลงาน</p>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                       {aggregationOptions.map((item) => {
                         const active = draftFilters.aggregationTypes.includes(item.value);
                         return (
@@ -1560,7 +1580,7 @@ export default function AdminScopusResearchDashboard() {
 
                   <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">คุณภาพวารสาร</p>
-                    <div className="grid grid-cols-6 gap-2">
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                       {qualityOptions.map((item) => {
                         const active = draftFilters.qualityBuckets.includes(item.value);
                         return (
@@ -2031,8 +2051,8 @@ export default function AdminScopusResearchDashboard() {
                         <th
                           className="border border-blue-200 bg-blue-50 px-3 py-2 text-center text-blue-800"
                           style={{
-                            minWidth: `${PERSON_MATRIX_RANK_WIDTH}px`,
-                            width: `${PERSON_MATRIX_RANK_WIDTH}px`,
+                            minWidth: `${personMatrixRankWidth}px`,
+                            width: `${personMatrixRankWidth}px`,
                             position: "sticky",
                             left: "0px",
                             zIndex: 30,
@@ -2046,7 +2066,7 @@ export default function AdminScopusResearchDashboard() {
                             onClick={() => handlePersonMatrixSort(col.key)}
                             className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-left text-blue-800"
                             style={{
-                              minWidth: `${PERSON_MATRIX_STICKY_WIDTHS[col.key] || 180}px`,
+                              minWidth: `${personMatrixStickyWidths[col.key] || 180}px`,
                               position: "sticky",
                               left: `${personMatrixStickyLeftByKey[col.key] || 0}px`,
                               zIndex: 20,
@@ -2094,8 +2114,8 @@ export default function AdminScopusResearchDashboard() {
                               <td
                                 className={`border border-slate-200 px-3 py-2 text-center ${stickyBgClass}`}
                                 style={{
-                                  minWidth: `${PERSON_MATRIX_RANK_WIDTH}px`,
-                                  width: `${PERSON_MATRIX_RANK_WIDTH}px`,
+                                  minWidth: `${personMatrixRankWidth}px`,
+                                  width: `${personMatrixRankWidth}px`,
                                   position: "sticky",
                                   left: "0px",
                                   zIndex: 20,
@@ -2109,7 +2129,7 @@ export default function AdminScopusResearchDashboard() {
                                     key={`${rowKey}-${col.key}`}
                                     className={`border border-slate-200 px-3 py-2 text-left ${col.key === "user_name" ? "font-medium text-slate-700" : ""} ${stickyBgClass}`}
                                     style={{
-                                      minWidth: `${PERSON_MATRIX_STICKY_WIDTHS[col.key] || 180}px`,
+                                      minWidth: `${personMatrixStickyWidths[col.key] || 180}px`,
                                       position: "sticky",
                                       left: `${personMatrixStickyLeftByKey[col.key] || 0}px`,
                                       zIndex: 10,
@@ -2350,9 +2370,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: 30,
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           />
                           <th colSpan={overviewYearsBE.length} className="border border-blue-200 bg-blue-50 px-3 py-2 text-center text-blue-800">
@@ -2369,9 +2389,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: 30,
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             รายการ
@@ -2400,9 +2420,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: 20,
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             TCI
@@ -2425,9 +2445,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: 20,
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             รวม
@@ -2456,9 +2476,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: getOverviewLabelZIndex("t1_per_q"),
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             {renderOverviewMetricLabel("t1_per_q", "ร้อยละของ T1 ต่อ จำนวนผลงาน Q1-Q4")}
@@ -2482,9 +2502,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: getOverviewLabelZIndex("q1_per_q"),
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             {renderOverviewMetricLabel("q1_per_q", "ร้อยละของ Q1 ต่อ จำนวนผลงาน Q1-Q4")}
@@ -2508,9 +2528,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: getOverviewLabelZIndex("t1q1_per_q"),
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             {renderOverviewMetricLabel("t1q1_per_q", "ร้อยละของ (T1+Q1) ต่อ จำนวนผลงาน Q1-Q4")}
@@ -2539,9 +2559,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: getOverviewLabelZIndex("q1_per_all"),
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             {renderOverviewMetricLabel("q1_per_all", "ร้อยละของ (T1+Q1) ต่อ จำนวนผลงานทุกประเภท (ไม่รวม TCI)")}
@@ -2565,9 +2585,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: getOverviewLabelZIndex("q1_per_all_with_tci"),
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             {renderOverviewMetricLabel("q1_per_all_with_tci", "ร้อยละของ (T1+Q1) ต่อ จำนวนผลงานทุกประเภท (รวม TCI)")}
@@ -2591,9 +2611,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: getOverviewLabelZIndex("t1_per_all_no_tci"),
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             {renderOverviewMetricLabel("t1_per_all_no_tci", "ร้อยละของ T1 ต่อ จำนวนผลงานทุกประเภท (ไม่รวม TCI)")}
@@ -2617,9 +2637,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: getOverviewLabelZIndex("tci_per_all_with_tci"),
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             {renderOverviewMetricLabel("tci_per_all_with_tci", "ร้อยละของ TCI ต่อ จำนวนผลงานทุกประเภท (รวม TCI)")}
@@ -2648,9 +2668,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: getOverviewLabelZIndex("works_q_per_teacher"),
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             {renderOverviewMetricLabel("works_q_per_teacher", "ร้อยละของจำนวนผลงาน T1-Q4 ต่อจำนวนอาจารย์")}
@@ -2674,9 +2694,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: getOverviewLabelZIndex("all_per_teacher"),
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             {renderOverviewMetricLabel("all_per_teacher", "ร้อยละผลงานทุกประเภทต่อ จำนวนอาจารย์ (ไม่รวม TCI)")}
@@ -2700,9 +2720,9 @@ export default function AdminScopusResearchDashboard() {
                               position: "sticky",
                               left: "0px",
                               zIndex: getOverviewLabelZIndex("all_with_tci_per_teacher"),
-                              minWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              width: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
-                              maxWidth: `${OVERVIEW_METRICS_LABEL_WIDTH}px`,
+                              minWidth: `${overviewLabelWidth}px`,
+                              width: `${overviewLabelWidth}px`,
+                              maxWidth: `${overviewLabelWidth}px`,
                             }}
                           >
                             {renderOverviewMetricLabel("all_with_tci_per_teacher", "ร้อยละผลงานทุกประเภทต่อ จำนวนอาจารย์ (รวม TCI)")}
