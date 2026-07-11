@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { openSignedFileInNewTab } from '@/app/lib/file_access';
+import { openSignedFileInNewTab, openSignedFileAsBlobInNewTab } from '@/app/lib/file_access';
 import {
   ArrowLeft, FileText,
   CheckCircle, XCircle, AlertTriangle, Clock,
@@ -2488,7 +2488,7 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
                     {mainAnn?.file_path ? (
                       <a
                         href="#"
-                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(mainAnn.file_path); }}
+                        onClick={(e) => { e.preventDefault(); openSignedFileAsBlobInNewTab(mainAnn.file_path, { forceSigned: true }); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={mainAnn?.title || mainAnn?.file_name || 'เปิดไฟล์ประกาศ'}
                       >
@@ -2522,7 +2522,7 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
                     {activityAnn?.file_path ? (
                       <a
                         href="#"
-                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(activityAnn.file_path); }}
+                        onClick={(e) => { e.preventDefault(); openSignedFileAsBlobInNewTab(activityAnn.file_path, { forceSigned: true }); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={activityAnn?.title || activityAnn?.file_name || 'เปิดไฟล์ประกาศ'}
                       >
