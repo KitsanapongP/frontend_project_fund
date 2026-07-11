@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FileText, Eye, Download, Bell, BookOpen, CalendarClock } from "lucide-react";
 import apiClient, { announcementAPI, fundFormAPI, systemAPI } from "../../../../../lib/api";
-import { getSignedFileUrl } from "../../../../../lib/file_access";
+import { getSignedFileUrl, openSignedFileInNewTab } from "../../../../../lib/file_access";
 import { systemConfigAPI } from "../../../../../lib/system_config_api";
 import { fundInstallmentAPI } from "../../../../../lib/fund_installment_api";
 import DataTable from "../../../admin/components/common/DataTable";
@@ -476,14 +476,6 @@ export default function AnnouncementPage() {
     return `${base}/announcements/${encodeURIComponent(id)}/download`;
   };
 
-  const getAnnouncementViewURL = (row) => {
-    const id = extractAnnouncementId(row);
-    if (!id) return null;
-    const base = getApiBaseURL();
-    if (!base) return null;
-    return `${base}/announcements/${encodeURIComponent(id)}/view`;
-  };
-
   const getFundFormId = (item) => {
     if (!item || typeof item !== 'object') return null;
     const candidates = [item.fund_form_id, item.form_id, item.id, item.FormID];
@@ -501,14 +493,6 @@ export default function AnnouncementPage() {
     const base = getApiBaseURL();
     if (!base) return null;
     return `${base}/fund-forms/${encodeURIComponent(id)}/download`;
-  };
-
-  const getFundFormViewURL = (row) => {
-    const id = getFundFormId(row);
-    if (!id) return null;
-    const base = getApiBaseURL();
-    if (!base) return null;
-    return `${base}/fund-forms/${encodeURIComponent(id)}/view`;
   };
 
   const getDownloadFileName = (filePath) => {
@@ -540,11 +524,6 @@ export default function AnnouncementPage() {
 
   const handleViewFile = async (row, entity = 'announcement') => {
     const filePath = row?.file_path ?? row;
-    const fallbackUrl = await resolveFileURL(filePath);
-    const apiViewUrl =
-      entity === 'announcement'
-        ? getAnnouncementViewURL(row)
-        : getFundFormViewURL(row);
 
     const extension = getFileExtension(row?.file_name || filePath);
     const canOpenInline = VIEWABLE_FILE_EXTENSIONS.has(extension);
@@ -554,53 +533,11 @@ export default function AnnouncementPage() {
       return;
     }
 
-    try {
-      const headers = new Headers();
-      const token = typeof apiClient.getToken === 'function' ? apiClient.getToken() : null;
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
-
-      let response = null;
-
-      if (apiViewUrl) {
-        const apiResponse = await fetch(apiViewUrl, {
-          method: 'GET',
-          headers,
-          credentials: 'include',
-        });
-
-        if (apiResponse.ok) {
-          response = apiResponse;
-        } else if (!fallbackUrl || fallbackUrl === apiViewUrl) {
-          throw new Error(
-            `API view failed with status ${apiResponse.status} ${apiResponse.statusText}`
-          );
-        }
-      }
-
-      if (!response && fallbackUrl) {
-        const fallbackResponse = await fetch(fallbackUrl, { method: 'GET' });
-        if (!fallbackResponse.ok) {
-          throw new Error(
-            `Fallback view failed with status ${fallbackResponse.status} ${fallbackResponse.statusText}`
-          );
-        }
-        response = fallbackResponse;
-      }
-
-      if (!response) {
-        return;
-      }
-
-      const blob = await response.blob();
-      const objectURL = URL.createObjectURL(blob);
-      window.open(objectURL, '_blank', 'noopener,noreferrer');
-      setTimeout(() => URL.revokeObjectURL(objectURL), 60000);
-    } catch (error) {
-      console.error('View failed, switching to download:', error);
-      await handleDownloadFile(row, entity);
-    }
+    // Announcements & fund forms are PUBLIC documents — open the shareable public
+    // URL directly (visible/copyable in the address bar) instead of an authed blob
+    // URL that only lives inside this browser session. openSignedFileInNewTab
+    // resolves these to /api/v1/public/... (login-free) via getSignedFileUrl.
+    await openSignedFileInNewTab(filePath);
   };
 
   const handleDownloadFile = async (row, entity = 'announcement') => {
