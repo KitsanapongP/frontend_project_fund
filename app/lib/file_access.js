@@ -42,7 +42,7 @@ export function toUploadRelPath(input) {
 // Mint a signed, absolute URL for viewing an uploaded file. Returns '' on failure.
 // `purpose: 'export'` yields a long-lived link suitable for embedding in a
 // downloaded spreadsheet/document.
-export async function getSignedFileUrl(input, { purpose } = {}) {
+export async function getSignedFileUrl(input, { purpose, forceSigned = false } = {}) {
   // Pass through absolute non-upload URLs unchanged (e.g. external links).
   if (typeof input === 'string' && /^https?:\/\//i.test(input)) {
     const rel = toUploadRelPath(input);
@@ -55,7 +55,7 @@ export async function getSignedFileUrl(input, { purpose } = {}) {
 
   // Public documents (announcements, fund forms, templates, email assets) are served
   // directly without a signature so they can be viewed without logging in.
-  if (PUBLIC_UPLOAD_FOLDERS.some((f) => relPath.toLowerCase().startsWith(f))) {
+  if (!forceSigned && PUBLIC_UPLOAD_FOLDERS.some((f) => relPath.toLowerCase().startsWith(f))) {
     return `${apiClient.getBackendBaseURL()}/uploads/${relPath}`;
   }
 
@@ -77,11 +77,11 @@ export async function getSignedFileUrl(input, { purpose } = {}) {
 // synchronously (so the browser doesn't block the popup after the async sign),
 // then navigates it once the signed URL resolves. Use this to replace
 // `<a href={getFileURL(path)} target="_blank">` links.
-export async function openSignedFileInNewTab(input, { purpose } = {}) {
+export async function openSignedFileInNewTab(input, { purpose, forceSigned = false } = {}) {
   if (!input) return;
   const win = typeof window !== 'undefined' ? window.open('', '_blank') : null;
   if (win) win.opener = null;
-  const signed = await getSignedFileUrl(input, { purpose });
+  const signed = await getSignedFileUrl(input, { purpose, forceSigned });
   if (signed) {
     if (win) {
       win.location.href = signed;
@@ -90,5 +90,43 @@ export async function openSignedFileInNewTab(input, { purpose } = {}) {
     }
   } else if (win) {
     win.close();
+  }
+}
+
+// Open an uploaded file as a blob URL. This is useful for routes that should not
+// expose or depend on a static /uploads URL, including public upload folders when
+// forceSigned is true.
+export async function openSignedFileAsBlobInNewTab(input, { purpose, forceSigned = false } = {}) {
+  if (!input) return;
+  const win = typeof window !== 'undefined' ? window.open('', '_blank') : null;
+  if (win) win.opener = null;
+
+  try {
+    const signed = await getSignedFileUrl(input, { purpose, forceSigned });
+    if (!signed) throw new Error('Unable to resolve signed file URL');
+
+    const token = apiClient.getToken?.();
+    const res = await fetch(signed, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error(`File request failed: ${res.status}`);
+
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    if (win) {
+      win.location.href = blobUrl;
+    } else if (typeof window !== 'undefined') {
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    setTimeout(() => {
+      try {
+        window.URL.revokeObjectURL(blobUrl);
+      } catch {}
+    }, 60000);
+  } catch (error) {
+    console.error('openSignedFileAsBlobInNewTab failed', error);
+    if (win) win.close();
   }
 }
