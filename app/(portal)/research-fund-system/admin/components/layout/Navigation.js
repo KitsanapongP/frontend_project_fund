@@ -51,6 +51,7 @@ export default function Navigation({
     "promotion-fund": DollarSign,
     "applications-list": FileText,
     "scopus-research-search": Search,
+    "scopus-benchmark": BarChart3,
     "fund-settings": Settings,
     projects: Briefcase,
     "approval-records": FileCheck,

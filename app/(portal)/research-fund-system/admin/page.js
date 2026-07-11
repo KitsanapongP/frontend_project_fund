@@ -19,6 +19,7 @@ import LegacySubmissionManager from "./components/submissions/legacy/LegacySubmi
 import AdminAcademicImports from "./components/settings/announcement_config/AdminAcademicImports";
 import AdminScopusResearchSearch from "./components/research/AdminScopusResearchSearch";
 import AdminScopusResearchDashboard from "./components/research/AdminScopusResearchDashboard";
+import AdminScopusBenchmark from "./components/research/AdminScopusBenchmark";
 import ApprovalRecords from "./components/approves/ApprovalRecords";
 import AdminNotificationCenter from "./components/notifications/NotificationCenter";
 import AdminImportExportPage from "./components/import-export/AdminImportExportPage";
@@ -40,6 +41,7 @@ const PAGE_PERMISSIONS_BY_ID = {
   "promotion-fund": ["ui.page.admin.promotion_fund.view"],
   "applications-list": ["ui.page.admin.applications.view"],
   "scopus-research-search": ["ui.page.admin.scopus.view", "scopus.publications.read"],
+  "scopus-benchmark": ["ui.page.admin.scopus.view", "scopus.publications.read"],
   "fund-settings": ["ui.page.admin.fund_settings.view"],
   projects: ["ui.page.admin.projects.view"],
   "approval-records": ["ui.page.admin.approval_records.view"],
@@ -90,6 +92,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
           'promotion-fund',
           'applications-list',
           'scopus-research-search',
+          'scopus-benchmark',
           'legacy-submissions',
           'fund-settings',
           'projects',
@@ -252,6 +255,8 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
         return <SubmissionsManagement currentPage={handleNavigate} />;
       case 'scopus-research-search':
         return <AdminScopusResearchSearch onNavigate={handleNavigate} />;
+      case 'scopus-benchmark':
+        return <AdminScopusBenchmark />;
       case 'legacy-submissions':
         return <LegacySubmissionManager />;
       case 'fund-settings':
@@ -281,6 +286,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
         'promotion-fund': 'ทุนอุดหนุนกิจกรรม',
         'applications-list': 'รายการการขอทุน',
         'scopus-research-search': 'ค้นหางานวิจัย',
+        'scopus-benchmark': 'เทียบผลงาน Scopus (CS)',
         'legacy-submissions': 'จัดการคำร้อง (ข้อมูลเก่า)',
         'fund-settings': 'ตั้งค่าทุน',
         'projects': 'จัดการโครงการ',

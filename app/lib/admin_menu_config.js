@@ -36,6 +36,12 @@ export const ADMIN_BASE_MENU_ITEMS = [
     requiredPermissions: ["ui.page.admin.scopus.view", "scopus.publications.read"],
   },
   {
+    id: "scopus-benchmark",
+    label: "เทียบผลงาน Scopus (CS)",
+    route: "/research-fund-system/admin/scopus-benchmark",
+    requiredPermissions: ["ui.page.admin.scopus.view", "scopus.publications.read"],
+  },
+  {
     id: "fund-settings",
     label: "ตั้งค่าทุน",
     route: "/research-fund-system/admin/fund-settings",

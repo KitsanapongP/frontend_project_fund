@@ -1204,6 +1204,34 @@ export const scopusConfigAPI = {
   },
 };
 
+export const scopusBenchmarkAPI = {
+  async resolveAffiliation(name) {
+    return apiClient.post('/admin/scopus/benchmark/affiliation/lookup', { name });
+  },
+  async listScopes() {
+    return apiClient.get('/admin/scopus/benchmark/scopes');
+  },
+  async updateScope(id, payload = {}) {
+    return apiClient.put(`/admin/scopus/benchmark/scopes/${encodeURIComponent(id)}`, payload);
+  },
+  async refreshCounts(yearsBack) {
+    const qs = yearsBack ? `?years_back=${encodeURIComponent(yearsBack)}` : '';
+    const res = await apiClient.post(`/admin/scopus/benchmark/counts/refresh${qs}`);
+    return res.data || res;
+  },
+  async harvest(payload = {}) {
+    const res = await apiClient.post('/admin/scopus/benchmark/harvest', payload);
+    return res.summary || res;
+  },
+  async listRuns(params = {}) {
+    return apiClient.get('/admin/scopus/benchmark/runs', params);
+  },
+  async comparison(yearsBack) {
+    const params = yearsBack ? { years_back: yearsBack } : {};
+    return apiClient.get('/admin/scopus/benchmark/comparison', params);
+  },
+};
+
 export const scopusImportAPI = {
   async listJobs(params = {}) {
     return apiClient.get('/admin/scopus/import/jobs', params);
