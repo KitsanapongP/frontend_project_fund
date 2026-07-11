@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { openSignedFileAsBlobInNewTab } from "@/app/lib/file_access";
+import { openSignedFileInNewTab } from "@/app/lib/file_access";
 import { toast } from "react-hot-toast";
 import { PDFDocument } from "pdf-lib";
 import { 
@@ -1251,7 +1251,7 @@ export default function PublicationRewardDetail({
                     {mainAnnouncement.filePath ? (
                       <a
                         href="#"
-                        onClick={(e) => { e.preventDefault(); openSignedFileAsBlobInNewTab(mainAnnouncement.filePath, { forceSigned: true }); }}
+                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(mainAnnouncement.filePath); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={mainAnnouncement.label}
                       >
@@ -1268,7 +1268,7 @@ export default function PublicationRewardDetail({
                     {rewardAnnouncement.filePath ? (
                       <a
                         href="#"
-                        onClick={(e) => { e.preventDefault(); openSignedFileAsBlobInNewTab(rewardAnnouncement.filePath, { forceSigned: true }); }}
+                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(rewardAnnouncement.filePath); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={rewardAnnouncement.label}
                       >

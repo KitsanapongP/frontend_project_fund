@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { getSignedFileUrl, openSignedFileAsBlobInNewTab } from '@/app/lib/file_access';
+import { getSignedFileUrl, openSignedFileInNewTab } from '@/app/lib/file_access';
 import {
   ArrowLeft, FileText,
     User,
@@ -1397,7 +1397,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
               {mainAnn?.file_path ? (
                 <a
                   href="#"
-                  onClick={(e) => { e.preventDefault(); openSignedFileAsBlobInNewTab(mainAnn.file_path, { forceSigned: true }); }}
+                  onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(mainAnn.file_path); }}
                   className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                   title={mainAnn?.title || mainAnn?.file_name || `#${detail?.main_annoucement}`}
                 >
@@ -1416,7 +1416,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
               {activityAnn?.file_path ? (
                 <a
                   href="#"
-                  onClick={(e) => { e.preventDefault(); openSignedFileAsBlobInNewTab(activityAnn.file_path, { forceSigned: true }); }}
+                  onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(activityAnn.file_path); }}
                   className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                   title={activityAnn?.title || activityAnn?.file_name || `#${detail?.activity_support_announcement}`}
                 >

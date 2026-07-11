@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { openSignedFileAsBlobInNewTab } from "@/app/lib/file_access";
+import { openSignedFileInNewTab } from "@/app/lib/file_access";
 import {
   ArrowLeft,
   FileText,
@@ -1203,7 +1203,7 @@ export default function FundApplicationDetail({
                     {mainAnnouncement.filePath ? (
                       <a
                         href="#"
-                        onClick={(e) => { e.preventDefault(); openSignedFileAsBlobInNewTab(mainAnnouncement.filePath, { forceSigned: true }); }}
+                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(mainAnnouncement.filePath); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={mainAnnouncement.label}
                       >
@@ -1222,7 +1222,7 @@ export default function FundApplicationDetail({
                     {activityAnnouncement.filePath ? (
                       <a
                         href="#"
-                        onClick={(e) => { e.preventDefault(); openSignedFileAsBlobInNewTab(activityAnnouncement.filePath, { forceSigned: true }); }}
+                        onClick={(e) => { e.preventDefault(); openSignedFileInNewTab(activityAnnouncement.filePath); }}
                         className="text-blue-600 hover:underline break-all cursor-pointer pointer-events-auto relative z-10"
                         title={activityAnnouncement.label}
                       >
