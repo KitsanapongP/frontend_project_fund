@@ -1190,7 +1190,18 @@ export const scopusConfigAPI = {
   },
   async listMetricRuns(params = {}) {
     return apiClient.get('/admin/scopus/metrics/runs', params);
-  },  
+  },
+  async backfillConference() {
+    const res = await apiClient.post('/admin/scopus/conference/backfill');
+    return res.summary || res;
+  },
+  async refreshConference() {
+    const res = await apiClient.post('/admin/scopus/conference/refresh');
+    return res.summary || res;
+  },
+  async listConferenceRuns(params = {}) {
+    return apiClient.get('/admin/scopus/conference/runs', params);
+  },
 };
 
 export const scopusImportAPI = {

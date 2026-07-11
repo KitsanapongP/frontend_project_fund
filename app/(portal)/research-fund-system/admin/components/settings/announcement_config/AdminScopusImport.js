@@ -51,6 +51,12 @@ const metricsRefreshSummaryItems = [
   { key: "errors", label: "ผิดพลาด" },
 ];
 
+const conferenceSummaryItems = [
+  { key: "documents_scanned", label: "เอกสารที่ตรวจสอบ" },
+  { key: "documents_fetched", label: "ดึงข้อมูลสำเร็จ" },
+  { key: "documents_failed", label: "ผิดพลาด" },
+];
+
 function looksLikeScopusId(value) {
   const normalized = (value || "").trim();
   return /^[0-9]{5,}$/.test(normalized);
@@ -187,6 +193,24 @@ export default function AdminScopusImport() {
   const [batchUserIds, setBatchUserIds] = useState("");
   const [batchLimit, setBatchLimit] = useState("");
 
+  const [conferenceBackfillRunning, setConferenceBackfillRunning] = useState(false);
+  const [conferenceRefreshRunning, setConferenceRefreshRunning] = useState(false);
+  const [lastConferenceSummary, setLastConferenceSummary] = useState(null);
+  const [conferenceHistory, setConferenceHistory] = useState({
+    runs: [],
+    loading: false,
+    error: "",
+    pagination: {
+      current_page: 1,
+      per_page: 10,
+      total_pages: 0,
+      total_count: 0,
+      has_next: false,
+      has_prev: false,
+    },
+    page: 1,
+  });
+
   const [apiKeyValue, setApiKeyValue] = useState("");
   const [apiKeyLoading, setApiKeyLoading] = useState(false);
   const [apiKeyError, setApiKeyError] = useState("");
@@ -250,6 +274,27 @@ export default function AdminScopusImport() {
   const disableBatchButton = batchRunning || manualBusy || hasBatchRunRunning;
   const disableBackfillButton = metricsBackfillRunning || hasMetricsRunRunning;
   const disableRefreshButton = metricsRefreshRunning || hasMetricsRunRunning;
+
+  const hasConferenceRunRunning = useMemo(
+    () => conferenceHistory.runs.some((run) => isRunningStatus(run?.status)),
+    [conferenceHistory.runs]
+  );
+  const disableConferenceButtons =
+    conferenceBackfillRunning || conferenceRefreshRunning || hasConferenceRunRunning;
+  const conferenceLatest = useMemo(
+    () => lastConferenceSummary || conferenceHistory.runs[0] || null,
+    [lastConferenceSummary, conferenceHistory.runs]
+  );
+  const conferencePagination = conferenceHistory.pagination;
+  const conferenceComputedPages =
+    conferencePagination.total_pages ||
+    (conferencePagination.total_count && conferencePagination.per_page
+      ? Math.ceil(conferencePagination.total_count / conferencePagination.per_page)
+      : 1);
+  const conferenceTotalPages = conferenceComputedPages > 0 ? conferenceComputedPages : 1;
+  const conferenceHasPrev = conferencePagination.has_prev ?? conferenceHistory.page > 1;
+  const conferenceHasNext =
+    conferencePagination.has_next ?? conferenceHistory.page < conferenceTotalPages;
 
   const refreshLatest = useMemo(
     () => lastMetricsRefreshSummary || metricHistory.refresh.runs[0] || null,
@@ -315,6 +360,7 @@ export default function AdminScopusImport() {
     fetchBatchRuns(1);
     fetchMetricRuns("refresh", 1);
     fetchMetricRuns("backfill", 1);
+    fetchConferenceRuns(1);
   }, []);
 
   useEffect(() => {
@@ -437,6 +483,77 @@ export default function AdminScopusImport() {
       } else if (runType === "backfill") {
         setLastMetricsBackfillSummary(null);
       }
+    }
+  }
+
+  async function fetchConferenceRuns(page = 1) {
+    setConferenceHistory((prev) => ({ ...prev, loading: true, error: "" }));
+    try {
+      const res = await scopusConfigAPI.listConferenceRuns({ page });
+      const items = Array.isArray(res?.data) ? res.data : [];
+      setConferenceHistory((prev) => ({
+        ...prev,
+        runs: items,
+        loading: false,
+        page,
+        pagination: {
+          current_page: res?.pagination?.current_page ?? page,
+          per_page: res?.pagination?.per_page ?? 10,
+          total_pages: res?.pagination?.total_pages ?? res?.pagination?.totalPages ?? 0,
+          total_count: res?.pagination?.total_count ?? res?.pagination?.totalCount ?? items.length,
+          has_next: res?.pagination?.has_next ?? false,
+          has_prev: res?.pagination?.has_prev ?? false,
+        },
+      }));
+      setLastConferenceSummary(items[0] || null);
+    } catch (error) {
+      setConferenceHistory((prev) => ({
+        ...prev,
+        runs: [],
+        loading: false,
+        page,
+        error: error?.message || "ไม่สามารถโหลดประวัติการดึงข้อมูล conference ได้",
+      }));
+      setLastConferenceSummary(null);
+    }
+  }
+
+  function goToConferenceRunsPage(page) {
+    if (page < 1) return;
+    fetchConferenceRuns(page);
+  }
+
+  async function backfillConferenceInfo() {
+    setConferenceBackfillRunning(true);
+    setMsg("");
+    try {
+      const summary = await scopusConfigAPI.backfillConference();
+      setLastConferenceSummary(summary);
+      setMsg("เริ่มดึงข้อมูล conference (เฉพาะที่ยังไม่มี) แล้ว ติดตามสถานะได้จากประวัติการรัน");
+      setMsgTone("success");
+      fetchConferenceRuns(1);
+    } catch (error) {
+      setMsg(error?.message || "ดึงข้อมูล conference ไม่สำเร็จ");
+      setMsgTone("error");
+    } finally {
+      setConferenceBackfillRunning(false);
+    }
+  }
+
+  async function refreshConferenceInfo() {
+    setConferenceRefreshRunning(true);
+    setMsg("");
+    try {
+      const summary = await scopusConfigAPI.refreshConference();
+      setLastConferenceSummary(summary);
+      setMsg("เริ่มดึงข้อมูล conference ใหม่ทั้งหมดแล้ว ติดตามสถานะได้จากประวัติการรัน");
+      setMsgTone("success");
+      fetchConferenceRuns(1);
+    } catch (error) {
+      setMsg(error?.message || "ดึงข้อมูล conference ไม่สำเร็จ");
+      setMsgTone("error");
+    } finally {
+      setConferenceRefreshRunning(false);
     }
   }
 
@@ -1501,6 +1618,133 @@ export default function AdminScopusImport() {
                   )
                 ) : (
                   <p className="mt-3 text-sm text-slate-500">เลือกงานก่อนเพื่อดูรายละเอียดคำขอ</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Conference Info (Abstract API)</div>
+            <div className="text-xl font-semibold text-slate-900">ข้อมูลงานประชุม (Conference)</div>
+            <p className="text-sm text-slate-600">
+              รายละเอียดงานประชุม (ชื่องาน / สถานที่ / เมือง / ประเทศ) มาจาก Scopus Abstract Retrieval API
+              คนละตัวกับการนำเข้าผลงานปกติ และดึงทีละ 1 คำขอต่อเอกสาร ระบบจะดึงอัตโนมัติตอนนำเข้าเอกสารงานประชุมใหม่
+              ปุ่มด้านล่างใช้เติมย้อนหลังหรือดึงใหม่ทั้งหมด
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+              <div className="text-sm font-semibold text-slate-900">เติมข้อมูลที่ยังไม่มี (Backfill)</div>
+              <p className="text-sm text-slate-600">
+                สแกนเอกสารประเภท Conference Proceeding ที่ยังไม่เคยดึงข้อมูลงานประชุม แล้วเรียก Abstract API เฉพาะรายการที่ขาด
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={backfillConferenceInfo}
+                  disabled={disableConferenceButtons}
+                  className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {conferenceBackfillRunning ? "กำลังดึง..." : "เติมข้อมูล conference ที่ขาด"}
+                </button>
+                <button
+                  type="button"
+                  onClick={refreshConferenceInfo}
+                  disabled={disableConferenceButtons}
+                  className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {conferenceRefreshRunning ? "กำลังดึง..." : "ดึงใหม่ทั้งหมด (Refresh)"}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                ป้องกันการคลิกซ้ำขณะกำลังทำงาน · Refresh จะเรียก API ทุกเอกสารงานประชุม (ใช้ quota มากกว่า)
+              </p>
+            </div>
+
+            <div className="space-y-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4">
+              <div className="text-sm font-semibold text-slate-900">สถานะการดึงล่าสุด</div>
+              {conferenceLatest ? (
+                <>
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600">
+                    <StatusBadge status={conferenceLatest.status} />
+                    <span>
+                      {conferenceLatest.run_type ? `ประเภท: ${conferenceLatest.run_type} · ` : ""}
+                      อัปเดตล่าสุด: {formatDateTime(conferenceLatest.finished_at || conferenceLatest.started_at)}
+                    </span>
+                  </div>
+                  <SummaryGrid summary={conferenceLatest} items={conferenceSummaryItems} />
+                </>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500">ยังไม่มีข้อมูลการรัน</p>
+              )}
+
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                  <span>ประวัติการดึงข้อมูล conference</span>
+                  {conferenceHistory.loading && <span className="text-slate-500">กำลังโหลด...</span>}
+                </div>
+                {conferenceHistory.error ? (
+                  <p className="text-sm text-rose-600">{conferenceHistory.error}</p>
+                ) : conferenceHistory.runs.length === 0 && !conferenceHistory.loading ? (
+                  <p className="text-sm text-slate-500">ยังไม่มีประวัติการดึงข้อมูล</p>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead>
+                          <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+                            <th className="px-3 py-2">เริ่ม</th>
+                            <th className="px-3 py-2">เสร็จสิ้น</th>
+                            <th className="px-3 py-2">ประเภท</th>
+                            <th className="px-3 py-2">สถานะ</th>
+                            <th className="px-3 py-2">สแกน/ดึง/ผิดพลาด</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {conferenceHistory.runs.map((run) => (
+                            <tr key={run.id} className="hover:bg-slate-50">
+                              <td className="px-3 py-2 text-xs text-slate-700">{formatDateTime(run.started_at)}</td>
+                              <td className="px-3 py-2 text-xs text-slate-700">{formatDateTime(run.finished_at)}</td>
+                              <td className="px-3 py-2 text-xs text-slate-700">{run.run_type || "-"}</td>
+                              <td className="px-3 py-2 text-xs">
+                                <StatusBadge status={run.status} />
+                              </td>
+                              <td className="px-3 py-2 text-xs text-slate-700">
+                                <div>สแกน: {run.documents_scanned ?? 0}</div>
+                                <div>ดึง: {run.documents_fetched ?? 0} / ผิดพลาด: {run.documents_failed ?? 0}</div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-600">
+                      <div>
+                        หน้า {conferenceHistory.page} / {conferenceTotalPages}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => goToConferenceRunsPage(conferenceHistory.page - 1)}
+                          disabled={!conferenceHasPrev || conferenceHistory.loading}
+                          className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          ก่อนหน้า
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => goToConferenceRunsPage(conferenceHistory.page + 1)}
+                          disabled={!conferenceHasNext || conferenceHistory.loading}
+                          className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          ถัดไป
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
