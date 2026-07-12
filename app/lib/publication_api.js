@@ -299,11 +299,11 @@ export const fileAPI = {
 
   async downloadFile(fileId) {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/files/managed/${fileId}/download`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const token = apiClient.getToken();
+      // Must include the API base (/api/v1); a bare "/files/managed/..." resolves to
+      // the frontend origin, which the production reverse proxy does not route -> 404.
+      const response = await fetch(`${apiClient.baseURL}/files/managed/${fileId}/download`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
       if (!response.ok) {
