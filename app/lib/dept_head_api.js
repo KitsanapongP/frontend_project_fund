@@ -232,11 +232,11 @@ export const deptHeadAPI = {
     const query = params && typeof params === 'object' ? { ...params } : {};
     let lastError = null;
 
+    // Note: there is no /dept-head/submissions/:id/documents route on the backend —
+    // probing it only produced a guaranteed 404 in the console. The general
+    // /submissions/:id/documents endpoint already skips the ownership filter for
+    // admin (role 3) and dept_head (role 4), so it returns the documents directly.
     const attempts = [
-      {
-        path: `/dept-head/submissions/${submissionId}/documents`,
-        label: 'dept-head',
-      },
       {
         path: `/submissions/${submissionId}/documents`,
         label: 'general',
