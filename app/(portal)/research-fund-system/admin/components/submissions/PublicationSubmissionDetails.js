@@ -1768,7 +1768,12 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
             typeof d.original_name === 'string' ? d.original_name.trim() : '';
           const originalName = trimmedOriginal || null;
           const docTypeId = d.document_type_id ?? d.DocumentTypeID ?? d.doc_type_id ?? null;
-          const docTypeName = d.document_type_name || typeMap[docTypeId] || 'ไม่ระบุหมวด';
+          const docTypeName =
+            d.document_type_name ||
+            d.document_type?.document_type_name ||
+            d.document_type?.name ||
+            typeMap[docTypeId] ||
+            'ไม่ระบุหมวด';
 
           return {
             ...d,
