@@ -6,6 +6,16 @@ import { useEffect } from "react";
 // เมื่อจับ error ประเภทนี้ได้ ให้ reload หน้า 1 ครั้งเพื่อดึง HTML สดที่ชี้ chunk ถูกต้อง
 export default function ChunkErrorReloader() {
   useEffect(() => {
+    // หลังกู้สำเร็จ (โหลดหน้าใหม่ผ่าน ?cb= มาแล้ว) ลบ cb ทิ้งจาก URL ให้สะอาด
+    // ใช้ replaceState = แก้แถบ URL เฉย ๆ ไม่ reload ไม่ยิง request ใหม่
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("cb")) {
+        url.searchParams.delete("cb");
+        window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+      }
+    }
+
     const KEY = "__chunkReloadAt";
     const reloadOnce = () => {
       const last = +sessionStorage.getItem(KEY) || 0;
