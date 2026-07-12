@@ -64,7 +64,7 @@ export function usePublicationSearch() {
       params.set("sort", sortField);
       params.set("order", sortDirection);
 
-      const res = await fetch(`/api/publications/search?${params}`);
+      const res = await fetch(`/api/v1/publications/search?${params}`);
       const json = await res.json();
 
       if (json.success) {
