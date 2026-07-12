@@ -4967,8 +4967,22 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
       return Number.isNaN(numericId) ? '' : getDocumentTypeName(numericId);
     };
 
+    // Documents the backend AUTO-GENERATES on submit: the request form (.docx/.pdf)
+    // and the combined "merged" PDF. They are OUTPUTS of a previous submit, so they
+    // must never be fed back into a new merge/preview — otherwise the fresh output
+    // re-includes stale/duplicated pages, and the .docx breaks the PDF merge entirely.
+    // Matched by the backend's fixed filename / type-name conventions (env-independent).
+    const isSystemGeneratedDocument = (doc) => {
+      const fileName = String(doc?.original_name || '').trim();
+      if (/(_publication_reward_form\.(?:docx|pdf)|_merged_document(?:_\d+)?\.pdf)$/i.test(fileName)) {
+        return true;
+      }
+      const typeName = String(doc?.document_type_name || '').toLowerCase();
+      return typeName.includes('auto generated') || typeName.includes('merged pdf');
+    };
+
     const pushServerDocument = (doc) => {
-      if (!doc || doc.pendingRemoval) {
+      if (!doc || doc.pendingRemoval || isSystemGeneratedDocument(doc)) {
         return;
       }
 
