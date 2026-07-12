@@ -7122,7 +7122,7 @@ const showSubmissionConfirmation = async () => {
                 )}
                 {selectionLocked && (
                   <p className="text-xs text-blue-700 sm:text-sm">
-                    ไม่สามารถเปลี่ยนทุนสำหรับคำร้องได้ กรุณาสร้างคำร้องใหม่หากจำเป็น
+                    หากต้องการเปลี่ยนประเภทของทุนหรือเปลี่ยน Quartile กรุณาสร้างคำร้องใหม่
                   </p>
                 )}
               </div>
@@ -7134,13 +7134,13 @@ const showSubmissionConfirmation = async () => {
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-orange-500" aria-hidden="true" />
               <div className="space-y-3">
-                <p className="font-semibold text-orange-800">คำแนะนำจากผู้ตรวจสอบ</p>
+                <p className="font-semibold text-orange-800">หมายเหตุจากผู้ตรวจสอบ</p>
                 <div>
                   <p className="text-xs uppercase tracking-wide text-orange-600">เจ้าหน้าที่</p>
                   <p className="whitespace-pre-wrap text-sm">{adminCommentDisplay}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-orange-600">หัวหน้าภาค/ผู้บังคับบัญชา</p>
+                  <p className="text-xs uppercase tracking-wide text-orange-600">หัวหน้าสาขา</p>
                   <p className="whitespace-pre-wrap text-sm">{headCommentDisplay}</p>
                 </div>
               </div>

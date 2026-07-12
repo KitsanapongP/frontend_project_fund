@@ -3395,7 +3395,7 @@ export default function GenericFundApplicationForm({
                 )}
                 {selectionLocked && (
                   <p className="text-xs text-blue-700 sm:text-sm">
-                    ไม่สามารถเปลี่ยนทุนสำหรับคำร้องนี้ได้ กรุณาสร้างคำร้องใหม่หากต้องการเลือกทุนอื่น
+                    หากต้องการเปลี่ยนประเภทของทุนหรือเปลี่ยน Quartile กรุณาสร้างคำร้องใหม่
                   </p>
                 )}
               </div>

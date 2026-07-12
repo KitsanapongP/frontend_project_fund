@@ -696,7 +696,7 @@ const DECISION_OPTIONS = [
     value: 'reject',
     label: 'ไม่เห็นควรพิจารณา',
     hint: 'เปลี่ยนสถานะเป็นไม่อนุมัติ',
-    description: 'ปฏิเสธคำร้องและแจ้งเหตุผลให้ผู้ยื่นทราบ',
+    description: 'ใช้กรณีต้องการให้ผู้ยื่นสร้างคำร้องใหม่ พร้อมระบุเหตุผลในหมายเหตุ',
     icon: XCircle,
     iconClass: 'text-red-600',
     iconBg: 'bg-red-50',
@@ -706,7 +706,7 @@ const DECISION_OPTIONS = [
     value: 'revision',
     label: 'ต้องการข้อมูลเพิ่มเติม',
     hint: 'แจ้งผู้ยื่นให้ส่งข้อมูลเพิ่ม',
-    description: 'ส่งคำขอข้อมูลเพิ่มเติมโดยใช้หมายเหตุของหัวหน้าสาขา',
+    description: 'แก้ไขข้อมูลวารสารและเพิ่มเอกสารได้ แต่เปลี่ยนประเภททุนหรือ Quartile ไม่ได้',
     icon: MessageCircle,
     iconClass: 'text-amber-600',
     iconBg: 'bg-amber-50',
@@ -1291,6 +1291,9 @@ function DeptDecisionPanel({
                 บันทึกผล
               </button>
             </div>
+          </div>
+          <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-700">
+            หากต้องการให้ผู้ยื่นสร้างคำร้องขอทุนใหม่ ให้เลือก “ไม่เห็นควรพิจารณา” และระบุเหตุผลในหมายเหตุ
           </div>
         </div>
       </div>
