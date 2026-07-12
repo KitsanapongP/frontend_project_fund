@@ -5964,7 +5964,10 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
           }
         }
 
-        setCurrentSubmissionStatus('draft');
+        // Saving a "needs more info" submission persists the edits (incl. file
+        // add/replace/remove) but must NOT flip it back to draft — the backend keeps
+        // its status, so preserve it locally too.
+        setCurrentSubmissionStatus((prev) => (prev === 'needs_more_info' ? prev : 'draft'));
       }
 
       if (!submissionId) {
@@ -8959,7 +8962,7 @@ const showSubmissionConfirmation = async () => {
             </button>
           )}
 
-          {showDraftActions && (
+          {(showDraftActions || editingNeedsMoreInfoSubmission) && (
             <button
               type="button"
               onClick={saveDraft}
@@ -8971,7 +8974,11 @@ const showSubmissionConfirmation = async () => {
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              {saving ? 'กำลังบันทึก...' : 'บันทึกร่าง'}
+              {saving
+                ? 'กำลังบันทึก...'
+                : editingNeedsMoreInfoSubmission
+                  ? 'บันทึกการแก้ไข'
+                  : 'บันทึกร่าง'}
             </button>
           )}
 

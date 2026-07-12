@@ -3844,7 +3844,7 @@ export default function GenericFundApplicationForm({
                     ลบร่าง
                   </button>
                 )}
-                {!isNeedsMoreInfo && (
+                {canEdit && (
                   <button
                     type="button"
                     onClick={saveDraft}
@@ -3856,7 +3856,11 @@ export default function GenericFundApplicationForm({
                     ) : (
                       <Save className="h-4 w-4" />
                     )}
-                    {saving ? 'กำลังบันทึก...' : 'บันทึกร่าง'}
+                    {saving
+                      ? 'กำลังบันทึก...'
+                      : isNeedsMoreInfo
+                        ? 'บันทึกการแก้ไข'
+                        : 'บันทึกร่าง'}
                   </button>
                 )}
                 <button
