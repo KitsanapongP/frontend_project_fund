@@ -12,7 +12,12 @@ export default function ChunkErrorReloader() {
       // reload ได้ครั้งเดียวใน 10 วินาที กัน loop ถ้า HTML ที่โหลดมายังเก่าอยู่
       if (Date.now() - last < 10000) return;
       sessionStorage.setItem(KEY, String(Date.now()));
-      window.location.reload();
+      // เติม/แทนที่ ?cb=<timestamp> เพื่อ "cache bust" -> reverse proxy เห็นเป็น URL ใหม่
+      // เลยหา HTML เก่าที่แคชไว้มาเสิร์ฟไม่ได้ ต้องไปดึงของสดจาก origin (ที่ชี้ chunk ถูก)
+      // query param เดิม (เช่น ?page=researchFund) ยังอยู่ครบ แค่เพิ่ม/ทับ cb ตัวเดียว
+      const url = new URL(window.location.href);
+      url.searchParams.set("cb", String(Date.now()));
+      window.location.replace(url.toString());
     };
     const onErr = (e) => {
       const msg = (e && (e.message || (e.reason && e.reason.message))) || "";
