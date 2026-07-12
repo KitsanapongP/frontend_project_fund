@@ -1170,7 +1170,34 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
     throw new Error('File not accessible');
   };
 
+  const VIEWABLE_FILE_EXTENSIONS = new Set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'txt']);
+  const getFileExtensionFromName = (name) => {
+    if (!name || typeof name !== 'string') return '';
+    const base = name.split(/[?#]/)[0].split(/[/\\]/).pop() || '';
+    const parts = base.split('.');
+    return parts.length < 2 ? '' : parts.pop().toLowerCase();
+  };
+
   const handleView = async (docOrFileId) => {
+    const doc =
+      docOrFileId && typeof docOrFileId === 'object'
+        ? docOrFileId
+        : { file_id: docOrFileId };
+
+    // .doc/.docx/.xlsx and other non-inline types download as a name-less zip when
+    // opened as a blob — download them with the real filename instead.
+    const nameForExt = doc.original_name || doc.file_name || resolveFilePath(doc) || '';
+    const ext = getFileExtensionFromName(nameForExt);
+    if (ext && !VIEWABLE_FILE_EXTENSIONS.has(ext)) {
+      const dlName =
+        doc.original_name ||
+        doc.file_name ||
+        (nameForExt ? nameForExt.split(/[/\\]/).pop() : '') ||
+        'document';
+      await handleDownload(docOrFileId, dlName);
+      return;
+    }
+
     try {
       const blob = await fetchDocumentBlob(docOrFileId);
       const fileURL = window.URL.createObjectURL(blob);

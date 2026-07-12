@@ -2046,11 +2046,29 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
   };
 
   // File actions
+  const VIEWABLE_FILE_EXTENSIONS = new Set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'txt']);
+  const getFileExtensionFromName = (name) => {
+    if (!name || typeof name !== 'string') return '';
+    const base = name.split(/[?#]/)[0].split(/[/\\]/).pop() || '';
+    const parts = base.split('.');
+    return parts.length < 2 ? '' : parts.pop().toLowerCase();
+  };
+
   const handleView = async (doc) => {
     if (!doc) {
       toast.error('ไม่พบไฟล์');
       return;
     }
+
+    // .doc/.docx/.xlsx and other non-inline types can't render in a browser tab;
+    // opening them as a blob downloads a name-less file that opens as a raw zip.
+    // Download them with the real filename instead (same as the download button).
+    const ext = getFileExtensionFromName(resolveFileName(doc, '') || resolveFilePath(doc) || '');
+    if (ext && !VIEWABLE_FILE_EXTENSIONS.has(ext)) {
+      await handleDownload(doc);
+      return;
+    }
+
     try {
       const blob = await fetchAttachmentBlob(doc);
       openBlobInNewTab(blob);
