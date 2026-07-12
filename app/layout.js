@@ -1,5 +1,6 @@
 // app/layout.js - Root Layout with AuthProvider
 import { AuthProvider } from './contexts/AuthContext';
+import ChunkErrorReloader from './components/ChunkErrorReloader';
 import './globals.css';
 
 export const metadata = {
@@ -19,6 +20,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className="font-sans">
+        <ChunkErrorReloader />
         <AuthProvider>
           <div id="root">
             {children}
