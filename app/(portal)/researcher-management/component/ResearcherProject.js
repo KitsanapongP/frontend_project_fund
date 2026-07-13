@@ -1,6 +1,6 @@
 "use client";
 import { Plus, X } from "lucide-react";
-import api from "../../../lib/api";
+import { apiClient } from "../../../lib/api";
 import Swal from "sweetalert2"; 
 
 export default function ResearcherProject({ formData, handleInputChange }) {
@@ -47,7 +47,7 @@ export default function ResearcherProject({ formData, handleInputChange }) {
     if (!result.isConfirmed) return;
 
       try {
-        await api.delete(`/researcher-management/instructor-research-projects/${target.id}`);
+        await apiClient.delete(`/researcher-management/instructor-research-projects/${target.id}`);
         Swal.fire({
           title: "ลบสำเร็จ!",
           text: "ลบข้อมูลโครงการวิจัยออกจากฐานข้อมูลเรียบร้อยแล้ว",

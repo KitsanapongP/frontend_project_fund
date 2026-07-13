@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ArrowLeft, Save, Plus, X, Loader2, Edit3, Database } from "lucide-react";
 import Header from "../component/layout/Header";
-import api from "../../../lib/api"; 
+import { apiClient } from "../../../lib/api"; 
 import Swal from "sweetalert2";
 
 export default function RankingSourcesPage() {
@@ -17,7 +17,7 @@ export default function RankingSourcesPage() {
   const fetchSources = async () => {
     setLoading(true);
     try {
-      const sourcesRes = await api.get("/researcher-management/ranking-sources");
+      const sourcesRes = await apiClient.get("/researcher-management/ranking-sources");
       setSources(sourcesRes || []);
     } catch (err) {
       console.error("Error fetching sources:", err);
@@ -86,7 +86,7 @@ export default function RankingSourcesPage() {
       if (!result.isConfirmed) return;
 
       try {
-        await api.delete(`/researcher-management/ranking-sources/${targetSource.source_id}`);
+        await apiClient.delete(`/researcher-management/ranking-sources/${targetSource.source_id}`);
         
         await Swal.fire({
           icon: "success",
@@ -134,7 +134,7 @@ export default function RankingSourcesPage() {
         is_active: Boolean(src.is_active)
       }));
 
-      await api.put("/researcher-management/ranking-sources", { sources: payload });
+      await apiClient.put("/researcher-management/ranking-sources", { sources: payload });
       
       await Swal.fire({
         icon: "success",

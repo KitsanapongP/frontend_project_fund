@@ -13,7 +13,7 @@ import ResearcherProfile from "./ResearcherProfile";
 import ResearcherEducation from "./ResearcherEducation";
 import ResearcherTextbook from "./ResearcherTextbook";
 import { exportToDocx } from "../utils/exportCHEDocx";
-import api from "../../../lib/api";
+import { apiClient } from "../../../lib/api";
 import Swal from "sweetalert2"; 
 
 export default function Instructor({ currentPage, setCurrentPage, targetUserId }) {
@@ -72,7 +72,7 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
   const fetchData = useCallback(async () => {
     if (!targetUserId) { setLoading(false); return; }
     try {
-      const res = await api.get(`/researcher-management/instructors/${targetUserId}`);
+      const res = await apiClient.get(`/researcher-management/instructors/${targetUserId}`);
       const profileData = res;
       setData(profileData);
 
@@ -284,7 +284,7 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
           })),
       };
 
-      await api.put(`/researcher-management/instructors/${targetUserId}`, payload);
+      await apiClient.put(`/researcher-management/instructors/${targetUserId}`, payload);
 
       //แจ้งเตือนบันทึกข้อมูลสำเร็จ
       Swal.fire({
@@ -367,7 +367,7 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
                     try {
                       let researchData = [];
                       if (targetUserId) {
-                        const res = await api.get(`/researcher-management/instructors/${targetUserId}/documents`);
+                        const res = await apiClient.get(`/researcher-management/instructors/${targetUserId}/documents`);
                         researchData = res || [];
                       }
                       exportToDocx({

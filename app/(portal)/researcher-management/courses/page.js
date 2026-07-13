@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Header from "../component/layout/Header";
 import Swal from "sweetalert2";
+import { apiClient } from "../../../lib/api";
 
 const DEGREE_LEVELS = [
   { id: 1, label: "ปริญญาตรี",  short: "ตรี" },
@@ -36,22 +37,6 @@ const EMPTY_ROW = {
   degree_full_en:  "",
   degree_short_en: "",
 };
-
-const BASE = "/api/v1";
-
-function authHeaders() {
-  const token = localStorage.getItem("access_token") || localStorage.getItem("token") || "";
-  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-}
-
-async function apiFetch(path, options = {}) {
-  const res = await fetch(`${BASE}${path}`, { headers: authHeaders(), ...options });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || body.message || `HTTP ${res.status}`);
-  }
-  return res.status === 204 ? null : res.json();
-}
 
 function Cell({ value, onChange, placeholder, className = "" }) {
   return (
@@ -156,7 +141,7 @@ export default function CoursesPage() {
   const fetchCourses = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiFetch("/researcher-management/courses");
+      const data = await apiClient.get("/researcher-management/courses");
       setCourses(Array.isArray(data) ? data : data?.data ?? []);
     } catch (err) {
       console.error(err);
@@ -193,7 +178,7 @@ export default function CoursesPage() {
     }
     setSaving((p) => ({ ...p, [id]: true }));
     try {
-      await apiFetch(`/researcher-management/courses/${id}`, { method: "PUT", body: JSON.stringify({ ...row, degree_id: Number(row.degree_id) }) });
+      await apiClient.put(`/researcher-management/courses/${id}`, { ...row, degree_id: Number(row.degree_id) });
       cancelEdit(id);
       fetchCourses();
       Swal.fire({ icon: "success", title: "บันทึกสำเร็จ", text: "แก้ไขข้อมูลหลักสูตรเรียบร้อยแล้ว", confirmButtonColor: "#059669", confirmButtonText: "ตกลง" });
@@ -213,7 +198,7 @@ export default function CoursesPage() {
     });
     if (result.isConfirmed) {
       try {
-        await apiFetch(`/researcher-management/courses/${id}`, { method: "DELETE" });
+        await apiClient.delete(`/researcher-management/courses/${id}`);
         fetchCourses();
         Swal.fire({ icon: "success", title: "ลบข้อมูลสำเร็จ", confirmButtonColor: "#059669", confirmButtonText: "ตกลง" });
       } catch (err) {
@@ -230,7 +215,7 @@ export default function CoursesPage() {
     setNewError("");
     setSavingNew(true);
     try {
-      await apiFetch("/researcher-management/courses", { method: "POST", body: JSON.stringify({ ...newRow, degree_id: Number(newRow.degree_id) }) });
+      await apiClient.post("/researcher-management/courses", { ...newRow, degree_id: Number(newRow.degree_id) });
       setAddingRow(false);
       setNewRow({ ...EMPTY_ROW });
       fetchCourses();

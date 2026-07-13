@@ -6,7 +6,7 @@ import {
   Lightbulb, Loader2, Link2, CalendarDays, Banknote,
   FlaskConical, BadgeCheck, Building, Layers
 } from "lucide-react";
-import api from "../../../lib/api";
+import { apiClient } from "../../../lib/api";
 import ResearcherResearch from "./ResearcherResearch";
 import { exportToDocx } from "../utils/exportCHEDocx"; 
 
@@ -157,7 +157,7 @@ export default function InstructorPublicProfile() {
                     try {
                       let researchData = [];
                       if (id) {
-                        const res = await api.get(`/researcher-management/instructors/${id}/documents`);
+                        const res = await apiClient.get(`/researcher-management/instructors/${id}/documents`);
                         researchData = res || []; 
                       }
 

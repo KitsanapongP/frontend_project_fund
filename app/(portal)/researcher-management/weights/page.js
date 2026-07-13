@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ArrowLeft, Save, Plus, X, Loader2, Database, Scale } from "lucide-react";
 import Header from "../component/layout/Header";
-import api from "../../../lib/api"; 
+import { apiClient } from "../../../lib/api"; 
 import Swal from "sweetalert2";
 
 export default function RankingWeightsPage() {
@@ -18,10 +18,10 @@ export default function RankingWeightsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const sourcesRes = await api.get("/researcher-management/ranking-sources").catch(() => []);
+      const sourcesRes = await apiClient.get("/researcher-management/ranking-sources").catch(() => []);
       setSources(sourcesRes || []);
 
-      const weightsRes = await api.get("/researcher-management/ranking-weights");
+      const weightsRes = await apiClient.get("/researcher-management/ranking-weights");
       const sanitizedData = (weightsRes || []).map(item => {
         const defaultSourceId = item.source_id || (sourcesRes[0]?.source_id || 1);
         
@@ -123,7 +123,7 @@ export default function RankingWeightsPage() {
       if (!result.isConfirmed) return;
 
       try {
-        await api.delete(`/researcher-management/ranking-weights/${targetWeight.tier_weight_id}`);
+        await apiClient.delete(`/researcher-management/ranking-weights/${targetWeight.tier_weight_id}`);
         
         await Swal.fire({
           icon: "success",
@@ -188,7 +188,7 @@ export default function RankingWeightsPage() {
         is_active:      Boolean(item.is_active)
       }));
 
-      const updatedWeights = await api.put("/researcher-management/ranking-weights", { weights: payload });
+      const updatedWeights = await apiClient.put("/researcher-management/ranking-weights", { weights: payload });
 
       if (updatedWeights && Array.isArray(updatedWeights)) {
         const sanitized = updatedWeights.map(item => ({

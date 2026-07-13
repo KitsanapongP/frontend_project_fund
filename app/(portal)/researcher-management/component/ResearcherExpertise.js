@@ -1,6 +1,6 @@
 "use client";
 import { Plus, X } from "lucide-react";
-import api from "../../../lib/api";
+import { apiClient } from "../../../lib/api";
 import Swal from "sweetalert2"; 
 
 export default function ResearcherExpertise({ formData, handleInputChange }) {
@@ -42,7 +42,7 @@ export default function ResearcherExpertise({ formData, handleInputChange }) {
       if (!result.isConfirmed) return;
 
       try {
-        await api.delete(`/researcher-management/instructor-expertises/${targetId}`);
+        await apiClient.delete(`/researcher-management/instructor-expertises/${targetId}`);
         
         // แจ้งเตือนเมื่อลบสำเร็จแบบ Auto-close 1.5 วินาที
         Swal.fire({
