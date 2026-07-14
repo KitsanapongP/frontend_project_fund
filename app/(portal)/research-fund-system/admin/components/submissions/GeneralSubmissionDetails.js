@@ -25,6 +25,7 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 import { PDFDocument } from 'pdf-lib';
 import { AnimatePresence, motion } from 'motion/react';
 import PublicationSubmissionDetails from './PublicationSubmissionDetails';
+import ApprovalEvidenceCard from './ApprovalEvidenceCard';
 
 /* =========================
  * Helpers
@@ -1263,6 +1264,7 @@ function RequestInfoCard({ submission, detail, fundName }) {
 export default function GeneralSubmissionDetails({ submissionId, onBack }) {
   const [loading, setLoading] = useState(true);
   const [submission, setSubmission] = useState(null);
+  const [activeTab, setActiveTab] = useState('details');
   const { getCodeById } = useStatusMap();
 
   // attachments
@@ -2559,6 +2561,35 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
         </div>
       </Card>
 
+      <div className="mb-6 border-b border-gray-200">
+        <nav className="flex gap-6" aria-label="Submission detail tabs">
+          <button
+            type="button"
+            onClick={() => setActiveTab('details')}
+            className={`border-b-2 px-1 py-2 text-sm font-medium ${
+              activeTab === 'details'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+            }`}
+          >
+            รายละเอียด
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('documents')}
+            className={`border-b-2 px-1 py-2 text-sm font-medium ${
+              activeTab === 'documents'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+            }`}
+          >
+            เอกสารแนบ
+          </button>
+        </nav>
+      </div>
+
+      {activeTab === 'details' && (
+        <div className="space-y-6">
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <RequestInfoCard submission={submission} detail={detail} fundName={fundName} />
@@ -2835,6 +2866,18 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
         </Card>
       )}
 
+        </div>
+      )}
+
+      {activeTab === 'documents' && (
+        <div className="space-y-6">
+      {isApprovedStatus && (
+        <ApprovalEvidenceCard
+          submissionId={submission?.submission_id}
+          canManage={isApprovedStatus}
+        />
+      )}
+
       {/* Attachments */}
       <Card title="เอกสารแนบ (Attachments)" icon={FileText} collapsible={false}>
         <div className="space-y-6">
@@ -2955,6 +2998,9 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
           )}
         </div>
       </Card>
+
+        </div>
+      )}
 
       <AnimatePresence>
         {showEventModal && (

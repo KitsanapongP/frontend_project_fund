@@ -45,6 +45,7 @@ import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
 import { PDFDocument } from 'pdf-lib';
+import ApprovalEvidenceCard from './ApprovalEvidenceCard';
 
 /* =========================
  * Helpers
@@ -1682,6 +1683,10 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
     [attachments],
   );
   const { getCodeById } = useStatusMap();
+  const isApprovedStatus = useMemo(() => {
+    const code = String(getCodeById(submission?.status_id) || '').toLowerCase();
+    return ['approved', '1', '6', '7'].includes(code) || [2, 7].includes(Number(submission?.status_id));
+  }, [getCodeById, submission?.status_id]);
 
   // Load data
   useEffect(() => {
@@ -2972,7 +2977,14 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
       )}
 
       {activeTab === 'documents' && (
-        <Card title="เอกสารแนบ (Attachments)" icon={FileText} collapsible={false}>
+        <div className="space-y-6">
+          {isApprovedStatus && (
+            <ApprovalEvidenceCard
+              submissionId={submission?.submission_id}
+              canManage={isApprovedStatus}
+            />
+          )}
+          <Card title="เอกสารแนบ (Attachments)" icon={FileText} collapsible={false}>
           <div className="space-y-6">
             {/* Content */}
             {attachmentsLoading ? (
@@ -3094,7 +3106,8 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
               </div>
             )}
           </div>
-        </Card>
+          </Card>
+        </div>
       )}
     </PageLayout>
   );
