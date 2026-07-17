@@ -1,7 +1,7 @@
 // contexts/AuthContext.js - Fixed Authentication Context
 'use client';
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useReducer, useEffect } from 'react';
 import Image from 'next/image';
 import { authAPI, AuthError, NetworkError } from '../lib/api';
 import { normalizeRoleName } from '../lib/access_routing';
@@ -12,6 +12,7 @@ const AUTH_ACTIONS = {
   LOGIN_SUCCESS: 'LOGIN_SUCCESS',
   LOGIN_FAILURE: 'LOGIN_FAILURE',
   LOGOUT: 'LOGOUT',
+  LOGOUT_REDIRECT_COMPLETE: 'LOGOUT_REDIRECT_COMPLETE',
   SET_USER: 'SET_USER',
   CLEAR_ERROR: 'CLEAR_ERROR',
   SET_LOADING: 'SET_LOADING',
@@ -24,6 +25,7 @@ const initialState = {
   user: null,
   token: null,
   isAuthenticated: false,
+  isLoggingOut: false,
   isLoading: true, // เริ่มต้นเป็น true เพื่อรอการตรวจสอบ token
   error: null,
   loginAttempts: 0,
@@ -39,12 +41,14 @@ function authReducer(state, action) {
         user: action.payload.user,
         token: action.payload.token,
         isAuthenticated: action.payload.isAuthenticated,
+        isLoggingOut: false,
         isLoading: false,
       };
 
     case AUTH_ACTIONS.LOGIN_START:
       return {
         ...state,
+        isLoggingOut: false,
         isLoading: true,
         error: null,
       };
@@ -55,6 +59,7 @@ function authReducer(state, action) {
         user: action.payload.user,
         token: action.payload.token,
         isAuthenticated: true,
+        isLoggingOut: false,
         isLoading: false,
         error: null,
         loginAttempts: 0,
@@ -67,6 +72,7 @@ function authReducer(state, action) {
         user: null,
         token: null,
         isAuthenticated: false,
+        isLoggingOut: false,
         isLoading: false,
         error: action.payload.error,
         loginAttempts: state.loginAttempts + 1,
@@ -76,8 +82,15 @@ function authReducer(state, action) {
     case AUTH_ACTIONS.LOGOUT:
       return {
         ...initialState,
+        isLoggingOut: action.payload?.userInitiated !== false,
         isLoading: false, // ไม่ต้อง loading หลัง logout
         loginAttempts: state.loginAttempts,
+      };
+
+    case AUTH_ACTIONS.LOGOUT_REDIRECT_COMPLETE:
+      return {
+        ...state,
+        isLoggingOut: false,
       };
 
     case AUTH_ACTIONS.SET_USER:
@@ -275,7 +288,7 @@ export function AuthProvider({ children }) {
     };
 
     // Logout function
-  const handleLogout = async () => {
+  const handleLogout = async ({ userInitiated = true } = {}) => {
     try {
         await authAPI.logout();
     } catch (error) {
@@ -292,9 +305,16 @@ export function AuthProvider({ children }) {
     // ลบการเรียก authAPI.clearAuth
     // authAPI.clearAuth(); // ลบบรรทัดนี้
     
-    dispatch({ type: AUTH_ACTIONS.LOGOUT });
+    dispatch({
+      type: AUTH_ACTIONS.LOGOUT,
+      payload: { userInitiated },
+    });
     
     };
+
+  const completeLogoutRedirect = useCallback(() => {
+    dispatch({ type: AUTH_ACTIONS.LOGOUT_REDIRECT_COMPLETE });
+  }, []);
 
   // Clear error
   const clearError = () => {
@@ -331,7 +351,7 @@ export function AuthProvider({ children }) {
       return response;
     } catch (error) {
       // If refresh fails, logout user
-      handleLogout();
+      handleLogout({ userInitiated: false });
       throw error;
     }
   };
@@ -448,6 +468,7 @@ export function AuthProvider({ children }) {
     // Actions
     login,
     logout: handleLogout,
+    completeLogoutRedirect,
     clearError,
     changePassword,
     refreshToken,

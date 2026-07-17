@@ -7,6 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 import UnauthorizedPage from "./UnauthorizedPage";
 import { hasAdminPortalAccess, hasMemberPortalAccess, normalizeRoleName } from "../lib/access_routing";
+import { getLoginRedirect } from "../lib/auth_redirect.mjs";
 
 const MEMBER_ALLOWED_ROLES = ['teacher', 'staff', 'dept_head'];
 
@@ -43,7 +44,7 @@ export default function AuthGuard({
   requireAuth = true,
   fallback = null
 }) {
-  const { isAuthenticated, user, isLoading, hasAnyRole, hasAnyPermission } = useAuth();
+  const { isAuthenticated, isLoggingOut, user, isLoading, hasAnyRole, hasAnyPermission } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [showUnauthorized, setShowUnauthorized] = useState(false);
@@ -59,7 +60,7 @@ export default function AuthGuard({
         typeof window !== 'undefined'
           ? `${window.location.pathname}${window.location.search}`
           : pathname || '/';
-      router.replace(`/login?next=${encodeURIComponent(currentPath)}`);
+      router.replace(getLoginRedirect({ isLoggingOut, currentPath }));
       return;
     }
 
@@ -84,6 +85,7 @@ export default function AuthGuard({
     setShowUnauthorized(false);
   }, [
     isAuthenticated,
+    isLoggingOut,
     user,
     isLoading,
     requireAuth,
