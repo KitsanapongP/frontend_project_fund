@@ -20,7 +20,7 @@ const statusDot = (name) => {
   if (v.includes("active") || v.includes("มีผล")) return "bg-emerald-500";
   if (v.includes("ใกล้")) return "bg-amber-500";
   if (v.includes("หมด")) return "bg-red-500";
-  if (v.includes("รอดำเนินการ")) return "bg-blue-500";
+  if (v.includes("รอดำเนินการ") || v.includes("กำลังดำเนินการ")) return "bg-blue-500";
   return "bg-gray-400";
 };
 
@@ -29,7 +29,7 @@ const statusClass = (name) => {
   if (v.includes("active") || v.includes("มีผล")) return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300";
   if (v.includes("ใกล้")) return "bg-amber-50 text-amber-700 ring-1 ring-amber-300";
   if (v.includes("หมด")) return "bg-red-50 text-red-700 ring-1 ring-red-300";
-  if (v.includes("รอดำเนินการ")) return "bg-blue-50 text-blue-700 ring-1 ring-blue-300";
+  if (v.includes("รอดำเนินการ") || v.includes("กำลังดำเนินการ")) return "bg-blue-50 text-blue-700 ring-1 ring-blue-300";
   return "bg-gray-50 text-gray-600 ring-1 ring-gray-300";
 };
 
@@ -273,7 +273,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
   const yearOfSigning = mou.year_of_signing ? fmtDate(mou.year_of_signing) : "-";
   const coordinator = mou.coordinator
     ? [mou.coordinator.prefix || "", mou.coordinator.user_fname || "", mou.coordinator.user_lname || ""].filter(Boolean).join(" ")
-    : "-";
+    : (mou.coordinator_other || "-");
   const signedBy = mou.signed_by || "-";
   const endDate = mou.end_date ? fmtDate(mou.end_date) : "-";
   const daysLeft = mou.end_date ? Math.ceil((new Date(mou.end_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;

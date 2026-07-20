@@ -19,7 +19,7 @@ function statusClass(name) {
   if (value.includes("active") || value.includes("มีผล") || value.includes("มีผลบังคับ")) return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300";
   if (value.includes("ใกล้") || value.includes("ใกล้หมด")) return "bg-amber-50 text-amber-700 ring-1 ring-amber-300";
   if (value.includes("หมด") || value.includes("หมดอายุ")) return "bg-red-50 text-red-700 ring-1 ring-red-300";
-  if (value.includes("รอดำเนินการ")) return "bg-blue-50 text-blue-700 ring-1 ring-blue-300";
+  if (value.includes("รอดำเนินการ") || value.includes("กำลังดำเนินการ")) return "bg-blue-50 text-blue-700 ring-1 ring-blue-300";
   return "bg-gray-50 text-gray-600 ring-1 ring-gray-300";
 }
 
@@ -301,7 +301,7 @@ export default function MouListPage() {
   const statCards = [
     { key: "total", label: "MOU ทั้งหมด", value: stats.total, icon: FileSignature, gradient: "from-blue-500 to-blue-600" },
     { key: "active", label: "มีผลบังคับใช้", value: stats.active, icon: Bookmark, gradient: "from-green-500 to-green-600" },
-    { key: "pending", label: "รอดำเนินการ", value: stats.pending, icon: Clock, gradient: "from-blue-500 to-blue-600" },
+    { key: "pending", label: "กำลังดำเนินการ", value: stats.pending, icon: Clock, gradient: "from-blue-500 to-blue-600" },
     { key: "nearExpiry", label: "ใกล้หมดอายุ (90 วัน)", value: stats.nearExpiry, icon: Clock, gradient: "from-amber-500 to-amber-600" },
     { key: "expired", label: "หมดอายุแล้ว", value: stats.expired, icon: AlertCircle, gradient: "from-red-500 to-red-600" },
   ];
@@ -363,7 +363,7 @@ export default function MouListPage() {
         const faculties = (mou.faculties || []).map(f => f.faculty?.name_th || f.external_name || "").filter(Boolean).join("; ");
         const level = mou.level === "university" ? "มหาวิทยาลัย" : mou.level === "faculty" ? "คณะ" : mou.level || "";
         const scope = mou.is_international ? "ต่างประเทศ" : "ในประเทศ";
-        const coordinator = mou.coordinator ? `${mou.coordinator.user_fname || ""} ${mou.coordinator.user_lname || ""}`.trim() : "";
+        const coordinator = mou.coordinator ? `${mou.coordinator.user_fname || ""} ${mou.coordinator.user_lname || ""}`.trim() : (mou.coordinator_other || "");
         const partnerType = partners.length > 0 ? partners[0].partner_type?.name_th || "" : "";
 
         if (partners.length === 0) {
