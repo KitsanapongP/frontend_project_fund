@@ -59,8 +59,11 @@ export default function SubmissionTable({
 
   const getSubcategoryName = (s) =>
     s?.Subcategory?.subcategory_name ||
+    s?.subcategory?.subcategory_name ||
     (s?.subcategory_id != null ? subMap[String(s.subcategory_id)] : undefined) ||
     s?.FundApplicationDetail?.Subcategory?.subcategory_name ||
+    s?.fund_application_detail?.Subcategory?.subcategory_name ||
+    s?.SubcategoryName ||
     s?.subcategory_name || '-';
 
   // ----- Normalize detail payloads -----
@@ -76,6 +79,7 @@ export default function SubmissionTable({
     const dpo = getDPO(s);
     return (
       s?.PublicationRewardDetail ||
+      s?.publication_reward_detail ||
       dpo?.PublicationRewardDetail ||
       dpo?.publication_reward_detail ||
       dpo?.submission?.PublicationRewardDetail ||
@@ -91,6 +95,7 @@ export default function SubmissionTable({
     // 1) For fund applications, prefer project title first
     const faTitle =
       s?.FundApplicationDetail?.project_title ||
+      s?.fund_application_detail?.project_title ||
       dpo?.FundApplicationDetail?.project_title ||
       dpo?.project_title;
     if (faTitle) return faTitle;
@@ -98,6 +103,7 @@ export default function SubmissionTable({
     // 2) For publication rewards, support both nested and flat payload shapes
     const pr =
       s?.PublicationRewardDetail ||
+      s?.publication_reward_detail ||
       dpo?.PublicationRewardDetail ||
       dpo?.publication_reward_detail ||
       dpo?.submission?.PublicationRewardDetail ||
@@ -118,7 +124,7 @@ export default function SubmissionTable({
       dpo?.title_th ||
       dpo?.title;
 
-    return fromPr || fromDpo || s?.title || '-';
+    return fromPr || fromDpo || s?.paper_title || s?.project_title || s?.title || '-';
   };
 
 
@@ -169,6 +175,8 @@ export default function SubmissionTable({
     });
     if (flat) return flat;
 
+    if (s?.applicant_name) return s.applicant_name;
+
     // 5) Final fallback: keep text readable instead of showing raw IDs
     return 'ไม่ระบุผู้ยื่น';
   };
@@ -185,6 +193,13 @@ export default function SubmissionTable({
          (pr.external_funding_amount || 0));
       const n = Number(total || 0);
       return isFinite(n) ? n : 0;
+    }
+
+    const flatPublicationAmount = Number(
+      s?.total_amount ?? s?.total_reward_amount ?? s?.net_amount ?? s?.requested_amount
+    );
+    if (Number.isFinite(flatPublicationAmount) && flatPublicationAmount > 0) {
+      return flatPublicationAmount;
     }
 
     // 2) Fund application (and others): always show requested amount
