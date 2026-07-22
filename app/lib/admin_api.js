@@ -1283,6 +1283,14 @@ export const adminAPI = {
     }
   },
 
+  async getSDGs() {
+    const response = await apiClient.get('/admin/sdgs');
+    return Array.isArray(response?.sdgs) ? response.sdgs : [];
+  },
+
+  async createSDG(data) { return apiClient.post('/admin/sdgs', data); },
+  async updateSDG(id, data) { return apiClient.put(`/admin/sdgs/${id}`, data); },
+
   async getProjectBudgetPlans() {
     try {
       const response = await apiClient.get('/admin/project-budget-plans');
