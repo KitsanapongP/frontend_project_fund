@@ -18,6 +18,8 @@ import { submissionAPI, documentAPI, fileAPI} from '../../../../../lib/member_ap
 import { teacherAPI } from '../../../../../lib/teacher_api';
 import { statusService } from '../../../../../lib/status_service';
 import { systemConfigAPI } from '../../../../../lib/system_config_api';
+import sdgAPI from '../../../../../lib/sdg_api';
+import SDGSelector from '../common/SDGSelector';
 
 // SweetAlert2 configuration
 const Toast = Swal.mixin({
@@ -1361,6 +1363,7 @@ export default function GenericFundApplicationForm({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedSDGIds, setSelectedSDGIds] = useState([]);
   const [errors, setErrors] = useState({});
   const [submissionUsage, setSubmissionUsage] = useState(null);
   const [currentSubmissionId, setCurrentSubmissionId] = useState(
@@ -1764,6 +1767,9 @@ export default function GenericFundApplicationForm({
       }
 
       setCurrentSubmissionId(submissionId);
+
+      const submissionSDGs = submission.sdgs || submission.submission_sdgs || [];
+      setSelectedSDGIds(submissionSDGs.map((sdg) => Number(sdg.sdg_id)).filter(Number.isInteger));
 
       const statusCode = getSubmissionStatusCode(submission);
       setSubmissionStatusCode(statusCode);
@@ -2951,6 +2957,7 @@ export default function GenericFundApplicationForm({
       };
 
       await apiClient.post(`/submissions/${submissionId}/fund-details`, fundDetailsPayload);
+      await sdgAPI.replaceForSubmission(submissionId, selectedSDGIds);
 
       const hasAttachmentChanges =
         documentsToDetach.size > 0 || Object.keys(uploadedFiles).length > 0;
@@ -3160,6 +3167,7 @@ export default function GenericFundApplicationForm({
         };
 
         await apiClient.post(`/submissions/${submissionId}/fund-details`, fundDetailsPayload);
+        await sdgAPI.replaceForSubmission(submissionId, selectedSDGIds);
       }
 
       // Step 3: Sync attachments with server (detach removed files, upload new ones)
@@ -3683,6 +3691,11 @@ export default function GenericFundApplicationForm({
               </div>
             </SimpleCard>
 
+            <SDGSelector
+              value={selectedSDGIds}
+              onChange={setSelectedSDGIds}
+              disabled={!canEdit || saving || submitting}
+            />
             <SimpleCard
               title="เอกสารแนบ (Attachments)"
               icon={Upload}

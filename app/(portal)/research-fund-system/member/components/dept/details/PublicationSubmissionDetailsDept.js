@@ -41,6 +41,7 @@ import { notificationsAPI } from '@/app/lib/notifications_api';
 
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import SubmissionSDGList from '../../common/SubmissionSDGList';
 import UnauthorizedPage from '@/app/components/UnauthorizedPage';
 
 const pickArray = (...candidates) => {
@@ -2696,6 +2697,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
 
       {/* Content */}
       {activeTab === 'details' && (
+        <>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Publication Information */}
           <Card title="ข้อมูลบทความ (Article Information)" icon={BookOpen} collapsible={false}>
@@ -2945,6 +2947,8 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
             onBack={onBack}
           />
         </div>
+        <SubmissionSDGList submission={submission} />
+        </>
       )}
 
       {activeTab === 'authors' && (

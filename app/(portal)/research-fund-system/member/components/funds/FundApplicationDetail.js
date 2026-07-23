@@ -23,6 +23,7 @@ import StatusBadge from "../common/StatusBadge";
 import { formatCurrency } from "@/app/utils/format";
 import { useStatusMap } from "@/app/hooks/useStatusMap";
 import { toast } from "react-hot-toast";
+import SubmissionSDGList from "../common/SubmissionSDGList";
 
 const statusIconOf = (statusCode) => {
   switch (statusCode) {
@@ -1255,6 +1256,7 @@ export default function FundApplicationDetail({
         </div>
       </Card>
 
+      <SubmissionSDGList submission={submission} />
       {/* Documents */}
       <Card title="เอกสารแนบ (Attachments)" icon={FileText} collapsible={false}>
         <div className="space-y-6">

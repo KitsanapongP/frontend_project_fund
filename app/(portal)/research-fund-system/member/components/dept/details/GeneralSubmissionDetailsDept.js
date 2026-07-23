@@ -22,6 +22,7 @@ import PublicationSubmissionDetailsDept from './PublicationSubmissionDetailsDept
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import UnauthorizedPage from '@/app/components/UnauthorizedPage';
+import SubmissionSDGList from '../../common/SubmissionSDGList';
 
 /* =========================
  * Helpers
@@ -1609,6 +1610,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
         />
       </div>
 
+      <SubmissionSDGList submission={submission} />
       {/* Attachments */}
       <Card title="เอกสารแนบ (Attachments)" icon={FileText} collapsible={false}>
         <div className="space-y-6">

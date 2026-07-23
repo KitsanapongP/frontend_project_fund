@@ -22,6 +22,7 @@ import { toast } from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { useStatusMap } from '@/app/hooks/useStatusMap';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import SubmissionSDGList from '../../../member/components/common/SubmissionSDGList';
 import { PDFDocument } from 'pdf-lib';
 import { AnimatePresence, motion } from 'motion/react';
 import PublicationSubmissionDetails from './PublicationSubmissionDetails';
@@ -1210,13 +1211,13 @@ function RequestInfoCard({ submission, detail, fundName }) {
     (submission?.subcategory_id != null ? `ประเภททุน #${submission.subcategory_id}` : '—');
 
   const fields = [
-    { label: 'ประเภททุน (Subcategory)', value: subName },
+    { label: 'ประเภททุน', value: subName },
     {
-      label: 'ชื่อโครงการ (Project Title)',
+      label: 'ชื่อโครงการ',
       value: detail?.project_title || submission?.title || '—',
     },
     {
-      label: 'คำอธิบายโครงการ (Description)',
+      label: 'คำอธิบายโครงการ',
       value: detail?.project_description || '—',
       long: true,
     },
@@ -2866,6 +2867,7 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
         </Card>
       )}
 
+        <SubmissionSDGList submission={submission} />
         </div>
       )}
 

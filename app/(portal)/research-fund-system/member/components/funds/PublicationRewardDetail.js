@@ -34,6 +34,7 @@ import Card from "../common/Card";
 import StatusBadge from "../common/StatusBadge";
 import { formatCurrency } from "@/app/utils/format";
 import { useStatusMap } from "@/app/hooks/useStatusMap";
+import SubmissionSDGList from "../common/SubmissionSDGList";
 
 const getStatusIcon = (statusCode) => {
   switch (statusCode) {
@@ -1347,6 +1348,7 @@ export default function PublicationRewardDetail({
 
       {/* Tab Content */}
       {activeTab === 'details' && (
+        <>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Publication Information */}
           <Card title="ข้อมูลบทความ (Article Information)" icon={BookOpen} collapsible={false}>
@@ -1566,6 +1568,8 @@ export default function PublicationRewardDetail({
             </div>
           </Card>
         </div>
+        <SubmissionSDGList submission={submission} />
+        </>
       )}
 
         {/* Authors Tab */}

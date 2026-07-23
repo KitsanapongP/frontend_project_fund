@@ -43,6 +43,7 @@ import { notificationsAPI } from '@/app/lib/notifications_api';
 
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import SubmissionSDGList from '../../../member/components/common/SubmissionSDGList';
 
 import { PDFDocument } from 'pdf-lib';
 import ApprovalEvidenceCard from './ApprovalEvidenceCard';
@@ -2688,6 +2689,7 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
 
       {/* Content */}
       {activeTab === 'details' && (
+        <>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Publication Information */}
           <Card title="ข้อมูลบทความ (Article Information)" icon={BookOpen} collapsible={false}>
@@ -2926,6 +2928,8 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
             onRequestRevision={requestRevision}
           />
         </div>
+        <SubmissionSDGList submission={submission} />
+        </>
       )}
 
       {activeTab === 'authors' && (

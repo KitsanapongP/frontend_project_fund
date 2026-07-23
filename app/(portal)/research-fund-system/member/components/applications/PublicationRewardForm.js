@@ -45,6 +45,8 @@ import Swal from 'sweetalert2';
 import { notificationsAPI } from '../../../../../lib/notifications_api';
 import { systemConfigAPI } from '../../../../../lib/system_config_api';
 import { getAuthorSubmissionFields } from './PublicationRewardForm.helpers.mjs';
+import sdgAPI from '../../../../../lib/sdg_api';
+import SDGSelector from '../common/SDGSelector';
 
 // =================================================================
 // CONFIGURATION & CONSTANTS
@@ -1699,6 +1701,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     has_university_fund: '',
     university_fund_ref: ''
   });
+  const [selectedSDGIds, setSelectedSDGIds] = useState([]);
 
   // Co-authors and files
   const [coauthors, setCoauthors] = useState([]);
@@ -2498,6 +2501,8 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         }
 
         setCurrentSubmissionId(payload.submission_id);
+        const submissionSDGs = payload.sdgs || payload.submission_sdgs || [];
+        setSelectedSDGIds(submissionSDGs.map((sdg) => Number(sdg.sdg_id)).filter(Number.isInteger));
 
         const statusCandidates = [
           payload.status?.code,
@@ -3996,7 +4001,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
       const charToDelete = e.key === 'Backspace' ? value[selectionStart - 1] : value[selectionStart];
       if (charToDelete === '-') {
         e.preventDefault();
-        
+
         // Move cursor to skip dash
         if (e.key === 'Backspace' && selectionStart > 0) {
           e.target.setSelectionRange(selectionStart - 2, selectionStart - 2);
@@ -6041,6 +6046,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
         mode: 'draft',
         allowIncomplete: true,
       });
+      await sdgAPI.replaceForSubmission(submissionId, selectedSDGIds);
 
       const savedExternalFunds = Array.isArray(response?.external_fundings)
         ? response.external_fundings
@@ -6814,6 +6820,7 @@ const showSubmissionConfirmation = async () => {
         const response = await publicationDetailsAPI.add(submissionId, publicationData, {
           mode: 'submit',
         });
+        await sdgAPI.replaceForSubmission(submissionId, selectedSDGIds);
 
         const savedExternalFunds = Array.isArray(response?.external_fundings)
           ? response.external_fundings
@@ -7124,6 +7131,7 @@ const showSubmissionConfirmation = async () => {
       ]}
     >
       <form ref={formRef} className="space-y-6" noValidate>
+
         {shouldShowDraftBanner && (
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
             <div className="flex items-start gap-3">
@@ -8378,6 +8386,11 @@ const showSubmissionConfirmation = async () => {
         {/* =================================================================
         // FILE ATTACHMENTS SECTION
         // ================================================================= */}
+        <SDGSelector
+          value={selectedSDGIds}
+          onChange={setSelectedSDGIds}
+          disabled={isReadOnly || saving || isSubmitting}
+        />
         <SimpleCard title="เอกสารแนบ (File Attachments)" icon={Upload} id="file-attachments-section">
           <div className="space-y-6">
             <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800">
