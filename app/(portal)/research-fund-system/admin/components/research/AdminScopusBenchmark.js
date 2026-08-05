@@ -284,7 +284,7 @@ export default function AdminScopusBenchmark() {
       grid: { borderColor: "#f1f5f9", strokeDashArray: 4 },
       legend: { position: "top", horizontalAlign: "right", markers: { radius: 4 } },
       xaxis: { categories, axisBorder: { show: false }, axisTicks: { show: false } },
-      tooltip: { shared: true },
+      tooltip: { shared: true, intersect: false },
     };
     if (chartType === "share") {
       return {
