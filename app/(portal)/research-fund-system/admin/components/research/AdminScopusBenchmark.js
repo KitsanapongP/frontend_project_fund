@@ -48,6 +48,66 @@ function RunStatus({ status }) {
   return <span className={`text-xs font-medium capitalize ${cls}`}>{status || "–"}</span>;
 }
 
+function HelpModal({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 sm:p-8"
+      onClick={onClose}>
+      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div className="text-base font-semibold text-slate-900">วิธีใช้งาน</div>
+          <button type="button" onClick={onClose}
+            className="rounded-md px-2 py-1 text-sm text-slate-400 hover:bg-slate-100 hover:text-slate-600">ปิด</button>
+        </div>
+        <div className="space-y-5 px-6 py-5 text-sm leading-relaxed text-slate-700">
+          <section>
+            <div className="mb-1 font-semibold text-slate-900">หน้านี้ใช้ทำอะไร</div>
+            <p>เปรียบเทียบจำนวนผลงานตีพิมพ์หมวด Computer Science ในแต่ละปี ระหว่างคณะของเรา
+            มหาวิทยาลัยขอนแก่น และทั้งประเทศไทย เพื่อดูว่าคณะมีสัดส่วนผลงานมากน้อยแค่ไหน</p>
+          </section>
+
+          <section>
+            <div className="mb-1 font-semibold text-slate-900">ตัวเลขแต่ละคอลัมน์มาจากไหน</div>
+            <ul className="ml-4 list-disc space-y-1">
+              <li><b>KKU / Thailand</b> — นับจำนวนจาก Scopus โดยตรง ได้จากปุ่ม “อัปเดตตัวเลข” เร็ว ไม่กี่วินาที</li>
+              <li><b>คณะ</b> — ได้จากการดึงเอกสารของ KKU มาเก็บ แล้วดูว่าเอกสารชิ้นไหนมีอาจารย์ในระบบเป็นผู้แต่ง
+              จึงต้องกด “ดึงข้อมูล KKU” ก่อน คอลัมน์นี้ถึงจะมีตัวเลข</li>
+            </ul>
+          </section>
+
+          <section>
+            <div className="mb-1 font-semibold text-slate-900">ลำดับที่ควรทำ</div>
+            <ol className="ml-4 list-decimal space-y-1">
+              <li>ตั้งค่า AF-ID ของ KKU (ทำครั้งเดียว)</li>
+              <li>เลือกช่วงปีที่ต้องการ แล้วกด “ดึงข้อมูล KKU” เพื่อให้ได้ตัวเลขของคณะ</li>
+              <li>กด “อัปเดตตัวเลข” เพื่อเติมตัวเลข KKU และ Thailand</li>
+              <li>เปิดแท็บ “ผลเปรียบเทียบ” เพื่อดูกราฟและตาราง</li>
+            </ol>
+          </section>
+
+          <section>
+            <div className="mb-1 font-semibold text-slate-900">ต่างกันอย่างไร: “ดึงข้อมูล” กับ “อัปเดตตัวเลข”</div>
+            <ul className="ml-4 list-disc space-y-1">
+              <li><b>อัปเดตตัวเลข</b> — ถามจำนวนจาก Scopus อย่างเดียว รวดเร็ว ใช้เติมคอลัมน์ KKU และ Thailand</li>
+              <li><b>ดึงข้อมูล</b> — โหลดตัวเอกสารจริงมาเก็บในระบบ ใช้เวลานานกว่า แต่จำเป็นสำหรับตัวเลขของคณะ
+              และเก็บข้อมูลไว้ใช้งานต่อได้</li>
+            </ul>
+          </section>
+
+          <section>
+            <div className="mb-1 font-semibold text-slate-900">ช่วงปี</div>
+            <p>กำหนดช่วงปีที่จะนับหรือดึงข้อมูล กดปุ่ม “ตั้งแต่ปีแรก” เพื่อให้ระบบค้นหาปีที่เก่าที่สุดที่มีผลงานให้</p>
+          </section>
+
+          <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            หมายเหตุ: การดึงข้อมูลระดับประเทศ (Thailand) ใช้เวลานานเพราะมีเอกสารจำนวนมาก
+            หากต้องการเพียงตัวเลขเปรียบเทียบ ไม่จำเป็นต้องดึง
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function YearRange({ yearFrom, yearTo, setYearFrom, setYearTo, onDetect, detecting, onRefresh, compact = false }) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -126,6 +186,7 @@ export default function AdminScopusBenchmark() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupOpen, setLookupOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const notify = (text, tone = "info") => setMsg(text ? { text, tone } : null);
   const yearParams = useCallback(() => ({ year_from: yearFrom, year_to: yearTo }), [yearFrom, yearTo]);
@@ -178,19 +239,20 @@ export default function AdminScopusBenchmark() {
 
   async function detectFirstYear() {
     if (!uni) return;
-    if (!uni.af_id) { notify("ตั้ง AF-ID ของ KKU ก่อน (แท็บตั้งค่า ขั้นที่ 1)", "error"); return; }
+    if (!uni.af_id) { notify("กรุณาตั้งค่า AF-ID ของ KKU ก่อน (ขั้นที่ 1)", "error"); return; }
     setDetecting(true);
     try {
       const res = await scopusBenchmarkAPI.detectYearRange(uni.id);
       const first = res?.data?.first_year;
       const last = res?.data?.last_year;
       if (first) {
+        const to = Math.min(last || CURRENT_YEAR, CURRENT_YEAR);
         setYearFrom(first);
-        setYearTo(Math.min(last || CURRENT_YEAR, CURRENT_YEAR));
-        notify(`พบผลงานตั้งแต่ปี ${first} — ตั้งช่วงให้แล้ว`, "success");
-      } else notify("ตรวจปีแรกไม่พบข้อมูล", "error");
+        setYearTo(to);
+        notify(`กำหนดช่วงปี ${first}–${to}`, "success");
+      } else notify("ไม่พบข้อมูลผลงาน", "error");
     } catch (e) {
-      notify(e?.message || "ตรวจปีแรกไม่สำเร็จ", "error");
+      notify(e?.message || "ค้นหาปีแรกไม่สำเร็จ", "error");
     } finally {
       setDetecting(false);
     }
@@ -201,7 +263,7 @@ export default function AdminScopusBenchmark() {
     notify("");
     try {
       await scopusBenchmarkAPI.refreshCounts(yearParams());
-      notify("อัปเดตตัวเลข KKU/Thailand เรียบร้อย", "success");
+      notify("อัปเดตตัวเลขแล้ว", "success");
       await loadComparison();
     } catch (e) {
       notify(e?.message || "อัปเดตตัวเลขไม่สำเร็จ", "error");
@@ -211,12 +273,12 @@ export default function AdminScopusBenchmark() {
   }
 
   async function runHarvest(scopeId) {
-    if (activeRun) { notify("มีงานกำลังรันอยู่ รอให้เสร็จหรือกดยกเลิกก่อน", "error"); return; }
+    if (activeRun) { notify("มีงานกำลังทำงานอยู่ กรุณารอให้เสร็จก่อน", "error"); return; }
     setHarvesting(true);
     notify("");
     try {
       await scopusBenchmarkAPI.harvest({ scope_id: Number(scopeId), ...yearParams() });
-      notify("เริ่มดึงข้อมูลแล้ว สถานะจะอัปเดตอัตโนมัติ", "success");
+      notify("เริ่มดึงข้อมูลแล้ว", "success");
       loadRuns();
     } catch (e) {
       notify(e?.message || "เริ่มดึงข้อมูลไม่สำเร็จ", "error");
@@ -229,7 +291,7 @@ export default function AdminScopusBenchmark() {
     setCancellingId(id);
     try {
       await scopusBenchmarkAPI.cancelRun(id);
-      notify("ส่งคำขอยกเลิกแล้ว งานจะหยุดในไม่กี่วินาที", "info");
+      notify("กำลังยกเลิกงาน", "info");
       loadRuns();
     } catch (e) {
       notify(e?.message || "ยกเลิกไม่สำเร็จ", "error");
@@ -254,7 +316,7 @@ export default function AdminScopusBenchmark() {
     if (!uni) return;
     try {
       await scopusBenchmarkAPI.updateScope(uni.id, { af_id: afId });
-      notify(`ตั้ง AF-ID ${afId} ให้ KKU แล้ว`, "success");
+      notify("บันทึก AF-ID แล้ว", "success");
       setLookupHits([]);
       setLookupOpen(false);
       loadScopes();
@@ -325,7 +387,9 @@ export default function AdminScopusBenchmark() {
 
   const renderResults = () => (
     <div className="space-y-5">
-      <YearRange {...yearRangeProps} onRefresh={loadComparison} />
+      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+        <YearRange {...yearRangeProps} onRefresh={loadComparison} />
+      </div>
 
       {!facultyHasData && !countsHasData && !comparisonLoading ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
@@ -401,6 +465,13 @@ export default function AdminScopusBenchmark() {
 
   const renderSetup = () => (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-slate-500">ทำตามลำดับด้านล่าง</div>
+        <button type="button" onClick={() => setHelpOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
+          <span aria-hidden>?</span> วิธีใช้งาน
+        </button>
+      </div>
       <Step n={1} title="ตั้งค่าขอบเขต KKU" desc="ระบุ Affiliation ID ของมหาวิทยาลัย (ทำครั้งเดียว) ใช้สำหรับค้นผลงาน" state={step1}>
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="text-slate-600">AF-ID ปัจจุบัน:</span>
@@ -549,6 +620,8 @@ export default function AdminScopusBenchmark() {
 
         {tab === "results" ? renderResults() : renderSetup()}
       </div>
+
+      {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
     </PageLayout>
   );
 }
