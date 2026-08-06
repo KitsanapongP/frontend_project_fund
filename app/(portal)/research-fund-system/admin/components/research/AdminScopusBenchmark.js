@@ -67,10 +67,11 @@ function HelpModal({ onClose }) {
 
           <section>
             <div className="mb-1 font-semibold text-slate-900">ตัวเลขแต่ละคอลัมน์มาจากไหน</div>
+            <p className="mb-1">ทั้งสามคอลัมน์นับจาก Scopus โดยตรง ได้จากปุ่ม “อัปเดตตัวเลข” (ไม่กี่วินาที)</p>
             <ul className="ml-4 list-disc space-y-1">
-              <li><b>KKU / Thailand</b> — นับจำนวนจาก Scopus โดยตรง ได้จากปุ่ม “อัปเดตตัวเลข” เร็ว ไม่กี่วินาที</li>
-              <li><b>คณะ</b> — ได้จากการดึงเอกสารของ KKU มาเก็บ แล้วดูว่าเอกสารชิ้นไหนมีอาจารย์ในระบบเป็นผู้แต่ง
-              จึงต้องกด “ดึงข้อมูล KKU” ก่อน คอลัมน์นี้ถึงจะมีตัวเลข</li>
+              <li><b>คณะ</b> — ผลงานหมวด Computer Science ที่มีอาจารย์ในระบบ (ผู้ที่ตั้ง Scopus ID ไว้) เป็นผู้แต่ง และผูกสังกัด KKU</li>
+              <li><b>KKU</b> — ผลงาน Computer Science ทั้งหมดของมหาวิทยาลัยขอนแก่น</li>
+              <li><b>Thailand</b> — ผลงาน Computer Science ทั้งหมดของประเทศไทย</li>
             </ul>
           </section>
 
@@ -78,24 +79,21 @@ function HelpModal({ onClose }) {
             <div className="mb-1 font-semibold text-slate-900">ลำดับที่ควรทำ</div>
             <ol className="ml-4 list-decimal space-y-1">
               <li>ตั้งค่า AF-ID ของ KKU (ทำครั้งเดียว)</li>
-              <li>เลือกช่วงปีที่ต้องการ แล้วกด “ดึงข้อมูล KKU” เพื่อให้ได้ตัวเลขของคณะ</li>
-              <li>กด “อัปเดตตัวเลข” เพื่อเติมตัวเลข KKU และ Thailand</li>
+              <li>เลือกช่วงปีที่ต้องการ</li>
+              <li>กด “อัปเดตตัวเลข” เพื่อเติมตัวเลขทั้งสามคอลัมน์</li>
               <li>เปิดแท็บ “ผลเปรียบเทียบ” เพื่อดูกราฟและตาราง</li>
             </ol>
           </section>
 
           <section>
-            <div className="mb-1 font-semibold text-slate-900">ต่างกันอย่างไร: “ดึงข้อมูล” กับ “อัปเดตตัวเลข”</div>
-            <ul className="ml-4 list-disc space-y-1">
-              <li><b>อัปเดตตัวเลข</b> — ถามจำนวนจาก Scopus อย่างเดียว รวดเร็ว ใช้เติมคอลัมน์ KKU และ Thailand</li>
-              <li><b>ดึงข้อมูล</b> — โหลดตัวเอกสารจริงมาเก็บในระบบ ใช้เวลานานกว่า แต่จำเป็นสำหรับตัวเลขของคณะ
-              และเก็บข้อมูลไว้ใช้งานต่อได้</li>
-            </ul>
+            <div className="mb-1 font-semibold text-slate-900">ช่วงปี</div>
+            <p>กำหนดช่วงปีที่จะนับ กดปุ่ม “ตั้งแต่ปีแรก” เพื่อให้ระบบค้นหาปีที่เก่าที่สุดที่มีผลงานให้</p>
           </section>
 
           <section>
-            <div className="mb-1 font-semibold text-slate-900">ช่วงปี</div>
-            <p>กำหนดช่วงปีที่จะนับหรือดึงข้อมูล กดปุ่ม “ตั้งแต่ปีแรก” เพื่อให้ระบบค้นหาปีที่เก่าที่สุดที่มีผลงานให้</p>
+            <div className="mb-1 font-semibold text-slate-900">การเก็บเอกสารเต็ม (ขั้นสูง)</div>
+            <p>ถ้าต้องการเก็บตัวเอกสารจริงไว้ใช้งานต่อ (ไม่ใช่แค่จำนวน) ใช้ปุ่มดึงข้อมูลในส่วนขั้นสูง
+            ซึ่งต้องใช้สิทธิ์การเข้าถึง Scopus แบบเต็ม (COMPLETE) หากยังไม่พร้อม ให้ใช้แค่การนับตัวเลขก่อนได้</p>
           </section>
 
           <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
@@ -186,6 +184,7 @@ export default function AdminScopusBenchmark() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupOpen, setLookupOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
   const notify = (text, tone = "info") => setMsg(text ? { text, tone } : null);
@@ -332,8 +331,7 @@ export default function AdminScopusBenchmark() {
     [runs, uni]
   );
   const step1 = uni?.af_id ? "done" : "todo";
-  const step2 = facultyHasData ? "done" : lastUniHarvest ? "partial" : "todo";
-  const step3 = countsHasData ? "done" : "todo";
+  const step2 = countsHasData ? "done" : "todo";
 
   const asc = useMemo(() => [...comparison].sort((a, b) => a.year - b.year), [comparison]);
   const latest = useMemo(() => (asc.length ? asc[asc.length - 1] : null), [asc]);
@@ -514,33 +512,45 @@ export default function AdminScopusBenchmark() {
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <YearRange {...yearRangeProps} compact />
-        <p className="mt-1 text-[11px] text-slate-400">ช่วงปีนี้ใช้กับทั้งขั้นที่ 2 (ดึงข้อมูล) และ 3 (นับตัวเลข)</p>
+        <p className="mt-1 text-[11px] text-slate-400">เลือกช่วงปีก่อนกดอัปเดตตัวเลขในขั้นที่ 2</p>
       </div>
 
-      <Step n={2} title={'ดึงข้อมูล KKU → ได้ตัวเลข "คณะ"'} desc="ดึงเอกสาร CS ของ KKU มาเก็บ เพื่อจับคู่ว่าชิ้นไหนเป็นของอาจารย์ในระบบ (จำเป็นต่อคอลัมน์คณะ)" state={step2}>
+      <Step n={2} title="อัปเดตตัวเลข → คณะ / KKU / Thailand" desc="นับจำนวนผลงาน Computer Science จาก Scopus ในช่วงปีที่เลือก เติมทั้งสามคอลัมน์ ใช้เวลาไม่กี่วินาที" state={step2}>
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" onClick={() => uni && runHarvest(uni.id)} disabled={harvesting || !!activeRun || !uni?.af_id}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
-            {activeRun ? "มีงานกำลังรัน…" : harvesting ? "กำลังเริ่ม…" : "เริ่มดึงข้อมูล KKU"}
+          <button type="button" onClick={refreshCounts} disabled={countsRunning || !uni?.af_id}
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
+            {countsRunning ? "กำลังอัปเดต…" : "อัปเดตตัวเลข"}
           </button>
-          {lastUniHarvest && <span className="text-xs text-slate-500">ล่าสุด: {formatDateTime(lastUniHarvest.finished_at)}</span>}
           {!uni?.af_id && <span className="text-xs text-rose-500">ต้องตั้ง AF-ID ในขั้นที่ 1 ก่อน</span>}
         </div>
       </Step>
 
-      <Step n={3} title="อัปเดตตัวเลขเทียบ → เติม KKU / Thailand" desc="นับจำนวนจาก Scopus (เร็ว) เติมคอลัมน์ KKU และ Thailand ในช่วงปีที่เลือก" state={step3}>
-        <button type="button" onClick={refreshCounts} disabled={countsRunning}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
-          {countsRunning ? "กำลังอัปเดต…" : "อัปเดตตัวเลข KKU/Thailand"}
+      <div className="rounded-xl border border-slate-200 bg-white">
+        <button type="button" onClick={() => setShowAdvanced((v) => !v)}
+          className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-slate-700">
+          <span>ขั้นสูง — เก็บเอกสารเต็ม (ไม่บังคับ)</span>
+          <span className="text-slate-400">{showAdvanced ? "▲" : "▼"}</span>
         </button>
-      </Step>
-
-      <Step n={4} title="(ไม่บังคับ) ดึงเอกสาร Thailand เต็ม" desc="ถ้าต้องการเก็บตัวเอกสารระดับประเทศไว้ใช้ต่อ — ถ้าอยากได้แค่จำนวนไม่ต้องทำ" state="todo">
-        <button type="button" onClick={() => country && runHarvest(country.id)} disabled={harvesting || !!activeRun}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-          เริ่มดึงข้อมูล Thailand
-        </button>
-      </Step>
+        {showAdvanced && (
+          <div className="space-y-3 border-t border-slate-100 px-4 py-4">
+            <p className="text-xs text-slate-500">
+              ดึงตัวเอกสารจริงมาเก็บไว้ใช้งานต่อ (ไม่ใช่แค่จำนวน) ต้องใช้สิทธิ์ Scopus แบบเต็ม (COMPLETE)
+              หากบัญชียังไม่มีสิทธิ์นี้ ระบบจะแจ้ง error — ใช้แค่การนับตัวเลขในขั้นที่ 2 ก่อนได้
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={() => uni && runHarvest(uni.id)} disabled={harvesting || !!activeRun || !uni?.af_id}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                ดึงเอกสาร KKU
+              </button>
+              <button type="button" onClick={() => country && runHarvest(country.id)} disabled={harvesting || !!activeRun}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                ดึงเอกสาร Thailand
+              </button>
+              {lastUniHarvest && <span className="self-center text-xs text-slate-500">KKU ล่าสุด: {formatDateTime(lastUniHarvest.finished_at)}</span>}
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="rounded-xl border border-slate-200 bg-white">
         <button type="button" onClick={() => setShowHistory((v) => !v)}
