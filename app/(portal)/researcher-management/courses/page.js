@@ -426,14 +426,6 @@ export default function CoursesPage() {
                 )}
               </div>
 
-              {/* ส่วนท้ายสุดในชุดคอนเทนเนอร์ (Footer Info Bar) */}
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-800 flex items-center gap-2">
-                <BookOpen size={15} />
-                <span>
-                  ดึงข้อมูลจากตาราง <code className="font-mono text-xs bg-emerald-100 px-1.5 py-0.5 rounded">instructor_courses</code> · ทั้งหมด {courses.length} หลักสูตร
-                </span>
-              </div>
-
             </div>
           </div>
 
