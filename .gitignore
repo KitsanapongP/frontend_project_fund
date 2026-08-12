@@ -36,14 +36,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# impeccable
-/.agents/
-/.codex/
-/.cursor/
-/.gemini/
-/.opencode/
-/.claude/
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
