@@ -13,6 +13,7 @@ import PageLayout from "../common/PageLayout";
 import Card from "../common/Card";
 import EmptyState from "../common/EmptyState";
 import { isApprovedStatus } from "../utils/status";
+import { getSubmissionFundStatus } from "@/app/lib/fund_availability.mjs";
 
 export default function ApplicationList({ onNavigate }) {
   const [applications, setApplications] = useState([]);
@@ -216,6 +217,7 @@ export default function ApplicationList({ onNavigate }) {
             status_id: statusId,
             status_fallback: fallbackStatusName,
             status_code: statusCode,
+            fund_status: getSubmissionFundStatus(sub),
             submitted_at: sub.created_at,
             year:
               resolveSubmissionYear(sub) ??
@@ -495,6 +497,7 @@ export default function ApplicationList({ onNavigate }) {
           .toLowerCase();
         const canEditDraft = statusCode === 'draft' || statusCode === '4';
         const canRevise = statusCode === 'needs_more_info' || statusCode === '3';
+        const isFundOpen = row.fund_status === '' || row.fund_status === 'active';
 
         return (
           <div className="flex flex-wrap gap-2">
@@ -506,7 +509,7 @@ export default function ApplicationList({ onNavigate }) {
               <Eye size={16} />
               ดูรายละเอียด
             </button>
-            {(canEditDraft || canRevise) && (
+            {isFundOpen && (canEditDraft || canRevise) && (
               <button
                 className="inline-flex items-center gap-1 px-3 py-1 text-sm text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-md transition-colors"
                 title={canRevise ? "แก้ไขเพิ่มเติม" : "แก้ไขร่าง"}

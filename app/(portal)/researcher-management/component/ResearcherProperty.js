@@ -1,7 +1,7 @@
 "use client";
 import { Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import api from "../../../lib/api";
+import { apiClient } from "../../../lib/api";
 import Swal from "sweetalert2"; 
 
 export default function IntellectualPropertyTab({ formData, handleInputChange }) {
@@ -13,7 +13,7 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
   useEffect(() => {
     const fetchWeights = async () => {
       try {
-        const res = await api.get("/researcher-management/ranking-weights");
+        const res = await apiClient.get("/researcher-management/ranking-weights");
         const rawData = Array.isArray(res) ? res : (res?.data ?? []);
 
         if (rawData.length > 0) {
@@ -124,7 +124,7 @@ export default function IntellectualPropertyTab({ formData, handleInputChange })
 
     if (target.id) {
       try {
-        await api.delete(`/researcher-management/instructor-intellectual-properties/${target.id}`);
+        await apiClient.delete(`/researcher-management/instructor-intellectual-properties/${target.id}`);
         Swal.fire({
           title: "ลบสำเร็จ!",
           text: "ลบข้อมูลผลงานทรัพย์สินทางปัญญาออกจากระบบเรียบร้อยแล้ว",

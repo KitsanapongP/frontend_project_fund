@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  Download,
   MousePointerClick,
   X,
 } from "lucide-react";
@@ -82,6 +83,7 @@ const PERSON_QUARTILE_COLUMNS = [
 
 const PERSON_SOURCE_COLUMNS = [
   { key: "journal_count", label: "Journal", align: "right", group: "source" },
+  { key: "book_count", label: "Book/Book Series", align: "right", group: "source" },
   { key: "conference_count", label: "Conference", align: "right", group: "source" },
 ];
 
@@ -107,6 +109,16 @@ const PERSON_ALL_COLUMNS = [
   ...PERSON_SOURCE_COLUMNS,
   ...PERSON_TIME_COLUMNS,
 ];
+const PERSON_QUALITY_SORT_KEY = "quality_priority";
+const PERSON_QUALITY_SORT_COLUMNS = [
+  "t1_count",
+  "q1_count",
+  "q2_count",
+  "q3_count",
+  "q4_count",
+  "conference_count",
+];
+const PERSON_DEFAULT_SORT = { key: PERSON_QUALITY_SORT_KEY, direction: "desc" };
 const PERSON_DEFAULT_COLUMN_VISIBILITY = PERSON_ALL_COLUMNS.reduce((acc, col) => {
   acc[col.key] = true;
   return acc;
@@ -122,6 +134,7 @@ const PERSON_COLUMN_PRESETS = {
     "t1_count",
     "q1_count",
     "journal_count",
+    "book_count",
     "conference_count",
   ],
   quartile: [
@@ -222,7 +235,7 @@ export default function AdminScopusResearchDashboard() {
   const [personMatrixSort, setPersonMatrixSort] = useState({ key: "user_name", direction: "asc" });
   const [personSummarySearch, setPersonSummarySearch] = useState("");
   const [personColumnVisibility, setPersonColumnVisibility] = useState(PERSON_DEFAULT_COLUMN_VISIBILITY);
-  const [personSort, setPersonSort] = useState({ key: "unique_documents", direction: "desc" });
+  const [personSort, setPersonSort] = useState(PERSON_DEFAULT_SORT);
   const [documentChartView, setDocumentChartView] = useState("bar");
   const [quartileChartView, setQuartileChartView] = useState("donut");
   const [publicationSourceSort, setPublicationSourceSort] = useState("desc");
@@ -455,7 +468,7 @@ export default function AdminScopusResearchDashboard() {
   }, []);
 
   const resetPersonSort = useCallback(() => {
-    setPersonSort({ key: "unique_documents", direction: "desc" });
+    setPersonSort(PERSON_DEFAULT_SORT);
   }, []);
 
   const handlePersonSort = useCallback((columnKey) => {
@@ -476,7 +489,9 @@ export default function AdminScopusResearchDashboard() {
   }, [personSort]);
 
   const personColumnLabelByKey = useMemo(() => {
-    const map = {};
+    const map = {
+      [PERSON_QUALITY_SORT_KEY]: "T1 → Q1 → Q2 → Q3 → Q4 → Conference",
+    };
     PERSON_ALL_COLUMNS.forEach((col) => {
       map[col.key] = col.label;
     });
@@ -839,6 +854,7 @@ export default function AdminScopusResearchDashboard() {
       "q4_count",
       "quartile_na",
       "journal_count",
+      "book_count",
       "conference_count",
       "first_year",
       "latest_year",
@@ -846,6 +862,16 @@ export default function AdminScopusResearchDashboard() {
     ]);
 
     filtered.sort((a, b) => {
+      if (personSort.key === PERSON_QUALITY_SORT_KEY) {
+        for (const columnKey of PERSON_QUALITY_SORT_COLUMNS) {
+          const compare = Number(a?.[columnKey] || 0) - Number(b?.[columnKey] || 0);
+          if (compare !== 0) {
+            return personSort.direction === "asc" ? compare : -compare;
+          }
+        }
+        return String(a?.user_name || "").localeCompare(String(b?.user_name || ""), "th", { sensitivity: "base" });
+      }
+
       const left = a?.[personSort.key];
       const right = b?.[personSort.key];
       let compare = 0;
@@ -870,6 +896,37 @@ export default function AdminScopusResearchDashboard() {
     () => personColumnLabelByKey[personSort.key] || personSort.key,
     [personColumnLabelByKey, personSort.key]
   );
+
+  const exportPersonSummaryCSV = useCallback(() => {
+    const visibleColumns = PERSON_ALL_COLUMNS.filter((col) => personColumnVisibility[col.key]);
+    const escapeCSVValue = (value) => {
+      const text = value == null ? "" : String(value);
+      const safeText = /^[=+\-@]/.test(text) ? `'${text}` : text;
+      return `"${safeText.replaceAll('"', '""')}"`;
+    };
+    const rows = personSummaryFilteredRows.map((row, index) => [
+      index + 1,
+      ...visibleColumns.map((col) => {
+        const value = row?.[col.key];
+        if (col.key === "avg_cited_by") return Number(value || 0).toFixed(2);
+        if ((col.key === "first_year" || col.key === "latest_year") && Number(value || 0) <= 0) return "-";
+        return value ?? "";
+      }),
+    ]);
+    const csv = [
+      ["ลำดับ", ...visibleColumns.map((col) => col.label)],
+      ...rows,
+    ].map((row) => row.map(escapeCSVValue).join(",")).join("\r\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `scopus-person-summary-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, [personColumnVisibility, personSummaryFilteredRows]);
 
   const visiblePersonMatrixIdentityColumns = useMemo(
     () => PERSON_MATRIX_IDENTITY_COLUMNS.filter((col) => personMatrixIdentityVisibility[col.key]),
@@ -1671,14 +1728,25 @@ export default function AdminScopusResearchDashboard() {
           <SimpleCard
             title="สรุปรายบุคคล (Person Summary)"
             action={(
-              <button
-                type="button"
-                onClick={togglePersonSummaryCollapsed}
-                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
-              >
-                <span>{isPersonSummaryCollapsed ? "แสดง" : "ซ่อน"}</span>
-                {isPersonSummaryCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={exportPersonSummaryCSV}
+                  disabled={personSummaryFilteredRows.length === 0}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Download size={14} />
+                  Export CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={togglePersonSummaryCollapsed}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
+                >
+                  <span>{isPersonSummaryCollapsed ? "แสดง" : "ซ่อน"}</span>
+                  {isPersonSummaryCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                </button>
+              </div>
             )}
           >
             {!isPersonSummaryCollapsed && (

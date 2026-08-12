@@ -2,6 +2,7 @@
 
 import apiClient from './api';
 import { targetRolesUtils } from './target_roles_utils';
+import { uniqueSubcategoriesById } from './admin_fund_helpers.mjs';
 
 const isExecutiveRole = () => {
   const user = apiClient.getUser?.();
@@ -603,8 +604,17 @@ export const adminAPI = {
   // Get categories with subcategories and budgets for a specific year
   async getCategoriesWithDetails(yearId) {
     try {
-      // Get categories for the year
-      const categories = await this.getCategories(yearId);
+      const params = yearId ? { year_id: yearId } : {};
+      const categoryEndpoint = isExecutiveRole() ? '/categories' : '/admin/categories';
+      const subcategoryEndpoint = isExecutiveRole() ? '/subcategories' : '/admin/subcategories';
+
+      // Fund settings must use the admin endpoints directly. The shared
+      // endpoints are intended for application forms and only return active
+      // records.
+      const categoryResponse = await apiClient.get(categoryEndpoint, params);
+      const categories = Array.isArray(categoryResponse?.categories)
+        ? categoryResponse.categories
+        : [];
 
       let budgetLookup = new Map();
       try {
@@ -636,7 +646,20 @@ export const adminAPI = {
       const categoriesWithDetails = await Promise.all(
         categories.map(async (category) => {
           try {
-            const subcategories = await this.getSubcategories(category.category_id);
+            const subcategoryParams = {
+              category_id: category.category_id,
+              ...(yearId ? { year_id: yearId } : {}),
+            };
+            const subcategoryResponse = await apiClient.get(subcategoryEndpoint, subcategoryParams);
+            const rawSubcategories = Array.isArray(subcategoryResponse?.subcategories)
+              ? subcategoryResponse.subcategories
+              : [];
+
+            // Older API deployments joined subcategories to their budget rows,
+            // which returned the same subcategory_id multiple times. Keep this
+            // defensive deduplication so mixed-version production/test servers
+            // still render one fund row while the backend fix is rolled out.
+            const subcategories = uniqueSubcategoriesById(rawSubcategories);
 
             const subcategoriesWithBudgets = subcategories.map((subcategory) => {
               const targetRoles = targetRolesUtils.parseTargetRoles(subcategory.target_roles);
@@ -1282,6 +1305,14 @@ export const adminAPI = {
       throw error;
     }
   },
+
+  async getSDGs() {
+    const response = await apiClient.get('/admin/sdgs');
+    return Array.isArray(response?.sdgs) ? response.sdgs : [];
+  },
+
+  async createSDG(data) { return apiClient.post('/admin/sdgs', data); },
+  async updateSDG(id, data) { return apiClient.put(`/admin/sdgs/${id}`, data); },
 
   async getProjectBudgetPlans() {
     try {

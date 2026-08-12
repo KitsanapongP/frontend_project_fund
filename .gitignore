@@ -36,6 +36,17 @@ yarn-error.log*
 # vercel
 .vercel
 
+# impeccable
+/.agents/
+/.codex/
+/.cursor/
+/.gemini/
+/.opencode/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# impeccable / local design tooling (machine-local, not shared)
+.claude/skills/impeccable/
+.claude/settings.local.json

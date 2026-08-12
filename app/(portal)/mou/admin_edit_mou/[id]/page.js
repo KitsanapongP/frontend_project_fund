@@ -48,7 +48,7 @@ function statusClass(name) {
   if (v.includes("มีผล")) return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300";
   if (v.includes("ใกล้")) return "bg-amber-50 text-amber-700 ring-1 ring-amber-300";
   if (v.includes("หมด")) return "bg-red-50 text-red-700 ring-1 ring-red-300";
-  if (v.includes("รอดำเนินการ")) return "bg-blue-50 text-blue-700 ring-1 ring-blue-300";
+  if (v.includes("รอดำเนินการ") || v.includes("กำลังดำเนินการ")) return "bg-blue-50 text-blue-700 ring-1 ring-blue-300";
   return "bg-gray-50 text-gray-600 ring-1 ring-gray-300";
 }
 
@@ -185,7 +185,7 @@ function Select({ value, onChange, options, placeholder = "เลือก", nam
     <div ref={ref} className="csWrap" onKeyDown={onKeyDown}>
       {searchable ? (
         <div ref={triggerRef} className={`csBtn${open ? " open" : ""}${value ? " hasVal" : ""}`} style={{ padding: 0, overflow: "hidden", alignItems: "stretch" }}>
-          <input ref={inputRef} type="text" className="csInput" value={query || displayLabel} onChange={handleInputChange} onFocus={() => setOpen(true)} placeholder={placeholder} />
+          <input ref={inputRef} type="text" className="csInput" value={query || (value ? displayLabel : "")} onChange={handleInputChange} onFocus={() => setOpen(true)} placeholder={placeholder} />
           <div style={{ display: "flex", alignItems: "center", paddingRight: 8, cursor: "pointer" }} onClick={toggle}>
             <ChevronDown size={18} className={`csArrow${open ? " open" : ""}`} />
           </div>
@@ -223,9 +223,9 @@ function Select({ value, onChange, options, placeholder = "เลือก", nam
 
 function formatDateForInput(dateStr) {
   if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toISOString().split("T")[0];
+  const tIndex = dateStr.indexOf("T");
+  if (tIndex !== -1) return dateStr.substring(0, tIndex);
+  return dateStr;
 }
 
 export default function AdminEditMouPage({ params: paramsPromise }) {
@@ -259,6 +259,25 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
   const [success, setSuccess] = useState("");
   const [currentStatusName, setCurrentStatusName] = useState("");
   const fileInputRef = useRef(null);
+  const coorRef = useRef(null);
+  const [coorQuery, setCoorQuery] = useState("");
+  const [coorOpen, setCoorOpen] = useState(false);
+
+  const filteredCoorUsers = coorQuery.trim()
+    ? users.filter(u =>
+        [u.prefix || "", u.user_fname || "", u.user_lname || ""].filter(Boolean).join(" ").toLowerCase().includes(coorQuery.toLowerCase())
+      )
+    : users;
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (coorRef.current && !coorRef.current.contains(e.target)) {
+        setCoorOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -275,6 +294,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
     country_id: null,
     faculty_ids: [],
     coordinator_id: "",
+    coordinator_other: "",
     coordinator_name: "",
     signed_by: "",
     notes: "",
@@ -352,12 +372,19 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
           country_id: mouRes.country_id ? String(mouRes.country_id) : "",
           faculty_ids: existingFacultyIds,
           coordinator_id: mouRes.coordinator_id ? String(mouRes.coordinator_id) : "",
+          coordinator_other: mouRes.coordinator_other || "",
           coordinator_name: "",
           signed_by: mouRes.signed_by || "",
           notes: mouRes.notes || "",
           notify_days_before: mouRes.notifications?.[0]?.days_before ?? 0,
         });
         setCurrentStatusName(mouRes.status?.name || "");
+        if (mouRes.coordinator_id) {
+          const cu = (usersRes?.users || []).find((u) => u.user_id === mouRes.coordinator_id);
+          if (cu) setCoorQuery(`${cu.prefix || ""} ${cu.user_fname || ""} ${cu.user_lname || ""}`.trim());
+        } else if (mouRes.coordinator_other) {
+          setCoorQuery(mouRes.coordinator_other);
+        }
       }
       setCountries(countriesRes || []);
       setUsers(usersRes?.users || []);
@@ -491,17 +518,6 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
     setSuccess("");
 
     try {
-      if (!formData.title || !formData.start_date || !formData.end_date || !formData.partner_name) {
-        setError("กรุณากรอกข้อมูลที่จำเป็นทั้งหมด");
-        return;
-      }
-
-      const newStatusId = formData.status_id ? parseInt(formData.status_id, 10) : null;
-      if (newStatusId === 2 && (!formData.year_of_signing || !formData.signed_by)) {
-        setError("กรุณากรอกวันเดือนปีที่ลงนามและผู้ลงนามก่อนเปลี่ยนสถานะเป็น 'มีผลบังคับใช้'");
-        return;
-      }
-
       const selectedUser = users.find(u => u.user_id === parseInt(formData.coordinator_id, 10));
 
       const facultiesArr = formData.faculty_ids.map((fid) => {
@@ -546,6 +562,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
         country_id: formData.country_id ? parseInt(formData.country_id, 10) : null,
         faculties: facultiesArr,
         coordinator_id: formData.coordinator_id ? parseInt(formData.coordinator_id, 10) : null,
+        coordinator_other: formData.coordinator_other || (selectedUser ? "" : null),
         coordinator_name: selectedUser ? `${selectedUser.user_fname || ""} ${selectedUser.user_lname || ""}`.trim() : "",
         signed_by: formData.signed_by || null,
         notes: formData.notes || null,
@@ -610,7 +627,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <div className="panel formSection afu" style={{ animationDelay: "0ms" }}>
           <div className="sectionHead">
             <FileText size={18} className="text-blue-500" />
@@ -619,21 +636,12 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
               <span style={{ fontSize: "14px", color: "var(--mou-muted)", fontWeight: 500 }}>สถานะ</span>
               <div style={{ position: "relative", minWidth: "160px" }}>
                 {(() => {
-                  const canChange = currentStatusName.includes("ร่าง") || currentStatusName.includes("รอดำเนินการ");
-                  const allowedStatuses = statuses.filter((s) => [1, 5, 2, 4].includes(s.id));
-                  if (!canChange) {
-                    return (
-                      <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${statusClass(currentStatusName)}`}>
-                        {currentStatusName || "-"}
-                      </span>
-                    );
-                  }
                   return (
                     <Select
                       name="status_id"
                       value={formData.status_id}
                       onChange={handleChange}
-                      options={allowedStatuses.map((s) => ({ value: String(s.id), label: s.name }))}
+                      options={statuses.map((s) => ({ value: String(s.id), label: s.name }))}
                       placeholder="เลือกสถานะ"
                     />
                   );
@@ -737,12 +745,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
             {formData.is_international === "true" && (
               <div className="field">
                 <label>ประเทศ</label>
-                <select name="country_id" value={formData.country_id || ""} onChange={handleChange}>
-                  <option value="">เลือกประเทศ</option>
-                  {countries.map((country) => (
-                    <option key={country.id} value={country.id}>{country.name_th}</option>
-                  ))}
-                </select>
+                <Select name="country_id" value={formData.country_id || ""} onChange={handleChange} placeholder="เลือกประเทศ" searchable options={countries.map((c) => ({ value: c.id, label: c.name_th }))} />
               </div>
             )}
 
@@ -942,14 +945,35 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
 
             <div className="field">
               <label>ผู้ประสานงาน <span className="required">*</span></label>
-              <select name="coordinator_id" value={formData.coordinator_id} onChange={handleChange} required>
-                <option value="">เลือกผู้ประสานงาน</option>
-                {users.map((user) => (
-                  <option key={user.user_id} value={user.user_id}>
-                    {user.prefix || ""} {user.user_fname} {user.user_lname}
-                  </option>
-                ))}
-              </select>
+              <div className="relative" ref={coorRef}>
+                <input
+                  value={coorQuery}
+                  onChange={(e) => {
+                    setCoorQuery(e.target.value);
+                    setCoorOpen(true);
+                    setFormData((prev) => ({ ...prev, coordinator_id: "", coordinator_other: e.target.value }));
+                  }}
+                  onFocus={() => setCoorOpen(true)}
+                  placeholder="ค้นหาหรือพิมพ์ชื่อผู้ประสานงาน"
+                />
+                {coorOpen && filteredCoorUsers.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {filteredCoorUsers.map((u) => (
+                      <div
+                        key={u.user_id}
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 ${u.user_id === parseInt(formData.coordinator_id) ? "bg-blue-50 text-blue-700" : "text-gray-900"}`}
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, coordinator_id: u.user_id, coordinator_other: "" }));
+                          setCoorQuery(`${u.prefix || ""} ${u.user_fname || ""} ${u.user_lname || ""}`.trim());
+                          setCoorOpen(false);
+                        }}
+                      >
+                        {u.prefix || ""} {u.user_fname || ""} {u.user_lname || ""}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="field">

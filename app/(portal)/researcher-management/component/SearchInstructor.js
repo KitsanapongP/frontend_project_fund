@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Search, User, ChevronRight, UserCircle, Clock, ArrowLeft, Settings, Database, BookOpen, ClipboardList  } from "lucide-react";
+import { apiClient } from "../../../lib/api";
 
 export default function SearchInstructor() {
   const router = useRouter();
@@ -10,6 +11,7 @@ export default function SearchInstructor() {
   const [instructors, setInstructors] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleBackToPortal = () => {
     window.location.href = "/";
@@ -72,33 +74,20 @@ export default function SearchInstructor() {
     const fetchInstructors = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+        setErrorMessage("");
 
-        if (!token) {
-          setLoading(false);
-          return;
-        }
+        const data = await apiClient.get("/researcher-management/instructors");
 
-        const response = await fetch("/api/v1/researcher-management/instructors", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          if (Array.isArray(data)) {
-            setInstructors(data);
-          } else if (data && Array.isArray(data.data)) {
-            setInstructors(data.data);
-          } else {
-            setInstructors([]);
-          }
+        if (Array.isArray(data)) {
+          setInstructors(data);
+        } else if (data && Array.isArray(data.data)) {
+          setInstructors(data.data);
         } else {
           setInstructors([]);
         }
       } catch (error) {
-        console.error("Fetch error:", error);
         setInstructors([]);
+        setErrorMessage(error?.message || "ไม่สามารถดึงรายชื่ออาจารย์ได้");
       } finally {
         setLoading(false);
       }
@@ -224,7 +213,9 @@ export default function SearchInstructor() {
                   ) : (
                     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
                       <User size={40} className="mx-auto text-slate-300 mb-3" />
-                      <p className="text-sm text-slate-500">ไม่พบข้อมูลรายชื่ออาจารย์ที่ค้นหา</p>
+                      <p className="text-sm text-slate-500">
+                        {errorMessage || "ไม่พบข้อมูลรายชื่ออาจารย์ที่ค้นหา"}
+                      </p>
                     </div>
                   )}
                 </div>

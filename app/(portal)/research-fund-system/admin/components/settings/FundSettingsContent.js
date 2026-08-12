@@ -1,6 +1,6 @@
 // FundSettingsContent.js
 import React, { useState, useEffect } from "react";
-import { Settings, CalendarRange, DollarSign, PencilLine, FileText, FileStack, ListChecks, BellRing, AlertTriangle } from "lucide-react";
+import { Settings, CalendarRange, DollarSign, PencilLine, FileText, FileStack, ListChecks, BellRing, AlertTriangle, Globe2 } from "lucide-react";
 import Swal from 'sweetalert2';
 
 // Import separated components
@@ -17,6 +17,7 @@ import InstallmentManagementTab from "@/app/(portal)/research-fund-system/admin/
 import NotificationTemplateManager from "@/app/(portal)/research-fund-system/admin/components/settings/notification_templates/NotificationTemplateManager";
 import ProjectTypesManager from "@/app/(portal)/research-fund-system/admin/components/settings/project_config/ProjectTypesManager";
 import BudgetPlansManager from "@/app/(portal)/research-fund-system/admin/components/settings/project_config/BudgetPlansManager";
+import SDGManagement from "@/app/(portal)/research-fund-system/admin/components/settings/sdg_config/SDGManagement";
 
 // Import modals
 import CategoryModal from "@/app/(portal)/research-fund-system/admin/components/settings/funds_config/CategoryModal";
@@ -38,6 +39,7 @@ const TAB_ITEMS = [
   { id: "system", label: "ตั้งค่าระบบ", icon: PencilLine },
   { id: "announcements", label: "ประกาศ", icon: FileText },
   { id: "notification-templates", label: "การแจ้งเตือน", icon: BellRing },
+  { id: "sdgs", label: "เป้าหมายการพัฒนาที่ยั่งยืน (SDGs)", icon: Globe2 },
 ];
 
 // SweetAlert2 configuration
@@ -1543,6 +1545,8 @@ export default function FundSettingsContent({ onNavigate }) {
         return <AnnouncementManager />;
       case "document-types":
         return <DocumentTypeManager />;
+      case "sdgs":
+        return <SDGManagement />;
       default:
         return null;
     }

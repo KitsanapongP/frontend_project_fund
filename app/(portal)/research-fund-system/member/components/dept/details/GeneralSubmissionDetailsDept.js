@@ -14,7 +14,7 @@ import PageLayout from '../../common/PageLayout';
 import Card from '../../common/Card';
 import StatusBadge from '../../common/StatusBadge';
 import deptHeadAPI from '@/app/lib/dept_head_api';
-import apiClient from '@/app/lib/api';
+import apiClient, { authAPI } from '@/app/lib/api';
 import { toast } from 'react-hot-toast';
 import { useStatusMap } from '@/app/hooks/useStatusMap';
 import { PDFDocument } from 'pdf-lib';
@@ -22,6 +22,7 @@ import PublicationSubmissionDetailsDept from './PublicationSubmissionDetailsDept
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import UnauthorizedPage from '@/app/components/UnauthorizedPage';
+import SubmissionSDGList from '../../common/SubmissionSDGList';
 
 /* =========================
  * Helpers
@@ -94,6 +95,21 @@ const getUserFullName = (u) => {
   return name || (u.email || '-');
 };
 
+const buildDeptHeadDisplayName = (user) => {
+  if (!user || typeof user !== 'object') return '';
+  return [user.user_fname || user.first_name || '', user.user_lname || user.last_name || '']
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+};
+
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
 // format THB
 function baht(value) {
   const n = Number(value ?? 0);
@@ -147,7 +163,7 @@ const DEPT_DECISION_OPTIONS = [
   {
     value: 'approve',
     label: 'เห็นควรพิจารณา',
-    hint: 'บันทึกผลพร้อมลายเซ็นหัวหน้าสาขา',
+    hint: 'บันทึกผลเป็นเห็นควรพิจารณา',
     description: 'ยืนยันการอนุมัติและบันทึกหมายเหตุที่ระบุ',
     icon: CheckCircle,
     iconClass: 'text-emerald-600',
@@ -157,8 +173,8 @@ const DEPT_DECISION_OPTIONS = [
   {
     value: 'reject',
     label: 'ไม่เห็นควรพิจารณา',
-    hint: 'เปลี่ยนสถานะเป็นไม่อนุมัติ',
-    description: 'ปฏิเสธคำร้องและแจ้งเหตุผลให้ผู้ยื่นทราบ',
+    hint: 'บันทึกผลเป็นไม่เห็นควรพิจารณา',
+    description: 'เมื่อไม่เห็นควรพิจารณา หรือใช้กรณีที่ต้องการให้ผู้ยื่นสร้างคำร้องใหม่ พร้อมระบุเหตุผลในหมายเหตุ',
     icon: XCircle,
     iconClass: 'text-red-600',
     iconBg: 'bg-red-50',
@@ -168,7 +184,7 @@ const DEPT_DECISION_OPTIONS = [
     value: 'revision',
     label: 'ต้องการข้อมูลเพิ่มเติม',
     hint: 'แจ้งผู้ยื่นให้ส่งข้อมูลเพิ่ม',
-    description: 'ส่งคำขอข้อมูลเพิ่มเติมโดยใช้หมายเหตุของหัวหน้าสาขา',
+    description: 'ผู้ยื่นคำร้องจะสามารถแก้ไขข้อมูลคำร้องได้บางส่วนและเพิ่มเอกสารได้ แต่จะไม่สามารถเปลี่ยนประเภททุน',
     icon: MessageCircle,
     iconClass: 'text-amber-600',
     iconBg: 'bg-amber-50',
@@ -304,14 +320,40 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
   const [comment, setComment] = useState(
     submission?.head_comment ?? submission?.comment ?? ''
   );
+  const [headSignature, setHeadSignature] = useState(
+    submission?.head_signature ?? ''
+  );
   const [saving, setSaving] = useState(false);
   const [selectedAction, setSelectedAction] = useState('approve');
   const [decisionPending, setDecisionPending] = useState(false);
   const [errors, setErrors] = useState({});
   const isCommentRequired = true;
 
+  useEffect(() => {
+    let cancelled = false;
+    const preloadHeadSignature = async () => {
+      if (headSignature?.trim()) return;
+      try {
+        const profile = await authAPI.getProfile();
+        const user = profile?.user || profile;
+        const displayName = buildDeptHeadDisplayName(user);
+        if (!cancelled && displayName && !headSignature?.trim()) {
+          setHeadSignature(displayName);
+        }
+      } catch (error) {
+        console.warn('[DeptDecisionPanel] Failed to preload head signature', error);
+      }
+    };
+
+    preloadHeadSignature();
+    return () => {
+      cancelled = true;
+    };
+  }, [headSignature]);
+
   const handleApprove = async () => {
     const trimmedComment = comment?.trim() || '';
+    const trimmedSignature = headSignature?.trim() || '';
 
     if (isCommentRequired && !trimmedComment) {
       setErrors((prev) => ({
@@ -326,11 +368,24 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
       return false;
     }
 
+    if (!trimmedSignature) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาระบุลายเซ็นหัวหน้าสาขา',
+        text: 'โปรดพิมพ์ชื่อเต็มของหัวหน้าสาขาก่อนดำเนินการ',
+      });
+      return false;
+    }
+
     const html = `
       <div style="text-align:left;font-size:14px;line-height:1.6;">
+        <div style="margin-bottom:.75rem;">
+          <div style="font-weight:500;margin-bottom:.25rem;">ลายเซ็นหัวหน้าสาขา</div>
+          <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;">${escapeHtml(trimmedSignature)}</div>
+        </div>
         ${trimmedComment
           ? `<div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
-            <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${trimmedComment.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+            <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${escapeHtml(trimmedComment)}</div>`
           : `<div style="font-size:12px;color:#6b7280;">(ไม่มีหมายเหตุ)</div>`
         }
       </div>
@@ -348,7 +403,7 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
       preConfirm: async () => {
         try {
           setSaving(true);
-          await onApprove(trimmedComment);
+          await onApprove(trimmedComment, trimmedSignature);
         } catch (e) {
           Swal.showValidationMessage(e?.message || 'อนุมัติไม่สำเร็จ');
           throw e;
@@ -370,6 +425,7 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
 
   const handleReject = async () => {
     const trimmedComment = comment?.trim() || '';
+    const trimmedSignature = headSignature?.trim() || '';
 
     const { value: reason } = await Swal.fire({
       title: 'เหตุผลการไม่อนุมัติ',
@@ -391,12 +447,19 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
         <div style="text-align:left;font-size:14px;">
           <div style="font-weight:500;margin-bottom:.25rem;">เหตุผลการไม่อนุมัติ</div>
           <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.75rem;border-radius:.5rem;white-space:pre-wrap;">
-            ${String(reason).replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+            ${escapeHtml(String(reason).trim())}
+          </div>
+          <div style="margin-top:.75rem;">
+            <div style="font-weight:500;margin-bottom:.25rem;">ลายเซ็นหัวหน้าสาขา</div>
+            ${trimmedSignature
+              ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;">${escapeHtml(trimmedSignature)}</div>`
+              : `<div style="font-size:12px;color:#6b7280;">(ไม่ระบุลายเซ็น)</div>`
+            }
           </div>
           <div style="margin-top:.75rem;">
             <div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
             ${trimmedComment
-              ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${trimmedComment.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+              ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${escapeHtml(trimmedComment)}</div>`
               : `<div style="font-size:12px;color:#6b7280;">(ไม่มีหมายเหตุ)</div>`
             }
           </div>
@@ -414,7 +477,7 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
       preConfirm: async () => {
         try {
           setSaving(true);
-          await onReject(String(reason).trim(), trimmedComment);
+          await onReject(String(reason).trim(), trimmedComment, trimmedSignature);
         } catch (e) {
           Swal.showValidationMessage(e?.message || 'ไม่อนุมัติไม่สำเร็จ');
           throw e;
@@ -435,6 +498,7 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
 
   const handleRequestRevision = async () => {
     const trimmedComment = comment?.trim() || '';
+    const trimmedSignature = headSignature?.trim() || '';
 
     if (!trimmedComment) {
       setErrors((prev) => ({
@@ -455,7 +519,14 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
         <div style="text-align:left;font-size:14px;line-height:1.6;">
           <div>
             <div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
-            <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${trimmedComment.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+            <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${escapeHtml(trimmedComment)}</div>
+          </div>
+          <div style="margin-top:.75rem;">
+            <div style="font-weight:500;margin-bottom:.25rem;">ลายเซ็นหัวหน้าสาขา</div>
+            ${trimmedSignature
+              ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;">${escapeHtml(trimmedSignature)}</div>`
+              : `<div style="font-size:12px;color:#6b7280;">(ไม่ระบุลายเซ็น)</div>`
+            }
           </div>
         </div>
       `,
@@ -471,6 +542,7 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
           await onRequestRevision({
             message: trimmedComment,
             headComment: trimmedComment,
+            headSignature: trimmedSignature,
           });
         } catch (e) {
           Swal.showValidationMessage(e?.message || 'ส่งคำขอไม่สำเร็จ');
@@ -561,6 +633,21 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
           )}
         </div>
 
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-gray-700 leading-tight">
+            ลายเซ็นหัวหน้าสาขา (พิมพ์ชื่อเต็ม)
+            <br /><span className="text-xs font-normal text-gray-600">Head Signature</span>
+          </label>
+          <input
+            type="text"
+            className="w-full rounded-lg border border-gray-300 p-3 outline-none transition focus:ring-2 focus:ring-blue-500"
+            placeholder="พิมพ์ชื่อเต็มของหัวหน้าสาขา"
+            value={headSignature}
+            onChange={(e) => setHeadSignature(e.target.value)}
+            disabled={saving}
+          />
+        </div>
+
         <div className="border-t border-gray-200 pt-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3 md:max-w-[60%]">
@@ -595,6 +682,9 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
                 บันทึกผล
               </button>
             </div>
+          </div>
+          <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-700">
+            หากต้องการให้ผู้ยื่นสร้างคำร้องขอทุนใหม่ ให้เลือก “ไม่เห็นควรพิจารณา” และระบุเหตุผลในหมายเหตุ
           </div>
         </div>
       </div>
@@ -1053,9 +1143,16 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
 
 
   // ===== Approve/Reject handlers (Dept) =====
-  // รับ headComment จากแผง แล้วส่งไปกับ recommendSubmission
-  const approve = async (headComment) => {
-    const body = headComment ? { head_comment: headComment, comment: headComment } : {};
+  // รับ headComment/headSignature จากแผง แล้วส่งไปกับ recommendSubmission
+  const approve = async (headComment, headSignature) => {
+    const body = {};
+    if (headComment) {
+      body.head_comment = headComment;
+      body.comment = headComment;
+    }
+    if (headSignature) {
+      body.head_signature = headSignature;
+    }
     await deptHeadAPI.recommendSubmission(submission.submission_id, body);
     // refresh
     const res = await deptHeadAPI.getSubmissionDetails(submission.submission_id);
@@ -1069,11 +1166,14 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
   };
 
   // ส่งเหตุผลปฏิเสธ + (ถ้ามี) คอมเมนต์ของหัวหน้าสาขา
-  const reject = async (reason, headComment) => {
+  const reject = async (reason, headComment, headSignature) => {
     const payload = { rejection_reason: reason };
     if (headComment) {
       payload.head_comment = headComment;
       payload.comment = headComment; // เผื่อระบบเดิมอ่านจาก comment
+    }
+    if (headSignature) {
+      payload.head_signature = headSignature;
     }
     await deptHeadAPI.rejectSubmission(submission.submission_id, payload);
     // refresh
@@ -1087,10 +1187,11 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
     setSubmission(data);
   };
 
-  const requestRevision = async ({ message, headComment }) => {
+  const requestRevision = async ({ message, headComment, headSignature }) => {
     const payload = {};
     const trimmedMessage = message?.trim();
     const trimmedComment = headComment?.trim();
+    const trimmedSignature = headSignature?.trim();
 
     if (trimmedMessage) {
       payload.request_comment = trimmedMessage;
@@ -1100,6 +1201,9 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
     if (trimmedComment) {
       payload.head_comment = trimmedComment;
       payload.comment = trimmedComment;
+    }
+    if (trimmedSignature) {
+      payload.head_signature = trimmedSignature;
     }
 
     await deptHeadAPI.requestRevision(submission.submission_id, payload);
@@ -1170,7 +1274,34 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
     throw new Error('File not accessible');
   };
 
+  const VIEWABLE_FILE_EXTENSIONS = new Set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'txt']);
+  const getFileExtensionFromName = (name) => {
+    if (!name || typeof name !== 'string') return '';
+    const base = name.split(/[?#]/)[0].split(/[/\\]/).pop() || '';
+    const parts = base.split('.');
+    return parts.length < 2 ? '' : parts.pop().toLowerCase();
+  };
+
   const handleView = async (docOrFileId) => {
+    const doc =
+      docOrFileId && typeof docOrFileId === 'object'
+        ? docOrFileId
+        : { file_id: docOrFileId };
+
+    // .doc/.docx/.xlsx and other non-inline types download as a name-less zip when
+    // opened as a blob — download them with the real filename instead.
+    const nameForExt = doc.original_name || doc.file_name || resolveFilePath(doc) || '';
+    const ext = getFileExtensionFromName(nameForExt);
+    if (ext && !VIEWABLE_FILE_EXTENSIONS.has(ext)) {
+      const dlName =
+        doc.original_name ||
+        doc.file_name ||
+        (nameForExt ? nameForExt.split(/[/\\]/).pop() : '') ||
+        'document';
+      await handleDownload(docOrFileId, dlName);
+      return;
+    }
+
     try {
       const blob = await fetchDocumentBlob(docOrFileId);
       const fileURL = window.URL.createObjectURL(blob);
@@ -1479,6 +1610,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
         />
       </div>
 
+      <SubmissionSDGList submission={submission} />
       {/* Attachments */}
       <Card title="เอกสารแนบ (Attachments)" icon={FileText} collapsible={false}>
         <div className="space-y-6">

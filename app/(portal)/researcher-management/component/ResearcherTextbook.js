@@ -1,6 +1,6 @@
 "use client";
 import { Plus, X } from "lucide-react";
-import api from "../../../lib/api"; 
+import { apiClient } from "../../../lib/api"; 
 import Swal from "sweetalert2"; 
 
 export default function ResearcherTextbook({ formData, handleInputChange }) {
@@ -54,7 +54,7 @@ export default function ResearcherTextbook({ formData, handleInputChange }) {
 
       try {
         // เริ่มส่ง API ลบข้อมูล
-        await api.delete(`/researcher-management/instructor-textbooks/${targetTextbook.id}`);
+        await apiClient.delete(`/researcher-management/instructor-textbooks/${targetTextbook.id}`);
         
         // แจ้งเตือนเมื่อลบสำเร็จ
         Swal.fire({

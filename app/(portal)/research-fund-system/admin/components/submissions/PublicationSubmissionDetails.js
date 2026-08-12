@@ -43,8 +43,10 @@ import { notificationsAPI } from '@/app/lib/notifications_api';
 
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import SubmissionSDGList from '../../../member/components/common/SubmissionSDGList';
 
 import { PDFDocument } from 'pdf-lib';
+import ApprovalEvidenceCard from './ApprovalEvidenceCard';
 
 /* =========================
  * Helpers
@@ -1682,6 +1684,10 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
     [attachments],
   );
   const { getCodeById } = useStatusMap();
+  const isApprovedStatus = useMemo(() => {
+    const code = String(getCodeById(submission?.status_id) || '').toLowerCase();
+    return ['approved', '1', '6', '7'].includes(code) || [2, 7].includes(Number(submission?.status_id));
+  }, [getCodeById, submission?.status_id]);
 
   // Load data
   useEffect(() => {
@@ -1768,7 +1774,12 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
             typeof d.original_name === 'string' ? d.original_name.trim() : '';
           const originalName = trimmedOriginal || null;
           const docTypeId = d.document_type_id ?? d.DocumentTypeID ?? d.doc_type_id ?? null;
-          const docTypeName = d.document_type_name || typeMap[docTypeId] || 'ไม่ระบุหมวด';
+          const docTypeName =
+            d.document_type_name ||
+            d.document_type?.document_type_name ||
+            d.document_type?.name ||
+            typeMap[docTypeId] ||
+            'ไม่ระบุหมวด';
 
           return {
             ...d,
@@ -2678,6 +2689,7 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
 
       {/* Content */}
       {activeTab === 'details' && (
+        <>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Publication Information */}
           <Card title="ข้อมูลบทความ (Article Information)" icon={BookOpen} collapsible={false}>
@@ -2916,6 +2928,8 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
             onRequestRevision={requestRevision}
           />
         </div>
+        <SubmissionSDGList submission={submission} />
+        </>
       )}
 
       {activeTab === 'authors' && (
@@ -2967,7 +2981,14 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
       )}
 
       {activeTab === 'documents' && (
-        <Card title="เอกสารแนบ (Attachments)" icon={FileText} collapsible={false}>
+        <div className="space-y-6">
+          {isApprovedStatus && (
+            <ApprovalEvidenceCard
+              submissionId={submission?.submission_id}
+              canManage={isApprovedStatus}
+            />
+          )}
+          <Card title="เอกสารแนบ (Attachments)" icon={FileText} collapsible={false}>
           <div className="space-y-6">
             {/* Content */}
             {attachmentsLoading ? (
@@ -3089,7 +3110,8 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
               </div>
             )}
           </div>
-        </Card>
+          </Card>
+        </div>
       )}
     </PageLayout>
   );

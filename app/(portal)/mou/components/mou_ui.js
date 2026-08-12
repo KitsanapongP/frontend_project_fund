@@ -138,7 +138,7 @@ function stats(includeActivity = false) {
 function filters(dropdowns = {}) {
   const statusData = dropdowns.status && dropdowns.status.length > 0
     ? dropdowns.status
-    : [{ id: 1, name: "มีผลบังคับใช้" }, { id: 2, name: "ใกล้หมดอายุ" }, { id: 3, name: "หมดอายุ" }, { id: 4, name: "ยกเลิก" }, { id: 5, name: "รอดำเนินการ" }];
+    : [{ id: 1, name: "มีผลบังคับใช้" }, { id: 2, name: "ใกล้หมดอายุ" }, { id: 3, name: "หมดอายุ" }, { id: 4, name: "ยกเลิก" }, { id: 5, name: "กำลังดำเนินการ" }];
 
   const levelData = dropdowns.level && dropdowns.level.length > 0
     ? dropdowns.level
@@ -218,7 +218,7 @@ function dashboardPage() {
         ${bar("barAmber", "ใกล้หมดอายุ", "11")}
         ${bar("barRed", "หมดอายุ", "10")}
         ${bar("barGray", "ยกเลิก", "2")}
-        ${bar("barPurple", "รอดำเนินการ", "15")}
+        ${bar("barBlue", "กำลังดำเนินการ", "15")}
       </div>
     </div>
     <div class="card tableCard">

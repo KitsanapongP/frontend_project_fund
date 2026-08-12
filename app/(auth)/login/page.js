@@ -21,7 +21,15 @@ import { authAPI, passwordAPI, APIError, NetworkError } from '../../lib/api';
 import { sanitizeNextPath } from '../../lib/portal_access';
 
 export default function LoginPage() {
-  const { login, isLoading, error, clearError, isAuthenticated, user } = useAuth();
+  const {
+    login,
+    isLoading,
+    error,
+    clearError,
+    completeLogoutRedirect,
+    isAuthenticated,
+    user,
+  } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const ssoErrorCode = searchParams?.get('error') || '';
@@ -50,6 +58,10 @@ export default function LoginPage() {
   });
   const [resetStatus, setResetStatus] = useState({ message: '', error: '' });
   const [resetLoading, setResetLoading] = useState(false);
+
+  useEffect(() => {
+    completeLogoutRedirect();
+  }, [completeLogoutRedirect]);
 
   // Redirect if already authenticated
   useEffect(() => {

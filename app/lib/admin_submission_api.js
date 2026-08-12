@@ -852,6 +852,42 @@ export const adminSubmissionAPI = {
     return apiClient.get('/document-types', params);
   },
 
+  async getApprovalAttachments(submissionId) {
+    if (!submissionId) return { attachments: [] };
+    const response = await apiClient.get(`${getSubmissionManagementBase()}/${submissionId}/approval-attachments`);
+    return response?.data || response || { attachments: [] };
+  },
+
+  async createApprovalAttachment(submissionId, file, label) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('label', label);
+    const response = await apiClient.postFormData(
+      `${getSubmissionManagementBase()}/${submissionId}/approval-attachments`,
+      formData,
+    );
+    return response?.data || response;
+  },
+
+  async updateApprovalAttachment(submissionId, attachmentId, payload) {
+    const response = await apiClient.patch(
+      `${getSubmissionManagementBase()}/${submissionId}/approval-attachments/${attachmentId}`,
+      payload,
+    );
+    return response?.data || response;
+  },
+
+  async deleteApprovalAttachment(submissionId, attachmentId) {
+    const response = await apiClient.delete(
+      `${getSubmissionManagementBase()}/${submissionId}/approval-attachments/${attachmentId}`,
+    );
+    return response?.data || response;
+  },
+
+  getApprovalAttachmentDownloadUrl(attachmentId) {
+    return `${apiClient.baseURL}/approval-attachments/${attachmentId}/download`;
+  },
+
   async getResearchFundEvents(submissionId) {
     if (!submissionId) {
       return { events: [], totals: normalizeResearchFundTotals() };

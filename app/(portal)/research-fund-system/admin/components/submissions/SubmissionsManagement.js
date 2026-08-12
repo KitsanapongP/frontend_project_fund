@@ -225,11 +225,18 @@ export default function SubmissionsManagement() {
     rejected_count: 0,
     revision_count: 0
   });
+  const [serverPagination, setServerPagination] = useState({
+    current_page: 1,
+    per_page: PAGE_SIZE,
+    total_count: 0,
+    total_pages: 1,
+  });
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1); // เลขหน้า (เริ่มที่ 1)
   const [cursor, setCursor] = useState(0);           // index เริ่มของหน้า (sync จาก currentPage)
   const latestReq = useRef(0);                       // race token for fetch-all
+  const inFlightListKey = useRef('');
 
   // Lookup maps for names/descriptions
   const [catMap, setCatMap] = useState({});
@@ -238,6 +245,79 @@ export default function SubmissionsManagement() {
   const [subBudgetDescMap, setSubBudgetDescMap] = useState({});
   const [detailsMap, setDetailsMap] = useState({});
   const [userMap, setUserMap] = useState({});
+
+  const fetchAdminPage = async (yearId, page, activeFilters) => {
+    const requestFilters = activeFilters || filters;
+    const requestKey = JSON.stringify({
+      yearId: yearId || '',
+      page: Math.max(1, Number(page) || 1),
+      category: requestFilters.category || '',
+      subcategory: requestFilters.subcategory || '',
+      status: requestFilters.status || '',
+      search: requestFilters.search || '',
+      sort_by: requestFilters.sort_by || 'created_at',
+      sort_order: requestFilters.sort_order || 'desc',
+    });
+    if (inFlightListKey.current === requestKey) return;
+    inFlightListKey.current = requestKey;
+    const requestId = ++latestReq.current;
+    setLoading(true);
+
+    try {
+      const res = await submissionsListingAPI.getAdminSubmissions({
+        page: Math.max(1, Number(page) || 1),
+        limit: PAGE_SIZE,
+        year_id: yearId || '',
+        category: requestFilters.category || '',
+        subcategory: requestFilters.subcategory || '',
+        status: requestFilters.status || '',
+        search: requestFilters.search || '',
+        sort_by: requestFilters.sort_by || 'created_at',
+        sort_order: requestFilters.sort_order || 'desc',
+      });
+      if (requestId !== latestReq.current) return;
+
+      const rows = Array.isArray(res?.submissions) ? res.submissions.map((item) => {
+        if (!item || typeof item !== 'object') return item;
+        if (item.fund_application_detail && !item.FundApplicationDetail) {
+          item.FundApplicationDetail = item.fund_application_detail;
+        }
+        if (item.publication_reward_detail && !item.PublicationRewardDetail) {
+          item.PublicationRewardDetail = item.publication_reward_detail;
+        }
+        return item;
+      }) : [];
+      const pagination = res?.pagination || {};
+      const nextPagination = {
+        current_page: Number(pagination.current_page ?? page ?? 1),
+        per_page: Number(pagination.per_page ?? PAGE_SIZE),
+        total_count: Number(pagination.total_count ?? 0),
+        total_pages: Math.max(1, Number(pagination.total_pages ?? 1)),
+      };
+
+      setAllSubmissions(rows);
+      setServerPagination(nextPagination);
+      setCursor(0);
+
+      const stats = res?.statistics || {};
+      setStatistics({
+        total_submissions: Number(stats.total_submissions ?? nextPagination.total_count),
+        dept_head_pending_count: Number(stats.dept_head_pending_count ?? 0),
+        pending_count: Number(stats.pending_count ?? 0),
+        approved_count: Number(stats.approved_count ?? 0),
+        rejected_count: Number(stats.rejected_count ?? 0),
+        revision_count: Number(stats.revision_count ?? 0),
+      });
+    } catch (error) {
+      if (requestId === latestReq.current) {
+        console.error('Error fetching admin submission page:', error);
+        toast.error('ไม่สามารถดึงข้อมูลคำร้องได้');
+      }
+    } finally {
+      if (inFlightListKey.current === requestKey) inFlightListKey.current = '';
+      if (requestId === latestReq.current) setLoading(false);
+    }
+  };
 
   // ---------- YEARS ----------
   const fetchYears = async () => {
@@ -621,8 +701,11 @@ export default function SubmissionsManagement() {
   );
 
   const filteredAndSorted = useMemo(() => {
-    return filterAndSortSubmissions(allSubmissions, filters);
-  }, [allSubmissions, filters, filterAndSortSubmissions]);
+    // Filtering, searching and sorting are handled by the API. Keeping the
+    // current page untouched prevents the UI from hiding rows because the
+    // compact list response intentionally omits full detail payloads.
+    return Array.isArray(allSubmissions) ? allSubmissions : [];
+  }, [allSubmissions]);
 
   // ---------- helper: build display name from mixed casing ----------
   const nameFromUser = (u) => {
@@ -1148,13 +1231,17 @@ export default function SubmissionsManagement() {
 
   // When year changes → fetch all for that year; reset window
   useEffect(() => {
-    if (currentView === 'list' && selectedYear !== undefined) {
-      fetchAllForYear(selectedYear);
+    if (currentView === 'list' && selectedYear) {
+      fetchAdminPage(selectedYear, currentPage, filters);
     }
-  }, [currentView, selectedYear]); // single effect; no duplicate triggers
+  }, [currentView, selectedYear, currentPage, filters]);
 
   // Fetch details for the visible 20 rows (for amount & author fallback)
   useEffect(() => {
+    // Full details are loaded only when the user opens a submission. The list
+    // endpoint already returns the compact title/applicant/amount fields.
+    return undefined;
+
     const visible = filteredAndSorted.slice(cursor, cursor + PAGE_SIZE);
 
     // fetch details for ANY visible row that doesn't have details yet
@@ -1246,7 +1333,7 @@ export default function SubmissionsManagement() {
   }, [filteredAndSorted]);
 
   // หน้า & แบ่งหน้า
-  const totalPages = Math.max(1, Math.ceil(deduped.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Number(serverPagination.total_pages) || 1);
   useEffect(() => {
     // sync cursor จาก currentPage เสมอ (เพื่อคง prop/JSX อื่น ๆ ที่อ้าง cursor)
     const start = (Math.min(Math.max(1, currentPage), totalPages) - 1) * PAGE_SIZE;
@@ -1255,8 +1342,8 @@ export default function SubmissionsManagement() {
 
   // ชุดที่แสดงในหน้านี้ (คงชื่อ windowed เดิม)
   const windowed = useMemo(() => {
-    return deduped.slice(cursor, cursor + PAGE_SIZE);
-  }, [deduped, cursor]);
+    return deduped;
+  }, [deduped]);
 
   // ---------- Handlers ----------
   const handleYearChange = (yearId) => {
@@ -1577,12 +1664,12 @@ export default function SubmissionsManagement() {
         {!loading && (
           <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-b-lg">
             <div className="text-sm text-gray-700">
-              แสดง <span className="font-medium">{filteredAndSorted.length === 0 ? 0 : cursor + 1}</span>{' '}
+              แสดง <span className="font-medium">{serverPagination.total_count === 0 ? 0 : ((currentPage - 1) * PAGE_SIZE) + 1}</span>{' '}
               ถึง{' '}
               <span className="font-medium">
-                {Math.min(cursor + PAGE_SIZE , filteredAndSorted.length)}
+                {Math.min(currentPage * PAGE_SIZE, serverPagination.total_count)}
               </span>{' '}
-              จาก <span className="font-medium">{filteredAndSorted.length}</span> รายการ
+              จาก <span className="font-medium">{serverPagination.total_count}</span> รายการ
             </div>
 
             <div className="space-x-2">
@@ -1613,7 +1700,7 @@ export default function SubmissionsManagement() {
               )}
               <button
                 onClick={handleNext}
-                disabled={cursor + PAGE_SIZE  >= filteredAndSorted.length}
+                disabled={currentPage >= totalPages}
                 className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ถัดไป ▶

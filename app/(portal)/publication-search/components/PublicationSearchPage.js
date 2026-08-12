@@ -58,7 +58,7 @@ export default function PublicationSearchPage() {
   const defaultYearMax = useRef(null);
   const [lastImportDates, setLastImportDates] = useState([]);
   useEffect(() => {
-    fetch('/api/publications/last-import').then(r => r.json()).then(d => setLastImportDates(d.data || [])).catch(() => {});
+    fetch('/api/v1/publications/last-import').then(r => r.json()).then(d => setLastImportDates(d.data || [])).catch(() => {});
   }, []);
   useEffect(() => {
     if (yearRange.min != null && yearRange.max != null) {
@@ -219,7 +219,7 @@ export default function PublicationSearchPage() {
     params.set("order", sortDirection);
     params.set("export", "1");
     try {
-      const res = await fetch(`/api/publications/search?${params.toString()}`);
+      const res = await fetch(`/api/v1/publications/search?${params.toString()}`);
       const json = await res.json();
       if (!json.success || !json.data?.length) return;
 

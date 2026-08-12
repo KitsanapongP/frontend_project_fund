@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import ResearcherLinks from "./ResearcherLinks";
+import { apiClient } from "../../../lib/api";
 
 const InstructorPrefix = [
   { id: "1", label: "นาย" },
@@ -33,11 +34,7 @@ export default function ResearcherProfile({ formData, handleInputChange, targetU
 
   // ดึงหลักสูตรจาก DB 
   useEffect(() => {
-    const token = localStorage.getItem("access_token") || localStorage.getItem("token") || "";
-    fetch("/api/v1/researcher-management/courses", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
+    apiClient.get("/researcher-management/courses")
       .then((data) => setCourseList(Array.isArray(data) ? data : data?.data ?? []))
       .catch(() => setCourseList([]))
       .finally(() => setCourseLoading(false));

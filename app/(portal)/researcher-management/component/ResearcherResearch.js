@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import api from "../../../lib/api";
+import { apiClient } from "../../../lib/api";
 
 export default function ResearchDocsTab({ targetUserId, hideHeader = false }) {
   const [documents, setDocuments] = useState([]);
@@ -15,7 +15,7 @@ export default function ResearchDocsTab({ targetUserId, hideHeader = false }) {
       const fetchDocuments = async () => {
         setIsLoading(true);
         try {
-          const res = await api.get(`/researcher-management/instructors/${targetUserId}/documents`);
+          const res = await apiClient.get(`/researcher-management/instructors/${targetUserId}/documents`);
           setDocuments(res || []);
         } catch (err) {
           console.error("Error fetching docs:", err);

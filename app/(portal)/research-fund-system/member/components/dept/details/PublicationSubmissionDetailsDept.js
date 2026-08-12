@@ -41,6 +41,7 @@ import { notificationsAPI } from '@/app/lib/notifications_api';
 
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import SubmissionSDGList from '../../common/SubmissionSDGList';
 import UnauthorizedPage from '@/app/components/UnauthorizedPage';
 
 const pickArray = (...candidates) => {
@@ -696,7 +697,7 @@ const DECISION_OPTIONS = [
     value: 'reject',
     label: 'ไม่เห็นควรพิจารณา',
     hint: 'เปลี่ยนสถานะเป็นไม่อนุมัติ',
-    description: 'ปฏิเสธคำร้องและแจ้งเหตุผลให้ผู้ยื่นทราบ',
+    description: 'ใช้กรณีต้องการให้ผู้ยื่นสร้างคำร้องใหม่ พร้อมระบุเหตุผลในหมายเหตุ',
     icon: XCircle,
     iconClass: 'text-red-600',
     iconBg: 'bg-red-50',
@@ -706,7 +707,7 @@ const DECISION_OPTIONS = [
     value: 'revision',
     label: 'ต้องการข้อมูลเพิ่มเติม',
     hint: 'แจ้งผู้ยื่นให้ส่งข้อมูลเพิ่ม',
-    description: 'ส่งคำขอข้อมูลเพิ่มเติมโดยใช้หมายเหตุของหัวหน้าสาขา',
+    description: 'แก้ไขข้อมูลวารสารและเพิ่มเอกสารได้ แต่เปลี่ยนประเภททุนหรือ Quartile ไม่ได้',
     icon: MessageCircle,
     iconClass: 'text-amber-600',
     iconBg: 'bg-amber-50',
@@ -1291,6 +1292,9 @@ function DeptDecisionPanel({
                 บันทึกผล
               </button>
             </div>
+          </div>
+          <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-700">
+            หากต้องการให้ผู้ยื่นสร้างคำร้องขอทุนใหม่ ให้เลือก “ไม่เห็นควรพิจารณา” และระบุเหตุผลในหมายเหตุ
           </div>
         </div>
       </div>
@@ -2046,11 +2050,29 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
   };
 
   // File actions
+  const VIEWABLE_FILE_EXTENSIONS = new Set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'txt']);
+  const getFileExtensionFromName = (name) => {
+    if (!name || typeof name !== 'string') return '';
+    const base = name.split(/[?#]/)[0].split(/[/\\]/).pop() || '';
+    const parts = base.split('.');
+    return parts.length < 2 ? '' : parts.pop().toLowerCase();
+  };
+
   const handleView = async (doc) => {
     if (!doc) {
       toast.error('ไม่พบไฟล์');
       return;
     }
+
+    // .doc/.docx/.xlsx and other non-inline types can't render in a browser tab;
+    // opening them as a blob downloads a name-less file that opens as a raw zip.
+    // Download them with the real filename instead (same as the download button).
+    const ext = getFileExtensionFromName(resolveFileName(doc, '') || resolveFilePath(doc) || '');
+    if (ext && !VIEWABLE_FILE_EXTENSIONS.has(ext)) {
+      await handleDownload(doc);
+      return;
+    }
+
     try {
       const blob = await fetchAttachmentBlob(doc);
       openBlobInNewTab(blob);
@@ -2675,6 +2697,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
 
       {/* Content */}
       {activeTab === 'details' && (
+        <>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Publication Information */}
           <Card title="ข้อมูลบทความ (Article Information)" icon={BookOpen} collapsible={false}>
@@ -2924,6 +2947,8 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
             onBack={onBack}
           />
         </div>
+        <SubmissionSDGList submission={submission} />
+        </>
       )}
 
       {activeTab === 'authors' && (
