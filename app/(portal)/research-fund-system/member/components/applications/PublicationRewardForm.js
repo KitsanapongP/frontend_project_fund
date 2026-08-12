@@ -788,14 +788,6 @@ const formatPhoneNumber = (value) => {
   return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
 };
 
-// Bank account formatting
-const formatBankAccount = (value) => {
-  // Keep only digits
-  const cleaned = value.replace(/\D/g, '');
-  // Limit to 15 digits
-  return cleaned.slice(0, 15);
-};
-
 const formatPreviewTimestamp = (timestamp) => {
   if (!timestamp) return '';
   try {
@@ -1697,10 +1689,6 @@ export default function PublicationRewardForm({
     external_funding_amount: 0,
     total_amount: 0,
     
-    // Bank info
-    bank_account: '',
-    bank_account_name: '',
-    bank_name: '',
     phone_number: '',
     signature: '',
     
@@ -1792,9 +1780,6 @@ export default function PublicationRewardForm({
       publication_fee: 0,
       external_funding_amount: 0,
       total_amount: 0,
-      bank_account: '',
-      bank_account_name: '',
-      bank_name: '',
       phone_number: '',
       signature: '',
       university_ranking: '',
@@ -2721,9 +2706,6 @@ export default function PublicationRewardForm({
               payload.contact_phone ??
               prev.phone_number ??
               '',
-            bank_account: payload.bank_account ?? prev.bank_account ?? '',
-            bank_account_name: payload.bank_account_name ?? prev.bank_account_name ?? '',
-            bank_name: payload.bank_name ?? prev.bank_name ?? '',
           };
         });
 
@@ -5945,9 +5927,6 @@ export default function PublicationRewardForm({
           submission_type: 'publication_reward',
           year_id: formData.year_id,
           contact_phone: formData.phone_number || '',
-          bank_account: formData.bank_account || '',
-          bank_account_name: formData.bank_account_name || '',
-          bank_name: formData.bank_name || '',
         };
 
         const resolvedCategoryId = formData.category_id || categoryId || null;
@@ -5987,9 +5966,9 @@ export default function PublicationRewardForm({
         }
 
         updatePayload.contact_phone = formData.phone_number || '';
-        updatePayload.bank_account = formData.bank_account || '';
-        updatePayload.bank_account_name = formData.bank_account_name || '';
-        updatePayload.bank_name = formData.bank_name || '';
+        updatePayload.bank_account = '';
+        updatePayload.bank_account_name = '';
+        updatePayload.bank_name = '';
 
         if (Object.keys(updatePayload).length > 0) {
           try {
@@ -6059,8 +6038,6 @@ export default function PublicationRewardForm({
         author_status: formData.author_status || '',
         author_type: formData.author_status || '',
         ...authorSubmissionFields,
-        bank_account: formData.bank_account || '',
-        bank_name: formData.bank_name || '',
         phone_number: formData.phone_number || '',
         has_university_funding: formData.has_university_fund || '',
         university_fund_ref: formData.university_fund_ref || '',
@@ -6370,16 +6347,6 @@ const showSubmissionConfirmation = async () => {
           </div>
         </div>
 
-        ${formData.bank_account || formData.bank_name || formData.bank_account_name ? `
-          <div class="bg-purple-50 p-4 rounded-lg">
-            <h4 class="font-semibold text-purple-700 mb-2">ข้อมูลธนาคาร</h4>
-            <div class="space-y-2 text-sm">
-              <p><span class="font-medium">เลขบัญชี:</span> ${formData.bank_account || '-'}</p>
-              <p><span class="font-medium">ชื่อบัญชี:</span> ${formData.bank_account_name || '-'}</p>
-              <p><span class="font-medium">ธนาคาร:</span> ${formData.bank_name || '-'}</p>
-            </div>
-          </div>
-        ` : ''}
       </div>
     `;
 
@@ -6653,14 +6620,19 @@ const showSubmissionConfirmation = async () => {
           subcategory_id: submissionSubcategoryId,        // Dynamic resolved
           subcategory_budget_id: submissionSubcategoryBudgetId,  // Dynamic resolved
           contact_phone: formData.phone_number || '',
-          bank_account: formData.bank_account || '',
-          bank_account_name: formData.bank_account_name || '',
-          bank_name: formData.bank_name || '',
         });
         
         submissionId = submissionResponse.submission.submission_id;
         setCurrentSubmissionId(submissionId);
       }
+
+      // Publication reward requests no longer collect bank information. Clear
+      // legacy values when an older draft is submitted so the database remains NULL.
+      await submissionAPI.update(submissionId, {
+        bank_account: '',
+        bank_account_name: '',
+        bank_name: '',
+      });
 
       // Step 2: Manage Users in Submission
       if (currentUser && (coauthors.length > 0 || formData.author_status)) {
@@ -6828,10 +6800,6 @@ const showSubmissionConfirmation = async () => {
         author_type: formData.author_status || '', // เพิ่ม field นี้ด้วย
         ...authorSubmissionFields,
 
-        // Bank info
-        bank_account: formData.bank_account || '',
-        bank_name: formData.bank_name || '',
-        bank_account_name: formData.bank_account_name || '',
         phone_number: formData.phone_number || '',
         
         // Additional info
@@ -8336,93 +8304,6 @@ const showSubmissionConfirmation = async () => {
                 </span>
                 <span className="text-sm text-gray-700"> บาท (Baht)</span>
               </div>
-            </div>
-          </div>
-        </SimpleCard>
-
-        {/* =================================================================
-        // BANK INFORMATION SECTION
-        // ================================================================= */}
-        <SimpleCard title="ข้อมูลธนาคาร (Bank Information)" icon={FileText}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Bank Account Number */}
-            <div id="field-bank_account">
-              <label htmlFor="bank_account" className="block text-sm font-medium text-gray-700 mb-2">
-                เลขบัญชีธนาคาร (Bank Account Number) <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="bank_account"
-                type="text"
-                name="bank_account"
-                value={formData.bank_account}
-                onChange={handleInputChange}
-                placeholder="กรอกเลขบัญชี (Enter account number)"
-                maxLength="15"
-                inputMode="numeric"
-                pattern="\d{10,15}"
-                required
-                aria-required="true"
-                aria-invalid={errors.bank_account ? 'true' : 'false'}
-                aria-describedby={errors.bank_account ? 'error-bank_account' : undefined}
-                data-pattern-message="เลขบัญชีธนาคารต้องเป็นตัวเลข 10-15 หลัก"
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.bank_account ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              <p className="text-xs text-gray-500 mt-1">กรอกเฉพาะตัวเลข 10-15 หลัก (Enter 10-15 digits only)</p>
-              {errors.bank_account && (
-                <p id="error-bank_account" className="text-red-500 text-sm mt-1">{errors.bank_account}</p>
-              )}
-            </div>
-
-            {/* Bank Account Name */}
-            <div id="field-bank_account_name">
-              <label htmlFor="bank_account_name" className="block text-sm font-medium text-gray-700 mb-2">
-                ชื่อบัญชีธนาคาร (Account Holder Name) <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="bank_account_name"
-                type="text"
-                name="bank_account_name"
-                value={formData.bank_account_name}
-                onChange={handleInputChange}
-                placeholder="ชื่อ-นามสกุลเจ้าของบัญชี"
-                required
-                aria-required="true"
-                aria-invalid={errors.bank_account_name ? 'true' : 'false'}
-                aria-describedby={errors.bank_account_name ? 'error-bank_account_name' : undefined}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.bank_account_name ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.bank_account_name && (
-                <p id="error-bank_account_name" className="text-red-500 text-sm mt-1">{errors.bank_account_name}</p>
-              )}
-            </div>
-
-            {/* Bank Name */}
-            <div id="field-bank_name">
-              <label htmlFor="bank_name" className="block text-sm font-medium text-gray-700 mb-2">
-                ชื่อธนาคาร (Bank Name) <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="bank_name"
-                type="text"
-                name="bank_name"
-                value={formData.bank_name}
-                onChange={handleInputChange}
-                placeholder="เช่น ธนาคารกรุงเทพ (e.g. Bangkok Bank)"
-                required
-                aria-required="true"
-                aria-invalid={errors.bank_name ? 'true' : 'false'}
-                aria-describedby={errors.bank_name ? 'error-bank_name' : undefined}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.bank_name ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.bank_name && (
-                <p id="error-bank_name" className="text-red-500 text-sm mt-1">{errors.bank_name}</p>
-              )}
             </div>
           </div>
         </SimpleCard>
