@@ -42,7 +42,6 @@ yarn-error.log*
 /.cursor/
 /.gemini/
 /.opencode/
-/.claude/
 
 # typescript
 *.tsbuildinfo
@@ -51,5 +50,3 @@ next-env.d.ts
 # impeccable / local design tooling (machine-local, not shared)
 .claude/skills/impeccable/
 .claude/settings.local.json
-DESIGN.md
-PRODUCT.md
