@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-12T00:00:00.000Z",
+  "title": "Design System: Research Fund Management Platform",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Confident Blue", "canonical": "#2563eb", "tonalRamp": ["#172554", "#1e3a8a", "#1e40af", "#1d4ed8", "#2563eb", "#3b82f6", "#93c5fd", "#eff6ff"] },
+      "ink-strong": { "role": "neutral", "displayName": "Ink", "canonical": "#0f172a", "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#cbd5e1", "#f1f5f9"] },
+      "success": { "role": "tertiary", "displayName": "Success Green", "canonical": "#16a34a", "tonalRamp": ["#052e16", "#14532d", "#166534", "#15803d", "#16a34a", "#22c55e", "#86efac", "#dcfce7"] },
+      "danger": { "role": "tertiary", "displayName": "Danger Red", "canonical": "#dc2626", "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#fca5a5", "#fee2e2"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles and dashboard section heads." },
+      "body": { "displayName": "Body", "purpose": "Default reading and data text; the workhorse." },
+      "label": { "displayName": "Label", "purpose": "Field labels, badges, table headers, metadata." }
+    },
+    "shadows": [
+      { "name": "hover-lift", "value": "0 4px 12px rgba(15,23,42,0.08)", "purpose": "Appears when a card or row becomes interactive under the cursor. Not used at rest." },
+      { "name": "overlay", "value": "0 12px 32px rgba(15,23,42,0.16)", "purpose": "Modals, dropdowns, popovers floating above the page." },
+      { "name": "focus-ring", "value": "0 0 0 3px rgba(59,130,246,0.35)", "purpose": "Keyboard/focus indication on inputs and buttons." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default easing for state transitions (hover, focus)." },
+      { "name": "duration-fast", "value": "200ms", "purpose": "Standard control transition duration." }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single strong-colored action on a screen; one per view.",
+      "html": "<button class=\"ds-btn-primary\">บันทึก / Save</button>",
+      "css": ".ds-btn-primary { background: #2563eb; color: #ffffff; padding: 8px 16px; border: none; border-radius: 8px; font-family: 'Anuphan', sans-serif; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background 200ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: #1d4ed8; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.35); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Lower-priority actions (cancel, back). Quiet by design.",
+      "html": "<button class=\"ds-btn-secondary\">ยกเลิก / Cancel</button>",
+      "css": ".ds-btn-secondary { background: #f1f5f9; color: #334155; padding: 8px 16px; border: none; border-radius: 8px; font-family: 'Anuphan', sans-serif; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background 200ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-secondary:hover { background: #e2e8f0; } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.35); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard form field. Flat at rest, blue ring on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"ชื่อโครงการ / Project name\" />",
+      "css": ".ds-input { width: 100%; background: #ffffff; color: #0f172a; padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Anuphan', sans-serif; font-size: 0.875rem; transition: border-color 200ms, box-shadow 200ms; } .ds-input::placeholder { color: #64748b; } .ds-input:focus-visible { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.35); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Working surface. No resting shadow; a border defines it, hover lifts it.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">คำขอทุนวิจัย</h3><p class=\"ds-card-body\">Fund application summary sits here.</p></div>",
+      "css": ".ds-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; transition: box-shadow 200ms cubic-bezier(0.4,0,0.2,1); } .ds-card:hover { box-shadow: 0 4px 12px rgba(15,23,42,0.08); } .ds-card-title { margin: 0 0 8px; font-family: 'Anuphan', sans-serif; font-size: 1.25rem; font-weight: 600; color: #0f172a; } .ds-card-body { margin: 0; font-family: 'Anuphan', sans-serif; font-size: 0.875rem; line-height: 1.6; color: #334155; }"
+    },
+    {
+      "name": "Status Badge (Approved)",
+      "kind": "chip",
+      "refersTo": "badge-approved",
+      "description": "Status pill. Color carries meaning: green=approved, yellow=pending, red=rejected.",
+      "html": "<span class=\"ds-badge-approved\">อนุมัติ / Approved</span>",
+      "css": ".ds-badge-approved { display: inline-block; background: #dcfce7; color: #166534; padding: 2px 10px; border-radius: 6px; font-family: 'Anuphan', sans-serif; font-size: 0.75rem; font-weight: 500; }"
+    },
+    {
+      "name": "Side Nav Item (Active)",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Vertical navigation item; active state uses blue tint + confident blue.",
+      "html": "<a class=\"ds-nav-item ds-nav-item--active\">ระบบทุนวิจัย / Research Funds</a>",
+      "css": ".ds-nav-item { display: block; padding: 8px 16px; border-radius: 8px; font-family: 'Anuphan', sans-serif; font-size: 0.875rem; color: #334155; text-decoration: none; transition: background 200ms; } .ds-nav-item:hover { background: #f1f5f9; } .ds-nav-item--active { background: #eff6ff; color: #2563eb; font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Academic Modern",
+    "overview": "A working system for a university's research office — clean, modern, confident, and above all trustworthy. It is Operate-mode software: expression lives in precision, not decoration. Anuphan carries Thai and Latin with the same even texture, keeping bilingual screens coherent. The system is consolidating away from mixed neutrals, gradients, and scattered accents toward one calm blue accent over a single slate ramp, with flat, border-defined surfaces.",
+    "keyCharacteristics": [
+      "One calm blue accent; semantic color reserved for status meaning, not mood.",
+      "Slate as the single neutral ramp — no parallel gray family.",
+      "Flat surfaces divided by 1px borders; shadow appears only on hover/focus/overlay.",
+      "Bilingual by construction — layouts survive Thai↔English length shifts.",
+      "Data density handled with whitespace and rhythm, not boxes-within-boxes."
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "Blue is the only decorative color. If something is neither interactive nor a status signal, it is slate — not teal, indigo, cyan, or violet.", "section": "colors" },
+      { "name": "The Status-Only Color Rule", "body": "Green, red, and yellow carry meaning (approved / rejected / pending). Never use them decoratively.", "section": "colors" },
+      { "name": "The Two-Family Ceiling Rule", "body": "Anuphan for anything a user reads on screen; TH Sarabun New only inside generated documents. No third UI typeface.", "section": "typography" },
+      { "name": "The Flat-At-Rest Rule", "body": "A card sitting still casts no shadow — a border defines it. Shadows mean 'this is hovering, floating, or focused.'", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use Confident Blue (#2563eb) as the only accent; everything non-interactive and non-status is slate.",
+      "Do consolidate all neutrals to the slate ramp — replace stray gray-* usages with their slate equivalents.",
+      "Do keep surfaces flat at rest and let 1px borders do the separating; add shadow only for hover, focus, and overlays.",
+      "Do reserve green/red/yellow for their status meanings (approved / rejected / pending).",
+      "Do size containers to content so Thai and English labels both fit without truncation.",
+      "Do keep one primary button per view."
+    ],
+    "donts": [
+      "Don't add gradients. The incumbent code has ~70 gradient usages; they are the single biggest 'AI-generated' tell here and should be retired, not extended.",
+      "Don't introduce new accent hues (teal, cyan, indigo, violet, emerald-as-decoration).",
+      "Don't mix gray-* and slate-* on the same surface; pick slate.",
+      "Don't put resting shadow-md on every card by reflex.",
+      "Don't use TH Sarabun New or Raleway for on-screen Thai UI — Anuphan is the UI voice.",
+      "Don't hard-code widths to a label's length; it will break in the other language."
+    ]
+  }
+}
