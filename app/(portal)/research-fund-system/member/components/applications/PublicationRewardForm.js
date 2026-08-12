@@ -1444,7 +1444,15 @@ const FileUpload = ({
 // MAIN COMPONENT START
 // =================================================================
 
-export default function PublicationRewardForm({ onNavigate, categoryId, yearId, submissionId: initialSubmissionId = null, readOnly = false, originPage = null }) {
+export default function PublicationRewardForm({
+  onNavigate,
+  categoryId,
+  yearId,
+  submissionId: initialSubmissionId = null,
+  readOnly = false,
+  originPage = null,
+  canApplyFromDetails = false,
+}) {
   // =================================================================
   // STATE DECLARATIONS
   // =================================================================
@@ -1725,6 +1733,7 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
   const [isReadOnly, setIsReadOnly] = useState(false);
 
   const editingExistingSubmission = Boolean(prefilledSubmissionId);
+  const isFundDetailsView = readOnly === true && !initialSubmissionId;
   const selectionLocked = editingExistingSubmission && !isReadOnly;
 
   const [announcementLock, setAnnouncementLock] = useState({
@@ -3928,6 +3937,27 @@ export default function PublicationRewardForm({ onNavigate, categoryId, yearId, 
     } else {
       router.push('/research-fund-system/member');
     }
+  };
+
+  const handleApplyFromDetails = () => {
+    if (!onNavigate) {
+      return;
+    }
+
+    try {
+      window.sessionStorage.removeItem('fund_form_readonly');
+    } catch {}
+
+    onNavigate(
+      'publication-reward-form',
+      {
+        category_id: categoryId,
+        year_id: yearId,
+        originPage: originPage || 'promotion-fund',
+        can_apply_from_details: canApplyFromDetails === true,
+      },
+      { mode: null },
+    );
   };
 
   // Handle form input changes
@@ -7132,6 +7162,18 @@ const showSubmissionConfirmation = async () => {
     >
       <form ref={formRef} className="space-y-6" noValidate>
 
+        {isFundDetailsView && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 shadow-sm">
+            <div className="flex items-start gap-3">
+              <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" aria-hidden="true" />
+              <div>
+                <p className="font-semibold text-blue-900">ขณะนี้คุณอยู่ในหน้าดูรายละเอียดทุน</p>
+                <p className="mt-1 leading-relaxed">หน้านี้ใช้สำหรับดูข้อมูลเท่านั้น จึงไม่สามารถกรอกหรือแก้ไขข้อมูลได้ หากสนใจสามารถไปยังหน้ายื่นคำร้องได้จากปุ่มด้านล่าง</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {shouldShowDraftBanner && (
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
             <div className="flex items-start gap-3">
@@ -7172,7 +7214,7 @@ const showSubmissionConfirmation = async () => {
             </div>
           </div>
         )}
-        {isReadOnly && (
+        {isReadOnly && !isFundDetailsView && (
           <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
             ขณะนี้เป็นโหมด <strong>อ่านอย่างเดียว</strong> — ไม่สามารถแก้ไขหรือส่งคำร้องได้
           </div>
@@ -7181,6 +7223,7 @@ const showSubmissionConfirmation = async () => {
         {/* =================================================================
         // BASIC INFORMATION SECTION
         // ================================================================= */}
+        {!isFundDetailsView && (
         <SimpleCard title="ข้อมูลพื้นฐาน (Basic Information)" icon={FileText}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Applicant Name - Read Only */}
@@ -7334,6 +7377,7 @@ const showSubmissionConfirmation = async () => {
             </div>
           </div>
         </SimpleCard>
+        )}
 
         {/* =================================================================
         // ARTICLE INFORMATION SECTION
@@ -8391,7 +8435,39 @@ const showSubmissionConfirmation = async () => {
           onChange={setSelectedSDGIds}
           disabled={isReadOnly || saving || isSubmitting}
         />
-        <SimpleCard title="เอกสารแนบ (File Attachments)" icon={Upload} id="file-attachments-section">
+        <SimpleCard title={isFundDetailsView ? "เอกสารที่ใช้ประกอบการยื่นคำร้อง" : "เอกสารแนบ (File Attachments)"} icon={isFundDetailsView ? FileText : Upload} id="file-attachments-section">
+          {isFundDetailsView ? (
+            documentTypes.length > 0 ? (
+              <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="w-16 px-4 py-3 text-center font-medium text-gray-600">ลำดับ</th>
+                      <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">ชื่อเอกสาร</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {documentTypes.map((docType, index) => (
+                      <tr key={docType.id ?? docType.document_type_id ?? index}>
+                        <td className="px-4 py-3 text-center text-gray-600">{index + 1}</td>
+                        <td className="px-4 py-3 font-medium text-gray-800">
+                          {docType.name || docType.document_type_name || 'ไม่ระบุชื่อเอกสาร'}
+                          {docType.required && (
+                            <span className="ml-1 text-red-500" aria-label="เอกสารบังคับ">*จำเป็น*</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center">
+                <FileText className="mx-auto mb-3 h-10 w-10 text-gray-400" aria-hidden="true" />
+                <p className="text-sm font-medium text-gray-600">ไม่มีเอกสารที่กำหนดสำหรับทุนนี้</p>
+              </div>
+            )
+          ) : (
           <div className="space-y-6">
             <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800">
               <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
@@ -8800,6 +8876,7 @@ const showSubmissionConfirmation = async () => {
               )}
             </div>
           </div>
+          )}
         </SimpleCard>
 
         {/* =================================================================
@@ -8963,6 +9040,7 @@ const showSubmissionConfirmation = async () => {
         {/* =================================================================
         // ACTION BUTTONS
         // ================================================================= */}
+        {!isFundDetailsView && (
         <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
           {showDraftActions && (
             <button
@@ -9009,10 +9087,12 @@ const showSubmissionConfirmation = async () => {
             {isSubmitting ? 'กำลังส่ง...' : 'ส่งคำร้อง'}
           </button>
         </div>
+        )}
 
         {/* =================================================================
         // WARNING NOTICE
         // ================================================================= */}
+        {!isFundDetailsView && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
@@ -9028,7 +9108,30 @@ const showSubmissionConfirmation = async () => {
             </div>
           </div>
         </div>
+        )}
       </fieldset>
+      {isFundDetailsView && (
+        <div className={`grid gap-3 pt-6 border-t ${canApplyFromDetails ? 'grid-cols-[1fr_3fr]' : 'grid-cols-1'}`}>
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            ย้อนกลับ
+          </button>
+          {canApplyFromDetails && (
+            <button
+              type="button"
+              onClick={handleApplyFromDetails}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+            >
+              <Send className="h-4 w-4" aria-hidden="true" />
+              ไปที่หน้ายื่นคำร้องของทุนนี้
+            </button>
+          )}
+        </div>
+      )}
       </form>
     </PageLayout>
   );

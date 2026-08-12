@@ -571,7 +571,7 @@ export default function ResearchFundContent({ onNavigate }) {
     return parentCategory?.category_id ?? parentCategory?.categoryId ?? null;
   };
 
-  const handleViewDetails = (subcategory) => {
+  const handleViewDetails = (subcategory, applicationAvailability = {}) => {
     const formType = subcategory?.form_type || "download";
     const formConfig = FORM_TYPE_CONFIG[formType] || {};
 
@@ -602,6 +602,7 @@ export default function ResearchFundContent({ onNavigate }) {
           subcategory_id: resolvedSubcategoryId,
           subcategory_name: resolvedSubcategoryName,
           originPage: "research-fund",
+          can_apply_from_details: applicationAvailability.canApply === true,
         },
         { mode: "view-only" }
       );
@@ -833,7 +834,7 @@ export default function ResearchFundContent({ onNavigate }) {
             <div className="flex flex-col items-center gap-1">
               <div className="inline-flex items-center justify-center gap-3">
                 <button
-                  onClick={() => handleViewDetails(fund)}
+                  onClick={() => handleViewDetails(fund, { canApply })}
                   className="inline-flex items-center gap-2 px-1 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
                   title="เปิดดูรายละเอียด (อ่านอย่างเดียว)"
                 >
@@ -873,7 +874,7 @@ export default function ResearchFundContent({ onNavigate }) {
             </button>
           ) : (
             <button
-              onClick={() => handleViewDetails(fund)}
+              onClick={() => handleViewDetails(fund, { canApply })}
               className="inline-flex items-center gap-2 px-1 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
             >
               <Search size={16} />

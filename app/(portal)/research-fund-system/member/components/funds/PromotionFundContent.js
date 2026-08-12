@@ -570,7 +570,7 @@ export default function PromotionFundContent({ onNavigate }) {
     return parent?.category_id;
   };
 
-  const handleViewDetails = (subcategory) => {
+  const handleViewDetails = (subcategory, applicationAvailability = {}) => {
     const formType = subcategory.form_type || 'download';
     const formConfig = FORM_TYPE_CONFIG[formType] || {};
     if (formConfig.isOnlineForm && onNavigate) {
@@ -588,6 +588,7 @@ export default function PromotionFundContent({ onNavigate }) {
           year_id: yearId,
           subcategory,
           originPage: 'promotion-fund',
+          can_apply_from_details: applicationAvailability.canApply === true,
         },
         { mode: 'view-only' }
       );
@@ -824,7 +825,7 @@ export default function PromotionFundContent({ onNavigate }) {
             <div className="flex flex-col items-center gap-1">
               <div className="inline-flex items-center justify-center gap-3">
                 <button
-                  onClick={() => handleViewDetails(fund)}
+                  onClick={() => handleViewDetails(fund, { canApply })}
                   className="inline-flex items-center gap-2 px-1 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
                   title="เปิดดูรายละเอียด (อ่านอย่างเดียว)"
                 >
@@ -867,7 +868,7 @@ export default function PromotionFundContent({ onNavigate }) {
             </button>
           ) : (
             <button
-              onClick={() => handleViewDetails(fund)}
+              onClick={() => handleViewDetails(fund, { canApply })}
               className="inline-flex items-center gap-2 px-1 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
             >
               <Search size={16} />
