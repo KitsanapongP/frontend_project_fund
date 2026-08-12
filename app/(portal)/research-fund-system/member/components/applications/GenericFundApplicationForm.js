@@ -20,6 +20,7 @@ import { statusService } from '../../../../../lib/status_service';
 import { systemConfigAPI } from '../../../../../lib/system_config_api';
 import sdgAPI from '../../../../../lib/sdg_api';
 import SDGSelector from '../common/SDGSelector';
+import { getSubmissionFundStatus } from '../../../../../lib/fund_availability.mjs';
 
 // SweetAlert2 configuration
 const Toast = Swal.mixin({
@@ -1409,6 +1410,7 @@ export default function GenericFundApplicationForm({
   const [submissionStatusCode, setSubmissionStatusCode] = useState(null);
   const [isEditable, setIsEditable] = useState(true);
   const [forceReadOnly, setForceReadOnly] = useState(false);
+  const [fundClosedReadOnly, setFundClosedReadOnly] = useState(false);
   const [isNeedsMoreInfo, setIsNeedsMoreInfo] = useState(false);
   const [reviewerComments, setReviewerComments] = useState({ admin: '', head: '' });
   const [announcementLock, setAnnouncementLock] = useState({
@@ -1459,7 +1461,7 @@ export default function GenericFundApplicationForm({
     () => Boolean(currentSubmissionId || subcategoryData?.submissionId),
     [currentSubmissionId, subcategoryData?.submissionId]
   );
-  const canEdit = isEditable && !forceReadOnly;
+  const canEdit = isEditable && !forceReadOnly && !fundClosedReadOnly;
   const isReadOnly = !canEdit;
   const navigationTarget = useMemo(() => {
     if (originPage) {
@@ -1686,6 +1688,7 @@ export default function GenericFundApplicationForm({
       setAttachmentsPreviewState({ loading: false, error: null, hasPreviewed: false });
       setSubmissionStatusCode(null);
       setIsEditable(true);
+      setFundClosedReadOnly(false);
       setIsNeedsMoreInfo(false);
       setReviewerComments({ admin: '', head: '' });
       serverFileCacheRef.current.clear();
@@ -1767,6 +1770,10 @@ export default function GenericFundApplicationForm({
       }
 
       setCurrentSubmissionId(submissionId);
+
+      const submissionFundStatus = getSubmissionFundStatus(submission);
+      const isClosedFund = Boolean(submissionFundStatus && submissionFundStatus !== 'active');
+      setFundClosedReadOnly(isClosedFund);
 
       const submissionSDGs = submission.sdgs || submission.submission_sdgs || [];
       setSelectedSDGIds(submissionSDGs.map((sdg) => Number(sdg.sdg_id)).filter(Number.isInteger));
@@ -3384,7 +3391,11 @@ export default function GenericFundApplicationForm({
 
         {isReadOnly && (
           <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
-            ขณะนี้เป็นโหมด <strong>อ่านอย่างเดียว</strong> — ไม่สามารถแก้ไขหรือส่งคำร้องได้
+            {fundClosedReadOnly ? (
+              <>ทุนนี้ปิดรับคำขอแล้ว — สามารถดูรายละเอียดได้เท่านั้น ไม่สามารถแก้ไขหรือส่งคำร้องได้</>
+            ) : (
+              <>ขณะนี้เป็นโหมด <strong>อ่านอย่างเดียว</strong> — ไม่สามารถแก้ไขหรือส่งคำร้องได้</>
+            )}
           </div>
         )}
 

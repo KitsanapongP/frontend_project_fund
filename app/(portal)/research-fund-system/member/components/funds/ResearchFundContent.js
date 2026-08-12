@@ -11,6 +11,7 @@ import { targetRolesUtils, filterFundsByRole } from "../../../../../lib/target_r
 import { FORM_TYPE_CONFIG } from "../../../../../lib/form_type_config";
 import systemConfigAPI from "../../../../../lib/system_config_api";
 import { systemAPI } from "../../../../../lib/api";
+import { getFundCondition, getFundDisplayHint, isFundOpenForApplications } from "../../../../../lib/fund_availability.mjs";
 
 const RESEARCH_CATEGORY_KEYWORDS = [
   "ทุนส่งเสริมการวิจัย"
@@ -496,22 +497,7 @@ export default function ResearchFundContent({ onNavigate }) {
         RESEARCH_CATEGORY_KEYWORDS
       );
 
-      // ถ้าอยู่นอกช่วงเวลา ให้เติม “สิ้นสุดรับคำขอ: …” ต่อท้าย fund_condition (เหมือน Promotion)
-      const adjusted = researchFunds.map((category) => {
-        const newSubs = (category.subcategories || []).map((sub) => {
-          let next = { ...sub };
-          if (!isWithinApplicationPeriod) {
-            const note = endDateLabel ? `\nสิ้นสุดรับคำขอ: ${endDateLabel}` : "";
-            const base = (next.fund_condition || "").trim();
-            const already = base.includes("สิ้นสุดรับคำขอ:");
-            next.fund_condition = already ? base : `${base}${note}`;
-          }
-          return next;
-        });
-        return { ...category, subcategories: newSubs };
-      });
-
-      setFundCategories(adjusted);
+      setFundCategories(researchFunds);
     } catch (err) {
       console.error("Error loading fund data:", err);
       setError(err.message || "เกิดข้อผิดพลาดในการโหลดข้อมูลทุน");
@@ -624,6 +610,8 @@ export default function ResearchFundContent({ onNavigate }) {
 
   const handleApplyForm = (subcategory, options = {}) => {
     const { isCurrentBudgetYear: canApplyCurrent = true } = options;
+
+    if (!isFundOpenForApplications(subcategory)) return;
 
     if (!canApplyCurrent) {
       if (typeof window !== "undefined") {
@@ -786,9 +774,12 @@ export default function ResearchFundContent({ onNavigate }) {
     const formConfig = FORM_TYPE_CONFIG[formType] || {};
     const ButtonIcon = formConfig.icon || FileText;
     const isOnlineForm = !!formConfig.isOnlineForm;
+    const isFundOpen = isFundOpenForApplications(fund);
+    const fundHint = getFundDisplayHint(fund);
+    const fundCondition = getFundCondition(fund);
     const activeYearLabel = normalizeYearValue(currentYear) || normalizeYearValue(selectedYear);
     const isCurrentBudgetYear = isFundInCurrentBudgetYear(fund, category);
-    const canApply = isCurrentBudgetYear && isWithinApplicationPeriod;
+    const canApply = isFundOpen && isCurrentBudgetYear && isWithinApplicationPeriod;
     const buttonTitle = !isCurrentBudgetYear
       ? `ยื่นขอทุนได้เฉพาะปีงบประมาณ ${activeYearLabel || "ปัจจุบัน"}`
       : (isWithinApplicationPeriod ? "ยื่นขอทุน" : "หมดเวลาการยื่นขอทุน");
@@ -809,6 +800,11 @@ export default function ResearchFundContent({ onNavigate }) {
           <div className="text-sm font-medium text-gray-900 max-w-lg break-words leading-relaxed">
             {fundName}
           </div>
+          {fundHint && (
+            <div className="mt-2 max-w-lg rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium leading-relaxed text-red-700">
+              {fundHint}
+            </div>
+          )}
           {fund.has_multiple_levels && (
             <div className="text-xs text-gray-500 mt-1">(มี {fund.budget_count} ระดับ)</div>
           )}
@@ -817,9 +813,9 @@ export default function ResearchFundContent({ onNavigate }) {
         <td className="px-6 py-4">
           <div className="flex flex-col gap-2">
             <div className="text-sm text-gray-900">
-              {fund.fund_condition ? (
+              {fundCondition ? (
                 <button
-                  onClick={() => showCondition(fundName, fund.fund_condition)}
+                  onClick={() => showCondition(fundName, fundCondition)}
                   className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
                 >
                   <Info className="w-4 h-4" />
@@ -845,7 +841,7 @@ export default function ResearchFundContent({ onNavigate }) {
                   ดูรายละเอียด
                 </button>
 
-                <button
+                {isFundOpen && <button
                   onClick={() => handleApplyForm(fund, { isCurrentBudgetYear })}
                   className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                     canApply
@@ -858,15 +854,15 @@ export default function ResearchFundContent({ onNavigate }) {
                 >
                   <ButtonIcon size={16} />
                   ยื่นขอทุน
-                </button>
+                </button>}
               </div>
-              {!isCurrentBudgetYear && activeYearLabel && (
+              {isFundOpen && !isCurrentBudgetYear && activeYearLabel && (
                 <p className="text-xs text-red-500">
                   ยื่นขอได้เฉพาะทุนในปีงบประมาณ {activeYearLabel}
                 </p>
               )}
             </div>
-          ) : (
+          ) : isFundOpen ? (
             <button
               onClick={handleDownload}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
@@ -874,6 +870,14 @@ export default function ResearchFundContent({ onNavigate }) {
             >
               <Download size={16} />
               ดาวน์โหลด
+            </button>
+          ) : (
+            <button
+              onClick={() => handleViewDetails(fund)}
+              className="inline-flex items-center gap-2 px-1 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+            >
+              <Search size={16} />
+              ดูรายละเอียด
             </button>
           )}
         </td>
