@@ -1204,6 +1204,50 @@ export const scopusConfigAPI = {
   },
 };
 
+export const scopusBenchmarkAPI = {
+  async resolveAffiliation(name) {
+    return apiClient.post('/admin/scopus/benchmark/affiliation/lookup', { name });
+  },
+  async listScopes() {
+    return apiClient.get('/admin/scopus/benchmark/scopes');
+  },
+  async updateScope(id, payload = {}) {
+    return apiClient.put(`/admin/scopus/benchmark/scopes/${encodeURIComponent(id)}`, payload);
+  },
+  async detectYearRange(scopeId) {
+    return apiClient.get(`/admin/scopus/benchmark/scopes/${encodeURIComponent(scopeId)}/year-range`);
+  },
+  async refreshCounts(params = {}) {
+    const qs = benchmarkQuery(params);
+    const res = await apiClient.post(`/admin/scopus/benchmark/counts/refresh${qs}`);
+    return res.data || res;
+  },
+  async harvest(payload = {}) {
+    const res = await apiClient.post('/admin/scopus/benchmark/harvest', payload);
+    return res.summary || res;
+  },
+  async cancelRun(runId) {
+    return apiClient.post(`/admin/scopus/benchmark/runs/${encodeURIComponent(runId)}/cancel`);
+  },
+  async listRuns(params = {}) {
+    return apiClient.get('/admin/scopus/benchmark/runs', params);
+  },
+  async comparison(params = {}) {
+    return apiClient.get('/admin/scopus/benchmark/comparison', cleanParams(params));
+  },
+};
+
+function cleanParams(params = {}) {
+  return Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+  );
+}
+
+function benchmarkQuery(params = {}) {
+  const qs = new URLSearchParams(cleanParams(params)).toString();
+  return qs ? `?${qs}` : '';
+}
+
 export const scopusImportAPI = {
   async listJobs(params = {}) {
     return apiClient.get('/admin/scopus/import/jobs', params);
