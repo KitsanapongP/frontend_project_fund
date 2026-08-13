@@ -119,10 +119,6 @@ const PERSON_QUALITY_SORT_COLUMNS = [
   "conference_count",
 ];
 const PERSON_DEFAULT_SORT = { key: PERSON_QUALITY_SORT_KEY, direction: "desc" };
-const PERSON_DEFAULT_COLUMN_VISIBILITY = PERSON_ALL_COLUMNS.reduce((acc, col) => {
-  acc[col.key] = true;
-  return acc;
-}, {});
 
 const PERSON_COLUMN_PRESETS = {
   executive: [
@@ -154,6 +150,13 @@ const PERSON_COLUMN_PRESETS = {
   ],
   analyst: PERSON_ALL_COLUMNS.map((col) => col.key),
 };
+
+// เปิดมาแสดงชุดคอลัมน์แบบ "ผู้บริหาร" (กระชับ) ก่อน เพื่อไม่ให้ตารางกว้างเป็นกำแพงตั้งแต่โหลด
+// ผู้ใช้กด "มุมมองวิเคราะห์" หรือเลือกคอลัมน์เองเพื่อดูครบทุกคอลัมน์ได้
+const PERSON_DEFAULT_COLUMN_VISIBILITY = PERSON_ALL_COLUMNS.reduce((acc, col) => {
+  acc[col.key] = PERSON_COLUMN_PRESETS.executive.includes(col.key);
+  return acc;
+}, {});
 
 function filterToQueryParams(filters = {}) {
   const query = {
@@ -1866,6 +1869,20 @@ export default function AdminScopusResearchDashboard() {
           >
             {!isPersonSummaryCollapsed && (
               <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg border border-slate-200 bg-white p-4">
+                    <p className="text-xs font-medium text-slate-500">ผลลัพธ์ที่พบ</p>
+                    <p className="mt-2 text-2xl font-semibold text-blue-700">{formatNumber(personSummaryFilteredRows.length)} <span className="text-sm font-medium text-slate-500">คน</span></p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-white p-4">
+                    <p className="text-xs font-medium text-slate-500">คอลัมน์ที่แสดง</p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-900">{visiblePersonColumnsCount} <span className="text-sm font-medium text-slate-500">/ {PERSON_ALL_COLUMNS.length}</span></p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-white p-4">
+                    <p className="text-xs font-medium text-slate-500">เรียงลำดับ</p>
+                    <p className="mt-2 text-sm font-semibold leading-snug text-slate-900">{personSortLabel} <span className="text-xs font-medium text-slate-500">({personSort.direction === "asc" ? "น้อยไปมาก" : "มากไปน้อย"})</span></p>
+                  </div>
+                </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                   <div className="grid gap-3 xl:grid-cols-2">
                     <div>
@@ -1918,22 +1935,6 @@ export default function AdminScopusResearchDashboard() {
                         </button>
                       </div>
 
-                      <div className="mt-3 grid grid-cols-1 gap-2">
-                        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">ผลลัพธ์ที่พบ</p>
-                          <p className="text-xl font-semibold leading-none text-slate-900">{formatNumber(personSummaryFilteredRows.length)} <span className="text-xs font-medium text-slate-500">คน</span></p>
-                        </div>
-
-                        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">คอลัมน์ที่แสดง</p>
-                          <p className="text-xl font-semibold leading-none text-slate-900">{visiblePersonColumnsCount} <span className="text-xs font-medium text-slate-500">/ {PERSON_ALL_COLUMNS.length}</span></p>
-                        </div>
-
-                        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">เรียงลำดับ</p>
-                          <p className="text-sm font-semibold leading-tight text-slate-900">{personSortLabel} <span className="text-xs font-medium text-slate-500">({personSort.direction === "asc" ? "น้อยไปมาก" : "มากไปน้อย"})</span></p>
-                        </div>
-                      </div>
                     </div>
 
                     <div>
