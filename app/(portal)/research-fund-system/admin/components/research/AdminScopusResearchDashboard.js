@@ -2397,7 +2397,7 @@ export default function AdminScopusResearchDashboard() {
 
                 {activeInternalCollabTab === "diversity" && (
                   <div className="space-y-3">
-                    <p className="text-xs text-slate-500">&quot;จำนวนผู้ร่วมงาน&quot; = จำนวนอาจารย์ในคณะที่เคยมีผลงานร่วมกัน · &quot;เฉลี่ยต่อผู้ร่วมงาน&quot; = ผลงานร่วมรวม ÷ จำนวนผู้ร่วมงาน</p>
+                    <p className="text-xs text-slate-500">&quot;จำนวนผู้ร่วมงาน&quot; = จำนวนอาจารย์ในคณะที่เคยมีผลงานร่วมกัน · &quot;เฉลี่ยต่อผู้ร่วมงาน&quot; = ผลงานร่วมรวม / จำนวนผู้ร่วมงาน</p>
 
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                       <div className="grid gap-3 md:grid-cols-3">
@@ -2761,7 +2761,7 @@ export default function AdminScopusResearchDashboard() {
                 </div>
                 <p className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-700">
                   <MousePointerClick size={13} className="text-blue-500" />
-                  คลิกที่ตัวเลขในแถว T1–Q4 และ Conference เพื่อดูรายการผลงานที่ถูกนับในช่องนั้น
+                  คลิกตัวเลขในตารางเพื่อดูรายการผลงานที่ถูกนับ
                 </p>
                 {overviewYearsBE.length === 0 ? (
                   <p className="text-sm text-slate-500">ไม่พบข้อมูลรายปี</p>
@@ -3170,7 +3170,7 @@ export default function AdminScopusResearchDashboard() {
                         <button
                           type="button"
                           onClick={() => setDrilldownPanelOpen(false)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 shadow-sm transition hover:bg-rose-100 hover:text-rose-800"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
                         >
                           <X size={16} />
                           ปิดหน้าต่างตรวจสอบ
