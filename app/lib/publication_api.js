@@ -242,6 +242,7 @@ export const publicationDetailsAPI = {
         
         // เงินรางวัลและการคำนวณ
         publication_reward: details.reward_amount,
+        has_received_reward: details.has_received_reward === true,
         revision_fee: details.revision_fee,
         publication_fee: details.publication_fee,
         external_funding_amount: details.external_funding_amount,

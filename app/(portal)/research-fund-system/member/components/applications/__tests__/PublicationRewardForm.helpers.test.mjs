@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   shouldDisableSubmitButton,
   getAuthorSubmissionFields,
+  calculatePublicationRequestAmounts,
+  validatePriorRewardRevisionFee,
 } from '../PublicationRewardForm.helpers.mjs';
 
 test('shouldDisableSubmitButton enforces declarations and required author fields before enabling submit', () => {
@@ -73,4 +75,28 @@ test('getAuthorSubmissionFields maps trimmed author fields for submission payloa
   const empty = getAuthorSubmissionFields();
   assert.equal(empty.author_name_list, '');
   assert.equal(empty.signature, '');
+});
+
+test('calculatePublicationRequestAmounts excludes a previously requested reward', () => {
+  assert.deepEqual(calculatePublicationRequestAmounts({
+    hasReceivedReward: false,
+    configuredReward: 10000,
+    revisionFee: 2000,
+    publicationFee: 3000,
+    externalFunding: 1000,
+  }), { rewardAmount: 10000, totalAmount: 14000 });
+
+  assert.deepEqual(calculatePublicationRequestAmounts({
+    hasReceivedReward: true,
+    configuredReward: 10000,
+    revisionFee: 2000,
+    publicationFee: 3000,
+    externalFunding: 1000,
+  }), { rewardAmount: 0, totalAmount: 4000 });
+});
+
+test('validatePriorRewardRevisionFee requires a positive editing fee conditionally', () => {
+  assert.equal(validatePriorRewardRevisionFee({ hasReceivedReward: false, revisionFee: 0 }), '');
+  assert.match(validatePriorRewardRevisionFee({ hasReceivedReward: true, revisionFee: 0 }), /ค่าปรับปรุงบทความ/);
+  assert.equal(validatePriorRewardRevisionFee({ hasReceivedReward: true, revisionFee: 1 }), '');
 });
