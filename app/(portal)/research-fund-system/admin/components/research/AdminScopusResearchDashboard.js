@@ -1593,7 +1593,7 @@ export default function AdminScopusResearchDashboard() {
       <tr
         key={rowKey}
         onClick={() => toggleOverviewMetricsRow(rowKey)}
-        className={`transition-colors ${selected ? "bg-blue-50" : "hover:bg-sky-50"}`}
+        className={`transition-colors ${selected ? "bg-blue-50" : "hover:bg-blue-50"}`}
       >
         <td
           className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selected ? "bg-blue-50" : "bg-slate-50"}`}
@@ -1761,8 +1761,8 @@ export default function AdminScopusResearchDashboard() {
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">คุณภาพวารสาร</p>
+                  <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">คุณภาพวารสาร</p>
                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                       {qualityOptions.map((item) => {
                         const active = draftFilters.qualityBuckets.includes(item.value);
@@ -1771,15 +1771,15 @@ export default function AdminScopusResearchDashboard() {
                             key={item.value}
                             className={`inline-flex h-10 min-w-0 w-full cursor-pointer items-center gap-2 rounded-lg border px-2.5 text-xs transition ${
                               active
-                                ? "border-emerald-500 bg-emerald-100/60 text-emerald-700"
-                                : "border-emerald-200 bg-white text-slate-700 hover:border-emerald-300"
+                                ? "border-blue-500 bg-blue-50 text-blue-700"
+                                : "border-blue-200 bg-white text-slate-700 hover:border-blue-300"
                             }`}
                           >
                             <input
                               type="checkbox"
                               checked={active}
                               onChange={() => toggleMulti("qualityBuckets", item.value)}
-                              className="h-3.5 w-3.5 border-slate-300 text-emerald-600"
+                              className="h-3.5 w-3.5 border-slate-300 text-blue-600"
                             />
                             <span className="truncate whitespace-nowrap">{(String(item.value || "").trim().toUpperCase() === "T1" || String(item.label || "").trim().toUpperCase().startsWith("T1")) ? "T1" : item.label}</span>
                           </label>
@@ -1846,7 +1846,7 @@ export default function AdminScopusResearchDashboard() {
                   type="button"
                   onClick={exportPersonSummaryCSV}
                   disabled={personSummaryFilteredRows.length === 0}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Download size={14} />
                   Export CSV
@@ -1974,10 +1974,10 @@ export default function AdminScopusResearchDashboard() {
                           </div>
                         </div>
 
-                        <div className="rounded-lg border border-violet-200 bg-violet-50 p-2">
+                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-2">
                           <div className="mb-1 flex items-center justify-between gap-2">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-700">กลุ่ม Quartile</p>
-                            <label className="inline-flex items-center gap-1 text-xs text-violet-700">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">กลุ่ม Quartile</p>
+                            <label className="inline-flex items-center gap-1 text-xs text-blue-700">
                               <input
                                 type="checkbox"
                                 checked={isQuartileGroupChecked}
@@ -1989,7 +1989,7 @@ export default function AdminScopusResearchDashboard() {
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {PERSON_QUARTILE_COLUMNS.map((col) => (
-                              <label key={col.key} className="inline-flex items-center gap-1 rounded-md border border-violet-200 bg-white px-2 py-1 text-xs text-slate-700">
+                              <label key={col.key} className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2 py-1 text-xs text-slate-700">
                                 <input
                                   type="checkbox"
                                   checked={Boolean(personColumnVisibility[col.key])}
@@ -2002,10 +2002,10 @@ export default function AdminScopusResearchDashboard() {
                           </div>
                         </div>
 
-                        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2">
+                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-2">
                           <div className="mb-1 flex items-center justify-between gap-2">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">กลุ่มประเภทแหล่งตีพิมพ์</p>
-                            <label className="inline-flex items-center gap-1 text-xs text-emerald-700">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">กลุ่มประเภทแหล่งตีพิมพ์</p>
+                            <label className="inline-flex items-center gap-1 text-xs text-blue-700">
                               <input
                                 type="checkbox"
                                 checked={isSourceGroupChecked}
@@ -2017,7 +2017,7 @@ export default function AdminScopusResearchDashboard() {
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {PERSON_SOURCE_COLUMNS.map((col) => (
-                              <label key={col.key} className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-white px-2 py-1 text-xs text-slate-700">
+                              <label key={col.key} className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2 py-1 text-xs text-slate-700">
                                 <input
                                   type="checkbox"
                                   checked={Boolean(personColumnVisibility[col.key])}
@@ -2037,53 +2037,53 @@ export default function AdminScopusResearchDashboard() {
                 <div className="overflow-x-auto">
                   <table className="min-w-full border-collapse text-sm">
                     <thead>
-                      <tr className="text-slate-700">
-                        <th rowSpan={hasGroupedPersonColumns ? 2 : 1} className="border border-indigo-200 bg-indigo-50 px-3 py-2 text-center text-indigo-800">ลำดับ</th>
+                      <tr>
+                        <th rowSpan={hasGroupedPersonColumns ? 2 : 1} className="border border-blue-200 bg-blue-100 px-3 py-2 text-center font-semibold text-blue-900">ลำดับ</th>
                         {visiblePersonBaseColumns.map((col) => (
                           <th
                             key={col.key}
                             rowSpan={hasGroupedPersonColumns ? 2 : 1}
                             onClick={() => handlePersonSort(col.key)}
-                            className={`cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-blue-800 ${col.align === "right" ? "text-right" : "text-left"}`}
+                            className={`cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 font-semibold text-blue-900 ${col.align === "right" ? "text-right" : "text-left"}`}
                           >
-                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-600">{personSortIndicator(col.key)}</span></span>
+                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-700">{personSortIndicator(col.key)}</span></span>
                           </th>
                         ))}
                         {visiblePersonQuartileColumns.length > 0 && (
-                          <th colSpan={visiblePersonQuartileColumns.length} className="border border-violet-200 bg-violet-50 px-3 py-2 text-center text-violet-800">กลุ่ม Quartile</th>
+                          <th colSpan={visiblePersonQuartileColumns.length} className="border border-blue-200 border-l-2 border-l-blue-300 bg-blue-100 px-3 py-2 text-center font-semibold text-blue-900">กลุ่ม Quartile</th>
                         )}
                         {visiblePersonSourceColumns.length > 0 && (
-                          <th colSpan={visiblePersonSourceColumns.length} className="border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-emerald-800">กลุ่มประเภทแหล่งตีพิมพ์</th>
+                          <th colSpan={visiblePersonSourceColumns.length} className="border border-blue-200 border-l-2 border-l-blue-300 bg-blue-100 px-3 py-2 text-center font-semibold text-blue-900">กลุ่มประเภทแหล่งตีพิมพ์</th>
                         )}
-                        {visiblePersonTimeColumns.map((col) => (
+                        {visiblePersonTimeColumns.map((col, timeIndex) => (
                           <th
                             key={col.key}
                             rowSpan={hasGroupedPersonColumns ? 2 : 1}
                             onClick={() => handlePersonSort(col.key)}
-                            className="cursor-pointer border border-amber-200 bg-amber-50 px-3 py-2 text-right text-amber-800"
+                            className={`cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-right font-semibold text-blue-900 ${timeIndex === 0 ? "border-l-2 border-l-blue-300" : ""}`}
                           >
-                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-amber-600">{personSortIndicator(col.key)}</span></span>
+                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-700">{personSortIndicator(col.key)}</span></span>
                           </th>
                         ))}
                       </tr>
                       {hasGroupedPersonColumns && (
-                        <tr className="text-slate-700">
-                          {visiblePersonQuartileColumns.map((col) => (
+                        <tr>
+                          {visiblePersonQuartileColumns.map((col, qIndex) => (
                             <th
                               key={col.key}
                               onClick={() => handlePersonSort(col.key)}
-                              className="cursor-pointer border border-violet-200 bg-violet-50 px-3 py-2 text-right text-violet-800"
+                              className={`cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right font-medium text-blue-800 ${qIndex === 0 ? "border-l-2 border-l-blue-300" : ""}`}
                             >
-                              <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-violet-600">{personSortIndicator(col.key)}</span></span>
+                              <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-600">{personSortIndicator(col.key)}</span></span>
                             </th>
                           ))}
-                          {visiblePersonSourceColumns.map((col) => (
+                          {visiblePersonSourceColumns.map((col, sIndex) => (
                             <th
                               key={col.key}
                               onClick={() => handlePersonSort(col.key)}
-                              className="cursor-pointer border border-emerald-200 bg-emerald-50 px-3 py-2 text-right text-emerald-800"
+                              className={`cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right font-medium text-blue-800 ${sIndex === 0 ? "border-l-2 border-l-blue-300" : ""}`}
                             >
-                              <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-emerald-600">{personSortIndicator(col.key)}</span></span>
+                              <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-600">{personSortIndicator(col.key)}</span></span>
                             </th>
                           ))}
                         </tr>
@@ -2103,8 +2103,8 @@ export default function AdminScopusResearchDashboard() {
                               selectedPersonSummaryRow === `${row.user_id}-${index}`
                                 ? "bg-blue-100"
                                 : index % 2 === 0
-                                  ? "bg-white hover:bg-sky-50"
-                                  : "bg-slate-50 hover:bg-sky-50"
+                                  ? "bg-white hover:bg-blue-50"
+                                  : "bg-slate-50 hover:bg-blue-50"
                             }`}
                           >
                             <td className="border border-slate-200 px-3 py-2 text-center">{index + 1}</td>
@@ -2243,7 +2243,7 @@ export default function AdminScopusResearchDashboard() {
                     <thead>
                       <tr className="text-slate-700">
                         <th
-                          className="border border-blue-200 bg-blue-50 px-3 py-2 text-center text-blue-800"
+                          className="border border-blue-200 bg-blue-100 px-3 py-2 text-center font-semibold text-blue-900"
                           style={{
                             minWidth: `${personMatrixRankWidth}px`,
                             width: `${personMatrixRankWidth}px`,
@@ -2258,7 +2258,7 @@ export default function AdminScopusResearchDashboard() {
                           <th
                             key={col.key}
                             onClick={() => handlePersonMatrixSort(col.key)}
-                            className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-left text-blue-800"
+                            className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-left font-semibold text-blue-900"
                             style={{
                               minWidth: `${personMatrixStickyWidths[col.key] || 180}px`,
                               position: "sticky",
@@ -2266,16 +2266,16 @@ export default function AdminScopusResearchDashboard() {
                               zIndex: 20,
                             }}
                           >
-                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-600">{personMatrixSortIndicator(col.key)}</span></span>
+                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-700">{personMatrixSortIndicator(col.key)}</span></span>
                           </th>
                         ))}
-                        {personMatrixVisibleYears.map((year) => (
+                        {personMatrixVisibleYears.map((year, yearIdx) => (
                           <th
                             key={year}
                             onClick={() => handlePersonMatrixSort(`year:${year}`)}
-                            className="cursor-pointer border border-sky-200 bg-sky-50 px-3 py-2 text-right text-sky-800"
+                            className={`cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right font-medium text-blue-800 ${yearIdx === 0 ? "border-l-2 border-l-blue-300" : ""}`}
                           >
-                            <span className="inline-flex items-center gap-1">{year}<span className="text-[10px] text-sky-600">{personMatrixSortIndicator(`year:${year}`)}</span></span>
+                            <span className="inline-flex items-center gap-1">{year}<span className="text-[10px] text-blue-600">{personMatrixSortIndicator(`year:${year}`)}</span></span>
                           </th>
                         ))}
                       </tr>
@@ -2301,8 +2301,8 @@ export default function AdminScopusResearchDashboard() {
                                 selectedPersonMatrixRow === rowKey
                                   ? "bg-blue-100"
                                   : index % 2 === 0
-                                    ? "bg-white hover:bg-sky-50"
-                                    : "bg-slate-50 hover:bg-sky-50"
+                                    ? "bg-white hover:bg-blue-50"
+                                    : "bg-slate-50 hover:bg-blue-50"
                               }`}
                             >
                               <td
@@ -2459,32 +2459,32 @@ export default function AdminScopusResearchDashboard() {
                         </colgroup>
                         <thead>
                           <tr className="text-slate-700">
-                            <th className="border border-blue-200 bg-blue-50 px-3 py-2 text-center text-blue-800">ลำดับ</th>
+                            <th className="border border-blue-200 bg-blue-100 px-3 py-2 text-center font-semibold text-blue-900">ลำดับ</th>
                             <th
                               onClick={() => handleDiversitySort("user")}
-                              className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-left text-blue-800"
+                              className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-left font-semibold text-blue-900"
                             >
                               <span className="inline-flex items-center gap-1">อาจารย์ <span className="text-[10px] text-blue-600">{diversitySortIndicator("user")}</span></span>
                             </th>
                             <th
                               onClick={() => handleDiversitySort("distinct_collaborators")}
-                              className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right text-blue-800"
+                              className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-right font-semibold text-blue-900"
                             >
                               <span className="inline-flex items-center justify-end gap-1">จำนวนผู้ร่วมงาน <span className="text-[10px] text-blue-600">{diversitySortIndicator("distinct_collaborators")}</span></span>
                             </th>
                             <th
                               onClick={() => handleDiversitySort("total_shared")}
-                              className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right text-blue-800"
+                              className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-right font-semibold text-blue-900"
                             >
                               <span className="inline-flex items-center justify-end gap-1">ผลงานร่วมรวม <span className="text-[10px] text-blue-600">{diversitySortIndicator("total_shared")}</span></span>
                             </th>
                             <th
                               onClick={() => handleDiversitySort("avg_per_collaborator")}
-                              className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right text-blue-800"
+                              className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-right font-semibold text-blue-900"
                             >
                               <span className="inline-flex items-center justify-end gap-1">เฉลี่ยต่อผู้ร่วมงาน <span className="text-[10px] text-blue-600">{diversitySortIndicator("avg_per_collaborator")}</span></span>
                             </th>
-                            <th className="border border-blue-200 bg-blue-50 px-3 py-2 text-left text-blue-800">รายชื่อผู้ร่วมงาน</th>
+                            <th className="border border-blue-200 bg-blue-100 px-3 py-2 text-left font-semibold text-blue-900">รายชื่อผู้ร่วมงาน</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2508,8 +2508,8 @@ export default function AdminScopusResearchDashboard() {
                                     isExpanded
                                       ? "bg-blue-100"
                                       : index % 2 === 0
-                                        ? "bg-white hover:bg-sky-50"
-                                        : "bg-slate-50 hover:bg-sky-50"
+                                        ? "bg-white hover:bg-blue-50"
+                                        : "bg-slate-50 hover:bg-blue-50"
                                   }`}
                                 >
                                   <td className="border border-slate-200 px-3 py-2 text-center">{rowNumber}</td>
@@ -2628,22 +2628,22 @@ export default function AdminScopusResearchDashboard() {
                   <table className="min-w-full border-collapse text-sm">
                     <thead>
                       <tr className="text-slate-700">
-                        <th className="border border-blue-200 bg-blue-50 px-3 py-2 text-center text-blue-800">ลำดับ</th>
+                        <th className="border border-blue-200 bg-blue-100 px-3 py-2 text-center font-semibold text-blue-900">ลำดับ</th>
                         <th
                           onClick={() => handleInternalCollabSort("user_a")}
-                          className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-left text-blue-800"
+                          className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-left font-semibold text-blue-900"
                         >
                           <span className="inline-flex items-center gap-1">อาจารย์ A <span className="text-[10px] text-blue-600">{internalCollabSortIndicator("user_a")}</span></span>
                         </th>
                         <th
                           onClick={() => handleInternalCollabSort("user_b")}
-                          className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-left text-blue-800"
+                          className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-left font-semibold text-blue-900"
                         >
                           <span className="inline-flex items-center gap-1">อาจารย์ B <span className="text-[10px] text-blue-600">{internalCollabSortIndicator("user_b")}</span></span>
                         </th>
                         <th
                           onClick={() => handleInternalCollabSort("shared_documents")}
-                          className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right text-blue-800"
+                          className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-right font-semibold text-blue-900"
                         >
                           <span className="inline-flex items-center gap-1">ผลงานร่วมกัน (เอกสารไม่ซ้ำ) <span className="text-[10px] text-blue-600">{internalCollabSortIndicator("shared_documents")}</span></span>
                         </th>
@@ -2666,8 +2666,8 @@ export default function AdminScopusResearchDashboard() {
                                 selectedInternalCollabRow === rowKey
                                   ? "bg-blue-100"
                                   : index % 2 === 0
-                                    ? "bg-white hover:bg-sky-50"
-                                    : "bg-slate-50 hover:bg-sky-50"
+                                    ? "bg-white hover:bg-blue-50"
+                                    : "bg-slate-50 hover:bg-blue-50"
                               }`}
                             >
                               <td className="border border-slate-200 px-3 py-2 text-center">{rowNumber}</td>
@@ -2752,8 +2752,8 @@ export default function AdminScopusResearchDashboard() {
                 <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-slate-800">จำนวนบทความที่เผยแพร่</p>
                 </div>
-                <p className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-sky-50 px-2 py-1 text-xs text-sky-700">
-                  <MousePointerClick size={13} className="text-sky-500" />
+                <p className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-700">
+                  <MousePointerClick size={13} className="text-blue-500" />
                   คลิกที่ตัวเลขในแถว T1–Q4 และ Conference เพื่อดูรายการผลงานที่ถูกนับในช่องนั้น
                 </p>
                 {overviewYearsBE.length === 0 ? (
@@ -2812,7 +2812,7 @@ export default function AdminScopusResearchDashboard() {
                         {renderOverviewCountRow("q4", "Q4 (0-24)", "q4")}
                         <tr
                           onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "tci" ? "" : "tci"))}
-                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "tci" ? "bg-blue-100" : "hover:bg-sky-50"}`}
+                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "tci" ? "bg-blue-100" : "hover:bg-blue-50"}`}
                         >
                           <td
                             className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "tci" ? "bg-blue-100" : "bg-slate-50"}`}
@@ -3139,7 +3139,7 @@ export default function AdminScopusResearchDashboard() {
                   </div>
                   <p className="mt-3 text-xs text-slate-500">อัปเดตล่าสุด: <span className="font-medium text-slate-700">{latestScopusPullLabel}</span></p>
                   {drilldownPanelOpen && (
-                    <div className="mt-3 rounded-xl border-2 border-sky-300 bg-white p-3 shadow-lg ring-2 ring-sky-100">
+                    <div className="mt-3 rounded-xl border-2 border-blue-300 bg-white p-3 shadow-lg ring-2 ring-blue-100">
                       <div ref={drilldownPanelRef} className="mb-2 flex flex-wrap items-center justify-between gap-2">
                         <p className="text-sm font-semibold text-slate-800">
                           ตรวจสอบรายการที่ถูกนับ: {drilldownState.bucketLabel || "-"} • ปี{drilldownState.yearType === "fiscal" ? "งบประมาณ" : "ปฏิทิน"} {drilldownState.yearBE || "-"}
@@ -3426,8 +3426,8 @@ export default function AdminScopusResearchDashboard() {
                             selectedFacultyHistoryRow === `${row.publication_year}-${index}`
                               ? "bg-blue-100"
                               : index % 2 === 0
-                                ? "bg-white hover:bg-sky-50"
-                                : "bg-slate-50 hover:bg-sky-50"
+                                ? "bg-white hover:bg-blue-50"
+                                : "bg-slate-50 hover:bg-blue-50"
                           }`}
                         >
                           <td className="border border-slate-200 px-3 py-2 text-left font-medium text-slate-700">{row.publication_year}</td>
