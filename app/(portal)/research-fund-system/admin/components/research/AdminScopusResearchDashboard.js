@@ -2397,7 +2397,7 @@ export default function AdminScopusResearchDashboard() {
 
                 {activeInternalCollabTab === "diversity" && (
                   <div className="space-y-3">
-                    <p className="text-xs text-slate-500">แต่ละแถวคืออาจารย์หนึ่งคนกับรายชื่อผู้ร่วมงานภายในคณะ — ยิ่ง &quot;จำนวนผู้ร่วมงาน&quot; มาก = ทำงานร่วมกับคนได้หลากหลาย ส่วน &quot;เฉลี่ยต่อผู้ร่วมงาน&quot; ยิ่งต่ำ = กระจายหลากหลาย ยิ่งสูง = ทำกับคนเดิมซ้ำ</p>
+                    <p className="text-xs text-slate-500">&quot;จำนวนผู้ร่วมงาน&quot; = จำนวนอาจารย์ในคณะที่เคยมีผลงานร่วมกัน · &quot;เฉลี่ยต่อผู้ร่วมงาน&quot; = ผลงานร่วมรวม ÷ จำนวนผู้ร่วมงาน</p>
 
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                       <div className="grid gap-3 md:grid-cols-3">
@@ -2547,8 +2547,8 @@ export default function AdminScopusResearchDashboard() {
                       </table>
                     </div>
 
-                    <p className="text-[11px] text-slate-400">
-                      หมายเหตุ: &quot;ผลงานร่วมรวม&quot; นับผลรวมของทุกคู่ — เอกสารที่มีผู้เขียนในคณะตั้งแต่ 3 คนขึ้นไปจะถูกนับซ้ำในหลายคู่ จึงเป็นตัววัดปริมาณความร่วมมือ ไม่ใช่จำนวนเอกสารไม่ซ้ำ
+                    <p className="text-xs text-slate-400">
+                      หมายเหตุ: เอกสารที่มีผู้เขียนในคณะ ≥ 3 คนถูกนับในหลายคู่ &quot;ผลงานร่วมรวม&quot; จึงไม่ใช่จำนวนเอกสารไม่ซ้ำ
                     </p>
 
                     <div className="flex items-center justify-end gap-2">
@@ -2574,7 +2574,7 @@ export default function AdminScopusResearchDashboard() {
 
                 {activeInternalCollabTab === "pairs" && (
                   <div className="space-y-3">
-                <p className="text-xs text-slate-500">ตารางคู่ความร่วมมือภายใน (Internal Collaboration Pair) แบบ canonical pair (A-B ไม่นับซ้ำ B-A)</p>
+                <p className="text-xs text-slate-500">คู่อาจารย์ที่เคยมีผลงานร่วมกัน (นับ A-B และ B-A เป็นคู่เดียว)</p>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                   <div className="grid gap-3 md:grid-cols-3">
