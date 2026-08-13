@@ -209,6 +209,7 @@ export default function AdminScopusResearchDashboard() {
   const [isSourceCollapsed, setIsSourceCollapsed] = useState(false);
   const [isSponsorCollapsed, setIsSponsorCollapsed] = useState(false);
   const [isOverviewCollapsed, setIsOverviewCollapsed] = useState(false);
+  const [showOverviewRatios, setShowOverviewRatios] = useState(false);
   const [isFacultyHistoryCollapsed, setIsFacultyHistoryCollapsed] = useState(false);
   const [selectedFacultyHistoryRow, setSelectedFacultyHistoryRow] = useState("");
   const [isPersonSummaryCollapsed, setIsPersonSummaryCollapsed] = useState(false);
@@ -1374,7 +1375,6 @@ export default function AdminScopusResearchDashboard() {
     const categories = documentTypeRows.map((row) => row.label);
     const totals = documentTypeRows.map((row) => Number(row.total || 0));
     const percents = documentTypeRows.map((row) => Number(ratioText(row.total).replace("%", "")));
-    const documentPalette = ["#2563eb", "#64748b", "#0ea5e9", "#94a3b8", "#1d4ed8", "#475569", "#3b82f6", "#cbd5e1"];
 
     if (documentChartView === "percent") {
       return {
@@ -1383,13 +1383,14 @@ export default function AdminScopusResearchDashboard() {
         series: [{ name: "สัดส่วน", data: percents }],
         options: {
           chart: { toolbar: { show: false } },
-          plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: "70%", distributed: true } },
+          plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: "70%", distributed: false } },
+          legend: { show: false },
           xaxis: {
             categories,
             max: 100,
             labels: { formatter: (value) => `${value}%` },
           },
-          colors: documentPalette,
+          colors: ["#2563eb"],
           dataLabels: {
             enabled: true,
             formatter: (value) => `${Number(value).toFixed(1)}%`,
@@ -1426,13 +1427,14 @@ export default function AdminScopusResearchDashboard() {
       series: [{ name: "จำนวนเอกสาร", data: totals }],
         options: {
           chart: { toolbar: { show: false } },
-          plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: "70%", distributed: true } },
+          plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: "70%", distributed: false } },
+          legend: { show: false },
           xaxis: {
             categories,
             max: undefined,
             labels: { formatter: (value) => formatNumber(value) },
           },
-          colors: documentPalette,
+          colors: ["#2563eb"],
           dataLabels: {
             enabled: true,
             formatter: (value) => formatNumber(value),
@@ -2726,25 +2728,29 @@ export default function AdminScopusResearchDashboard() {
               <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                 <div className="rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">จำนวนอาจารย์ในคณะ</p>
-                  <p className="mt-2 text-right text-3xl font-semibold text-blue-700">{formatNumber(kpi.total_teachers_with_scopus || 0)}</p>
+                  <p className="mt-2 text-3xl font-semibold text-blue-700">{formatNumber(kpi.total_teachers_with_scopus || 0)}</p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">จำนวนผลงานทั้งหมด (Unique Document)</p>
-                  <div className="mt-2 space-y-1 text-right">
-                    <p className="text-xs text-slate-500">ปีปฏิทิน: <span className="text-lg font-semibold text-slate-900">{formatNumber(overviewKpiByYearType.calendar.uniqueDocuments || 0)}</span></p>
-                    <p className="text-xs text-slate-500">ปีงบประมาณ: <span className="text-lg font-semibold text-slate-900">{formatNumber(overviewKpiByYearType.fiscal.uniqueDocuments || 0)}</span></p>
-                  </div>
+                  <p className="mt-2 text-3xl font-semibold text-slate-900">
+                    {formatNumber(overviewKpiByYearType.calendar.uniqueDocuments || 0)}
+                    <span className="mx-1.5 text-xl font-normal text-slate-300">/</span>
+                    {formatNumber(overviewKpiByYearType.fiscal.uniqueDocuments || 0)}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">ปีปฏิทิน · ปีงบประมาณ</p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">จำนวน Citation ทั้งหมด (Total Citation)</p>
-                  <div className="mt-2 space-y-1 text-right">
-                    <p className="text-xs text-slate-500">ปีปฏิทิน: <span className="text-lg font-semibold text-slate-900">{formatNumber(overviewKpiByYearType.calendar.totalCitations || 0)}</span></p>
-                    <p className="text-xs text-slate-500">ปีงบประมาณ: <span className="text-lg font-semibold text-slate-900">{formatNumber(overviewKpiByYearType.fiscal.totalCitations || 0)}</span></p>
-                  </div>
+                  <p className="mt-2 text-3xl font-semibold text-slate-900">
+                    {formatNumber(overviewKpiByYearType.calendar.totalCitations || 0)}
+                    <span className="mx-1.5 text-xl font-normal text-slate-300">/</span>
+                    {formatNumber(overviewKpiByYearType.fiscal.totalCitations || 0)}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">ปีปฏิทิน · ปีงบประมาณ</p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">ช่วงปีผลงาน (Publication Year Range)</p>
-                  <p className="mt-2 text-right text-2xl font-semibold text-slate-900">{publicationYearRangeLabel}</p>
+                  <p className="mt-2 text-3xl font-semibold text-slate-900">{publicationYearRangeLabel}</p>
                 </div>
               </div>
 
@@ -2859,6 +2865,20 @@ export default function AdminScopusResearchDashboard() {
                             <td key={`fy-total-${year}`} className="border border-slate-300 bg-slate-200 px-3 py-2 text-right font-semibold text-slate-900">{formatNumber(overviewYearMetricsFiscal[year]?.totalWithConferenceAndTCI || 0)}</td>
                           ))}
                         </tr>
+                        <tr>
+                          <td colSpan={1 + overviewYearsBE.length * 2} className="border border-slate-200 bg-white px-3 py-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setShowOverviewRatios((v) => !v)}
+                              className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-900"
+                            >
+                              {showOverviewRatios ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                              {showOverviewRatios ? "ซ่อนกลุ่มสัดส่วน (Ratio)" : "แสดงกลุ่มสัดส่วน (Ratio)"}
+                            </button>
+                          </td>
+                        </tr>
+                        {showOverviewRatios && (
+                          <>
                         <tr>
                           <td colSpan={1 + overviewYearsBE.length * 2} className="border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600">
                             กลุ่มสัดส่วนในผลงาน Q1-Q4
@@ -3134,6 +3154,8 @@ export default function AdminScopusResearchDashboard() {
                             <td key={`fy-allwithtci-teacher-${year}`} className="border border-slate-200 bg-white px-3 py-2 text-right font-semibold">{formatRatio(overviewYearMetricsFiscal[year]?.allWithTCIPerTeacher || 0)}</td>
                           ))}
                         </tr>
+                          </>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -3163,14 +3185,14 @@ export default function AdminScopusResearchDashboard() {
                           <div className="overflow-x-auto">
                             <table className="min-w-[980px] border-collapse text-xs">
                               <thead>
-                                <tr className="bg-slate-100 text-slate-700">
-                                  <th className="border border-slate-200 px-2 py-2 text-left">ชื่อผลงาน</th>
-                                  <th className="border border-slate-200 px-2 py-2 text-left">อาจารย์ในคณะ</th>
-                                  <th className="border border-slate-200 px-2 py-2 text-center">ประเภทผลงาน</th>
-                                  <th className="border border-slate-200 px-2 py-2 text-center">ปีตีพิมพ์ (พ.ศ.)</th>
-                                  <th className="border border-slate-200 px-2 py-2 text-center">ปี CiteScore ที่ใช้</th>
-                                  <th className="border border-slate-200 px-2 py-2 text-center">สถานะ CiteScore</th>
-                                  <th className="border border-slate-200 px-2 py-2 text-center">ที่มาของปี CiteScore</th>
+                                <tr className="bg-blue-100 text-blue-900">
+                                  <th className="border border-blue-200 px-2 py-2 text-left font-semibold">ชื่อผลงาน</th>
+                                  <th className="border border-blue-200 px-2 py-2 text-left font-semibold">อาจารย์ในคณะ</th>
+                                  <th className="border border-blue-200 px-2 py-2 text-center font-semibold">ประเภทผลงาน</th>
+                                  <th className="border border-blue-200 px-2 py-2 text-center font-semibold">ปีตีพิมพ์ (พ.ศ.)</th>
+                                  <th className="border border-blue-200 px-2 py-2 text-center font-semibold">ปี CiteScore ที่ใช้</th>
+                                  <th className="border border-blue-200 px-2 py-2 text-center font-semibold">สถานะ CiteScore</th>
+                                  <th className="border border-blue-200 px-2 py-2 text-center font-semibold">ที่มาของปี CiteScore</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -3308,15 +3330,15 @@ export default function AdminScopusResearchDashboard() {
                       ) : (
                         <div className="max-h-[360px] overflow-y-auto rounded-lg border border-slate-200">
                           <table className="min-w-full border-collapse text-sm">
-                            <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700">
+                            <thead className="sticky top-0 z-10 bg-blue-100 text-blue-900">
                               <tr>
-                                <th className="border border-slate-200 px-3 py-2 text-left font-semibold">ประเภทผลงาน</th>
-                                <th className="border border-slate-200 px-3 py-2 text-left font-semibold">แหล่งตีพิมพ์</th>
-                                <th className="border border-slate-200 px-3 py-2 text-right font-semibold">
+                                <th className="border border-blue-200 px-3 py-2 text-left font-semibold">ประเภทผลงาน</th>
+                                <th className="border border-blue-200 px-3 py-2 text-left font-semibold">แหล่งตีพิมพ์</th>
+                                <th className="border border-blue-200 px-3 py-2 text-right font-semibold">
                                   <button
                                     type="button"
                                     onClick={() => setPublicationSourceSort((prev) => (prev === "desc" ? "asc" : "desc"))}
-                                    className="inline-flex items-center gap-1 text-right text-slate-700 hover:text-slate-900"
+                                    className="inline-flex items-center gap-1 text-right text-blue-800 hover:text-blue-900"
                                   >
                                     <span>จำนวน</span>
                                     {publicationSourceSort === "desc" ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
