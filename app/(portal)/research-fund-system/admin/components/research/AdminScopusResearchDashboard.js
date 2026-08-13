@@ -224,6 +224,13 @@ export default function AdminScopusResearchDashboard() {
   const [internalCollabPage, setInternalCollabPage] = useState(1);
   const [internalCollabPageSize, setInternalCollabPageSize] = useState(25);
   const [internalCollabSort, setInternalCollabSort] = useState({ key: "shared_documents", direction: "desc" });
+  const [activeInternalCollabTab, setActiveInternalCollabTab] = useState("diversity");
+  const [selectedDiversityRow, setSelectedDiversityRow] = useState("");
+  const [diversitySearch, setDiversitySearch] = useState("");
+  const [diversityMinCollaborators, setDiversityMinCollaborators] = useState("");
+  const [diversityPage, setDiversityPage] = useState(1);
+  const [diversityPageSize, setDiversityPageSize] = useState(25);
+  const [diversitySort, setDiversitySort] = useState({ key: "distinct_collaborators", direction: "desc" });
   const [personMatrixSearch, setPersonMatrixSearch] = useState("");
   const [personMatrixYearStart, setPersonMatrixYearStart] = useState("");
   const [personMatrixYearEnd, setPersonMatrixYearEnd] = useState("");
@@ -432,6 +439,26 @@ export default function AdminScopusResearchDashboard() {
     if (internalCollabSort.key !== columnKey) return "↕";
     return internalCollabSort.direction === "asc" ? "▲" : "▼";
   }, [internalCollabSort]);
+
+  const handleDiversitySort = useCallback((columnKey) => {
+    setDiversitySort((prev) => {
+      if (prev.key === columnKey) {
+        return {
+          key: columnKey,
+          direction: prev.direction === "asc" ? "desc" : "asc",
+        };
+      }
+      return {
+        key: columnKey,
+        direction: columnKey === "user" ? "asc" : "desc",
+      };
+    });
+  }, []);
+
+  const diversitySortIndicator = useCallback((columnKey) => {
+    if (diversitySort.key !== columnKey) return "↕";
+    return diversitySort.direction === "asc" ? "▲" : "▼";
+  }, [diversitySort]);
 
   const togglePersonColumn = useCallback((columnKey) => {
     setPersonColumnVisibility((prev) => ({
@@ -741,6 +768,81 @@ export default function AdminScopusResearchDashboard() {
     return internalCollabFilteredRows.slice(start, start + internalCollabPageSize);
   }, [internalCollabFilteredRows, internalCollabPage, internalCollabPageSize]);
 
+  // มุมมองรายบุคคล (Diversity) — กาง canonical pair แต่ละอันเป็นสองทิศแล้ว group ตามอาจารย์
+  const teacherDiversityRows = useMemo(() => {
+    const byTeacher = new Map();
+
+    const addCollaborator = (ownerId, ownerName, partnerId, partnerName, shared) => {
+      if (ownerId === undefined || ownerId === null) return;
+      const key = String(ownerId);
+      if (!byTeacher.has(key)) {
+        byTeacher.set(key, { user_id: ownerId, user: ownerName || "-", collaborators: [] });
+      }
+      byTeacher.get(key).collaborators.push({ id: partnerId, name: partnerName || "-", shared });
+    };
+
+    internalCollaborationPairs.forEach((pair) => {
+      const shared = Number(pair.shared_documents || 0);
+      addCollaborator(pair.user_a_id, pair.user_a, pair.user_b_id, pair.user_b, shared);
+      addCollaborator(pair.user_b_id, pair.user_b, pair.user_a_id, pair.user_a, shared);
+    });
+
+    return Array.from(byTeacher.values()).map((entry) => {
+      const collaborators = entry.collaborators
+        .slice()
+        .sort((a, b) => Number(b.shared || 0) - Number(a.shared || 0));
+      const distinct = collaborators.length;
+      const totalShared = collaborators.reduce((sum, c) => sum + Number(c.shared || 0), 0);
+      return {
+        user_id: entry.user_id,
+        user: entry.user,
+        distinct_collaborators: distinct,
+        total_shared: totalShared,
+        avg_per_collaborator: distinct > 0 ? totalShared / distinct : 0,
+        collaborators,
+      };
+    });
+  }, [internalCollaborationPairs]);
+
+  const diversityFilteredRows = useMemo(() => {
+    const query = diversitySearch.trim().toLowerCase();
+    const minCollab = Number(diversityMinCollaborators || 0);
+    const threshold = Number.isFinite(minCollab) && minCollab > 0 ? minCollab : 0;
+
+    const filtered = teacherDiversityRows.filter((row) => {
+      const name = String(row.user || "").toLowerCase();
+      const partnerMatch = query === "" || row.collaborators.some((c) => String(c.name || "").toLowerCase().includes(query));
+      const searchMatch = query === "" || name.includes(query) || partnerMatch;
+      return searchMatch && row.distinct_collaborators >= threshold;
+    });
+
+    filtered.sort((a, b) => {
+      let compare = 0;
+      if (diversitySort.key === "user") {
+        compare = String(a?.user || "").localeCompare(String(b?.user || ""), "th", { sensitivity: "base" });
+      } else {
+        compare = Number(a?.[diversitySort.key] || 0) - Number(b?.[diversitySort.key] || 0);
+      }
+
+      if (compare === 0) {
+        return String(a?.user || "").localeCompare(String(b?.user || ""), "th", { sensitivity: "base" });
+      }
+      return diversitySort.direction === "asc" ? compare : -compare;
+    });
+
+    return filtered;
+  }, [teacherDiversityRows, diversitySearch, diversityMinCollaborators, diversitySort]);
+
+  const diversityTotalPages = useMemo(
+    () => Math.max(1, Math.ceil(diversityFilteredRows.length / diversityPageSize)),
+    [diversityFilteredRows.length, diversityPageSize]
+  );
+
+  const diversityPageRows = useMemo(() => {
+    const start = (diversityPage - 1) * diversityPageSize;
+    return diversityFilteredRows.slice(start, start + diversityPageSize);
+  }, [diversityFilteredRows, diversityPage, diversityPageSize]);
+
   useEffect(() => {
     const start = personYearMatrix?.year_start_be;
     const end = personYearMatrix?.year_end_be;
@@ -763,6 +865,16 @@ export default function AdminScopusResearchDashboard() {
       setInternalCollabPage(internalCollabTotalPages);
     }
   }, [internalCollabPage, internalCollabTotalPages]);
+
+  useEffect(() => {
+    setDiversityPage(1);
+  }, [diversitySearch, diversityMinCollaborators, diversityPageSize, diversitySort]);
+
+  useEffect(() => {
+    if (diversityPage > diversityTotalPages) {
+      setDiversityPage(diversityTotalPages);
+    }
+  }, [diversityPage, diversityTotalPages]);
 
   useEffect(() => {
     if (drilldownPanelOpen && drilldownPanelRef.current) {
@@ -2253,7 +2365,211 @@ export default function AdminScopusResearchDashboard() {
             )}
           >
             {!isInternalCollabCollapsed && (
-              <div className="space-y-3">
+              <div className="space-y-4">
+                <div className="flex gap-1 border-b border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setActiveInternalCollabTab("diversity")}
+                    className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                      activeInternalCollabTab === "diversity"
+                        ? "border-blue-600 text-blue-700"
+                        : "border-transparent text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    รายบุคคล (Diversity)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveInternalCollabTab("pairs")}
+                    className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                      activeInternalCollabTab === "pairs"
+                        ? "border-blue-600 text-blue-700"
+                        : "border-transparent text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    รายคู่ (Pairs)
+                  </button>
+                </div>
+
+                {activeInternalCollabTab === "diversity" && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-slate-500">แต่ละแถวคืออาจารย์หนึ่งคนกับรายชื่อผู้ร่วมงานภายในคณะ — ยิ่ง &quot;จำนวนผู้ร่วมงาน&quot; มาก = ทำงานร่วมกับคนได้หลากหลาย ส่วน &quot;เฉลี่ยต่อผู้ร่วมงาน&quot; ยิ่งต่ำ = กระจายหลากหลาย ยิ่งสูง = ทำกับคนเดิมซ้ำ</p>
+
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <div>
+                          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            ค้นหาอาจารย์
+                          </label>
+                          <input
+                            type="text"
+                            value={diversitySearch}
+                            onChange={(event) => setDiversitySearch(event.target.value)}
+                            placeholder="พิมพ์ชื่ออาจารย์ หรือผู้ร่วมงาน"
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            จำนวนผู้ร่วมงานขั้นต่ำ
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={diversityMinCollaborators}
+                            onChange={(event) => setDiversityMinCollaborators(event.target.value)}
+                            placeholder="เช่น 3"
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            แถวต่อหน้า
+                          </label>
+                          <select
+                            value={diversityPageSize}
+                            onChange={(event) => setDiversityPageSize(Number(event.target.value))}
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                          >
+                            {[10, 25, 50, 100].map((size) => (
+                              <option key={size} value={size}>{size}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                        <span className="mr-4">ผลลัพธ์ที่พบ: <span className="font-semibold text-slate-800">{formatNumber(diversityFilteredRows.length)}</span> คน</span>
+                        <span>หน้า: <span className="font-semibold text-slate-800">{diversityPage}</span> / {diversityTotalPages}</span>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[880px] table-fixed border-collapse text-sm">
+                        <colgroup>
+                          <col className="w-14" />
+                          <col className="w-48" />
+                          <col className="w-28" />
+                          <col className="w-28" />
+                          <col className="w-32" />
+                          <col />
+                        </colgroup>
+                        <thead>
+                          <tr className="text-slate-700">
+                            <th className="border border-blue-200 bg-blue-50 px-3 py-2 text-center text-blue-800">ลำดับ</th>
+                            <th
+                              onClick={() => handleDiversitySort("user")}
+                              className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-left text-blue-800"
+                            >
+                              <span className="inline-flex items-center gap-1">อาจารย์ <span className="text-[10px] text-blue-600">{diversitySortIndicator("user")}</span></span>
+                            </th>
+                            <th
+                              onClick={() => handleDiversitySort("distinct_collaborators")}
+                              className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right text-blue-800"
+                            >
+                              <span className="inline-flex items-center justify-end gap-1">จำนวนผู้ร่วมงาน <span className="text-[10px] text-blue-600">{diversitySortIndicator("distinct_collaborators")}</span></span>
+                            </th>
+                            <th
+                              onClick={() => handleDiversitySort("total_shared")}
+                              className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right text-blue-800"
+                            >
+                              <span className="inline-flex items-center justify-end gap-1">ผลงานร่วมรวม <span className="text-[10px] text-blue-600">{diversitySortIndicator("total_shared")}</span></span>
+                            </th>
+                            <th
+                              onClick={() => handleDiversitySort("avg_per_collaborator")}
+                              className="cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right text-blue-800"
+                            >
+                              <span className="inline-flex items-center justify-end gap-1">เฉลี่ยต่อผู้ร่วมงาน <span className="text-[10px] text-blue-600">{diversitySortIndicator("avg_per_collaborator")}</span></span>
+                            </th>
+                            <th className="border border-blue-200 bg-blue-50 px-3 py-2 text-left text-blue-800">รายชื่อผู้ร่วมงาน</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {diversityPageRows.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="border border-slate-200 px-3 py-4 text-center text-slate-500">ไม่พบข้อมูล</td>
+                            </tr>
+                          ) : (
+                            diversityPageRows.map((row, index) => {
+                              const rowKey = `${row.user_id}-${index}`;
+                              const rowNumber = (diversityPage - 1) * diversityPageSize + index + 1;
+                              const isExpanded = selectedDiversityRow === rowKey;
+                              const preview = row.collaborators.slice(0, 4);
+                              const remaining = row.collaborators.length - preview.length;
+                              const chips = isExpanded ? row.collaborators : preview;
+                              return (
+                                <tr
+                                  key={rowKey}
+                                  onClick={() => setSelectedDiversityRow((prev) => (prev === rowKey ? "" : rowKey))}
+                                  className={`cursor-pointer align-top transition-colors ${
+                                    isExpanded
+                                      ? "bg-amber-100"
+                                      : index % 2 === 0
+                                        ? "bg-white hover:bg-sky-50"
+                                        : "bg-slate-50 hover:bg-sky-50"
+                                  }`}
+                                >
+                                  <td className="border border-slate-200 px-3 py-2 text-center">{rowNumber}</td>
+                                  <td className="border border-slate-200 px-3 py-2 text-left font-medium text-slate-700">{row.user || "-"}</td>
+                                  <td className="border border-slate-200 px-3 py-2 text-right font-semibold text-blue-700">{formatNumber(row.distinct_collaborators)}</td>
+                                  <td className="border border-slate-200 px-3 py-2 text-right">{formatNumber(row.total_shared)}</td>
+                                  <td className="border border-slate-200 px-3 py-2 text-right">{row.avg_per_collaborator.toFixed(2)}</td>
+                                  <td className="border border-slate-200 px-3 py-2 text-left">
+                                    <div className="flex flex-wrap gap-1">
+                                      {chips.map((c, ci) => (
+                                        <span
+                                          key={`${rowKey}-c-${c.id}-${ci}`}
+                                          className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700"
+                                        >
+                                          <span>{c.name}</span>
+                                          <span className="rounded-full bg-slate-200 px-1.5 text-[10px] font-semibold text-slate-600">{formatNumber(c.shared)}</span>
+                                        </span>
+                                      ))}
+                                      {!isExpanded && remaining > 0 && (
+                                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">+{remaining}</span>
+                                      )}
+                                    </div>
+                                    {!isExpanded && remaining > 0 && (
+                                      <span className="mt-1 block text-[10px] text-slate-400">คลิกเพื่อดูทั้งหมด</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400">
+                      หมายเหตุ: &quot;ผลงานร่วมรวม&quot; นับผลรวมของทุกคู่ — เอกสารที่มีผู้เขียนในคณะตั้งแต่ 3 คนขึ้นไปจะถูกนับซ้ำในหลายคู่ จึงเป็นตัววัดปริมาณความร่วมมือ ไม่ใช่จำนวนเอกสารไม่ซ้ำ
+                    </p>
+
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDiversityPage((prev) => Math.max(1, prev - 1))}
+                        disabled={diversityPage <= 1}
+                        className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                      >
+                        ก่อนหน้า
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDiversityPage((prev) => Math.min(diversityTotalPages, prev + 1))}
+                        disabled={diversityPage >= diversityTotalPages}
+                        className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                      >
+                        ถัดไป
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeInternalCollabTab === "pairs" && (
+                  <div className="space-y-3">
                 <p className="text-xs text-slate-500">ตารางคู่ความร่วมมือภายใน (Internal Collaboration Pair) แบบ canonical pair (A-B ไม่นับซ้ำ B-A)</p>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -2383,6 +2699,8 @@ export default function AdminScopusResearchDashboard() {
                     ถัดไป
                   </button>
                 </div>
+                  </div>
+                )}
               </div>
             )}
           </SimpleCard>
