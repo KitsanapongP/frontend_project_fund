@@ -1461,6 +1461,7 @@ export default function GenericFundApplicationForm({
     () => Boolean(currentSubmissionId || subcategoryData?.submissionId),
     [currentSubmissionId, subcategoryData?.submissionId]
   );
+  const isFundDetailsView = readOnly === true && !editingExistingSubmission;
   const canEdit = isEditable && !forceReadOnly && !fundClosedReadOnly;
   const isReadOnly = !canEdit;
   const navigationTarget = useMemo(() => {
@@ -3280,6 +3281,22 @@ export default function GenericFundApplicationForm({
     }
   };
 
+  const handleApplyFromDetails = () => {
+    if (!onNavigate) {
+      return;
+    }
+
+    try {
+      window.sessionStorage.removeItem('fund_form_readonly');
+    } catch {}
+
+    onNavigate(
+      'generic-fund-application',
+      subcategoryData,
+      { mode: null }
+    );
+  };
+
   if (loading) {
     return (
       <PageLayout title="กำลังโหลด..." icon={FileText}>
@@ -3358,6 +3375,142 @@ export default function GenericFundApplicationForm({
   const adminCommentDisplay = formatReviewerComment(reviewerComments.admin);
   const headCommentDisplay = formatReviewerComment(reviewerComments.head);
   const hasBudgetHints = budgetHintDisplayItems.length > 0;
+
+  if (isFundDetailsView) {
+    const fundCategoryLabel = categoryPage === 'promotion-fund'
+      ? 'ทุนอุดหนุนกิจกรรม'
+      : 'ทุนวิจัย';
+    const fundCategoryHref = `/research-fund-system/member/${categoryPage || 'research-fund'}`;
+    const canApplyFromDetails = subcategoryData?.can_apply_from_details === true;
+
+    return (
+      <PageLayout
+        title={`รายละเอียดทุน ${fundDisplayName || ''}`.trim()}
+        subtitle="ข้อมูลเงื่อนไขและเอกสารที่ใช้ประกอบการยื่นขอทุน"
+        icon={FileText}
+        actions={(
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            ย้อนกลับ
+          </button>
+        )}
+        breadcrumbs={[
+          { label: 'หน้าแรก', href: '/research-fund-system/member' },
+          { label: fundCategoryLabel, href: fundCategoryHref },
+          { label: fundDisplayName || 'รายละเอียดทุน' },
+        ]}
+      >
+        <div className="space-y-6">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 shadow-sm">
+            <div className="flex items-start gap-3">
+              <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" aria-hidden="true" />
+              <div>
+                <p className="font-semibold text-blue-900">ขณะนี้คุณอยู่ในหน้าดูรายละเอียดทุน</p>
+                <p className="mt-1 leading-relaxed">หน้านี้ใช้สำหรับดูข้อมูลเท่านั้น จึงไม่สามารถกรอกหรือแก้ไขข้อมูลได้ หากสนใจสามารถไปยังหน้ายื่นคำร้องได้จากปุ่มด้านล่าง</p>
+              </div>
+            </div>
+          </div>
+
+          <SimpleCard title="เงื่อนไขและวงเงินสนับสนุน" icon={Info} bodyClassName="space-y-4">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
+                  <Info className="h-5 w-5 text-blue-600" aria-hidden="true" />
+                </div>
+                <div className="flex-1 space-y-3">
+                  <p className="text-sm font-semibold text-blue-900">{budgetHintTitle}</p>
+                  {budgetHintsLoading && !hasBudgetHints ? (
+                    <p className="flex items-center gap-2 text-sm text-blue-700">
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      กำลังโหลดข้อมูลเงื่อนไข...
+                    </p>
+                  ) : hasBudgetHints ? (
+                    <ul className="space-y-2 text-sm text-blue-800">
+                      {budgetHintDisplayItems.map((item) => (
+                        <li key={item.id} className="flex items-start gap-2">
+                          <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-400" aria-hidden="true" />
+                          <span className="leading-relaxed">{item.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-blue-700">ไม่พบข้อมูลเงื่อนไขย่อยของทุนนี้</p>
+                  )}
+                  {budgetHintsLoading && hasBudgetHints && (
+                    <p className="flex items-center gap-2 text-xs text-blue-600">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                      กำลังอัปเดตข้อมูลเงื่อนไข...
+                    </p>
+                  )}
+                  {budgetHintsError && (
+                    <p className="text-xs text-blue-600">{budgetHintsError}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </SimpleCard>
+
+          <SimpleCard title="เอกสารที่ใช้ประกอบการยื่นขอทุน" icon={FileText}>
+            {documentRequirements.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center">
+                <FileText className="mx-auto mb-3 h-10 w-10 text-gray-400" aria-hidden="true" />
+                <p className="text-sm font-medium text-gray-600">ไม่มีเอกสารที่กำหนดสำหรับทุนนี้</p>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="w-16 px-4 py-3 text-center font-medium text-gray-600">ลำดับ</th>
+                      <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">ชื่อเอกสาร</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {documentRequirements.map((docType, index) => (
+                      <tr key={docType.document_type_id}>
+                        <td className="px-4 py-3 text-center text-gray-600">{index + 1}</td>
+                        <td className="px-4 py-3 font-medium text-gray-800">
+                          {docType.document_type_name}
+                          {docType.required && (
+                            <span className="ml-1 text-red-500" aria-label="เอกสารบังคับ">*จำเป็น*</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </SimpleCard>
+
+          <div className={`grid gap-3 ${canApplyFromDetails ? 'grid-cols-[1fr_3fr]' : 'grid-cols-1'}`}>
+            <button
+              type="button"
+              onClick={handleBack}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              ย้อนกลับ
+            </button>
+            {canApplyFromDetails && (
+              <button
+                type="button"
+                onClick={handleApplyFromDetails}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+              >
+                <Send className="h-4 w-4" aria-hidden="true" />
+                ไปที่หน้ายื่นคำร้องของทุนนี้
+              </button>
+            )}
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout

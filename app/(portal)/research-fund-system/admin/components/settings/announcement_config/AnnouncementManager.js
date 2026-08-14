@@ -1095,7 +1095,7 @@ export default function AnnouncementManager() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <div className="lg:col-span-2 flex flex-col gap-1">
               <label className="text-sm text-gray-600" htmlFor="announcement-search">
-                ค้นหา (ชื่อไฟล์/หัวข้อ)
+                ค้นหา (หัวข้อประกาศ)
               </label>
               <input
                 id="announcement-search"
@@ -1104,7 +1104,7 @@ export default function AnnouncementManager() {
                 onChange={(e) =>
                   setAFilters((prev) => ({ ...prev, q: e.target.value.trimStart(), page: 1 }))
                 }
-                placeholder="เช่น ชื่อไฟล์หรือชื่อประกาศ"
+                placeholder="เช่น ชื่อประกาศ"
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
             </div>
@@ -1150,7 +1150,7 @@ export default function AnnouncementManager() {
                 <thead className="bg-gray-50">
                   <tr>
                   <th className="w-10 px-3 py-2 text-center text-gray-600">ลำดับ</th>
-                  <th className="px-3 py-2 text-center text-gray-600">ชื่อไฟล์ / หัวข้อ</th>
+                  <th className="px-3 py-2 text-center text-gray-600">หัวข้อประกาศ</th>
                   <th className="px-3 py-2 text-center text-gray-600">หมวดหมู่กองทุน</th>
                   <th className="px-3 py-2 text-center text-gray-600">ปี</th>
                   <th className="px-3 py-2 text-center text-gray-600">เผยแพร่</th>
@@ -1176,25 +1176,19 @@ export default function AnnouncementManager() {
                         </div>
                       </td>
                       <td className="px-3 py-2">
-                        <div className="flex flex-col gap-1 text-sm">
-                          {row.file_path ? (
-                            <button
-                              onClick={() => handleViewFile(row, "announcement")}
-                              className="text-blue-600 hover:underline text-left inline-flex max-w-[28ch]"
-                              title={row.file_name || "เปิดไฟล์"}
-                            >
-                              <span className="truncate">{row.file_name || "เปิดไฟล์"}</span>
-                            </button>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                          <div
-                            className="text-gray-500 truncate max-w-[36ch]"
-                            title={row.title || "-"}
+                        {row.file_path ? (
+                          <button
+                            onClick={() => handleViewFile(row, "announcement")}
+                            className="inline-flex max-w-[36ch] text-left font-medium text-blue-600 hover:underline"
+                            title={row.title || "เปิดประกาศ"}
                           >
+                            <span className="truncate">{row.title || "เปิดประกาศ"}</span>
+                          </button>
+                        ) : (
+                          <span className="block max-w-[36ch] truncate font-medium text-gray-700" title={row.title || "-"}>
                             {row.title || "-"}
-                          </div>
-                        </div>
+                          </span>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-center text-sm text-gray-700">
                         {TYPE_LABEL[row.announcement_type] || row.announcement_type || "-"}

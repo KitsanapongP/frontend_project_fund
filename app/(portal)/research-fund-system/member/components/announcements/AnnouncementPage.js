@@ -925,15 +925,10 @@ export default function AnnouncementPage() {
 
   const announcementColumns = [
     {
-      header: "ชื่อไฟล์",
-      accessor: "file_name",
+      header: "ชื่อประกาศ",
+      accessor: "title",
       className: "font-medium",
-      render: (value, row) => (
-        <div>
-          <div className="font-medium text-gray-900">{value}</div>
-          <div className="text-sm text-gray-500">{row.title}</div>
-        </div>
-      )
+      render: (value) => <span className="font-medium text-gray-900">{value || "-"}</span>
     },
     {
       header: "ปี",
@@ -998,15 +993,10 @@ export default function AnnouncementPage() {
 
   const fundFormColumns = [
     {
-      header: "ชื่อไฟล์",
-      accessor: "file_name",
+      header: "ชื่อแบบฟอร์ม",
+      accessor: "title",
       className: "font-medium",
-      render: (value, row) => (
-        <div>
-          <div className="font-medium text-gray-900">{value}</div>
-          <div className="text-sm text-gray-500">{row.title}</div>
-        </div>
-      )
+      render: (value) => <span className="font-medium text-gray-900">{value || "-"}</span>
     },
     {
       header: "ปี",
@@ -1228,20 +1218,17 @@ export default function AnnouncementPage() {
                                 key={card.key}
                                 className={`rounded-xl border p-4 shadow-sm ${nextCardClass}`}
                               >
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center">
                                   <p className={`text-sm font-medium ${labelClass}`}>
                                     {card.isNext ? "รอบถัดไป" : "รอบการพิจารณา"}
                                   </p>
-                                  {card.status ? (
-                                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium shadow-sm ${badgeClass}`}>
-                                      {card.status}
-                                    </span>
-                                  ) : null}
                                 </div>
                                 <p className={`mt-2 text-xl font-semibold ${titleClass}`}>
                                   รอบพิจารณาครั้งที่ {formatInstallmentNumber(card.installmentNumber)}
                                 </p>
-                                <p className={subTextClass}>{card.cutoffLabel}</p>
+                                <p className={subTextClass}>
+                                  วันที่สิ้นสุดรอบพิจารณา: {card.cutoffLabel}
+                                </p>
                                 {card.yearLabel ? (
                                   <p className="text-sm text-gray-600">ปีงบประมาณ {card.yearLabel}</p>
                                 ) : null}

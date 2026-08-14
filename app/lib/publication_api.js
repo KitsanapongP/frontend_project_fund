@@ -24,10 +24,6 @@ export const submissionAPI = {
       if (data.subcategory_budget_id) payload.subcategory_budget_id = data.subcategory_budget_id;
       if (data.status_id != null) payload.status_id = data.status_id;
       if (data.contact_phone) payload.contact_phone = data.contact_phone;
-      if (data.bank_account) payload.bank_account = data.bank_account;
-      if (data.bank_account_name) payload.bank_account_name = data.bank_account_name;
-      if (data.bank_name) payload.bank_name = data.bank_name;
-
       const response = await apiClient.post('/submissions', payload);
       return response;
     } catch (error) {
@@ -259,9 +255,6 @@ export const publicationDetailsAPI = {
         author_name_list: details.author_name_list,
         signature: details.signature,
         
-        // ข้อมูลธนาคาร
-        bank_account: details.bank_account,
-        bank_name: details.bank_name,
         phone_number: details.phone_number,
         
         // ข้อมูลอื่นๆ

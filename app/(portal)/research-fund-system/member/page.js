@@ -210,6 +210,7 @@ export function MemberPageContent({ initialPage = 'dashboard', initialMode = nul
             originPage={selectedFundData?.originPage}
             mode={currentMode}
             readOnly={currentMode === 'view-only'}
+            canApplyFromDetails={selectedFundData?.can_apply_from_details}
           />
         );
       case 'generic-fund-application':
