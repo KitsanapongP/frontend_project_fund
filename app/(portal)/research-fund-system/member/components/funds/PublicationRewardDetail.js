@@ -360,6 +360,25 @@ const isMergedFormDocument = (doc) => {
   });
 };
 
+const GENERATED_DOCX_FORM_CODE = "publication_reward_form_docx";
+const isGeneratedDocxForm = (doc) => {
+  if (!doc) return false;
+  const code = (doc?.document_type?.code || "").trim().toLowerCase();
+  if (code === GENERATED_DOCX_FORM_CODE) return true;
+  const typeName = (
+    doc?.document_type?.document_type_name ||
+    doc?.document_type_name ||
+    ""
+  )
+    .trim()
+    .toLowerCase();
+  if (typeName === "แบบฟอร์มคำขอรับเงินรางวัล (docx)") return true;
+  const names = [doc?.original_name, doc?.file?.file_name, doc?.File?.file_name];
+  return names.some(
+    (n) => typeof n === "string" && /publication_reward_form.*\.docx$/i.test(n.trim())
+  );
+};
+
 const resolveAnnouncementInfo = (value, fallbackLabel) => {
   const fallback =
     typeof fallbackLabel === "string"
@@ -455,7 +474,9 @@ export default function PublicationRewardDetail({
 
   const visibleDocuments = useMemo(() => {
     if (!Array.isArray(documents)) return [];
-    return documents.filter((doc) => !isMergedFormDocument(doc));
+    return documents.filter(
+      (doc) => !isMergedFormDocument(doc) && !isGeneratedDocxForm(doc)
+    );
   }, [documents]);
 
   const cleanupMergedUrl = () => {
