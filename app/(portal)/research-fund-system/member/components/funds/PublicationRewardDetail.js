@@ -1434,6 +1434,11 @@ export default function PublicationRewardDetail({
           {/* Financial Information */}
           <Card title="ข้อมูลการเงิน (Financial Information)" icon={DollarSign} collapsible={false}>
             <div className="space-y-4">
+              {pubDetail.has_received_reward && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  เคยขอเงินรางวัลแล้ว (ไม่คำนวณเงินรางวัล)
+                </div>
+              )}
               {/* Column headers */}
               <div
                 className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} pb-2 border-b text-sm text-gray-600`}

@@ -2825,6 +2825,11 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
           {/* Request Information */}
           <Card title="ข้อมูลการเงิน (Request Information)" icon={DollarSign} collapsible={false}>
             <div className="space-y-4">
+              {pubDetail?.has_received_reward && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900">
+                  เคยขอเงินรางวัลแล้ว (ไม่คำนวณเงินรางวัล)
+                </div>
+              )}
               <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} pb-2 border-b text-sm text-gray-600`}>
                 <div></div>
                 <div className="text-right">

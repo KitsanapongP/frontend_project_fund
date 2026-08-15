@@ -44,7 +44,11 @@ import {
 import Swal from 'sweetalert2';
 import { notificationsAPI } from '../../../../../lib/notifications_api';
 import { systemConfigAPI } from '../../../../../lib/system_config_api';
-import { getAuthorSubmissionFields } from './PublicationRewardForm.helpers.mjs';
+import {
+  calculatePublicationRequestAmounts,
+  getAuthorSubmissionFields,
+  validatePriorRewardRevisionFee,
+} from './PublicationRewardForm.helpers.mjs';
 import sdgAPI from '../../../../../lib/sdg_api';
 import SDGSelector from '../common/SDGSelector';
 
@@ -1684,6 +1688,7 @@ export default function PublicationRewardForm({
     // Reward calculation
     reward_amount: 0,
     publication_reward: 0,
+    has_received_reward: false,
     revision_fee: 0,
     publication_fee: 0,
     external_funding_amount: 0,
@@ -1776,6 +1781,7 @@ export default function PublicationRewardForm({
       journal_type: '',
       reward_amount: 0,
       publication_reward: 0,
+      has_received_reward: false,
       revision_fee: 0,
       publication_fee: 0,
       external_funding_amount: 0,
@@ -2395,6 +2401,10 @@ export default function PublicationRewardForm({
     return targetId ? normalizeYearLabel(targetId) : '';
   }, [formData.year_id, years, lockedBudgetYearLabel]);
 
+  const effectiveRewardAmount = formData.has_received_reward
+    ? 0
+    : (parseFloat(formData.publication_reward) || 0);
+
   const formSignature = useMemo(() => {
     return JSON.stringify({
       author_status: formData.author_status,
@@ -2411,6 +2421,7 @@ export default function PublicationRewardForm({
       publication_fee: formData.publication_fee,
       external_funding_amount: formData.external_funding_amount,
       publication_reward: formData.publication_reward,
+      has_received_reward: formData.has_received_reward,
       signature: formData.signature,
     });
   }, [
@@ -2428,6 +2439,7 @@ export default function PublicationRewardForm({
     formData.publication_fee,
     formData.external_funding_amount,
     formData.publication_reward,
+    formData.has_received_reward,
     formData.signature,
   ]);
 
@@ -2628,6 +2640,9 @@ export default function PublicationRewardForm({
           const rewardValue = toNumberOrEmpty(
             detail.reward_amount ?? prev.publication_reward ?? prev.reward_amount ?? ''
           );
+          const hasReceivedReward = detail.has_received_reward === true
+            || detail.has_received_reward === 1
+            || detail.has_received_reward === '1';
           const revisionValue = clampCurrencyValue(
             toNumberOrEmpty(detail.revision_fee ?? prev.revision_fee ?? '')
           );
@@ -2672,6 +2687,7 @@ export default function PublicationRewardForm({
             in_tci: indexingFlags.tci,
             publication_reward: rewardValue,
             reward_amount: rewardValue,
+            has_received_reward: hasReceivedReward,
             revision_fee: revisionValue,
             publication_fee: publicationValue,
             external_funding_amount: resolvedExternalAmount,
@@ -3272,10 +3288,13 @@ export default function PublicationRewardForm({
       ? externalFundings.reduce((sum, funding) => sum + (parseFloat(funding.amount) || 0), 0)
       : 0;
 
-    const totalAmount = (parseFloat(formData.publication_reward) || 0) +
-                      (parseFloat(formData.revision_fee) || 0) +
-                      (parseFloat(formData.publication_fee) || 0) -
-                      externalTotal;
+    const { totalAmount } = calculatePublicationRequestAmounts({
+      hasReceivedReward: formData.has_received_reward,
+      configuredReward: formData.publication_reward,
+      revisionFee: formData.revision_fee,
+      publicationFee: formData.publication_fee,
+      externalFunding: externalTotal,
+    });
 
     setFormData(prev => ({
       ...prev,
@@ -3284,6 +3303,7 @@ export default function PublicationRewardForm({
     }));
   }, [
     formData.publication_reward,
+    formData.has_received_reward,
     formData.revision_fee,
     formData.publication_fee,
     formData.journal_quartile,
@@ -3359,7 +3379,7 @@ export default function PublicationRewardForm({
       }
 
       next.external_funding_amount = 0;
-      next.total_amount = (parseFloat(prev.publication_reward) || 0);
+      next.total_amount = prev.has_received_reward ? 0 : (parseFloat(prev.publication_reward) || 0);
       return next;
     });
 
@@ -5358,7 +5378,8 @@ export default function PublicationRewardForm({
       journal_month: stringify(formData.journal_month),
       journal_year: stringify(formData.journal_year),
       journal_quartile: stringify(formData.journal_quartile),
-      publication_reward: stringify(formData.publication_reward),
+      publication_reward: stringify(effectiveRewardAmount),
+      has_received_reward: formData.has_received_reward === true,
       revision_fee: stringify(formData.revision_fee),
       publication_fee: stringify(formData.publication_fee),
       external_funding_amount: stringify(formData.external_funding_amount),
@@ -5808,6 +5829,19 @@ export default function PublicationRewardForm({
       });
     }
 
+    const priorRewardMessage = validatePriorRewardRevisionFee({
+      hasReceivedReward: formData.has_received_reward,
+      revisionFee: formData.revision_fee,
+    });
+    if (priorRewardMessage) {
+      errorList.push({
+        fieldKey: 'revision_fee',
+        label: 'ค่าปรับปรุงบทความ',
+        refOrId: 'revision_fee',
+        message: priorRewardMessage,
+      });
+    }
+
     const externalAmountForValidation = Boolean(formData.journal_quartile && feeLimits.total > 0)
       ? (externalFundings || []).reduce((sum, funding) => sum + (parseFloat(funding.amount) || 0), 0)
       : 0;
@@ -6027,7 +6061,8 @@ export default function PublicationRewardForm({
           formData.in_web_of_science && 'Web of Science',
           formData.in_tci && 'TCI'
         ].filter(Boolean).join(', ') || '',
-        reward_amount: parseFloat(formData.publication_reward) || 0,
+        reward_amount: effectiveRewardAmount,
+        has_received_reward: formData.has_received_reward === true,
         revision_fee: parseFloat(formData.revision_fee) || 0,
         publication_fee: parseFloat(formData.publication_fee) || 0,
         external_funding_amount: includeExternalFunds ? (parseFloat(formData.external_funding_amount) || 0) : 0,
@@ -6274,7 +6309,8 @@ const showSubmissionConfirmation = async () => {
         <div class="bg-green-50 p-4 rounded-lg">
           <h4 class="font-semibold text-green-700 mb-2">จำนวนเงินที่ขอเบิก</h4>
           <div class="space-y-2 text-sm">
-            <p><span class="font-medium">เงินรางวัลการตีพิมพ์:</span> ${formatCurrency(formData.publication_reward || 0)} บาท</p>
+            <p><span class="font-medium">เคยขอเงินรางวัลแล้ว:</span> ${formData.has_received_reward ? 'ใช่ (ไม่คำนวณเงินรางวัล)' : 'ไม่ใช่'}</p>
+            <p><span class="font-medium">เงินรางวัลการตีพิมพ์:</span> ${formatCurrency(effectiveRewardAmount)} บาท</p>
             <p><span class="font-medium">ค่าปรับปรุงบทความ:</span> ${formatCurrency(formData.revision_fee || 0)} บาท</p>
             <p><span class="font-medium">ค่าการตีพิมพ์:</span> ${formatCurrency(formData.publication_fee || 0)} บาท</p>
             
@@ -6301,7 +6337,7 @@ const showSubmissionConfirmation = async () => {
                   คำนวณจาก: เงินรางวัล + (ค่าปรับปรุง + ค่าตีพิมพ์ - ทุนภายนอก)
                 </div>
                 <div class="text-xs text-gray-600">
-                  = ${formatCurrency(formData.publication_reward || 0)} + (${formatCurrency(formData.revision_fee || 0)} + ${formatCurrency(formData.publication_fee || 0)} - ${formatCurrency(formData.external_funding_amount || 0)})
+                  = ${formatCurrency(effectiveRewardAmount)} + (${formatCurrency(formData.revision_fee || 0)} + ${formatCurrency(formData.publication_fee || 0)} - ${formatCurrency(formData.external_funding_amount || 0)})
                 </div>
               </div>
             </div>
@@ -6784,7 +6820,8 @@ const showSubmissionConfirmation = async () => {
         ].filter(Boolean).join(', ') || '',
         
         // Financial fields
-        reward_amount: parseFloat(formData.publication_reward) || 0,
+        reward_amount: effectiveRewardAmount,
+        has_received_reward: formData.has_received_reward === true,
         revision_fee: parseFloat(formData.revision_fee) || 0,
         publication_fee: parseFloat(formData.publication_fee) || 0,
         external_funding_amount: includeExternalFunds ? (parseFloat(formData.external_funding_amount) || 0) : 0,
@@ -7806,7 +7843,28 @@ const showSubmissionConfirmation = async () => {
         // REWARD CALCULATION SECTION
         // ================================================================= */}
         <SimpleCard title="การคำนวณเงินรางวัล (Reward Calculation)" icon={Calculator}>
-          <div>
+          <div className="space-y-4">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <input
+                id="has_received_reward"
+                name="has_received_reward"
+                type="checkbox"
+                checked={formData.has_received_reward === true}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setFormData((prev) => ({ ...prev, has_received_reward: checked }));
+                  if (!checked) {
+                    setErrors((prev) => ({ ...prev, revision_fee: undefined }));
+                  }
+                }}
+                disabled={isReadOnly}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-gray-800">เคยขอเงินรางวัลแล้ว (ไม่ต้องคำนวณเงินรางวัล)</span>
+                <span className="mt-1 block text-xs text-gray-600">เลือกกรณีขอเฉพาะค่าปรับปรุงบทความ โดยระบบจะไม่นำเงินรางวัลมารวมในยอดเบิกครั้งนี้</span>
+              </span>
+            </label>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               เงินรางวัล (บาท)
               <br />
@@ -7814,13 +7872,17 @@ const showSubmissionConfirmation = async () => {
             </label>
             <div className="bg-gray-50 rounded-lg p-3">
               <div className="text-2xl font-semibold text-gray-800">
-                {formatCurrency(formData.publication_reward || 0)}
+                {formatCurrency(effectiveRewardAmount)}
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              คำนวณอัตโนมัติจากสถานะผู้แต่งและ Quartile
+              {formData.has_received_reward
+                ? 'ไม่นำเงินรางวัลมาคำนวณ เนื่องจากเคยขอเงินรางวัลแล้ว'
+                : 'คำนวณอัตโนมัติจากสถานะผู้แต่งและ Quartile'}
               <br />
-              (Automatically calculated based on author status and quartile)
+              {formData.has_received_reward
+                ? '(Reward excluded because it was previously requested)'
+                : '(Automatically calculated based on author status and quartile)'}
             </p>
           </div>
         </SimpleCard>
@@ -7863,11 +7925,14 @@ const showSubmissionConfirmation = async () => {
               <div id="field-fees_limit">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     ค่าปรับปรุงบทความ (บาท)
+                    {formData.has_received_reward && <span className="ml-1 text-red-500">*</span>}
                     <br />
                     <span className="text-xs font-normal text-gray-600">Manuscript Editing Fee (Baht)</span>
                   </label>
                 <div className={`bg-gray-50 rounded-lg p-3 ${feeError ? 'border-2 border-red-500' : ''}`}>
                   <input
+                    id="revision_fee"
+                    name="revision_fee"
                     type="number"
                     value={formData.revision_fee || ''}
                     onChange={async (e) => {
@@ -7890,6 +7955,9 @@ const showSubmissionConfirmation = async () => {
                       );
                     }}
                     disabled={!formData.journal_quartile || feeLimits.total === 0}
+                    required={formData.has_received_reward && feeLimits.total > 0}
+                    aria-required={formData.has_received_reward ? 'true' : 'false'}
+                    aria-invalid={errors.revision_fee ? 'true' : 'false'}
                     min="0"
                     max={MAX_CURRENCY_AMOUNT}
                     placeholder="0"
@@ -7898,6 +7966,7 @@ const showSubmissionConfirmation = async () => {
                     }`}
                   />
                 </div>
+                {errors.revision_fee && <p className="mt-1 text-sm text-red-500">{errors.revision_fee}</p>}
               </div>
 
               {/* Publication Fee */}
@@ -7971,7 +8040,7 @@ const showSubmissionConfirmation = async () => {
                   <span className="text-sm text-gray-700">บาท (Baht)</span>
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  = เงินรางวัล (Reward) ({formatCurrency(formData.publication_reward || 0)}) 
+                  = เงินรางวัล (Reward) ({formatCurrency(effectiveRewardAmount)})
                   + (ค่าปรับปรุง (Editing) ({formatCurrency(formData.revision_fee || 0)}) 
                   + ค่าตีพิมพ์ (Page Charge) ({formatCurrency(formData.publication_fee || 0)}) 
                   - ทุนภายนอก (External Funding) ({formatCurrency(formData.external_funding_amount || 0)}))
