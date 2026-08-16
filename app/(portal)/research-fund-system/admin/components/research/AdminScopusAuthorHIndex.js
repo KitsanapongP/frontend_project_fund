@@ -118,6 +118,17 @@ export default function AdminScopusAuthorHIndex() {
     }
   }
 
+  // Export CSV รายบุคคล: รายการบทความของอาจารย์ที่เลือก ตามช่วงปีที่แสดง
+  function exportPersonCSV() {
+    if (!graph || !Array.isArray(graph.points) || graph.points.length === 0) return;
+    const h = graph.h_index;
+    const header = ["ลำดับ", "ชื่อบทความ", "ปี (พ.ศ.)", "จำนวนการอ้างอิง", "อยู่ใน h-core", "EID"];
+    const rows = graph.points.map((p) => [
+      p.rank, p.title || "", p.year != null ? toBE(p.year) : "-", p.citations, p.rank <= h ? "ใช่" : "ไม่", p.eid || "",
+    ]);
+    downloadCSV(`scopus-hindex-${selectedScopusId}-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+  }
+
   // Export รายงานรายบุคคล: ไฟล์ HTML ฝังภาพกราฟ + ตารางบทความ (เปิดในเบราว์เซอร์/พิมพ์เป็น PDF ได้)
   async function exportPersonReport() {
     if (!graph || !Array.isArray(graph.points) || graph.points.length === 0) return;
@@ -336,7 +347,7 @@ export default function AdminScopusAuthorHIndex() {
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Download size={14} />
-          {exportingAll ? "กำลังส่งออก..." : "ส่งออก CSV (ทุกคน)"}
+          {exportingAll ? "กำลังส่งออก..." : "ส่งออก CSV (ทั้งหมด)"}
         </button>
       </div>
 
@@ -404,13 +415,24 @@ export default function AdminScopusAuthorHIndex() {
 
         <button
           type="button"
+          onClick={exportPersonCSV}
+          disabled={!graph || !(graph.points?.length > 0)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          title="ส่งออกรายการบทความของอาจารย์ที่เลือกเป็น CSV ตามช่วงปีที่แสดง"
+        >
+          <Download size={14} />
+          ส่งออกบทความ (CSV)
+        </button>
+
+        <button
+          type="button"
           onClick={exportPersonReport}
           disabled={!graph || !(graph.points?.length > 0)}
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           title="ส่งออกรายงานของอาจารย์ที่เลือก (กราฟ + ตารางบทความ) ตามช่วงปีที่แสดง"
         >
           <Download size={14} />
-          ส่งออกรายบุคคล (พร้อมกราฟ)
+          ส่งออกรายงาน (พร้อมกราฟ)
         </button>
       </div>
 
