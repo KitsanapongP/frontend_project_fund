@@ -3483,7 +3483,10 @@ export default function AdminScopusResearchDashboard() {
           </>
         )}
 
-        <AdminScopusAuthorHIndex />
+        <AdminScopusAuthorHIndex
+          filterYearStartBE={appliedFilters?.yearStartBE}
+          filterYearEndBE={appliedFilters?.yearEndBE}
+        />
       </div>
     </PageLayout>
   );
