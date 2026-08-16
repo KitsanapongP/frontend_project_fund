@@ -7,18 +7,8 @@ import { formatNumber } from "@/app/utils/format";
 
 const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
-const BE_OFFSET = 543;
-
-// แปลงปี พ.ศ. (จาก filter ของ dashboard) -> ค.ศ. ที่ endpoint hgraph ใช้
-function beToCe(be) {
-  const n = Number(String(be || "").trim());
-  if (!Number.isFinite(n) || n <= 0) return null;
-  // เผื่อกรณีที่ค่าเป็น ค.ศ. อยู่แล้ว (เช่น < 2100 แต่ > 1900)
-  return n > 2400 ? n - BE_OFFSET : n;
-}
-
 // Hirsch h-graph รายอาจารย์ (เอกสารเรียงตาม citations vs เส้น y=x) จาก scopus_documents
-export default function AdminScopusAuthorHIndex({ filterYearStartBE = "", filterYearEndBE = "" }) {
+export default function AdminScopusAuthorHIndex() {
   const [users, setUsers] = useState([]);
   const [usersError, setUsersError] = useState("");
   const [usersLoading, setUsersLoading] = useState(true);
@@ -28,12 +18,9 @@ export default function AdminScopusAuthorHIndex({ filterYearStartBE = "", filter
   const [yearTo, setYearTo] = useState("");
 
   const [graph, setGraph] = useState(null);
+  const [authorYears, setAuthorYears] = useState([]); // ปี (ค.ศ.) ที่มีเอกสารจริงของอาจารย์คนที่เลือก
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // ปี ค.ศ. ที่มาจาก filter ด้านบนของ dashboard (ใช้เป็น default)
-  const filterCeFrom = useMemo(() => beToCe(filterYearStartBE), [filterYearStartBE]);
-  const filterCeTo = useMemo(() => beToCe(filterYearEndBE), [filterYearEndBE]);
 
   // โหลดรายชื่ออาจารย์ที่มี Scopus ID
   useEffect(() => {
@@ -46,7 +33,7 @@ export default function AdminScopusAuthorHIndex({ filterYearStartBE = "", filter
         if (cancelled) return;
         setUsers(items);
         if (items.length > 0) {
-          setSelectedScopusId(String(items[0].scopus_author_id || ""));
+          setSelectedScopusId(String(items[0].scopus_id || ""));
         }
       } catch (e) {
         if (!cancelled) setUsersError(e?.message || "ไม่สามารถโหลดรายชื่ออาจารย์ได้");
@@ -60,7 +47,7 @@ export default function AdminScopusAuthorHIndex({ filterYearStartBE = "", filter
   }, []);
 
   const selectedUser = useMemo(
-    () => users.find((u) => String(u.scopus_author_id) === String(selectedScopusId)) || null,
+    () => users.find((u) => String(u.scopus_id) === String(selectedScopusId)) || null,
     [users, selectedScopusId]
   );
 
@@ -73,7 +60,19 @@ export default function AdminScopusAuthorHIndex({ filterYearStartBE = "", filter
       if (yf) params.year_from = yf;
       if (yt) params.year_to = yt;
       const res = await scopusConfigAPI.getAuthorHIndexGraph(params);
-      setGraph(res?.data || null);
+      const data = res?.data || null;
+      setGraph(data);
+      // ตอนโหลดช่วงเต็ม (ไม่กรองปี) เก็บรายการปีที่มีเอกสารจริง + ตั้ง default เป็นช่วงเต็ม (h-index เป็นค่าสะสมทั้งอาชีพ)
+      if (data && !yf && !yt) {
+        let ys = Array.isArray(data.available_years) ? data.available_years.map(Number) : [];
+        if (ys.length === 0 && Array.isArray(data.points)) {
+          ys = [...new Set(data.points.map((p) => p.year).filter((y) => y != null).map(Number))];
+        }
+        ys.sort((a, b) => b - a);
+        setAuthorYears(ys);
+        if (data.available_year_min != null) setYearFrom(String(data.available_year_min));
+        if (data.available_year_max != null) setYearTo(String(data.available_year_max));
+      }
     } catch (e) {
       setError(e?.message || "ไม่สามารถโหลดกราฟ h-index ได้");
       setGraph(null);
@@ -82,42 +81,25 @@ export default function AdminScopusAuthorHIndex({ filterYearStartBE = "", filter
     }
   }
 
-  // เมื่อเปลี่ยนอาจารย์ หรือ filter ปีด้านบนเปลี่ยน -> ตั้ง default ปีตาม filter แล้วโหลดกราฟ
+  // เมื่อเปลี่ยนอาจารย์ -> โหลดกราฟช่วงเต็ม (fetchGraph จะตั้ง default ช่วงปีเป็นช่วงที่มีข้อมูลจริง)
   useEffect(() => {
     if (!selectedScopusId) return;
-    const yf = filterCeFrom != null ? String(filterCeFrom) : "";
-    const yt = filterCeTo != null ? String(filterCeTo) : "";
-    setYearFrom(yf);
-    setYearTo(yt);
-    fetchGraph(selectedScopusId, yf, yt);
+    setYearFrom("");
+    setYearTo("");
+    fetchGraph(selectedScopusId, "", "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedScopusId, filterCeFrom, filterCeTo]);
+  }, [selectedScopusId]);
 
-  // ช่วงปีสำหรับ dropdown: ใช้ available range จากกราฟ, ไม่งั้น fallback จาก filter/ปีปัจจุบัน (ให้ dropdown ไม่ว่างเสมอ)
+  // ตัวเลือกปี (ค.ศ.) = ปีที่มีเอกสารจริงจาก backend (available_years) + ปีที่เลือกไว้ (กันช่องว่าง)
+  // แสดงผลเป็น พ.ศ. ในหน้าจอ แต่เก็บ/ส่งค่าเป็น ค.ศ. ให้ตรงกับ endpoint
   const yearOptions = useMemo(() => {
-    let min = graph?.available_year_min;
-    let max = graph?.available_year_max;
-    // เผื่อ available_* ไม่มา -> ดึงจาก points
-    if ((min == null || max == null) && Array.isArray(graph?.points)) {
-      const years = graph.points.map((p) => p.year).filter((y) => y != null);
-      if (years.length > 0) {
-        min = Math.min(...years);
-        max = Math.max(...years);
-      }
-    }
-    const nowCe = new Date().getFullYear();
-    if (min == null) min = filterCeFrom != null ? filterCeFrom : 2000;
-    if (max == null) max = filterCeTo != null ? filterCeTo : nowCe;
-    // ให้ครอบคลุมค่าที่เลือกไว้ด้วย
+    const set = new Set(authorYears.map(Number));
     const selFrom = Number(yearFrom);
     const selTo = Number(yearTo);
-    if (Number.isFinite(selFrom) && selFrom > 0) min = Math.min(min, selFrom);
-    if (Number.isFinite(selTo) && selTo > 0) max = Math.max(max, selTo);
-    if (min > max) [min, max] = [max, min];
-    const out = [];
-    for (let y = max; y >= min; y -= 1) out.push(y);
-    return out;
-  }, [graph, yearFrom, yearTo, filterCeFrom, filterCeTo]);
+    if (Number.isFinite(selFrom) && selFrom > 0) set.add(selFrom);
+    if (Number.isFinite(selTo) && selTo > 0) set.add(selTo);
+    return Array.from(set).sort((a, b) => b - a);
+  }, [authorYears, yearFrom, yearTo]);
 
   const chart = useMemo(() => {
     if (!graph || !Array.isArray(graph.points) || graph.points.length === 0) return null;
@@ -199,7 +181,7 @@ export default function AdminScopusAuthorHIndex({ filterYearStartBE = "", filter
         <div className="text-xl font-semibold text-slate-900">กราฟ h-index รายอาจารย์ (Scopus)</div>
         <p className="text-sm text-slate-600">
           กราฟ Hirsch (เอกสารเรียงตามจำนวนการอ้างอิง) คำนวณจากเอกสาร Scopus ที่นำเข้าระบบแล้ว จุดที่เส้นตัดกับเส้นทแยง y=x คือค่า h-index
-          · ค่าอาจต่ำกว่า scopus.com เล็กน้อยหากยังไม่ได้ refresh จำนวนการอ้างอิงล่าสุด · ช่วงปีเริ่มต้นตาม filter ด้านบน
+          · ค่าอาจต่ำกว่า scopus.com เล็กน้อยหากยังไม่ได้ refresh จำนวนการอ้างอิงล่าสุด · เริ่มต้นแสดงช่วงปีเต็มที่มีข้อมูล (เลือกแคบลงได้)
         </p>
       </div>
 
@@ -217,15 +199,15 @@ export default function AdminScopusAuthorHIndex({ filterYearStartBE = "", filter
             {usersLoading && <option value="">กำลังโหลด...</option>}
             {!usersLoading && users.length === 0 && <option value="">— ไม่มีอาจารย์ที่มี Scopus ID —</option>}
             {users.map((u) => (
-              <option key={u.user_id} value={u.scopus_author_id}>
-                {u.name || `User ${u.user_id}`} ({u.scopus_author_id})
+              <option key={u.user_id} value={u.scopus_id}>
+                {u.name || `User ${u.user_id}`} ({u.scopus_id})
               </option>
             ))}
           </select>
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs font-medium text-slate-600">ตั้งแต่ปี (ค.ศ.)</span>
+          <span className="text-xs font-medium text-slate-600">ตั้งแต่ปี (พ.ศ.)</span>
           <select
             value={yearFrom}
             onChange={(e) => setYearFrom(e.target.value)}
@@ -234,14 +216,14 @@ export default function AdminScopusAuthorHIndex({ filterYearStartBE = "", filter
             <option value="">ทั้งหมด</option>
             {yearOptions.map((y) => (
               <option key={y} value={y}>
-                {y}
+                {y + 543}
               </option>
             ))}
           </select>
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs font-medium text-slate-600">ถึงปี (ค.ศ.)</span>
+          <span className="text-xs font-medium text-slate-600">ถึงปี (พ.ศ.)</span>
           <select
             value={yearTo}
             onChange={(e) => setYearTo(e.target.value)}
@@ -250,7 +232,7 @@ export default function AdminScopusAuthorHIndex({ filterYearStartBE = "", filter
             <option value="">ทั้งหมด</option>
             {yearOptions.map((y) => (
               <option key={y} value={y}>
-                {y}
+                {y + 543}
               </option>
             ))}
           </select>
@@ -287,7 +269,7 @@ export default function AdminScopusAuthorHIndex({ filterYearStartBE = "", filter
           </div>
           {graph?.available_year_min != null && (
             <p className="text-[11px] text-slate-500">
-              ช่วงปีที่มีข้อมูล: {graph.available_year_min}–{graph.available_year_max}
+              ช่วงปีที่มีข้อมูล (พ.ศ.): {graph.available_year_min + 543}–{graph.available_year_max + 543}
             </p>
           )}
         </div>
