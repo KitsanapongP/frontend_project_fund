@@ -137,6 +137,11 @@ export default function AdminScopusAuthorHIndex() {
     let imgTag = "";
     try {
       const ApexCharts = (await import("apexcharts")).default;
+      // รีเซ็ตซูมให้กราฟเต็มก่อนแคปเป็นรูป กันภาพที่ผู้ใช้ซูมค้างไว้ออกไปในรายงาน
+      try {
+        await ApexCharts.exec("author-hindex-graph", "resetSeries", true, true);
+        await new Promise((r) => setTimeout(r, 80));
+      } catch (_) {}
       const res = await ApexCharts.exec("author-hindex-graph", "dataURI", { scale: 2 });
       if (res?.imgURI) {
         imgTag = `<img src="${res.imgURI}" alt="กราฟ h-index" style="max-width:100%;border:1px solid #e2e8f0;border-radius:8px;margin-top:8px" />`;
@@ -258,8 +263,13 @@ export default function AdminScopusAuthorHIndex() {
       chart: {
         id: "author-hindex-graph",
         type: "line",
-        toolbar: { show: false },
-        zoom: { enabled: false },
+        toolbar: {
+          show: true,
+          // ปิด download (เรามีปุ่ม export เอง) เหลือปุ่มซูมเข้า/ออก/รีเซ็ต + ลากซูม + pan
+          tools: { download: false, selection: false, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true },
+          autoSelected: "zoom",
+        },
+        zoom: { enabled: true, type: "xy", allowMouseWheelZoom: true }, // scroll เพื่อซูม + pinch บนมือถือ
         selection: { enabled: false },
         fontFamily: "inherit",
         animations: { enabled: false },
@@ -476,7 +486,7 @@ export default function AdminScopusAuthorHIndex() {
           </div>
           {chart && graph?.h_index > 0 && (
             <p className="text-xs leading-relaxed text-slate-500">
-              แต่ละจุดคือ 1 บทความ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — เอาเมาส์ชี้จุดเพื่อดูชื่อบทความ ·{" "}
+              แต่ละจุดคือ 1 บทความ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่มมุมขวาบน/เลื่อนเมาส์/ลากเลือกช่วง (มือถือใช้ปุ่มซูมหรือลากนิ้ว) ·{" "}
               <span className="text-slate-700">h-index = {graph.h_index}</span> หมายถึงมี {graph.h_index} บทความที่ถูกอ้างอิงอย่างน้อยบทความละ {graph.h_index} ครั้ง (บทความทางซ้ายของเส้นประ)
             </p>
           )}
