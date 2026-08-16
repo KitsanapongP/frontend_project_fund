@@ -2,10 +2,32 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { Download } from "lucide-react";
 import { usersAPI, scopusConfigAPI } from "@/app/lib/api";
 import { formatNumber } from "@/app/utils/format";
 
 const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
+
+const toBE = (ce) => (ce == null || ce === "" ? "" : Number(ce) + 543);
+
+function csvEscape(value) {
+  const text = value == null ? "" : String(value);
+  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text; // กัน CSV injection
+  return `"${safe.replaceAll('"', '""')}"`;
+}
+
+function downloadCSV(filename, rows) {
+  const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\r\n");
+  const blob = new Blob(["﻿", csv], { type: "text/csv;charset=utf-8" }); // BOM ให้ Excel อ่านไทยได้
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
 // Hirsch h-graph รายอาจารย์ (เอกสารเรียงตาม citations vs เส้น y=x) จาก scopus_documents
 export default function AdminScopusAuthorHIndex() {
@@ -21,6 +43,7 @@ export default function AdminScopusAuthorHIndex() {
   const [authorYears, setAuthorYears] = useState([]); // ปี (ค.ศ.) ที่มีเอกสารจริงของอาจารย์คนที่เลือก
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [exportingAll, setExportingAll] = useState(false);
 
   // โหลดรายชื่ออาจารย์ที่มี Scopus ID
   useEffect(() => {
@@ -50,6 +73,43 @@ export default function AdminScopusAuthorHIndex() {
     () => users.find((u) => String(u.scopus_id) === String(selectedScopusId)) || null,
     [users, selectedScopusId]
   );
+
+  // Export CSV: h-index ของอาจารย์ทุกคน
+  async function exportAllCSV() {
+    setExportingAll(true);
+    setError("");
+    try {
+      const res = await scopusConfigAPI.getAuthorHIndexSummary();
+      const data = Array.isArray(res?.data) ? res.data : [];
+      const header = [
+        "ลำดับ", "รหัสอาจารย์", "ชื่อ-สกุล", "Scopus Author ID",
+        "h-index (ในระบบ)", "จำนวนเอกสาร", "การอ้างอิงรวม", "ช่วงปีผลงาน (พ.ศ.)",
+        "h-index (Scopus)", "ผู้เขียนร่วม", "การอ้างอิง (Scopus)", "วันที่ดึง Scopus",
+      ];
+      const rows = data.map((r) => [
+        r.rank, r.user_id, r.name, r.scopus_author_id,
+        r.h_index, r.document_count, r.citation_total,
+        r.year_min != null ? `${toBE(r.year_min)}–${toBE(r.year_max)}` : "-",
+        r.scopus_h_index ?? "-", r.scopus_coauthor_count ?? "-", r.scopus_cited_by_count ?? "-", r.scopus_snapshot_date ?? "-",
+      ]);
+      downloadCSV(`scopus-hindex-all-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+    } catch (e) {
+      setError(e?.message || "ส่งออกข้อมูลทุกคนไม่สำเร็จ");
+    } finally {
+      setExportingAll(false);
+    }
+  }
+
+  // Export CSV: บทความของอาจารย์คนที่เลือก (ข้อมูลเบื้องหลังกราฟ) ตามช่วงปีที่แสดงอยู่
+  function exportPersonCSV() {
+    if (!graph || !Array.isArray(graph.points) || graph.points.length === 0) return;
+    const h = graph.h_index;
+    const header = ["ลำดับ", "ชื่อบทความ", "ปี (พ.ศ.)", "จำนวนการอ้างอิง", "อยู่ใน h-core", "EID"];
+    const rows = graph.points.map((p) => [
+      p.rank, p.title || "", p.year != null ? toBE(p.year) : "-", p.citations, p.rank <= h ? "ใช่" : "ไม่", p.eid || "",
+    ]);
+    downloadCSV(`scopus-hindex-${selectedScopusId}-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+  }
 
   async function fetchGraph(scopusId, yf, yt) {
     if (!scopusId) return;
@@ -191,13 +251,24 @@ export default function AdminScopusAuthorHIndex() {
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-1">
-        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Author h-index</div>
-        <div className="text-xl font-semibold text-slate-900">h-index รายอาจารย์ (Scopus)</div>
-        <p className="text-sm text-slate-600">
-          ดู h-index ของอาจารย์แต่ละคนจากผลงานใน Scopus เลือกอาจารย์และช่วงปีได้ตามต้องการ
-          ตัวเลขนับจากข้อมูลที่นำเข้าระบบ อาจน้อยกว่าใน scopus.com หากยังไม่ได้อัปเดตจำนวนการอ้างอิงล่าสุด
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Author h-index</div>
+          <div className="text-xl font-semibold text-slate-900">h-index รายอาจารย์ (Scopus)</div>
+          <p className="max-w-2xl text-sm text-slate-600">
+            ดู h-index ของอาจารย์แต่ละคนจากผลงานใน Scopus เลือกอาจารย์และช่วงปีได้ตามต้องการ
+            ตัวเลขนับจากข้อมูลที่นำเข้าระบบ อาจน้อยกว่าใน scopus.com หากยังไม่ได้อัปเดตจำนวนการอ้างอิงล่าสุด
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={exportAllCSV}
+          disabled={exportingAll}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Download size={14} />
+          {exportingAll ? "กำลังส่งออก..." : "Export CSV (ทุกคน)"}
+        </button>
       </div>
 
       {usersError && <p className="mt-3 text-sm text-rose-600">{usersError}</p>}
@@ -260,6 +331,17 @@ export default function AdminScopusAuthorHIndex() {
           className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "กำลังโหลด..." : "อัปเดตกราฟ"}
+        </button>
+
+        <button
+          type="button"
+          onClick={exportPersonCSV}
+          disabled={!graph || !(graph.points?.length > 0)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          title="ส่งออกรายการบทความของอาจารย์คนนี้ตามช่วงปีที่แสดง"
+        >
+          <Download size={14} />
+          Export บทความ (คนนี้)
         </button>
       </div>
 

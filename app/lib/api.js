@@ -1225,6 +1225,10 @@ export const scopusConfigAPI = {
   async getAuthorHIndexGraph(params = {}) {
     return apiClient.get('/admin/scopus/author-metrics/hgraph', params);
   },
+  // สรุป h-index อาจารย์ทุกคน (สำหรับ export CSV)
+  async getAuthorHIndexSummary() {
+    return apiClient.get('/admin/scopus/author-metrics/summary');
+  },
 };
 
 export const scopusBenchmarkAPI = {
