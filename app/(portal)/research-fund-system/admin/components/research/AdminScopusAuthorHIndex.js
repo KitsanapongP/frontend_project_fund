@@ -94,10 +94,9 @@ export default function AdminScopusAuthorHIndex() {
     [users, selectedScopusId]
   );
 
-  // ===== Zoom (ทำเองเพื่อคุม cap + ให้ smooth + ไม่มี drag) =====
+  // ===== Zoom + Pan (ทำเองเพื่อคุม cap/ตำแหน่งการซูม + ให้ smooth) =====
   const chartWrapRef = useRef(null);
   const ZOOM_MIN_SPAN = 3; // ซูมเข้าได้ลึกสุด ~3 บทความ (cap เข้า)
-  // ช่วงเต็มของแกน X = จำนวนบทความ หรือ citation สูงสุด (อย่างใดมากกว่า)
   const axisMax = useMemo(() => {
     if (!graph || !Array.isArray(graph.points) || graph.points.length === 0) return 1;
     const n = graph.points.length;
@@ -105,12 +104,26 @@ export default function AdminScopusAuthorHIndex() {
     return Math.max(n, maxCit, 1);
   }, [graph]);
   const zoomRef = useRef({ min: 0, max: 1 });
-  // กราฟเปลี่ยน (เปลี่ยนคน/ช่วงปี) -> รีเซ็ตซูมเป็นเต็ม
   useEffect(() => {
     zoomRef.current = { min: 0, max: axisMax };
   }, [axisMax]);
 
-  async function applyZoomRange(min, max) {
+  // เข้าถึง instance ApexCharts แบบ sync (ไว้ pan/wheel ให้ลื่น ไม่ต้อง await import)
+  function getChart() {
+    const list = (typeof window !== "undefined" && window.Apex && window.Apex._chartInstances) || [];
+    const f = list.find((c) => c.id === "author-hindex-graph");
+    return f ? f.chart : null;
+  }
+  function getGridRect() {
+    const el = chartWrapRef.current?.querySelector(".apexcharts-grid");
+    return el ? el.getBoundingClientRect() : null;
+  }
+  function commitRange(min, max) {
+    zoomRef.current = { min, max };
+    const chart = getChart();
+    if (chart) chart.updateOptions({ xaxis: { min, max } }, false, false, false);
+  }
+  function applyZoomRange(min, max) {
     min = Math.max(0, min);
     max = Math.min(axisMax, max);
     if (max - min < ZOOM_MIN_SPAN) {
@@ -119,36 +132,111 @@ export default function AdminScopusAuthorHIndex() {
       max = Math.min(axisMax, c + ZOOM_MIN_SPAN / 2);
     }
     if (min >= max) return;
-    zoomRef.current = { min, max };
-    try {
-      const ApexCharts = (await import("apexcharts")).default;
-      ApexCharts.exec("author-hindex-graph", "updateOptions", { xaxis: { min, max } }, false, false);
-    } catch (_) {}
+    commitRange(min, max);
   }
-  // factor < 1 = ซูมเข้า, > 1 = ซูมออก; center = จุดที่คงไว้ (ค่าเริ่มต้น = กลางช่วง)
+  // factor < 1 = ซูมเข้า, > 1 = ซูมออก; center = จุดแกน X ที่คงไว้ระหว่างซูม
   function zoomBy(factor, center) {
     const { min, max } = zoomRef.current;
     const span = max - min;
-    const c = center == null ? (min + max) / 2 : center;
+    let c = center == null ? (min + max) / 2 : center;
+    c = Math.max(min, Math.min(max, c));
     const newSpan = Math.min(axisMax, span * factor);
-    let nmin = c - (c - min) * (newSpan / span);
+    const nmin = c - (c - min) * (newSpan / span);
     applyZoomRange(nmin, nmin + newSpan);
   }
-  const zoomInStep = () => zoomBy(0.6);
-  const zoomOutStep = () => zoomBy(1.7);
+  // ปุ่มซูม: โฟกัสไปที่จุด h-index (ส่วนที่สนใจจริง)
+  const zoomInStep = () => zoomBy(0.6, graph?.h_index);
+  const zoomOutStep = () => zoomBy(1.7, graph?.h_index);
   const zoomReset = () => applyZoomRange(0, axisMax);
 
-  // wheel zoom แบบ smooth (ก้าวเล็ก ๆ ไม่มี debounce) เฉพาะตอนชี้อยู่บนกราฟ
+  // wheel = ซูมเข้าหาเคอร์เซอร์ · กดค้างลาก = pan (เมาส์ + สัมผัส) เฉพาะตอนที่ซูมเข้าอยู่
   useEffect(() => {
     const el = chartWrapRef.current;
-    if (!el) return;
-    const onWheel = (e) => {
-      if (!graph) return;
-      e.preventDefault();
-      zoomBy(e.deltaY > 0 ? 1.12 : 0.89); // ออก / เข้า ทีละนิด
+    if (!el || !graph) return;
+
+    const centerFromClientX = (clientX) => {
+      const gr = getGridRect();
+      if (!gr || !gr.width) return null;
+      const frac = Math.min(1, Math.max(0, (clientX - gr.left) / gr.width));
+      const { min, max } = zoomRef.current;
+      return min + frac * (max - min);
     };
+    const clientXOf = (e) => (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX);
+    const clientYOf = (e) => (e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY);
+
+    let rafId = null;
+    const flush = () => {
+      rafId = null;
+      const chart = getChart();
+      if (chart) chart.updateOptions({ xaxis: { min: zoomRef.current.min, max: zoomRef.current.max } }, false, false, false);
+    };
+    const schedule = (min, max) => {
+      zoomRef.current = { min, max };
+      if (!rafId) rafId = requestAnimationFrame(flush);
+    };
+
+    const pan = { active: false };
+    const onWheel = (e) => {
+      e.preventDefault();
+      zoomBy(e.deltaY > 0 ? 1.12 : 0.89, centerFromClientX(e.clientX));
+    };
+    const onDown = (e) => {
+      const { min, max } = zoomRef.current;
+      if (max - min >= axisMax - 0.001) return; // ยังไม่ได้ซูม -> ไม่ต้อง pan (มือถือเลื่อนหน้าปกติ)
+      const gr = getGridRect();
+      if (!gr || !gr.width) return;
+      pan.active = true;
+      pan.isTouch = !!e.touches;
+      pan.decided = !pan.isTouch;
+      pan.startX = clientXOf(e);
+      pan.startY = clientYOf(e);
+      pan.startMin = min;
+      pan.startMax = max;
+      pan.dataPerPx = (max - min) / gr.width;
+      el.style.cursor = "grabbing";
+    };
+    const onMove = (e) => {
+      if (!pan.active) return;
+      const cx = clientXOf(e);
+      if (!pan.decided) {
+        const dx = Math.abs(cx - pan.startX);
+        const dy = Math.abs(clientYOf(e) - pan.startY);
+        if (dx < 6 && dy < 6) return;
+        if (dy > dx) { pan.active = false; return; } // ตั้งใจเลื่อนแนวตั้ง -> ปล่อยให้ scroll หน้า
+        pan.decided = true;
+      }
+      if (e.cancelable) e.preventDefault();
+      const shift = -(cx - pan.startX) * pan.dataPerPx;
+      let nmin = pan.startMin + shift;
+      let nmax = pan.startMax + shift;
+      const span = nmax - nmin;
+      if (nmin < 0) { nmin = 0; nmax = span; }
+      if (nmax > axisMax) { nmax = axisMax; nmin = axisMax - span; }
+      schedule(nmin, nmax);
+    };
+    const onUp = () => {
+      pan.active = false;
+      el.style.cursor = "grab";
+    };
+
+    el.style.cursor = "grab";
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
+    el.addEventListener("mousedown", onDown);
+    el.addEventListener("touchstart", onDown, { passive: true });
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchend", onUp);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("mousedown", onDown);
+      el.removeEventListener("touchstart", onDown);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchend", onUp);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graph, axisMax]);
 
@@ -555,7 +643,7 @@ export default function AdminScopusAuthorHIndex() {
           </div>
           {chart && graph?.h_index > 0 && (
             <p className="text-xs leading-relaxed text-slate-500">
-              แต่ละจุดคือ 1 บทความ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่มด้านบนหรือเลื่อนเมาส์ ·{" "}
+              แต่ละจุดคือ 1 บทความ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่ม/เลื่อนเมาส์ (โฟกัสที่ h-index) · เมื่อซูมแล้วกดค้างลากเพื่อเลื่อนดูช่วงอื่นได้ ·{" "}
               <span className="text-slate-700">h-index = {graph.h_index}</span> หมายถึงมี {graph.h_index} บทความที่ถูกอ้างอิงอย่างน้อยบทความละ {graph.h_index} ครั้ง (บทความทางซ้ายของเส้นประ)
             </p>
           )}
