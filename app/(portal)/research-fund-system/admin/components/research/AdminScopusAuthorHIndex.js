@@ -83,14 +83,12 @@ export default function AdminScopusAuthorHIndex() {
       const data = Array.isArray(res?.data) ? res.data : [];
       const header = [
         "ลำดับ", "รหัสอาจารย์", "ชื่อ-สกุล", "Scopus Author ID",
-        "h-index (ในระบบ)", "จำนวนเอกสาร", "การอ้างอิงรวม", "ช่วงปีผลงาน (พ.ศ.)",
-        "h-index (Scopus)", "ผู้เขียนร่วม", "การอ้างอิง (Scopus)", "วันที่ดึง Scopus",
+        "h-index", "จำนวนเอกสาร", "การอ้างอิงรวม", "ผู้เขียนร่วม", "ช่วงปีผลงาน (พ.ศ.)",
       ];
       const rows = data.map((r) => [
         r.rank, r.user_id, r.name, r.scopus_author_id,
-        r.h_index, r.document_count, r.citation_total,
+        r.h_index, r.document_count, r.citation_total, r.scopus_coauthor_count ?? "-",
         r.year_min != null ? `${toBE(r.year_min)}–${toBE(r.year_max)}` : "-",
-        r.scopus_h_index ?? "-", r.scopus_coauthor_count ?? "-", r.scopus_cited_by_count ?? "-", r.scopus_snapshot_date ?? "-",
       ]);
       downloadCSV(`scopus-hindex-all-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
     } catch (e) {
@@ -267,7 +265,7 @@ export default function AdminScopusAuthorHIndex() {
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Download size={14} />
-          {exportingAll ? "กำลังส่งออก..." : "Export CSV (ทุกคน)"}
+          {exportingAll ? "กำลังส่งออก..." : "ส่งออก CSV (ทุกท่าน)"}
         </button>
       </div>
 
@@ -338,10 +336,10 @@ export default function AdminScopusAuthorHIndex() {
           onClick={exportPersonCSV}
           disabled={!graph || !(graph.points?.length > 0)}
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          title="ส่งออกรายการบทความของอาจารย์คนนี้ตามช่วงปีที่แสดง"
+          title="ส่งออกรายการบทความของอาจารย์ที่เลือก ตามช่วงปีที่แสดง"
         >
           <Download size={14} />
-          Export บทความ (คนนี้)
+          ส่งออกบทความ (รายบุคคล)
         </button>
       </div>
 
