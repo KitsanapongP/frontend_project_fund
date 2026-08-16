@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Download } from "lucide-react";
+import { Download, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { usersAPI, scopusConfigAPI } from "@/app/lib/api";
 import { formatNumber } from "@/app/utils/format";
 
@@ -94,6 +94,64 @@ export default function AdminScopusAuthorHIndex() {
     [users, selectedScopusId]
   );
 
+  // ===== Zoom (ทำเองเพื่อคุม cap + ให้ smooth + ไม่มี drag) =====
+  const chartWrapRef = useRef(null);
+  const ZOOM_MIN_SPAN = 3; // ซูมเข้าได้ลึกสุด ~3 บทความ (cap เข้า)
+  // ช่วงเต็มของแกน X = จำนวนบทความ หรือ citation สูงสุด (อย่างใดมากกว่า)
+  const axisMax = useMemo(() => {
+    if (!graph || !Array.isArray(graph.points) || graph.points.length === 0) return 1;
+    const n = graph.points.length;
+    const maxCit = graph.points.reduce((m, p) => Math.max(m, p.citations || 0), 0);
+    return Math.max(n, maxCit, 1);
+  }, [graph]);
+  const zoomRef = useRef({ min: 0, max: 1 });
+  // กราฟเปลี่ยน (เปลี่ยนคน/ช่วงปี) -> รีเซ็ตซูมเป็นเต็ม
+  useEffect(() => {
+    zoomRef.current = { min: 0, max: axisMax };
+  }, [axisMax]);
+
+  async function applyZoomRange(min, max) {
+    min = Math.max(0, min);
+    max = Math.min(axisMax, max);
+    if (max - min < ZOOM_MIN_SPAN) {
+      const c = (min + max) / 2;
+      min = Math.max(0, c - ZOOM_MIN_SPAN / 2);
+      max = Math.min(axisMax, c + ZOOM_MIN_SPAN / 2);
+    }
+    if (min >= max) return;
+    zoomRef.current = { min, max };
+    try {
+      const ApexCharts = (await import("apexcharts")).default;
+      ApexCharts.exec("author-hindex-graph", "updateOptions", { xaxis: { min, max } }, false, false);
+    } catch (_) {}
+  }
+  // factor < 1 = ซูมเข้า, > 1 = ซูมออก; center = จุดที่คงไว้ (ค่าเริ่มต้น = กลางช่วง)
+  function zoomBy(factor, center) {
+    const { min, max } = zoomRef.current;
+    const span = max - min;
+    const c = center == null ? (min + max) / 2 : center;
+    const newSpan = Math.min(axisMax, span * factor);
+    let nmin = c - (c - min) * (newSpan / span);
+    applyZoomRange(nmin, nmin + newSpan);
+  }
+  const zoomInStep = () => zoomBy(0.6);
+  const zoomOutStep = () => zoomBy(1.7);
+  const zoomReset = () => applyZoomRange(0, axisMax);
+
+  // wheel zoom แบบ smooth (ก้าวเล็ก ๆ ไม่มี debounce) เฉพาะตอนชี้อยู่บนกราฟ
+  useEffect(() => {
+    const el = chartWrapRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      if (!graph) return;
+      e.preventDefault();
+      zoomBy(e.deltaY > 0 ? 1.12 : 0.89); // ออก / เข้า ทีละนิด
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graph, axisMax]);
+
   // Export CSV: h-index ของอาจารย์ทุกคน
   async function exportAllCSV() {
     setExportingAll(true);
@@ -139,7 +197,8 @@ export default function AdminScopusAuthorHIndex() {
       const ApexCharts = (await import("apexcharts")).default;
       // รีเซ็ตซูมให้กราฟเต็มก่อนแคปเป็นรูป กันภาพที่ผู้ใช้ซูมค้างไว้ออกไปในรายงาน
       try {
-        await ApexCharts.exec("author-hindex-graph", "resetSeries", true, true);
+        zoomRef.current = { min: 0, max: axisMax };
+        ApexCharts.exec("author-hindex-graph", "updateOptions", { xaxis: { min: 0, max: axisMax } }, false, false);
         await new Promise((r) => setTimeout(r, 80));
       } catch (_) {}
       const res = await ApexCharts.exec("author-hindex-graph", "dataURI", { scale: 2 });
@@ -263,13 +322,10 @@ export default function AdminScopusAuthorHIndex() {
       chart: {
         id: "author-hindex-graph",
         type: "line",
-        toolbar: {
-          show: true,
-          // ปิด download (เรามีปุ่ม export เอง) เหลือปุ่มซูมเข้า/ออก/รีเซ็ต + ลากซูม + pan
-          tools: { download: false, selection: false, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true },
-          autoSelected: "zoom",
-        },
-        zoom: { enabled: true, type: "xy", allowMouseWheelZoom: true }, // scroll เพื่อซูม + pinch บนมือถือ
+        // ปิด zoom/toolbar ในตัว ApexCharts (drag ไม่มีประโยชน์ + wheel มัน debounce กระตุก)
+        // แล้วใช้ปุ่ม + wheel handler ของเราเองที่ clamp ช่วงได้ (ดู applyZoom/zoomBy)
+        toolbar: { show: false },
+        zoom: { enabled: false },
         selection: { enabled: false },
         fontFamily: "inherit",
         animations: { enabled: false },
@@ -473,7 +529,20 @@ export default function AdminScopusAuthorHIndex() {
         </div>
 
         <div className="space-y-2">
-          <div className="min-h-[360px] rounded-xl border border-slate-200 p-2">
+          {chart && (
+            <div className="flex items-center justify-end gap-1">
+              <button type="button" onClick={zoomOutStep} title="ซูมออก" className="rounded-md border border-slate-300 p-1.5 text-slate-600 shadow-sm transition hover:bg-slate-50">
+                <ZoomOut size={15} />
+              </button>
+              <button type="button" onClick={zoomInStep} title="ซูมเข้า" className="rounded-md border border-slate-300 p-1.5 text-slate-600 shadow-sm transition hover:bg-slate-50">
+                <ZoomIn size={15} />
+              </button>
+              <button type="button" onClick={zoomReset} title="ขนาดเต็ม" className="rounded-md border border-slate-300 p-1.5 text-slate-600 shadow-sm transition hover:bg-slate-50">
+                <Maximize2 size={15} />
+              </button>
+            </div>
+          )}
+          <div ref={chartWrapRef} className="min-h-[360px] rounded-xl border border-slate-200 p-2">
             {loading ? (
               <div className="flex h-[360px] items-center justify-center text-sm text-slate-500">กำลังโหลดกราฟ...</div>
             ) : chart ? (
@@ -486,7 +555,7 @@ export default function AdminScopusAuthorHIndex() {
           </div>
           {chart && graph?.h_index > 0 && (
             <p className="text-xs leading-relaxed text-slate-500">
-              แต่ละจุดคือ 1 บทความ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่มมุมขวาบน/เลื่อนเมาส์/ลากเลือกช่วง (มือถือใช้ปุ่มซูมหรือลากนิ้ว) ·{" "}
+              แต่ละจุดคือ 1 บทความ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่มด้านบนหรือเลื่อนเมาส์ ·{" "}
               <span className="text-slate-700">h-index = {graph.h_index}</span> หมายถึงมี {graph.h_index} บทความที่ถูกอ้างอิงอย่างน้อยบทความละ {graph.h_index} ครั้ง (บทความทางซ้ายของเส้นประ)
             </p>
           )}
