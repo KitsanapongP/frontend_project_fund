@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, Eye, Gift, RefreshCcw } from "lucide-react";
 import { submissionAPI, teacherAPI } from "@/app/lib/member_api";
 import { systemAPI } from "@/app/lib/api";
-import { systemConfigAPI } from "@/app/lib/system_config_api";
 import { statusService } from "@/app/lib/status_service";
 import { useStatusMap } from "@/app/hooks/useStatusMap";
 import { isApprovedStatus } from "../utils/status";
@@ -46,20 +45,7 @@ export default function ReceivedFundsList({ onNavigate }) {
   const loadYears = async () => {
     setYearsLoading(true);
     try {
-      const [yearsRes, currentYearRes] = await Promise.all([
-        systemAPI
-          .getYears()
-          .catch((error) => {
-            console.error('Error fetching years list:', error);
-            return null;
-          }),
-        systemConfigAPI
-          .getCurrentYear()
-          .catch((error) => {
-            console.error('Error fetching current system year:', error);
-            return null;
-          }),
-      ]);
+      const yearsRes = await systemAPI.getYears();
 
       const rawYears = Array.isArray(yearsRes?.years)
         ? yearsRes.years
@@ -78,20 +64,6 @@ export default function ReceivedFundsList({ onNavigate }) {
         .filter((year) => year.year_id != null && year.year);
 
       setYears(normalizedYears);
-
-      const defaultYearCandidate =
-        currentYearRes?.current_year ??
-        currentYearRes?.data?.current_year ??
-        currentYearRes?.year ??
-        null;
-
-      if (defaultYearCandidate != null) {
-        const defaultYear = String(defaultYearCandidate);
-        const existsInList = normalizedYears.some((year) => String(year.year) === defaultYear);
-        if (existsInList) {
-          setYearFilter((prev) => (prev === 'all' ? defaultYear : prev));
-        }
-      }
     } catch (error) {
       console.error('Error loading years data:', error);
     } finally {
@@ -297,6 +269,15 @@ export default function ReceivedFundsList({ onNavigate }) {
     );
   }, [statusOptions]);
 
+  const totalReceivedAmount = useMemo(
+    () =>
+      filteredFunds.reduce(
+        (total, fund) => total + toNumber(fund.requested_amount),
+        0
+      ),
+    [filteredFunds]
+  );
+
   const columns = [
     {
       header: "เลขที่คำร้อง",
@@ -335,7 +316,9 @@ export default function ReceivedFundsList({ onNavigate }) {
     {
       header: "จำนวนเงิน",
       accessor: "requested_amount",
-      render: (value) => `฿${(value || 0).toLocaleString()}`,
+      className: "text-right tabular-nums",
+      headerClassName: "text-right",
+      render: (value) => `${toNumber(value).toLocaleString("th-TH")}฿`,
     },
     {
       header: "วันที่ส่ง",
@@ -482,9 +465,27 @@ export default function ReceivedFundsList({ onNavigate }) {
             </div>
           </>
         )}
+
+        {!loading && (
+          <div className="mt-4 flex justify-end">
+            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-right">
+              <p className="text-sm text-gray-600">ยอดรวมทุนที่เคยได้รับ</p>
+              <p className="text-xl font-semibold tabular-nums text-blue-700">
+                {totalReceivedAmount.toLocaleString("th-TH")}฿
+              </p>
+            </div>
+          </div>
+        )}
       </Card>
     </PageLayout>
   );
+}
+
+function toNumber(value) {
+  const normalizedValue =
+    typeof value === "string" ? value.replace(/,/g, "").trim() : value;
+  const number = Number(normalizedValue);
+  return Number.isFinite(number) ? number : 0;
 }
 
 function getProjectTitle(submission) {
