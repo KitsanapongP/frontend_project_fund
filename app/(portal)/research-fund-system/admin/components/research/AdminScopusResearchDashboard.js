@@ -17,6 +17,7 @@ import {
 
 import PageLayout from "../common/PageLayout";
 import SimpleCard from "../common/SimpleCard";
+import AdminScopusAuthorHIndex from "./AdminScopusAuthorHIndex";
 import adminAPI from "@/app/lib/admin_api";
 import { formatNumber } from "@/app/utils/format";
 
@@ -3481,6 +3482,8 @@ export default function AdminScopusResearchDashboard() {
           </SimpleCard>
           </>
         )}
+
+        <AdminScopusAuthorHIndex />
       </div>
     </PageLayout>
   );

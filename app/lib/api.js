@@ -1202,6 +1202,29 @@ export const scopusConfigAPI = {
   async listConferenceRuns(params = {}) {
     return apiClient.get('/admin/scopus/conference/runs', params);
   },
+  // ดึง h-index อาจารย์ทุกคน (อิง users.scopus_id) แบบ async
+  async refreshAuthorMetrics({ user_ids, limit } = {}) {
+    const qs = new URLSearchParams();
+    if (user_ids) {
+      const value = Array.isArray(user_ids) ? user_ids.join(',') : String(user_ids);
+      if (value.trim()) {
+        qs.set('user_ids', value.trim());
+      }
+    }
+    if (limit) {
+      qs.set('limit', limit);
+    }
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    const res = await apiClient.post(`/admin/scopus/author-metrics/refresh${suffix}`);
+    return res.summary || res;
+  },
+  async listAuthorMetricsRuns(params = {}) {
+    return apiClient.get('/admin/scopus/author-metrics/runs', params);
+  },
+  // Hirsch h-graph รายอาจารย์ จาก scopus_documents (params: scopus_id | user_id, year_from, year_to)
+  async getAuthorHIndexGraph(params = {}) {
+    return apiClient.get('/admin/scopus/author-metrics/hgraph', params);
+  },
 };
 
 export const scopusBenchmarkAPI = {

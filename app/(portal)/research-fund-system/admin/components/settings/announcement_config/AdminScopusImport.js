@@ -57,6 +57,13 @@ const conferenceSummaryItems = [
   { key: "documents_failed", label: "ผิดพลาด" },
 ];
 
+const authorMetricsSummaryItems = [
+  { key: "users_processed", label: "อาจารย์ที่สำเร็จ" },
+  { key: "users_with_errors", label: "ผิดพลาด" },
+  { key: "not_found", label: "ไม่พบข้อมูล" },
+  { key: "api_calls", label: "จำนวน API ที่เรียก" },
+];
+
 function looksLikeScopusId(value) {
   const normalized = (value || "").trim();
   return /^[0-9]{5,}$/.test(normalized);
@@ -211,6 +218,23 @@ export default function AdminScopusImport() {
     page: 1,
   });
 
+  const [authorMetricsRunning, setAuthorMetricsRunning] = useState(false);
+  const [lastAuthorMetricsSummary, setLastAuthorMetricsSummary] = useState(null);
+  const [authorMetricsHistory, setAuthorMetricsHistory] = useState({
+    runs: [],
+    loading: false,
+    error: "",
+    pagination: {
+      current_page: 1,
+      per_page: 10,
+      total_pages: 0,
+      total_count: 0,
+      has_next: false,
+      has_prev: false,
+    },
+    page: 1,
+  });
+
   const [apiKeyValue, setApiKeyValue] = useState("");
   const [apiKeyLoading, setApiKeyLoading] = useState(false);
   const [apiKeyError, setApiKeyError] = useState("");
@@ -296,6 +320,26 @@ export default function AdminScopusImport() {
   const conferenceHasNext =
     conferencePagination.has_next ?? conferenceHistory.page < conferenceTotalPages;
 
+  const hasAuthorMetricsRunRunning = useMemo(
+    () => authorMetricsHistory.runs.some((run) => isRunningStatus(run?.status)),
+    [authorMetricsHistory.runs]
+  );
+  const disableAuthorMetricsButton = authorMetricsRunning || hasAuthorMetricsRunRunning;
+  const authorMetricsLatest = useMemo(
+    () => lastAuthorMetricsSummary || authorMetricsHistory.runs[0] || null,
+    [lastAuthorMetricsSummary, authorMetricsHistory.runs]
+  );
+  const authorMetricsPagination = authorMetricsHistory.pagination;
+  const authorMetricsComputedPages =
+    authorMetricsPagination.total_pages ||
+    (authorMetricsPagination.total_count && authorMetricsPagination.per_page
+      ? Math.ceil(authorMetricsPagination.total_count / authorMetricsPagination.per_page)
+      : 1);
+  const authorMetricsTotalPages = authorMetricsComputedPages > 0 ? authorMetricsComputedPages : 1;
+  const authorMetricsHasPrev = authorMetricsPagination.has_prev ?? authorMetricsHistory.page > 1;
+  const authorMetricsHasNext =
+    authorMetricsPagination.has_next ?? authorMetricsHistory.page < authorMetricsTotalPages;
+
   const refreshLatest = useMemo(
     () => lastMetricsRefreshSummary || metricHistory.refresh.runs[0] || null,
     [lastMetricsRefreshSummary, metricHistory.refresh.runs]
@@ -361,6 +405,7 @@ export default function AdminScopusImport() {
     fetchMetricRuns("refresh", 1);
     fetchMetricRuns("backfill", 1);
     fetchConferenceRuns(1);
+    fetchAuthorMetricsRuns(1);
   }, []);
 
   useEffect(() => {
@@ -554,6 +599,60 @@ export default function AdminScopusImport() {
       setMsgTone("error");
     } finally {
       setConferenceRefreshRunning(false);
+    }
+  }
+
+  async function fetchAuthorMetricsRuns(page = 1) {
+    setAuthorMetricsHistory((prev) => ({ ...prev, loading: true, error: "" }));
+    try {
+      const res = await scopusConfigAPI.listAuthorMetricsRuns({ page });
+      const items = Array.isArray(res?.data) ? res.data : [];
+      setAuthorMetricsHistory((prev) => ({
+        ...prev,
+        runs: items,
+        loading: false,
+        page,
+        pagination: {
+          current_page: res?.pagination?.current_page ?? page,
+          per_page: res?.pagination?.per_page ?? 10,
+          total_pages: res?.pagination?.total_pages ?? res?.pagination?.totalPages ?? 0,
+          total_count: res?.pagination?.total_count ?? res?.pagination?.totalCount ?? items.length,
+          has_next: res?.pagination?.has_next ?? false,
+          has_prev: res?.pagination?.has_prev ?? false,
+        },
+      }));
+      setLastAuthorMetricsSummary(items[0] || null);
+    } catch (error) {
+      setAuthorMetricsHistory((prev) => ({
+        ...prev,
+        runs: [],
+        loading: false,
+        page,
+        error: error?.message || "ไม่สามารถโหลดประวัติการดึง h-index ได้",
+      }));
+      setLastAuthorMetricsSummary(null);
+    }
+  }
+
+  function goToAuthorMetricsRunsPage(page) {
+    if (page < 1) return;
+    fetchAuthorMetricsRuns(page);
+  }
+
+  async function refreshAuthorMetrics() {
+    setAuthorMetricsRunning(true);
+    setMsg("");
+    try {
+      const summary = await scopusConfigAPI.refreshAuthorMetrics();
+      setLastAuthorMetricsSummary(summary);
+      setMsg("เริ่มดึง h-index อาจารย์ทุกคนแล้ว ติดตามสถานะได้จากประวัติการรัน");
+      setMsgTone("success");
+      fetchAuthorMetricsRuns(1);
+    } catch (error) {
+      setMsg(error?.message || "ดึง h-index ไม่สำเร็จ");
+      setMsgTone("error");
+    } finally {
+      setAuthorMetricsRunning(false);
     }
   }
 
@@ -1738,6 +1837,125 @@ export default function AdminScopusImport() {
                           type="button"
                           onClick={() => goToConferenceRunsPage(conferenceHistory.page + 1)}
                           disabled={!conferenceHasNext || conferenceHistory.loading}
+                          className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          ถัดไป
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Author Metrics (Author API)</div>
+            <div className="text-xl font-semibold text-slate-900">h-index อาจารย์ (Scopus)</div>
+            <p className="text-sm text-slate-600">
+              ดึง h-index / จำนวนเอกสาร / จำนวนการอ้างอิง ของอาจารย์ทุกคนจาก Scopus Author Retrieval API
+              โดยอิง Scopus ID ในระบบ (users.scopus_id) เก็บเป็น snapshot รายวัน (ยิงซ้ำในวันเดียวจะทับค่าเดิม)
+              เหมาะกับการรันเดือนละครั้งเพราะ h-index เปลี่ยนช้า · ต้องเรียกจาก IP สถาบัน/VPN ไม่งั้นจะได้ 401
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+              <div className="text-sm font-semibold text-slate-900">ดึง h-index ทุกคน</div>
+              <p className="text-sm text-slate-600">
+                วนอาจารย์ทุกคนที่มี Scopus ID แล้วยิง Author API ทีละคน (1 คำขอ/คน) · ระบบกันการรันซ้อนอัตโนมัติ
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={refreshAuthorMetrics}
+                  disabled={disableAuthorMetricsButton}
+                  className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {disableAuthorMetricsButton ? "กำลังดึง..." : "ดึง h-index ทุกคน"}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                โควตา Author API 5,000 คำขอ/สัปดาห์ · การเรียกทุกครั้งถูกบันทึกไว้ตรวจสอบย้อนหลังได้
+              </p>
+            </div>
+
+            <div className="space-y-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4">
+              <div className="text-sm font-semibold text-slate-900">สถานะการดึงล่าสุด</div>
+              {authorMetricsLatest ? (
+                <>
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600">
+                    <StatusBadge status={authorMetricsLatest.status} />
+                    <span>
+                      {authorMetricsLatest.trigger_source ? `ที่มา: ${authorMetricsLatest.trigger_source} · ` : ""}
+                      อัปเดตล่าสุด: {formatDateTime(authorMetricsLatest.finished_at || authorMetricsLatest.started_at)}
+                    </span>
+                  </div>
+                  <SummaryGrid summary={authorMetricsLatest} items={authorMetricsSummaryItems} />
+                </>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500">ยังไม่มีข้อมูลการรัน</p>
+              )}
+
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                  <span>ประวัติการดึง h-index</span>
+                  {authorMetricsHistory.loading && <span className="text-slate-500">กำลังโหลด...</span>}
+                </div>
+                {authorMetricsHistory.error ? (
+                  <p className="text-sm text-rose-600">{authorMetricsHistory.error}</p>
+                ) : authorMetricsHistory.runs.length === 0 && !authorMetricsHistory.loading ? (
+                  <p className="text-sm text-slate-500">ยังไม่มีประวัติการดึง h-index</p>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead>
+                          <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+                            <th className="px-3 py-2">เริ่ม</th>
+                            <th className="px-3 py-2">เสร็จสิ้น</th>
+                            <th className="px-3 py-2">ที่มา</th>
+                            <th className="px-3 py-2">สถานะ</th>
+                            <th className="px-3 py-2">สำเร็จ/ผิดพลาด/API</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {authorMetricsHistory.runs.map((run) => (
+                            <tr key={run.id} className="hover:bg-slate-50">
+                              <td className="px-3 py-2 text-xs text-slate-700">{formatDateTime(run.started_at)}</td>
+                              <td className="px-3 py-2 text-xs text-slate-700">{formatDateTime(run.finished_at)}</td>
+                              <td className="px-3 py-2 text-xs text-slate-700">{run.trigger_source || "-"}</td>
+                              <td className="px-3 py-2 text-xs">
+                                <StatusBadge status={run.status} />
+                              </td>
+                              <td className="px-3 py-2 text-xs text-slate-700">
+                                <div>สำเร็จ: {run.users_processed ?? 0} / ผิดพลาด: {run.users_with_errors ?? 0}</div>
+                                <div>ไม่พบ: {run.not_found ?? 0} · API: {run.api_calls ?? 0}</div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-600">
+                      <div>
+                        หน้า {authorMetricsHistory.page} / {authorMetricsTotalPages}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => goToAuthorMetricsRunsPage(authorMetricsHistory.page - 1)}
+                          disabled={!authorMetricsHasPrev || authorMetricsHistory.loading}
+                          className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          ก่อนหน้า
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => goToAuthorMetricsRunsPage(authorMetricsHistory.page + 1)}
+                          disabled={!authorMetricsHasNext || authorMetricsHistory.loading}
                           className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           ถัดไป
