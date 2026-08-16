@@ -16,6 +16,26 @@ function csvEscape(value) {
   return `"${safe.replaceAll('"', '""')}"`;
 }
 
+function htmlEscape(value) {
+  return String(value == null ? "" : value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function downloadFile(filename, content, mime) {
+  const blob = new Blob(["﻿", content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function downloadCSV(filename, rows) {
   const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\r\n");
   const blob = new Blob(["﻿", csv], { type: "text/csv;charset=utf-8" }); // BOM ให้ Excel อ่านไทยได้
@@ -98,15 +118,65 @@ export default function AdminScopusAuthorHIndex() {
     }
   }
 
-  // Export CSV: บทความของอาจารย์คนที่เลือก (ข้อมูลเบื้องหลังกราฟ) ตามช่วงปีที่แสดงอยู่
-  function exportPersonCSV() {
+  // Export รายงานรายบุคคล: ไฟล์ HTML ฝังภาพกราฟ + ตารางบทความ (เปิดในเบราว์เซอร์/พิมพ์เป็น PDF ได้)
+  async function exportPersonReport() {
     if (!graph || !Array.isArray(graph.points) || graph.points.length === 0) return;
     const h = graph.h_index;
-    const header = ["ลำดับ", "ชื่อบทความ", "ปี (พ.ศ.)", "จำนวนการอ้างอิง", "อยู่ใน h-core", "EID"];
-    const rows = graph.points.map((p) => [
-      p.rank, p.title || "", p.year != null ? toBE(p.year) : "-", p.citations, p.rank <= h ? "ใช่" : "ไม่", p.eid || "",
-    ]);
-    downloadCSV(`scopus-hindex-${selectedScopusId}-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+
+    let imgTag = "";
+    try {
+      const ApexCharts = (await import("apexcharts")).default;
+      const res = await ApexCharts.exec("author-hindex-graph", "dataURI", { scale: 2 });
+      if (res?.imgURI) {
+        imgTag = `<img src="${res.imgURI}" alt="กราฟ h-index" style="max-width:100%;border:1px solid #e2e8f0;border-radius:8px;margin-top:8px" />`;
+      }
+    } catch (e) {
+      // ถ้าดึงภาพกราฟไม่ได้ ก็ยังออกรายงานพร้อมตารางได้
+    }
+
+    const name = selectedUser?.name || selectedScopusId;
+    const yearLabel =
+      yearFrom || yearTo ? `${yearFrom ? toBE(yearFrom) : "ต้น"}–${yearTo ? toBE(yearTo) : "ล่าสุด"} พ.ศ.` : "ทั้งหมด";
+    const rowsHtml = graph.points
+      .map(
+        (p) => `<tr>
+          <td style="text-align:center">${p.rank}</td>
+          <td>${htmlEscape(p.title || "")}</td>
+          <td style="text-align:center">${p.year != null ? toBE(p.year) : "-"}</td>
+          <td style="text-align:right">${p.citations}</td>
+          <td style="text-align:center">${p.rank <= h ? "✓" : ""}</td>
+          <td>${htmlEscape(p.eid || "")}</td>
+        </tr>`
+      )
+      .join("");
+
+    const html = `<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><title>h-index — ${htmlEscape(name)}</title>
+<style>
+  body{font-family:'Sarabun',Tahoma,-apple-system,'Segoe UI',sans-serif;color:#0f172a;margin:28px;max-width:960px}
+  h1{font-size:20px;margin:0 0 4px}.muted{color:#64748b;font-size:13px}
+  .stats{display:flex;gap:16px;margin:16px 0;flex-wrap:wrap}
+  .stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 16px;min-width:110px}
+  .stat b{font-size:22px;display:block}.stat span{color:#64748b;font-size:12px}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin-top:18px}
+  th,td{border:1px solid #e2e8f0;padding:6px 9px;vertical-align:top}th{background:#f1f5f9;text-align:left}
+  @media print{body{margin:0}}
+</style></head><body>
+  <h1>h-index รายบุคคล — ${htmlEscape(name)}</h1>
+  <div class="muted">Scopus Author ID: ${htmlEscape(selectedScopusId)} · ช่วงปี: ${yearLabel} · ออกรายงาน ${new Date().toLocaleDateString("th-TH")}</div>
+  <div class="stats">
+    <div class="stat"><span>h-index</span><b>${h}</b></div>
+    <div class="stat"><span>เอกสาร</span><b>${graph.document_count}</b></div>
+    <div class="stat"><span>การอ้างอิงรวม</span><b>${graph.citation_total}</b></div>
+  </div>
+  ${imgTag}
+  <table>
+    <thead><tr><th style="width:48px">ลำดับ</th><th>ชื่อบทความ</th><th style="width:74px">ปี (พ.ศ.)</th><th style="width:84px">การอ้างอิง</th><th style="width:60px">h-core</th><th style="width:150px">EID</th></tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+</body></html>`;
+
+    downloadFile(`scopus-hindex-${selectedScopusId}-${new Date().toISOString().slice(0, 10)}.html`, html, "text/html;charset=utf-8");
   }
 
   async function fetchGraph(scopusId, yf, yt) {
@@ -175,6 +245,7 @@ export default function AdminScopusAuthorHIndex() {
     const h = graph.h_index;
     const options = {
       chart: {
+        id: "author-hindex-graph",
         type: "line",
         toolbar: { show: false },
         zoom: { enabled: false },
@@ -265,7 +336,7 @@ export default function AdminScopusAuthorHIndex() {
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Download size={14} />
-          {exportingAll ? "กำลังส่งออก..." : "ส่งออก CSV (ทุกท่าน)"}
+          {exportingAll ? "กำลังส่งออก..." : "ส่งออก CSV (ทุกคน)"}
         </button>
       </div>
 
@@ -333,13 +404,13 @@ export default function AdminScopusAuthorHIndex() {
 
         <button
           type="button"
-          onClick={exportPersonCSV}
+          onClick={exportPersonReport}
           disabled={!graph || !(graph.points?.length > 0)}
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          title="ส่งออกรายการบทความของอาจารย์ที่เลือก ตามช่วงปีที่แสดง"
+          title="ส่งออกรายงานของอาจารย์ที่เลือก (กราฟ + ตารางบทความ) ตามช่วงปีที่แสดง"
         >
           <Download size={14} />
-          ส่งออกบทความ (รายบุคคล)
+          ส่งออกรายบุคคล (พร้อมกราฟ)
         </button>
       </div>
 
