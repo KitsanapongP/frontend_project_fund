@@ -114,49 +114,64 @@ export default function AdminScopusAuthorHIndex() {
       { x: axisMax, y: axisMax },
     ];
 
+    const h = graph.h_index;
     const options = {
-      chart: { type: "line", toolbar: { show: false }, fontFamily: "inherit", animations: { enabled: false } },
+      chart: {
+        type: "line",
+        toolbar: { show: false },
+        zoom: { enabled: false },
+        selection: { enabled: false },
+        fontFamily: "inherit",
+        animations: { enabled: false },
+      },
       colors: ["#38bdf8", "#7c3aed"],
       stroke: { curve: "straight", width: [2, 2] },
       fill: { type: ["gradient", "solid"], opacity: [0.25, 1] },
-      markers: { size: 0 },
+      // จุดบนเส้น citations hover ดูรายละเอียดบทความได้ ส่วนเส้นทแยงไม่มีจุด
+      markers: { size: [3, 0], strokeWidth: 0, hover: { size: 6 } },
       xaxis: {
         type: "numeric",
         min: 0,
         max: axisMax,
         tickAmount: Math.min(axisMax, 12),
-        title: { text: "จำนวนเอกสาร (Documents)" },
+        title: { text: "ลำดับบทความ (เรียงตามการอ้างอิงมาก→น้อย)" },
         labels: { formatter: (v) => `${Math.round(v)}` },
       },
       yaxis: {
         min: 0,
-        title: { text: "การอ้างอิง (Citations)" },
+        title: { text: "จำนวนการอ้างอิง" },
         labels: { formatter: (v) => `${Math.round(v)}` },
       },
       legend: { show: false },
       tooltip: {
         shared: false,
+        intersect: true,
         custom: ({ seriesIndex, dataPointIndex }) => {
           if (seriesIndex !== 0) return "";
           const p = points[dataPointIndex];
           if (!p) return "";
           const title = p.title ? p.title : "(ไม่มีชื่อเรื่อง)";
-          return `<div style="padding:6px 8px;font-size:12px;max-width:260px">
-            <div style="font-weight:600">#${p.rank} · ${p.citations} citations${p.year ? ` · ${p.year}` : ""}</div>
+          return `<div style="padding:6px 8px;font-size:12px;max-width:280px">
+            <div style="font-weight:600">บทความอันดับ ${p.rank} · ถูกอ้างอิง ${p.citations} ครั้ง${p.year ? ` · ${p.year + 543}` : ""}</div>
             <div style="color:#475569;margin-top:2px">${title}</div>
           </div>`;
         },
       },
       annotations: {
+        // เส้นตั้งที่ h = ขอบเขตบทความที่นับเข้า h-index (h บทความแรกถูกอ้างอิง ≥ h ครั้ง)
+        xaxis:
+          h > 0
+            ? [{ x: h, borderColor: "#a16207", strokeDashArray: 4, label: { text: `h แรก`, style: { background: "#fef9c3", color: "#713f12" } } }]
+            : [],
         points:
-          graph.h_index > 0
+          h > 0
             ? [
                 {
-                  x: graph.h_index,
-                  y: graph.h_index,
+                  x: h,
+                  y: h,
                   marker: { size: 7, fillColor: "#facc15", strokeColor: "#a16207", strokeWidth: 2 },
                   label: {
-                    text: `h = ${graph.h_index}`,
+                    text: `h-index = ${h}`,
                     borderColor: "#a16207",
                     style: { background: "#fef9c3", color: "#713f12", fontWeight: 600 },
                   },
@@ -178,10 +193,10 @@ export default function AdminScopusAuthorHIndex() {
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-1">
         <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Author h-index</div>
-        <div className="text-xl font-semibold text-slate-900">กราฟ h-index รายอาจารย์ (Scopus)</div>
+        <div className="text-xl font-semibold text-slate-900">h-index รายอาจารย์ (Scopus)</div>
         <p className="text-sm text-slate-600">
-          กราฟ Hirsch (เอกสารเรียงตามจำนวนการอ้างอิง) คำนวณจากเอกสาร Scopus ที่นำเข้าระบบแล้ว จุดที่เส้นตัดกับเส้นทแยง y=x คือค่า h-index
-          · ค่าอาจต่ำกว่า scopus.com เล็กน้อยหากยังไม่ได้ refresh จำนวนการอ้างอิงล่าสุด · เริ่มต้นแสดงช่วงปีเต็มที่มีข้อมูล (เลือกแคบลงได้)
+          ดู h-index ของอาจารย์แต่ละคนจากผลงานใน Scopus เลือกอาจารย์และช่วงปีได้ตามต้องการ
+          ตัวเลขนับจากข้อมูลที่นำเข้าระบบ อาจน้อยกว่าใน scopus.com หากยังไม่ได้อัปเดตจำนวนการอ้างอิงล่าสุด
         </p>
       </div>
 
@@ -274,15 +289,23 @@ export default function AdminScopusAuthorHIndex() {
           )}
         </div>
 
-        <div className="min-h-[360px] rounded-xl border border-slate-200 p-2">
-          {loading ? (
-            <div className="flex h-[360px] items-center justify-center text-sm text-slate-500">กำลังโหลดกราฟ...</div>
-          ) : chart ? (
-            <ApexChart options={chart.options} series={chart.series} type="line" height={360} />
-          ) : (
-            <div className="flex h-[360px] items-center justify-center text-sm text-slate-500">
-              {selectedScopusId ? "ไม่มีเอกสารสำหรับช่วงที่เลือก" : "เลือกอาจารย์เพื่อดูกราฟ"}
-            </div>
+        <div className="space-y-2">
+          <div className="min-h-[360px] rounded-xl border border-slate-200 p-2">
+            {loading ? (
+              <div className="flex h-[360px] items-center justify-center text-sm text-slate-500">กำลังโหลดกราฟ...</div>
+            ) : chart ? (
+              <ApexChart options={chart.options} series={chart.series} type="line" height={360} />
+            ) : (
+              <div className="flex h-[360px] items-center justify-center text-sm text-slate-500">
+                {selectedScopusId ? "ไม่มีเอกสารสำหรับช่วงที่เลือก" : "เลือกอาจารย์เพื่อดูกราฟ"}
+              </div>
+            )}
+          </div>
+          {chart && graph?.h_index > 0 && (
+            <p className="text-xs leading-relaxed text-slate-500">
+              แต่ละจุดคือ 1 บทความ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — เอาเมาส์ชี้จุดเพื่อดูชื่อบทความ ·{" "}
+              <span className="text-slate-700">h-index = {graph.h_index}</span> หมายถึงมี {graph.h_index} บทความที่ถูกอ้างอิงอย่างน้อยบทความละ {graph.h_index} ครั้ง (บทความทางซ้ายของเส้นประ)
+            </p>
           )}
         </div>
       </div>
