@@ -7,6 +7,8 @@ import {
   ArrowLeft,
   BookOpenText,
   BriefcaseBusiness,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
   FileSearch,
   GraduationCap,
@@ -148,17 +150,26 @@ function createEmptyAdvancedFilters() {
 }
 
 function PortalGridContent({ onCardClick }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const getCollapsedItemClass = (index) => {
+    if (index < 2) return "";
+    if (index < 4) return "hidden sm:block";
+    if (index < 6) return "hidden xl:block";
+    return "hidden";
+  };
+
   return (
     <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {PORTAL_ITEMS.map((item) => {
+      <div id="portal-menu-grid" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {PORTAL_ITEMS.map((item, index) => {
           const Icon = item.icon;
           return (
             <button
               key={item.id}
               type="button"
               onClick={() => onCardClick(item)}
-              className="group w-full rounded-2xl border border-gray-200 bg-gray-50 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-white hover:shadow"
+              className={`${isExpanded ? "" : getCollapsedItemClass(index)} group w-full rounded-2xl border border-gray-200 bg-gray-50 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-white hover:shadow`}
             >
               <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white">
                 <Icon size={22} />
@@ -169,6 +180,36 @@ function PortalGridContent({ onCardClick }) {
           );
         })}
       </div>
+
+      {PORTAL_ITEMS.length > 2 && (
+        <div className="mt-5 flex justify-center border-t border-gray-100 pt-4">
+          <button
+            type="button"
+            aria-controls="portal-menu-grid"
+            aria-expanded={isExpanded}
+            onClick={() => setIsExpanded((expanded) => !expanded)}
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            {isExpanded ? (
+              <>
+                แสดงน้อยลง
+                <ChevronUp size={18} aria-hidden="true" />
+              </>
+            ) : (
+              <>
+                <span>
+                  ดูเพิ่มเติม (
+                  <span className="sm:hidden">{PORTAL_ITEMS.length - 2}</span>
+                  <span className="hidden sm:inline xl:hidden">{PORTAL_ITEMS.length - 4}</span>
+                  <span className="hidden xl:inline">{PORTAL_ITEMS.length - 6}</span>
+                  {" รายการ)"}
+                </span>
+                <ChevronDown size={18} aria-hidden="true" />
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </section>
   );
 }
