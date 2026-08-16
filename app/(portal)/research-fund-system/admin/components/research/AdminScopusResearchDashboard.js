@@ -1183,6 +1183,7 @@ export default function AdminScopusResearchDashboard() {
         q2: Number(row?.q2 || 0),
         q3: Number(row?.q3 || 0),
         q4: Number(row?.q4 || 0),
+        na: Number(row?.na || 0),
         tci: Number(row?.tci || 0),
         journal: Number(row?.journal || 0),
         conference: Number(row?.conference || 0),
@@ -1204,6 +1205,7 @@ export default function AdminScopusResearchDashboard() {
         q2: Number(row?.q2 || 0),
         q3: Number(row?.q3 || 0),
         q4: Number(row?.q4 || 0),
+        na: Number(row?.na || 0),
         tci: Number(row?.tci || 0),
         journal: Number(row?.journal || 0),
         conference: Number(row?.conference || 0),
@@ -1223,13 +1225,16 @@ export default function AdminScopusResearchDashboard() {
       const q2 = Number(bucket.q2 || 0);
       const q3 = Number(bucket.q3 || 0);
       const q4 = Number(bucket.q4 || 0);
+      const na = Number(bucket.na || 0);
       const tci = Number(bucket.tci || 0);
       const conference = Number(bucket.conference || 0);
       const uniqueDocuments = Number(bucket.unique_documents || 0);
       const citedByTotal = Number(bucket.cited_by_total || 0);
       const groupedTotal = t1 + q1 + q2 + q3 + q4;
       const worksWithQ = groupedTotal;
-      const allNoTCI = groupedTotal + conference;
+      // ผลงานทุกประเภท (ไม่รวม TCI) ต้องรวมเอกสารที่ไม่มี tier (na) ด้วย มิฉะนั้นยอด "รวม"
+      // และตัวหารสัดส่วนจะน้อยกว่าจำนวนผลงานจริง (unique_documents)
+      const allNoTCI = groupedTotal + na + conference;
       const allWithTCI = allNoTCI + tci;
       const totalWithConferenceAndTCI = allWithTCI;
       const topTierT1Q1 = t1 + q1;
@@ -1240,6 +1245,7 @@ export default function AdminScopusResearchDashboard() {
         q2,
         q3,
         q4,
+        na,
         tci,
         journal: Number(bucket.journal || 0),
         conference,
@@ -2817,6 +2823,7 @@ export default function AdminScopusResearchDashboard() {
                         {renderOverviewCountRow("q2", "Q2 (50-74)", "q2")}
                         {renderOverviewCountRow("q3", "Q3 (25-49)", "q3")}
                         {renderOverviewCountRow("q4", "Q4 (0-24)", "q4")}
+                        {renderOverviewCountRow("na", "N/A (ไม่มี tier)", "na")}
                         <tr
                           onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "tci" ? "" : "tci"))}
                           className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "tci" ? "bg-blue-100" : "hover:bg-blue-50"}`}
