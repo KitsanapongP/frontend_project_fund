@@ -316,7 +316,7 @@ export default function AdminScopusAuthorHIndex() {
     const html = `<!doctype html>
 <html lang="th"><head><meta charset="utf-8"><title>h-index — ${htmlEscape(name)}</title>
 <style>
-  body{font-family:'Anuphan',Tahoma,-apple-system,'Segoe UI',sans-serif;color:#0f172a;margin:28px;max-width:960px}
+  body{font-family:'Sarabun',Tahoma,-apple-system,'Segoe UI',sans-serif;color:#0f172a;margin:28px;max-width:960px}
   h1{font-size:20px;margin:0 0 4px}.muted{color:#64748b;font-size: 14px}
   .stats{display:flex;gap:16px;margin:16px 0;flex-wrap:wrap}
   .stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 16px;min-width:110px}

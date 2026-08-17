@@ -1,14 +1,14 @@
 // app/layout.js - Root Layout with AuthProvider
 import { AuthProvider } from './contexts/AuthContext';
 import ChunkErrorReloader from './components/ChunkErrorReloader';
-import { Anuphan } from 'next/font/google';
+import { Sarabun } from 'next/font/google';
 import './globals.css';
 
-const anuphan = Anuphan({
-  weight: 'variable',
+const sarabun = Sarabun({
+  weight: ['400', '500', '600', '700', '800'],
   subsets: ['latin', 'thai'],
   display: 'swap',
-  variable: '--font-anuphan',
+  variable: '--font-sarabun',
   fallback: ['Tahoma', 'Arial', 'sans-serif'],
 });
 
@@ -22,7 +22,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="th" className={anuphan.variable}>
+    <html lang="th" className={sarabun.variable}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
