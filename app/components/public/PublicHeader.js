@@ -1,12 +1,14 @@
 ﻿"use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
 import { LogIn } from "lucide-react";
 import { HiMenu } from "react-icons/hi";
 import { RxCross2 } from "react-icons/rx";
 import { BRANDING } from "../../config/branding";
+import {
+  PortalBrandLogo,
+  PortalFontSizeControl,
+} from "../portal/PortalChrome";
 
 export default function PublicHeader({
   isOpen,
@@ -19,34 +21,10 @@ export default function PublicHeader({
 }) {
   const {
     appName,
-    appAcronym,
     subtitles = {},
-    logo: {
-      text: logoText,
-      imageSrc: logoImageSrc,
-      imageAlt: logoImageAlt,
-      backgroundClass: logoBackgroundClass,
-      containerClassName,
-      containerStyle,
-      imageWidth,
-      imageHeight,
-      imageClassName,
-      imageStyle,
-      useFill,
-      imageWrapperClassName,
-      imageWrapperStyle,
-    } = {},
   } = BRANDING;
 
-  const canToggleMenu = Boolean(Navigation);
-
-  const logoContainerClass = useMemo(() => {
-    const baseSizeClass = containerClassName || "w-10 h-10";
-    const sharedClasses = "rounded-lg flex items-center justify-center";
-    const background = logoBackgroundClass ?? "bg-gradient-to-br from-blue-500 to-purple-600";
-
-    return [baseSizeClass, sharedClasses, background].filter(Boolean).join(" ");
-  }, [containerClassName, logoBackgroundClass]);
+  const canToggleMenu = true;
 
   const handleToggleMenu = () => {
     setIsOpen?.((prev) => !prev);
@@ -54,46 +32,6 @@ export default function PublicHeader({
 
   const handleCloseMenu = () => {
     setIsOpen?.(false);
-  };
-
-  const renderLogoContent = () => {
-    if (logoImageSrc) {
-      if (useFill) {
-        return (
-          <div
-            className={`relative w-full h-full ${imageWrapperClassName || ""}`}
-            style={imageWrapperStyle || undefined}
-          >
-            <Image
-              src={logoImageSrc}
-              alt={logoImageAlt || appName || "Application logo"}
-              fill
-              className={imageClassName || "object-contain"}
-              priority
-              style={imageStyle || undefined}
-            />
-          </div>
-        );
-      }
-
-      return (
-        <Image
-          src={logoImageSrc}
-          alt={logoImageAlt || appName || "Application logo"}
-          width={imageWidth || 32}
-          height={imageHeight || 32}
-          className={imageClassName || "w-8 h-8 object-contain"}
-          priority
-          style={imageStyle || undefined}
-        />
-      );
-    }
-
-    return (
-      <span className="text-white font-bold text-xl">
-        {logoText || appAcronym || "F"}
-      </span>
-    );
   };
 
   const renderNavigation = () => {
@@ -105,21 +43,19 @@ export default function PublicHeader({
   };
 
   return (
-    <header className="fixed top-0 z-40 w-full border-b border-gray-200 bg-white/95 backdrop-blur">
-      <div className="flex items-start justify-between gap-3 px-4 py-3 sm:items-center sm:px-6">
-        <div className="flex items-start gap-3 sm:items-center">
-          <div className="flex items-start gap-3 sm:items-center">
-            <div className={logoContainerClass} style={containerStyle || undefined}>
-              {renderLogoContent()}
-            </div>
+    <header className="portal-header">
+      <div className="portal-header__inner">
+        <div className="flex min-w-0 items-center gap-3">
+          <PortalBrandLogo onNavigate={handleCloseMenu} />
+          <div className="hidden min-w-0 sm:block">
             <div className="min-w-0">
-              <h1 className="text-lg font-bold text-gray-800 sm:text-xl">
+              <h1 className="truncate text-base font-semibold text-slate-900 lg:text-lg">
                 {subtitles.public || "งานวิจัยและนวัตกรรม วิทยาลัยการคอมพิวเตอร์"}
               </h1>
-              <p className="text-sm text-gray-700 leading-tight">
+              <p className="truncate text-xs leading-tight text-slate-600 lg:text-sm">
                 {appName || "Fund Management"}
               </p>
-              <p className="mt-1 text-xs text-gray-500 truncate" title={currentPageTitle}>
+              <p className="mt-1 truncate text-xs text-slate-500" title={currentPageTitle}>
                 {currentPageTitle}
               </p>
             </div>
@@ -127,23 +63,27 @@ export default function PublicHeader({
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="hidden items-center gap-2 md:flex">
+            <PortalFontSizeControl />
+          </div>
+
           {canToggleMenu ? (
             <button
-              className="inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-sm text-gray-600 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 md:hidden"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 p-2 text-sm text-slate-600 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 md:hidden"
               onClick={handleToggleMenu}
               aria-label={isOpen ? "close-mobile-menu" : "open-mobile-menu"}
               aria-expanded={isOpen}
             >
               {isOpen ? (
-                <RxCross2 className="w-5 h-5 text-gray-700" />
+                <RxCross2 className="h-5 w-5 text-slate-700" />
               ) : (
-                <HiMenu className="w-5 h-5 text-gray-700" />
+                <HiMenu className="h-5 w-5 text-slate-700" />
               )}
             </button>
           ) : null}
 
           {userLabel ? (
-            <div className="hidden sm:inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
+            <div className="hidden items-center rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 lg:inline-flex">
               {userLabel}
             </div>
           ) : null}
@@ -151,7 +91,7 @@ export default function PublicHeader({
           {loginHref ? (
             <Link
               href={loginHref}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:px-4"
             >
               <LogIn size={16} />
               <span>{loginLabel}</span>
@@ -162,15 +102,21 @@ export default function PublicHeader({
       </div>
 
       {isOpen && canToggleMenu && (
-        <div className="fixed inset-0 bg-gray-200/50 z-40" onClick={handleCloseMenu}>
+        <div className="fixed inset-0 z-40 bg-slate-900/30" onClick={handleCloseMenu}>
           <div
-            className="absolute top-0 pt-5 right-0 h-screen z-50 w-64 bg-white shadow p-4"
+            className="absolute right-0 top-0 z-50 h-screen w-[min(21rem,88vw)] border-l border-slate-200 bg-white p-5 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-end mb-3">
-              <button onClick={handleCloseMenu} aria-label="close-mobile-menu">
-                <RxCross2 className="w-7 h-7 text-gray-600 hover:text-red-500" />
+            <div className="mb-5 flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-800">การแสดงผลและเมนู</span>
+              <button className="rounded-lg p-2 hover:bg-slate-100" onClick={handleCloseMenu} aria-label="close-mobile-menu">
+                <RxCross2 className="h-6 w-6 text-slate-600" />
               </button>
+            </div>
+
+            <div className="mb-6 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold text-slate-600">ขนาดตัวอักษร</p>
+              <PortalFontSizeControl />
             </div>
 
             {renderNavigation()}

@@ -312,7 +312,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
   );
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-slate-100">
       <Header
         isOpen={isOpen}
         setIsOpen={setIsOpen}
@@ -320,9 +320,9 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
         Navigation={navigationMenu}
       />
 
-      <div className="flex min-h-[calc(100vh-5rem)] mt-24 sm:mt-20">
+      <div className="portal-shell-offset flex">
         {/* Desktop Sidebar */}
-        <div className="hidden md:block w-64 bg-white border-r border-gray-300 fixed h-[calc(100vh-5rem)] overflow-y-auto shadow-sm">
+        <div className="portal-sidebar hidden w-64 md:block">
           <div className="p-5">
             <Navigation
               currentPage={currentPage}

@@ -23,7 +23,7 @@ export default function DetailLayout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <main className="pt-24 lg:pt-22 px-4 pb-8 w-full flex justify-center">
+      <main className="portal-page-offset flex w-full justify-center px-4 pb-8">
         <div className="w-full max-w-[1400px]">
           {children}
         </div>

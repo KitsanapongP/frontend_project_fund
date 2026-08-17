@@ -370,7 +370,7 @@ export default function AuditTrailPage() {
     <div className="min-h-screen bg-gray-100 font-sans pb-12">
       <Header currentPageTitle="ประวัติการแก้ไขข้อมูล (Audit Trail)" />
 
-      <main className="w-full pt-28 px-6">
+      <main className="portal-page-offset w-full px-6">
         <div className="max-w-7xl mx-auto space-y-3">
 
           <div className="flex flex-wrap items-center justify-between gap-2">

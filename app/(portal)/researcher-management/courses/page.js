@@ -275,7 +275,7 @@ export default function CoursesPage() {
       <Header currentPageTitle="จัดการฐานข้อมูลหลักสูตร" />
 
       {/* ── Main Layout Wrapper ── */}
-      <main className="w-full pt-28 px-6">
+      <main className="portal-page-offset w-full px-6">
         <div className="max-w-5xl mx-auto space-y-3">
           
           {/* ── ส่วนกลุ่มปุ่มด้านบนสุด ── */}
