@@ -18,6 +18,17 @@ export default function RootLayout({ children }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
+        {/*
+          กู้ ChunkLoadError ให้เร็วที่สุด: inline script ใน <head> ทำงานก่อน chunk ใด ๆ จะโหลด
+          จึงจับ error ได้แม้ chunk ที่แชร์/dynamic พังตั้งแต่ render แรก (ก่อน useEffect ของ
+          ChunkErrorReloader จะติดตั้ง handler ทัน) -> reload พร้อม ?cb เพื่อ cache-bust ดึง HTML สด
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{function r(){try{var k='__chunkReloadAt',l=+sessionStorage.getItem(k)||0;if(Date.now()-l<10000)return;sessionStorage.setItem(k,String(Date.now()));var u=new URL(location.href);u.searchParams.set('cb',String(Date.now()));location.replace(u.toString())}catch(e){location.reload()}}function h(e){var m=(e&&(e.message||(e.reason&&e.reason.message)))||'';if(/ChunkLoadError|Loading chunk|Loading CSS chunk|dynamically imported/i.test(m)){r()}}window.addEventListener('error',h);window.addEventListener('unhandledrejection',h)}catch(e){}})();",
+          }}
+        />
       </head>
       <body className="font-sans">
         <ChunkErrorReloader />
