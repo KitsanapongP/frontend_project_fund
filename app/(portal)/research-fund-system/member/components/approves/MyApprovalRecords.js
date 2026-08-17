@@ -240,7 +240,7 @@ export default function MyApprovalRecords() {
 
   const chartOptions = useMemo(
     () => ({
-      chart: { toolbar: { show: false }, fontFamily: 'Kanit, sans-serif' },
+      chart: { toolbar: { show: false }, fontFamily: 'var(--font-ui)' },
       xaxis: { categories: categoryLabels },
       yaxis: { labels: { formatter: (value) => fmtTHB2(Number(value) || 0) } },
       dataLabels: { enabled: false },
@@ -261,7 +261,7 @@ export default function MyApprovalRecords() {
 
   const donutOptions = useMemo(
     () => ({
-      chart: { fontFamily: 'Kanit, sans-serif' },
+      chart: { fontFamily: 'var(--font-ui)' },
       labels: categoryLabels,
       colors: CHART_PALETTE,
       legend: { position: 'bottom' },

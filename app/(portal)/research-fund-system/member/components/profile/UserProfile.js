@@ -226,7 +226,7 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
       legend: {
         position: "top",
         horizontalAlign: "left",
-        fontSize: "13px",
+        fontSize: "14px",
         labels: { colors: "#0f172a" },
       },
       colors: ["#0ea5e9", "#7c3aed"],
@@ -411,7 +411,7 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
           <div className="flex items-center justify-between text-xs text-gray-500">
             <span>{chartUnitLabel}</span>
             {chart.isCitations ? null : (
-              <span className="italic text-[11px] text-gray-400">
+              <span className="italic text-xs text-gray-400">
                 TODO: เปลี่ยนเป็นจำนวนการอ้างอิงเมื่อมีข้อมูล
               </span>
             )}
@@ -449,7 +449,7 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
                     return (
                       <div
                         key={year}
-                        className="group flex h-full min-w-[56px] flex-1 flex-col items-center justify-end text-[11px] text-gray-500"
+                        className="group flex h-full min-w-[56px] flex-1 flex-col items-center justify-end text-xs text-gray-500"
                       >
                         <div className="flex h-full w-full items-end">
                           <div
@@ -458,7 +458,7 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
                           >
                             <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-2 whitespace-nowrap rounded-md bg-slate-900/90 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-all duration-150 group-hover:-translate-y-3 group-hover:opacity-100">
                               <div>{formattedValue ?? "-"} {chartValueLabel}</div>
-                              <div className="text-[10px] font-normal text-slate-300">{year}</div>
+                              <div className="text-xs font-normal text-slate-300">{year}</div>
                             </div>
                           </div>
                         </div>
@@ -1927,7 +1927,7 @@ export default function ProfileContent() {
                                             </span>
                                           ) : null}
                                           {formatPercentile(citeScoreMetrics?.percentile) ? (
-                                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-700">
+                                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
                                               Percentile{" "}
                                               {formatPercentile(citeScoreMetrics?.percentile)}
                                             </span>

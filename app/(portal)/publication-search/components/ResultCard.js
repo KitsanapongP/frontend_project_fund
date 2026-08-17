@@ -98,7 +98,7 @@ export default function ResultCard({ item, tab, query, index }) {
           <div className="flex flex-wrap gap-1.5">
             {authorText.split(", ").map((name, i) => (
               <Link key={i} href={`/publication-search?q=${encodeURIComponent(name)}&search_field=author${item.source_name === 'ai_showcase' ? '&tab=student' : ''}`}
-                className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 
+                className="inline-flex items-center gap-1 text-xs px-2 py-0.5
                             bg-[#F3F8FF] text-[#4F8EF7] rounded-full border border-[#DCEBFF]
                             hover:bg-blue-100 hover:border-blue-300 transition cursor-pointer">
                 <User size={10} />
@@ -114,7 +114,7 @@ export default function ResultCard({ item, tab, query, index }) {
               <Link
                 key={i}
                 href={`/publication-search?q=${encodeURIComponent(kw)}&search_field=keywords`}
-                className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 
+                className="inline-flex items-center gap-1 text-xs px-2 py-0.5
                             bg-[#F4FFF8] text-[#34B27B] rounded-full border border-[#DCFCEB]
                             hover:bg-emerald-100 hover:border-emerald-300 transition cursor-pointer">
                 <Tag size={10} />
@@ -127,7 +127,7 @@ export default function ResultCard({ item, tab, query, index }) {
                 className="
                   inline-flex items-center gap-0.5
                   px-2 py-0.5
-                  text-[9px] font-medium
+                  text-xs font-medium
                   rounded-full
                   bg-[#F6FFF9]
                   text-[#2FA56F]
@@ -160,7 +160,7 @@ export default function ResultCard({ item, tab, query, index }) {
         <>
 
           <div className="flex flex-col items-center justify-center w-full md:w-[180px] text-center">
-            <span className="inline-flex items-center justify-center gap-1 h-8 w-full text-[10px] font-medium text-amber-700">
+            <span className="inline-flex items-center justify-center gap-1 h-8 w-full text-xs font-medium text-amber-700">
               {item.advisors && item.advisors.length > 0
                 ? item.advisors.join(", ")
                 : "-"}
@@ -203,11 +203,11 @@ export default function ResultCard({ item, tab, query, index }) {
 
       <div className={`flex flex-col items-center justify-center w-full ${tab === 'student' ? 'md:w-[120px]' : 'md:w-[200px]'} text-center`}>
         {item.journal_name && (
-          <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-medium text-gray-500 bg-gray-100 leading-tight mb-1.5 max-w-[190px] line-clamp-2">
+          <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 bg-gray-100 leading-tight mb-1.5 max-w-[190px] line-clamp-2">
             {item.journal_name}
           </span>
         )}
-        <span className={`inline-flex items-center justify-center h-6 px-1.5 rounded-md text-[9px] font-semibold ${sourceColor}`}>
+        <span className={`inline-flex items-center justify-center h-6 px-1.5 rounded-md text-xs font-semibold ${sourceColor}`}>
           {sourceLabel}
         </span>
       </div>

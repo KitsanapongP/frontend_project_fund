@@ -335,7 +335,7 @@ export default function NotificationCenter() {
                           <div className="space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <h4 className="text-sm font-semibold text-slate-900">{notification.title}</h4>
-                              <span className={`text-[11px] font-medium rounded-full px-2 py-0.5 ${typeBadge}`}>
+                              <span className={`text-xs font-medium rounded-full px-2 py-0.5 ${typeBadge}`}>
                                   {type === "success"
                                     ? "สำเร็จ"
                                     : type === "warning"
@@ -364,7 +364,7 @@ export default function NotificationCenter() {
 
                         {isExpanded && (
                           <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-inner">
-                            <div className="mb-2 text-[13px] font-semibold text-slate-800">
+                            <div className="mb-2 text-sm font-semibold text-slate-800">
                               รายละเอียดการแจ้งเตือน
                             </div>
                             <div className="whitespace-pre-line leading-relaxed text-slate-700">

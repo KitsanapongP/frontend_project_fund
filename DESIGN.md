@@ -33,6 +33,11 @@ typography:
     fontSize: "1.25rem"
     fontWeight: 600
     lineHeight: 1.3
+  subheading:
+    fontFamily: "Anuphan, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: 600
+    lineHeight: 1.5
   title:
     fontFamily: "Anuphan, sans-serif"
     fontSize: "1rem"
@@ -48,6 +53,16 @@ typography:
     fontSize: "0.75rem"
     fontWeight: 500
     lineHeight: 1.4
+  pageTitle:
+    fontFamily: "Anuphan, sans-serif"
+    fontSize: "1.875rem"
+    fontWeight: 600
+    lineHeight: 1.25
+  metric:
+    fontFamily: "Anuphan, sans-serif"
+    fontSize: "2.25rem"
+    fontWeight: 700
+    lineHeight: 1.15
 rounded:
   sm: "6px"
   md: "8px"
@@ -144,7 +159,10 @@ A restrained palette: one blue accent over a slate neutral ramp, with semantic c
 
 ### Hierarchy
 - **Display** (600, 1.5rem/24px, 1.25): Page titles, dashboard section heads.
+- **Page title** (600, 1.875rem/30px, 1.25): Primary titles on spacious landing and overview surfaces.
+- **Metric** (700, 2.25rem/36px, 1.15): Standalone dashboard figures only.
 - **Headline** (600, 1.25rem/20px, 1.3): Card and panel titles.
+- **Subheading** (600, 1.125rem/18px, 1.5): Compact section titles and prominent controls.
 - **Title** (600, 1rem/16px, 1.4): Form-group and table-block labels.
 - **Body** (400, 0.875rem/14px, 1.6): Default reading and data text.
 - **Label** (500, 0.75rem/12px, 1.4): Field labels, badges, table headers, metadata.

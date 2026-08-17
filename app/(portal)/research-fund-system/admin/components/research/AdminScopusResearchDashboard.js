@@ -1368,7 +1368,7 @@ export default function AdminScopusResearchDashboard() {
           <p className="font-semibold text-slate-800">ความหมาย</p>
           <p className="mt-0.5 leading-relaxed">{tip.description}</p>
           <p className="mt-2 font-semibold text-slate-800">สูตรคำนวณ</p>
-          <p className="mt-0.5 rounded-md bg-slate-50 px-2 py-1 font-mono text-[11px] leading-relaxed text-slate-900">
+          <p className="mt-0.5 rounded-md bg-slate-50 px-2 py-1 font-mono text-xs leading-relaxed text-slate-900">
             {tip.formula}
           </p>
         </div>
@@ -1527,7 +1527,7 @@ export default function AdminScopusResearchDashboard() {
         colors,
         legend: {
           position: "bottom",
-          fontSize: "13px",
+          fontSize: "14px",
           itemMargin: { horizontal: 10, vertical: 6 },
           formatter: (seriesName, opts) => {
             const index = opts.seriesIndex;
@@ -1577,7 +1577,7 @@ export default function AdminScopusResearchDashboard() {
                 total: {
                   show: true,
                   label: "รวม",
-                  fontSize: "13px",
+                  fontSize: "14px",
                   color: "#64748b",
                   formatter: () => formatNumber(totals.reduce((sum, n) => sum + n, 0)),
                 },
@@ -1810,7 +1810,7 @@ export default function AdminScopusResearchDashboard() {
                   <p className="font-medium text-slate-700">ตัวกรองปัจจุบัน:</p>
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     {appliedFilterSummaryItems.map((item) => (
-                      <span key={item.key} className="inline-flex max-w-full items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-700">
+                      <span key={item.key} className="inline-flex max-w-full items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
                         <span className="font-semibold text-slate-600">{item.label}:</span>
                         <span className="truncate">{item.value}</span>
                       </span>
@@ -1958,7 +1958,7 @@ export default function AdminScopusResearchDashboard() {
                       <div className="space-y-2">
                         <div className="rounded-lg border border-blue-200 bg-blue-50 p-2">
                           <div className="mb-1 flex items-center justify-between gap-2">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">ข้อมูลหลัก</p>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">ข้อมูลหลัก</p>
                             <label className="inline-flex items-center gap-1 text-xs text-blue-700">
                               <input
                                 type="checkbox"
@@ -1986,7 +1986,7 @@ export default function AdminScopusResearchDashboard() {
 
                         <div className="rounded-lg border border-blue-200 bg-blue-50 p-2">
                           <div className="mb-1 flex items-center justify-between gap-2">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">กลุ่ม Quartile</p>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">กลุ่ม Quartile</p>
                             <label className="inline-flex items-center gap-1 text-xs text-blue-700">
                               <input
                                 type="checkbox"
@@ -2014,7 +2014,7 @@ export default function AdminScopusResearchDashboard() {
 
                         <div className="rounded-lg border border-blue-200 bg-blue-50 p-2">
                           <div className="mb-1 flex items-center justify-between gap-2">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">กลุ่มประเภทแหล่งตีพิมพ์</p>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">กลุ่มประเภทแหล่งตีพิมพ์</p>
                             <label className="inline-flex items-center gap-1 text-xs text-blue-700">
                               <input
                                 type="checkbox"
@@ -2056,7 +2056,7 @@ export default function AdminScopusResearchDashboard() {
                             onClick={() => handlePersonSort(col.key)}
                             className={`cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 font-semibold text-blue-900 ${col.align === "right" ? "text-right" : "text-left"}`}
                           >
-                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-700">{personSortIndicator(col.key)}</span></span>
+                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-xs text-blue-700">{personSortIndicator(col.key)}</span></span>
                           </th>
                         ))}
                         {visiblePersonQuartileColumns.length > 0 && (
@@ -2072,7 +2072,7 @@ export default function AdminScopusResearchDashboard() {
                             onClick={() => handlePersonSort(col.key)}
                             className={`cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-right font-semibold text-blue-900 ${timeIndex === 0 ? "border-l-2 border-l-blue-300" : ""}`}
                           >
-                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-700">{personSortIndicator(col.key)}</span></span>
+                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-xs text-blue-700">{personSortIndicator(col.key)}</span></span>
                           </th>
                         ))}
                       </tr>
@@ -2084,7 +2084,7 @@ export default function AdminScopusResearchDashboard() {
                               onClick={() => handlePersonSort(col.key)}
                               className={`cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right font-medium text-blue-800 ${qIndex === 0 ? "border-l-2 border-l-blue-300" : ""}`}
                             >
-                              <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-600">{personSortIndicator(col.key)}</span></span>
+                              <span className="inline-flex items-center gap-1">{col.label}<span className="text-xs text-blue-600">{personSortIndicator(col.key)}</span></span>
                             </th>
                           ))}
                           {visiblePersonSourceColumns.map((col, sIndex) => (
@@ -2093,7 +2093,7 @@ export default function AdminScopusResearchDashboard() {
                               onClick={() => handlePersonSort(col.key)}
                               className={`cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right font-medium text-blue-800 ${sIndex === 0 ? "border-l-2 border-l-blue-300" : ""}`}
                             >
-                              <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-600">{personSortIndicator(col.key)}</span></span>
+                              <span className="inline-flex items-center gap-1">{col.label}<span className="text-xs text-blue-600">{personSortIndicator(col.key)}</span></span>
                             </th>
                           ))}
                         </tr>
@@ -2228,7 +2228,7 @@ export default function AdminScopusResearchDashboard() {
 
                       <div className="rounded-lg border border-blue-200 bg-blue-50 p-2">
                         <div className="mb-1 flex items-center justify-between gap-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">คอลัมน์ข้อมูลบุคคล</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">คอลัมน์ข้อมูลบุคคล</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {PERSON_MATRIX_IDENTITY_COLUMNS.map((col) => (
@@ -2276,7 +2276,7 @@ export default function AdminScopusResearchDashboard() {
                               zIndex: 20,
                             }}
                           >
-                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-[10px] text-blue-700">{personMatrixSortIndicator(col.key)}</span></span>
+                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-xs text-blue-700">{personMatrixSortIndicator(col.key)}</span></span>
                           </th>
                         ))}
                         {personMatrixVisibleYears.map((year, yearIdx) => (
@@ -2285,7 +2285,7 @@ export default function AdminScopusResearchDashboard() {
                             onClick={() => handlePersonMatrixSort(`year:${year}`)}
                             className={`cursor-pointer border border-blue-200 bg-blue-50 px-3 py-2 text-right font-medium text-blue-800 ${yearIdx === 0 ? "border-l-2 border-l-blue-300" : ""}`}
                           >
-                            <span className="inline-flex items-center gap-1">{year}<span className="text-[10px] text-blue-600">{personMatrixSortIndicator(`year:${year}`)}</span></span>
+                            <span className="inline-flex items-center gap-1">{year}<span className="text-xs text-blue-600">{personMatrixSortIndicator(`year:${year}`)}</span></span>
                           </th>
                         ))}
                       </tr>
@@ -2474,25 +2474,25 @@ export default function AdminScopusResearchDashboard() {
                               onClick={() => handleDiversitySort("user")}
                               className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-left font-semibold text-blue-900"
                             >
-                              <span className="inline-flex items-center gap-1">อาจารย์ <span className="text-[10px] text-blue-600">{diversitySortIndicator("user")}</span></span>
+                              <span className="inline-flex items-center gap-1">อาจารย์ <span className="text-xs text-blue-600">{diversitySortIndicator("user")}</span></span>
                             </th>
                             <th
                               onClick={() => handleDiversitySort("distinct_collaborators")}
                               className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-right font-semibold text-blue-900"
                             >
-                              <span className="inline-flex items-center justify-end gap-1">จำนวนผู้ร่วมงาน <span className="text-[10px] text-blue-600">{diversitySortIndicator("distinct_collaborators")}</span></span>
+                              <span className="inline-flex items-center justify-end gap-1">จำนวนผู้ร่วมงาน <span className="text-xs text-blue-600">{diversitySortIndicator("distinct_collaborators")}</span></span>
                             </th>
                             <th
                               onClick={() => handleDiversitySort("total_shared")}
                               className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-right font-semibold text-blue-900"
                             >
-                              <span className="inline-flex items-center justify-end gap-1">ผลงานร่วมรวม <span className="text-[10px] text-blue-600">{diversitySortIndicator("total_shared")}</span></span>
+                              <span className="inline-flex items-center justify-end gap-1">ผลงานร่วมรวม <span className="text-xs text-blue-600">{diversitySortIndicator("total_shared")}</span></span>
                             </th>
                             <th
                               onClick={() => handleDiversitySort("avg_per_collaborator")}
                               className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-right font-semibold text-blue-900"
                             >
-                              <span className="inline-flex items-center justify-end gap-1">เฉลี่ยต่อผู้ร่วมงาน <span className="text-[10px] text-blue-600">{diversitySortIndicator("avg_per_collaborator")}</span></span>
+                              <span className="inline-flex items-center justify-end gap-1">เฉลี่ยต่อผู้ร่วมงาน <span className="text-xs text-blue-600">{diversitySortIndicator("avg_per_collaborator")}</span></span>
                             </th>
                             <th className="border border-blue-200 bg-blue-100 px-3 py-2 text-left font-semibold text-blue-900">รายชื่อผู้ร่วมงาน</th>
                           </tr>
@@ -2535,7 +2535,7 @@ export default function AdminScopusResearchDashboard() {
                                           className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700"
                                         >
                                           <span>{c.name}</span>
-                                          <span className="rounded-full bg-slate-200 px-1.5 text-[10px] font-semibold text-slate-600">{formatNumber(c.shared)}</span>
+                                          <span className="rounded-full bg-slate-200 px-1.5 text-xs font-semibold text-slate-600">{formatNumber(c.shared)}</span>
                                         </span>
                                       ))}
                                       {!isExpanded && remaining > 0 && (
@@ -2543,7 +2543,7 @@ export default function AdminScopusResearchDashboard() {
                                       )}
                                     </div>
                                     {!isExpanded && remaining > 0 && (
-                                      <span className="mt-1 block text-[10px] text-slate-400">คลิกเพื่อดูทั้งหมด</span>
+                                      <span className="mt-1 block text-xs text-slate-400">คลิกเพื่อดูทั้งหมด</span>
                                     )}
                                   </td>
                                 </tr>
@@ -2643,19 +2643,19 @@ export default function AdminScopusResearchDashboard() {
                           onClick={() => handleInternalCollabSort("user_a")}
                           className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-left font-semibold text-blue-900"
                         >
-                          <span className="inline-flex items-center gap-1">อาจารย์ A <span className="text-[10px] text-blue-600">{internalCollabSortIndicator("user_a")}</span></span>
+                          <span className="inline-flex items-center gap-1">อาจารย์ A <span className="text-xs text-blue-600">{internalCollabSortIndicator("user_a")}</span></span>
                         </th>
                         <th
                           onClick={() => handleInternalCollabSort("user_b")}
                           className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-left font-semibold text-blue-900"
                         >
-                          <span className="inline-flex items-center gap-1">อาจารย์ B <span className="text-[10px] text-blue-600">{internalCollabSortIndicator("user_b")}</span></span>
+                          <span className="inline-flex items-center gap-1">อาจารย์ B <span className="text-xs text-blue-600">{internalCollabSortIndicator("user_b")}</span></span>
                         </th>
                         <th
                           onClick={() => handleInternalCollabSort("shared_documents")}
                           className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-right font-semibold text-blue-900"
                         >
-                          <span className="inline-flex items-center gap-1">ผลงานร่วมกัน (เอกสารไม่ซ้ำ) <span className="text-[10px] text-blue-600">{internalCollabSortIndicator("shared_documents")}</span></span>
+                          <span className="inline-flex items-center gap-1">ผลงานร่วมกัน (เอกสารไม่ซ้ำ) <span className="text-xs text-blue-600">{internalCollabSortIndicator("shared_documents")}</span></span>
                         </th>
                       </tr>
                     </thead>

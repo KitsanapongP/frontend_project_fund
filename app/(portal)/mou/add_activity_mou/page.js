@@ -301,7 +301,7 @@ export default function AddActivityMouPage() {
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                         <Building2 size={14} className="text-gray-400 shrink-0" />
                         <div className="min-w-0">
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">หน่วยงาน</div>
+                          <div className="text-xs text-gray-400 uppercase tracking-wider">หน่วยงาน</div>
                           <div className="text-xs font-medium text-gray-700 truncate">{selectedMou.partners.map(p => p.partner_org).join(", ")}</div>
                         </div>
                       </div>
@@ -310,7 +310,7 @@ export default function AddActivityMouPage() {
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                         <MapPin size={14} className="text-gray-400 shrink-0" />
                         <div className="min-w-0">
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">ประเทศ</div>
+                          <div className="text-xs text-gray-400 uppercase tracking-wider">ประเทศ</div>
                           <div className="text-xs font-medium text-gray-700">{selectedMou.country.name_th}</div>
                         </div>
                       </div>
@@ -319,7 +319,7 @@ export default function AddActivityMouPage() {
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                         <Tag size={14} className="text-gray-400 shrink-0" />
                         <div className="min-w-0">
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">ระดับ</div>
+                          <div className="text-xs text-gray-400 uppercase tracking-wider">ระดับ</div>
                           <div className="text-xs font-medium text-gray-700">{selectedMou.level === "university" ? "มหาวิทยาลัย" : selectedMou.level === "faculty" ? "คณะ" : selectedMou.level}</div>
                         </div>
                       </div>
@@ -328,7 +328,7 @@ export default function AddActivityMouPage() {
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                         <Calendar size={14} className="text-gray-400 shrink-0" />
                         <div className="min-w-0">
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">ระยะเวลา</div>
+                          <div className="text-xs text-gray-400 uppercase tracking-wider">ระยะเวลา</div>
                           <div className="text-xs font-medium text-gray-700">{fmtDate(selectedMou.start_date)} - {selectedMou.end_date ? fmtDate(selectedMou.end_date) : "ปัจจุบัน"}</div>
                         </div>
                       </div>
@@ -337,7 +337,7 @@ export default function AddActivityMouPage() {
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                         <Bookmark size={14} className="text-gray-400 shrink-0" />
                         <div className="min-w-0">
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wider">สถานะ</div>
+                          <div className="text-xs text-gray-400 uppercase tracking-wider">สถานะ</div>
                           <div className="text-xs font-medium text-gray-700">{selectedMou.status.name}</div>
                         </div>
                       </div>
@@ -402,12 +402,12 @@ export default function AddActivityMouPage() {
                                     <span className="text-xs font-medium text-indigo-900 truncate">{fac.faculty?.name_th || "-"}</span>
                                   </div>
                                   {fac.user && (
-                                    <div className="text-[11px] text-gray-500 truncate pl-5">
+                                    <div className="text-xs text-gray-500 truncate pl-5">
                                       ผู้รับผิดชอบ: {[fac.user.prefix || "", fac.user.user_fname || "", fac.user.user_lname || ""].filter(Boolean).join(" ")}
                                     </div>
                                   )}
                                   {(fac.user?.email || fac.email) && (
-                                    <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.user?.email || fac.email}</div>
+                                    <div className="text-xs text-gray-400 truncate pl-5">อีเมล: {fac.user?.email || fac.email}</div>
                                   )}
                                 </div>
                               ))}
@@ -429,8 +429,8 @@ export default function AddActivityMouPage() {
                                     <Building2 size={13} className="text-blue-500 shrink-0" />
                                     <span className="text-xs font-medium text-blue-900 truncate">{fac.external_org || "ไม่ระบุ"}</span>
                                   </div>
-                                  <div className="text-[11px] text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {fac.external_name || "ไม่ระบุ"}</div>
-                                  {fac.email && <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.email}</div>}
+                                  <div className="text-xs text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {fac.external_name || "ไม่ระบุ"}</div>
+                                  {fac.email && <div className="text-xs text-gray-400 truncate pl-5">อีเมล: {fac.email}</div>}
                                 </div>
                               ))}
                             </div>
@@ -614,7 +614,7 @@ export default function AddActivityMouPage() {
                       <span style={{ verticalAlign: "middle" }}>{t.name}</span>
                     </label>
                   )) : (
-                    <div style={{ padding: "12px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>ไม่มีประเภทกิจกรรม</div>
+                    <div style={{ padding: "12px", textAlign: "center", color: "#9ca3af", fontSize: "14px" }}>ไม่มีประเภทกิจกรรม</div>
                   )}
                 </div>
               </div>
@@ -635,7 +635,7 @@ export default function AddActivityMouPage() {
                       <span style={{ verticalAlign: "middle" }}>{o.title}</span>
                     </label>
                   )) : (
-                    <div style={{ padding: "12px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>ไม่มี OKR</div>
+                    <div style={{ padding: "12px", textAlign: "center", color: "#9ca3af", fontSize: "14px" }}>ไม่มี OKR</div>
                   )}
                 </div>
               </div>
@@ -659,8 +659,8 @@ export default function AddActivityMouPage() {
                     {files.map((f, i) => (
                       <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", padding: "12px 16px 10px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", minWidth: "110px", position: "relative" }}>
                         <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "#fee2e2", borderRadius: 10, color: "#dc2626", fontSize: 13, fontWeight: 700, letterSpacing: "0.5px" }}>PDF</div>
-                        <span style={{ fontSize: "11px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{f.name}</span>
-                        <span style={{ fontSize: "10px", color: "#9ca3af" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+                        <span style={{ fontSize: "12px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{f.name}</span>
+                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
                         <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0, boxShadow: "0 2px 4px rgba(239,68,68,0.3)" }} title="ลบ">×</button>
                       </div>
                     ))}
@@ -668,14 +668,14 @@ export default function AddActivityMouPage() {
                       onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.color = "#3b82f6"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b7280"; }}>
                       <span style={{ fontSize: 24, fontWeight: 300, lineHeight: 1, color: "inherit" }}>+</span>
-                      <span style={{ fontSize: "11px", textAlign: "center", color: "inherit" }}>เพิ่มไฟล์</span>
+                      <span style={{ fontSize: "12px", textAlign: "center", color: "inherit" }}>เพิ่มไฟล์</span>
                     </div>
                     <span style={{ fontSize: "12px", color: "#6b7280", width: "100%", textAlign: "center", marginTop: "2px" }}>คลิกเพื่อเพิ่มไฟล์ (สูงสุด 3 ไฟล์)</span>
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
                     <Upload size={22} style={{ color: "var(--mou-primary)" }} />
-                    <span style={{ color: "#6b7280", fontSize: "13px" }}>PDF สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB</span>
+                    <span style={{ color: "#6b7280", fontSize: "14px" }}>PDF สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB</span>
                   </div>
                 )}
               </div>

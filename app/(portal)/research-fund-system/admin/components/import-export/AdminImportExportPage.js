@@ -296,7 +296,7 @@ export default function AdminImportExportPage() {
       <p className="mb-2 font-semibold">คอลัมน์ที่ต้องมีตามเทมเพลต:</p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {columns.map((col) => (
-          <span key={col} className="inline-flex items-center gap-2 rounded-md bg-slate-50 px-2 py-1 font-mono text-[11px] text-slate-700">
+          <span key={col} className="inline-flex items-center gap-2 rounded-md bg-slate-50 px-2 py-1 font-mono text-xs text-slate-700">
             <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
             {col}
           </span>

@@ -275,7 +275,7 @@ export default function AdminNotificationSettingsPage() {
                           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                             <Building2 size={14} className="text-gray-400 shrink-0" />
                             <div className="min-w-0">
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wider">หน่วยงาน</div>
+                              <div className="text-xs text-gray-400 uppercase tracking-wider">หน่วยงาน</div>
                               <div className="text-xs font-medium text-gray-700 truncate">{mouDetail.partners.map(p => p.partner_org).join(", ")}</div>
                             </div>
                           </div>
@@ -284,7 +284,7 @@ export default function AdminNotificationSettingsPage() {
                           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                             <MapPin size={14} className="text-gray-400 shrink-0" />
                             <div className="min-w-0">
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wider">ประเทศ</div>
+                              <div className="text-xs text-gray-400 uppercase tracking-wider">ประเทศ</div>
                               <div className="text-xs font-medium text-gray-700">{mouDetail.country.name_th}</div>
                             </div>
                           </div>
@@ -293,7 +293,7 @@ export default function AdminNotificationSettingsPage() {
                           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                             <Tag size={14} className="text-gray-400 shrink-0" />
                             <div className="min-w-0">
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wider">ระดับ</div>
+                              <div className="text-xs text-gray-400 uppercase tracking-wider">ระดับ</div>
                               <div className="text-xs font-medium text-gray-700">{mouDetail.level === "university" ? "มหาวิทยาลัย" : mouDetail.level === "faculty" ? "คณะ" : mouDetail.level}</div>
                             </div>
                           </div>
@@ -302,7 +302,7 @@ export default function AdminNotificationSettingsPage() {
                           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                             <Calendar size={14} className="text-gray-400 shrink-0" />
                             <div className="min-w-0">
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wider">ระยะเวลา</div>
+                              <div className="text-xs text-gray-400 uppercase tracking-wider">ระยะเวลา</div>
                               <div className="text-xs font-medium text-gray-700">{fmtDate(mouDetail.start_date)} - {mouDetail.end_date ? fmtDate(mouDetail.end_date) : "ปัจจุบัน"}</div>
                             </div>
                           </div>
@@ -311,7 +311,7 @@ export default function AdminNotificationSettingsPage() {
                           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                             <Bookmark size={14} className="text-gray-400 shrink-0" />
                             <div className="min-w-0">
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wider">สถานะ</div>
+                              <div className="text-xs text-gray-400 uppercase tracking-wider">สถานะ</div>
                               <div className="text-xs font-medium text-gray-700">{mouDetail.status.name}</div>
                             </div>
                           </div>
@@ -380,13 +380,13 @@ export default function AdminNotificationSettingsPage() {
                                         const userName = [fac.user?.prefix, fac.user?.user_fname, fac.user?.user_lname].filter(Boolean).join(" ");
                                         const responsibleName = userName || fac.external_name;
                                         return responsibleName ? (
-                                          <div className="text-[11px] text-gray-500 truncate pl-5">
+                                          <div className="text-xs text-gray-500 truncate pl-5">
                                             ผู้รับผิดชอบ: {responsibleName}
                                           </div>
                                         ) : null;
                                       })()}
                                       {(fac.user?.email || fac.email) && (
-                                        <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.user?.email || fac.email}</div>
+                                        <div className="text-xs text-gray-400 truncate pl-5">อีเมล: {fac.user?.email || fac.email}</div>
                                       )}
                                     </div>
                                   ))}
@@ -408,8 +408,8 @@ export default function AdminNotificationSettingsPage() {
                                         <Building2 size={13} className="text-blue-500 shrink-0" />
                                         <span className="text-xs font-medium text-blue-900 truncate">{fac.external_org || "ไม่ระบุ"}</span>
                                       </div>
-                                      <div className="text-[11px] text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {fac.external_name || "ไม่ระบุ"}</div>
-                                      {fac.email && <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.email}</div>}
+                                      <div className="text-xs text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {fac.external_name || "ไม่ระบุ"}</div>
+                                      {fac.email && <div className="text-xs text-gray-400 truncate pl-5">อีเมล: {fac.email}</div>}
                                     </div>
                                   ))}
                                 </div>

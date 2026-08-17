@@ -713,8 +713,8 @@ export default function AddMouPage() {
                     {files.map((f, i) => (
                       <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", padding: "12px 16px 10px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", minWidth: "110px", position: "relative" }}>
                         <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "#fee2e2", borderRadius: 10, color: "#dc2626", fontSize: 13, fontWeight: 700, letterSpacing: "0.5px" }}>PDF</div>
-                        <span style={{ fontSize: "11px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{f.name}</span>
-                        <span style={{ fontSize: "10px", color: "#9ca3af" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+                        <span style={{ fontSize: "12px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{f.name}</span>
+                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
                         <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0, boxShadow: "0 2px 4px rgba(239,68,68,0.3)" }} title="ลบ">×</button>
                       </div>
                     ))}
@@ -722,14 +722,14 @@ export default function AddMouPage() {
                       onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.color = "#3b82f6"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b7280"; }}>
                       <span style={{ fontSize: 24, fontWeight: 300, lineHeight: 1, color: "inherit" }}>+</span>
-                      <span style={{ fontSize: "11px", textAlign: "center", color: "inherit" }}>เพิ่มไฟล์</span>
+                      <span style={{ fontSize: "12px", textAlign: "center", color: "inherit" }}>เพิ่มไฟล์</span>
                     </div>
                     <span style={{ fontSize: "12px", color: "#6b7280", width: "100%", textAlign: "center", marginTop: "2px" }}>คลิกเพื่อเพิ่มไฟล์ (สูงสุด 3 ไฟล์)</span>
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
                     <Upload size={22} style={{ color: "var(--mou-primary)" }} />
-                    <span style={{ color: "#6b7280", fontSize: "13px" }}>PDF สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB</span>
+                    <span style={{ color: "#6b7280", fontSize: "14px" }}>PDF สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 20 MB</span>
                   </div>
                 )}
               </div>
@@ -784,7 +784,7 @@ export default function AddMouPage() {
                     </div>
                   </div>
                   <div style={{ width: "240px", border: "1px solid var(--mou-line)", borderRadius: "8px", background: "var(--mou-surface)", padding: "10px", overflowY: "auto" }}>
-                    <div style={{ fontSize: "13px", color: "var(--mou-muted)", marginBottom: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ fontSize: "14px", color: "var(--mou-muted)", marginBottom: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
                       <Building2 size={14} />เลือกแล้ว {formData.faculty_ids.length} คณะ
                     </div>
                     {formData.faculty_ids.length > 0 ? (
@@ -793,7 +793,7 @@ export default function AddMouPage() {
                           const fac = faculties.find((f) => f.id === fid);
                           const isComputing = fid === COMPUTING_FACULTY_ID;
                           return (
-                            <div key={fid} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: "6px", background: isComputing ? "#eff6ff" : "var(--mou-primary-soft)", fontSize: "13px" }}>
+                            <div key={fid} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: "6px", background: isComputing ? "#eff6ff" : "var(--mou-primary-soft)", fontSize: "14px" }}>
                               <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                 {isComputing && <Sparkles size={11} className="text-blue-500" />}
                                 {fac?.name_th || `#${fid}`}
@@ -804,7 +804,7 @@ export default function AddMouPage() {
                         })}
                       </div>
                     ) : (
-                      <div style={{ fontSize: "13px", color: "var(--mou-muted-soft)", textAlign: "center", padding: "20px 0" }}>ยังไม่เลือกคณะ</div>
+                      <div style={{ fontSize: "14px", color: "var(--mou-muted-soft)", textAlign: "center", padding: "20px 0" }}>ยังไม่เลือกคณะ</div>
                     )}
                   </div>
                 </div>

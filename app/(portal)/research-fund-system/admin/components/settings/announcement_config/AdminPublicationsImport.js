@@ -348,11 +348,11 @@ export default function AdminPublicationsImport() {
                             <div className="font-medium text-slate-900">{u.name || `(ID: ${u.user_id})`}</div>
                             {u.email && <div className="text-xs text-slate-500">{u.email}</div>}
                             {u.scholar_author_id ? (
-                              <div className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                              <div className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
                                 Scholar ID <code className="font-mono text-xs">{u.scholar_author_id}</code>
                               </div>
                             ) : (
-                              <div className="text-[11px] text-slate-400">ยังไม่บันทึก Scholar ID</div>
+                              <div className="text-xs text-slate-400">ยังไม่บันทึก Scholar ID</div>
                             )}
                           </div>
                           <button
@@ -451,7 +451,7 @@ export default function AdminPublicationsImport() {
               <div className="space-y-2 rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-600">
                 <p>
                   หา Author ID ได้จาก URL โปรไฟล์ Scholar:{" "}
-                  <code className="text-[11px]">
+                  <code className="text-xs">
                     https://scholar.google.com/citations?user=<span className="font-semibold">_XXXXXXXXXXX</span>
                   </code>
                 </p>

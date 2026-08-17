@@ -316,12 +316,12 @@ export default function AdminScopusAuthorHIndex() {
     const html = `<!doctype html>
 <html lang="th"><head><meta charset="utf-8"><title>h-index — ${htmlEscape(name)}</title>
 <style>
-  body{font-family:'Sarabun',Tahoma,-apple-system,'Segoe UI',sans-serif;color:#0f172a;margin:28px;max-width:960px}
-  h1{font-size:20px;margin:0 0 4px}.muted{color:#64748b;font-size:13px}
+  body{font-family:'Anuphan',Tahoma,-apple-system,'Segoe UI',sans-serif;color:#0f172a;margin:28px;max-width:960px}
+  h1{font-size:20px;margin:0 0 4px}.muted{color:#64748b;font-size: 14px}
   .stats{display:flex;gap:16px;margin:16px 0;flex-wrap:wrap}
   .stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 16px;min-width:110px}
-  .stat b{font-size:22px;display:block}.stat span{color:#64748b;font-size:12px}
-  table{border-collapse:collapse;width:100%;font-size:13px;margin-top:18px}
+  .stat b{font-size: 24px;display:block}.stat span{color:#64748b;font-size:12px}
+  table{border-collapse:collapse;width:100%;font-size: 14px;margin-top:18px}
   th,td{border:1px solid #e2e8f0;padding:6px 9px;vertical-align:top}th{background:#f1f5f9;text-align:left}
   @media print{body{margin:0}}
 </style></head><body>
@@ -610,7 +610,7 @@ export default function AdminScopusAuthorHIndex() {
             </div>
           </div>
           {graph?.available_year_min != null && (
-            <p className="text-[11px] text-slate-500">
+            <p className="text-xs text-slate-500">
               ช่วงปีที่มีข้อมูล (พ.ศ.): {graph.available_year_min + 543}–{graph.available_year_max + 543}
             </p>
           )}

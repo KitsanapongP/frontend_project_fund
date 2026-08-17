@@ -508,7 +508,7 @@ export default function AuditTrailPage() {
                                       ? `${log.user_edit.prefix ?? ""} ${log.user_edit.user_fname} ${log.user_edit.user_lname}`.trim()
                                       : "ไม่ระบุผู้แก้ไข"}
                                   </span>
-                                  <span className="inline-flex items-center w-max rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-500">
+                                  <span className="inline-flex items-center w-max rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono text-slate-500">
                                     ID {log.user_edit_id ?? "—"}
                                   </span>
                                 </div>
@@ -532,7 +532,7 @@ export default function AuditTrailPage() {
                                   <span className="text-xs font-medium text-slate-800 truncate" title={recordName}>
                                     {recordName}
                                   </span>
-                                  <span className="text-[10px] text-slate-400 font-mono">
+                                  <span className="text-xs text-slate-400 font-mono">
                                     รหัสรายการ: {log.record_id ?? "—"}
                                   </span>
                                 </div>

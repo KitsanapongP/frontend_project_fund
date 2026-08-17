@@ -193,7 +193,7 @@ export default function MouLayout({ children, title, subtitle }) {
                 >
                   <Bell size={20} />
                   {notifData?.total > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white leading-none">
                       {notifData.total > 99 ? "99+" : notifData.total}
                     </span>
                   )}
@@ -214,7 +214,7 @@ export default function MouLayout({ children, title, subtitle }) {
                       ) : (
                         <>
                           {notifData.expired.count > 0 && (
-                            <div className="px-4 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
+                            <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
                               หมดอายุแล้ว ({notifData.expired.count})
                             </div>
                           )}
@@ -234,7 +234,7 @@ export default function MouLayout({ children, title, subtitle }) {
                             </Link>
                           ))}
                           {notifData.nearExpiry.count > 0 && (
-                            <div className="px-4 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
+                            <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
                               ใกล้หมดอายุ ({notifData.nearExpiry.count})
                             </div>
                           )}

@@ -1095,7 +1095,7 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
         ? `คงเหลือ ฿${formatCurrency(0)}`
         : `คงเหลือ ฿${formatCurrency(remain)}`;
       return (
-        <p className="text-gray-500 text-[11px]">
+        <p className="text-gray-500 text-xs">
           ใช้วงเงินร่วมตามยอดที่ขอ: ฿{formatCurrency(sharedFeeCap)} ({remainText})
         </p>
       );

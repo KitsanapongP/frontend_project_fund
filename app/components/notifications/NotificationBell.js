@@ -85,7 +85,7 @@ export default function NotificationBell({ onViewAll }) {
       >
         <Bell size={22} className="text-slate-700" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[22px] h-5 rounded-full bg-rose-500 px-1 text-[11px] font-semibold text-white shadow-sm flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 min-w-[22px] h-5 rounded-full bg-rose-500 px-1 text-xs font-semibold text-white shadow-sm flex items-center justify-center">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

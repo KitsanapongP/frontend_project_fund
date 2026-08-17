@@ -254,7 +254,7 @@ export default function AdminKkuPeopleScraper() {
             <p className="text-xs uppercase text-slate-500">ผลลัพธ์ล่าสุด</p>
             <span className={`inline-flex mt-1 items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${statusBadgeClass(lastRun?.status)}`}>
               {lastRun?.status ? lastRun.status.toUpperCase() : "-"}
-              {lastRun?.dry_run ? <span className="ml-1 text-[10px] uppercase text-slate-500">DRY RUN</span> : null}
+              {lastRun?.dry_run ? <span className="ml-1 text-xs uppercase text-slate-500">DRY RUN</span> : null}
             </span>
           </div>
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
