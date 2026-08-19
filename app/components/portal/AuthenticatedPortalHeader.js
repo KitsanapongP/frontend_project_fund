@@ -36,6 +36,7 @@ export default function AuthenticatedPortalHeader({
   Navigation,
   currentPageTitle,
   branding,
+  onNotificationViewAll,
 }) {
   const { user, logout, getUserRoleDisplay } = useAuth();
   const router = useRouter();
@@ -97,7 +98,7 @@ export default function AuthenticatedPortalHeader({
 
           <div className="hidden items-center gap-3 md:flex">
             <PortalFontSizeControl />
-            <NotificationBell />
+            <NotificationBell onViewAll={onNotificationViewAll} />
             <div className="text-right">
               <p className="max-w-48 truncate text-sm font-medium text-slate-800">{displayName}</p>
               <p className="text-xs text-slate-500">{roleLabel}</p>
@@ -153,7 +154,7 @@ export default function AuthenticatedPortalHeader({
                   <p className="text-xs text-slate-500">{roleLabel}</p>
                 </div>
               </div>
-              <div className="mb-3 flex items-center gap-3 text-sm text-slate-700"><NotificationBell /><span>การแจ้งเตือน</span></div>
+              <div className="mb-3 flex items-center gap-3 text-sm text-slate-700"><NotificationBell onViewAll={onNotificationViewAll} /><span>การแจ้งเตือน</span></div>
               <button type="button" onClick={() => void handleLogout()} className="portal-nav-item portal-nav-item--danger px-0">
                 <LogOut size={16} aria-hidden="true" /><span>ออกจากระบบ</span>
               </button>

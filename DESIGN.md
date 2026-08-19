@@ -20,8 +20,12 @@ colors:
   danger: "#dc2626"
   danger-tint: "#fee2e2"
   danger-ink: "#991b1b"
+  warning: "#d97706"
   warning-tint: "#fef9c3"
   warning-ink: "#854d0e"
+  notification: "#f59e0b"
+  notification-tint: "#fffbeb"
+  notification-ink: "#92400e"
 typography:
   display:
     fontFamily: "Sarabun, sans-serif"
@@ -113,7 +117,7 @@ It is Operate-mode software. Expression lives in precision, not decoration: cons
 The system is being consolidated. Today the code mixes two neutral families (gray and slate) and reaches for gradients and a scattered set of accent colors; this document sets the target it should converge on. Depth is flat by default — surfaces are separated by hairline borders, and shadow is a response to interaction, not a permanent costume.
 
 **Key Characteristics:**
-- One calm blue accent; semantic color reserved for status meaning, not mood.
+- One calm blue accent for interaction; semantic color pairs icons and labels with the meaning they communicate.
 - Slate as the single neutral ramp — no parallel gray family.
 - Flat surfaces divided by 1px borders; shadow appears only on hover/focus/overlay.
 - Bilingual by construction — layouts survive Thai↔English length shifts.
@@ -121,7 +125,7 @@ The system is being consolidated. Today the code mixes two neutral families (gra
 
 ## Colors
 
-A restrained palette: one blue accent over a slate neutral ramp, with semantic colors held in reserve for status only.
+A restrained palette: one blue accent over a slate neutral ramp, with semantic colors used deliberately for status, attention, and meaning-bearing icon/label pairs.
 
 ### Primary
 - **Confident Blue** (#2563eb): The single interactive accent — primary buttons, active nav, links, selected rows, key figures. It marks *what you can act on*, so it stays scarce.
@@ -139,15 +143,19 @@ A restrained palette: one blue accent over a slate neutral ramp, with semantic c
 - **Subtle Surface** (#f1f5f9): Table headers, secondary buttons, inset zones.
 - **Canvas** (#f5f7fb): The page background the whole app sits on.
 
-### Semantic (status only)
+### Semantic (meaning only)
 - **Success Green** (#16a34a / tint #dcfce7 / ink #166534): Approved states, positive confirmations.
 - **Danger Red** (#dc2626 / tint #fee2e2 / ink #991b1b): Rejected states, destructive actions, errors.
-- **Warning** (tint #fef9c3 / ink #854d0e): Pending / awaiting-review states.
+- **Warning Amber** (#d97706 / tint #fef9c3 / ink #854d0e): Pending, awaiting-review, and caution states.
+- **Notification Amber** (#f59e0b / tint #fffbeb / ink #92400e): Notification bells, unread-attention surfaces, and notification-category labels. Individual notification types still use their own semantic status color.
+- **Information Blue** (#2563eb / tint #eff6ff / ink #1d4ed8): Neutral information and references. It must not visually compete with the primary action on the same surface.
 
 ### Named Rules
 **The One Accent Rule.** Blue is the only decorative color. If something is neither interactive nor a status signal, it is slate — not teal, indigo, cyan, or violet. Competing accents are the fastest way this UI slips back into looking machine-generated.
 
-**The Status-Only Color Rule.** Green, red, and yellow carry *meaning* (approved / rejected / pending). Never use them decoratively; a green button that doesn't mean "approve" is a bug.
+**The Meaning-Only Color Rule.** Green, red, amber, and information blue carry meaning — approved, rejected/error, pending/attention, and information/reference. Never assign them randomly by module or for decoration.
+
+**The Semantic Pairing Rule.** When an icon and label describe the same concept, they use the same semantic family across icon foreground, quiet tint, border, and label text. Color never works alone: retain the icon, readable label, status text, or shape so the meaning survives color-vision differences. A notification bell may be amber because it requests attention; a success check is green; a permission-denied shield is red.
 
 ## Typography
 
@@ -220,6 +228,12 @@ Gently rounded, consistent geometry: 8px (`md`) on the vast majority of controls
 - **Shape:** 6px radius, 2px 10px padding, Label typography.
 - **Approved:** Success tint bg / Success ink text. **Pending:** Warning tint / Warning ink. **Rejected:** Danger tint / Danger ink.
 
+### Semantic Icon + Label Pairs
+- Use a quiet semantic tint and 1px semantic border behind the icon; use the matching ink color for the icon and adjacent badge or label.
+- Keep the readable label even when the icon is familiar. Examples: amber bell + “การแจ้งเตือน”, green check + “อนุมัติแล้ว”, red shield + “ไม่มีสิทธิ์เข้าถึง”.
+- The container stays white or slate unless the whole region communicates that state. Do not wash an entire data-heavy page in semantic color.
+- Unread notification attention uses amber plus a text/count cue; the notification’s own success/warning/error/info badge retains its specific semantic family.
+
 ### Navigation (side)
 - **Style:** Vertical list on Surface; items in slate, Body weight.
 - **Active:** Blue Tint background + Confident Blue text/indicator.
@@ -228,16 +242,18 @@ Gently rounded, consistent geometry: 8px (`md`) on the vast majority of controls
 ## Do's and Don'ts
 
 ### Do:
-- **Do** use Confident Blue (#2563eb) as the *only* accent; everything non-interactive and non-status is slate.
+- **Do** use Confident Blue (#2563eb) as the interactive accent; everything without interaction or semantic meaning is slate.
 - **Do** consolidate all neutrals to the slate ramp — replace stray `gray-*` usages with their slate equivalents.
 - **Do** keep surfaces flat at rest and let 1px borders do the separating; add shadow only for hover, focus, and overlays.
-- **Do** reserve green/red/yellow for their status meanings (approved / rejected / pending).
+- **Do** pair semantic icon and label colors consistently: green/success, amber/attention or pending, red/error or denied, blue/information.
+- **Do** keep a text, icon, or shape cue alongside every semantic color.
 - **Do** size containers to content so Thai and English labels both fit without truncation.
 - **Do** keep one primary button per view.
 
 ### Don't:
 - **Don't** add gradients. The incumbent code has ~70 gradient usages; they are the single biggest "AI-generated" tell here and should be retired, not extended.
 - **Don't** introduce new accent hues (teal, cyan, indigo, violet, emerald-as-decoration). New color = new inconsistency.
+- **Don't** color icons or labels differently just to make modules look varied; every non-slate color must answer what it means.
 - **Don't** mix `gray-*` and `slate-*` on the same surface; pick slate.
 - **Don't** put resting `shadow-md` on every card by reflex.
 - **Don't** use TH Sarabun New or Raleway for on-screen Thai UI — Sarabun is the UI voice.

@@ -1,248 +1,131 @@
-// NotificationList.js
 "use client";
 
 import { useState } from "react";
-
-import {
-  AlertTriangle,
-  CheckCheck,
-  CheckCircle,
-  ChevronDown,
-  ChevronUp,
-  Clock3,
-  Info,
-  X,
-  XCircle,
-} from "lucide-react";
+import { Bell, CheckCheck, RefreshCw, X } from "lucide-react";
+import NotificationItem from "./NotificationItem";
 
 export default function NotificationList({
   notifications,
   onMarkAsRead,
   onMarkAllAsRead,
   onClose,
-  onViewAll = () => {},
+  onViewAll,
+  onRetry,
   isLoading = false,
   errorMessage = "",
 }) {
   const [expandedIds, setExpandedIds] = useState([]);
-
-  const getIcon = (type) => {
-    switch (type) {
-      case "success":
-        return <CheckCircle className="text-emerald-500" size={20} />;
-      case "warning":
-        return <AlertTriangle className="text-amber-500" size={20} />;
-      case "error":
-        return <XCircle className="text-rose-500" size={20} />;
-      default:
-        return <Info className="text-sky-500" size={20} />;
-    }
-  };
-
-  const typeBadge = (type) => {
-    switch (type) {
-      case "success":
-        return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100";
-      case "warning":
-        return "bg-amber-50 text-amber-700 ring-1 ring-amber-100";
-      case "error":
-        return "bg-rose-50 text-rose-700 ring-1 ring-rose-100";
-      default:
-        return "bg-sky-50 text-sky-700 ring-1 ring-sky-100";
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return "";
-
-    const now = new Date();
-    const diffMs = now - date;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-    if (diffHours < 1) {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      return `${diffMinutes} นาทีที่แล้ว`;
-    } else if (diffHours < 24) {
-      return `${diffHours} ชั่วโมงที่แล้ว`;
-    } else if (diffHours < 48) {
-      return "เมื่อวาน";
-    } else {
-      return date.toLocaleDateString("th-TH");
-    }
-  };
-
-  const unreadCount = notifications?.filter?.((item) => !item.is_read).length || 0;
+  const items = Array.isArray(notifications) ? notifications : [];
+  const unreadCount = items.filter((item) => !item.is_read).length;
 
   const toggleNotification = (notificationId) => {
-    onMarkAsRead(notificationId);
-    setExpandedIds((prevExpanded) =>
-      prevExpanded.includes(notificationId)
-        ? prevExpanded.filter((id) => id !== notificationId)
-        : [...prevExpanded, notificationId]
+    const notification = items.find((item) => item.notification_id === notificationId);
+    if (notification && !notification.is_read) {
+      onMarkAsRead(notificationId);
+    }
+    setExpandedIds((current) =>
+      current.includes(notificationId)
+        ? current.filter((id) => id !== notificationId)
+        : [...current, notificationId]
     );
   };
 
   return (
-    <div className="flex flex-col rounded-2xl bg-white shadow-xl border border-slate-200 overflow-hidden">
-      <div className="bg-gradient-to-r from-sky-600 via-indigo-600 to-blue-700 text-white px-5 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold">ศูนย์การแจ้งเตือน</p>
-            <p className="text-xs text-sky-100/90">ใหม่ {unreadCount} รายการ</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onMarkAllAsRead}
-              className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-sm font-medium text-white backdrop-blur hover:bg-white/25 transition"
-            >
-              <CheckCheck size={16} />
-              อ่านทั้งหมด
-            </button>
-            <button
-              onClick={onClose}
-              className="rounded-full bg-white/10 p-1 text-white hover:bg-white/20 transition"
-              aria-label="close-notifications"
-            >
-              <X size={18} />
-            </button>
+    <section
+      className="flex max-h-[min(26rem,calc(100vh-7rem))] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.16)]"
+      aria-label="รายการการแจ้งเตือน"
+    >
+      <header className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3.5">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700">
+            <Bell className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="font-semibold text-slate-900">การแจ้งเตือน</h2>
+            <p className="text-xs text-slate-500">
+              {unreadCount > 0 ? `ยังไม่อ่าน ${unreadCount} รายการ` : "อ่านครบแล้ว"}
+            </p>
           </div>
         </div>
-      </div>
 
-      <div className="max-h-96 overflow-y-auto bg-slate-50 px-4 py-3 space-y-3">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onMarkAllAsRead}
+            disabled={unreadCount === 0}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="ทำเครื่องหมายการแจ้งเตือนทั้งหมดว่าอ่านแล้ว"
+            title="อ่านทั้งหมด"
+          >
+            <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="hidden text-xs font-medium sm:inline">อ่านทั้งหมด</span>
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            aria-label="ปิดการแจ้งเตือน"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center gap-3 rounded-xl bg-white p-6 text-slate-500 shadow-sm">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-sky-500" />
+          <div className="flex min-h-44 items-center justify-center gap-3 px-6 text-sm text-slate-600">
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" aria-hidden="true" />
             กำลังโหลดการแจ้งเตือน...
           </div>
         ) : errorMessage ? (
-          <div className="rounded-xl bg-rose-50 p-6 text-center text-rose-600 ring-1 ring-rose-100">
-            {errorMessage}
+          <div className="flex min-h-44 flex-col items-center justify-center gap-3 px-6 text-center">
+            <p className="font-medium text-red-700">{errorMessage}</p>
+            {onRetry ? (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                ลองอีกครั้ง
+              </button>
+            ) : null}
           </div>
-        ) : !notifications || notifications.length === 0 ? (
-          <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-              <BellIcon />
-            </div>
+        ) : items.length === 0 ? (
+          <div className="flex min-h-52 flex-col items-center justify-center px-6 text-center">
+            <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+              <Bell className="h-6 w-6" aria-hidden="true" />
+            </span>
             <p className="font-semibold text-slate-800">ยังไม่มีการแจ้งเตือน</p>
-            <p className="text-sm text-slate-500">การแจ้งเตือนใหม่จะแสดงที่นี่ทันทีที่มีการอัปเดต</p>
+            <p className="mt-1 max-w-64 text-sm text-slate-500">รายการใหม่จะแสดงที่นี่เมื่อมีความคืบหน้าหรือข่าวสารสำคัญ</p>
           </div>
         ) : (
-          notifications.map((notification) => (
-            <div
-              key={notification.notification_id}
-              role="button"
-              tabIndex={0}
-              className={`w-full cursor-pointer rounded-xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
-                notification.is_read
-                  ? "border-slate-100"
-                  : "border-sky-100 ring-1 ring-sky-100 bg-gradient-to-br from-sky-50/60 to-white"
-              }`}
-              onClick={() => toggleNotification(notification.notification_id)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  toggleNotification(notification.notification_id);
-                }
-              }}
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className={`mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 ${
-                    notification.is_read ? "" : "ring-2 ring-offset-2 ring-sky-200 ring-offset-sky-50"
-                  }`}
-                >
-                  {getIcon(notification.type)}
-                </div>
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-sm font-semibold text-slate-900">
-                          {notification.title}
-                        </h4>
-                        <span className={`text-xs font-medium rounded-full px-2 py-0.5 ${typeBadge(notification.type)}`}>
-                          {notification.type === "success"
-                            ? "สำเร็จ"
-                            : notification.type === "warning"
-                              ? "แจ้งเตือน"
-                              : notification.type === "error"
-                                ? "ต้องดำเนินการ"
-                                : "ทั่วไป"}
-                        </span>
-                        {!notification.is_read && (
-                          <span className="h-2 w-2 rounded-full bg-amber-400" aria-hidden="true" />
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                        <span className="inline-flex items-center gap-1">
-                          <Clock3 size={14} /> {formatDate(notification.created_at)}
-                        </span>
-                        {notification.related_submission_id && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-700 ring-1 ring-sky-100">
-                            อ้างอิง #{notification.related_submission_id}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="rounded-full border border-slate-200 bg-white p-1 text-slate-600 shadow-sm">
-                      {expandedIds.includes(notification.notification_id) ? (
-                        <ChevronUp size={16} />
-                      ) : (
-                        <ChevronDown size={16} />
-                      )}
-                    </div>
-                  </div>
-
-                  {expandedIds.includes(notification.notification_id) && (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-inner">
-                      <div className="mb-2 text-sm font-semibold text-slate-800">
-                        รายละเอียดการแจ้งเตือน
-                      </div>
-                      <div className="whitespace-pre-line leading-relaxed text-slate-700">
-                        {notification.message}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))
+          <div className="divide-y divide-slate-200">
+            {items.map((notification) => (
+              <NotificationItem
+                key={notification.notification_id}
+                notification={notification}
+                isExpanded={expandedIds.includes(notification.notification_id)}
+                onToggle={toggleNotification}
+                compact
+              />
+            ))}
+          </div>
         )}
       </div>
 
-      <div className="border-t border-slate-200 bg-white px-5 py-3 flex items-center justify-between">
-        <div className="text-sm text-slate-500">เข้าถึงศูนย์การแจ้งเตือนเพื่อดูรายการทั้งหมด</div>
-        <button
-          className="text-sm font-semibold text-sky-700 hover:text-sky-800 inline-flex items-center gap-1"
-          onClick={onViewAll}
-        >
-          ดูทั้งหมด
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
-    </div>
+      <footer className="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3">
+        <p className="text-xs text-slate-500">แสดงล่าสุดไม่เกิน 20 รายการ</p>
+        {onViewAll ? (
+          <button
+            type="button"
+            className="text-blue-700 underline-offset-4 hover:text-blue-800 hover:underline"
+            onClick={onViewAll}
+          >
+            <span className="text-xs font-medium">ดูทั้งหมด</span>
+          </button>
+        ) : null}
+      </footer>
+    </section>
   );
 }
-
-const BellIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-6 w-6"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    aria-hidden="true"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M14.25 18.75a2.25 2.25 0 11-4.5 0m9-2.25V11.1a6 6 0 10-12 0v5.4l-1.5 1.5h15l-1.5-1.5z"
-    />
-  </svg>
-);

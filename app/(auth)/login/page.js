@@ -287,71 +287,101 @@ export default function LoginPage() {
   // เนเธชเธ”เธ loading screen เธเธ“เธฐ redirecting
   if (redirecting) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="text-center flex flex-col items-center gap-4">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <div className="flex flex-col items-center gap-5 text-center">
           <Image
             src="/image_icon/fund_cpkku_logo.png"
-            alt="Fund CPKKU Logo"
-            width={140}
-            height={140}
-            className="object-contain drop-shadow"
+            alt="ระบบกองทุนวิจัย วิทยาลัยการคอมพิวเตอร์"
+            width={112}
+            height={112}
+            className="object-contain"
             priority
           />
 
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
-              เข้าสู่ระบบสำเร็จ
-            </h1>
-            <p className='text-gray-600'>กำลังโหลดหน้า...</p>
-            <p className='text-sm text-gray-500'>กำลังเปลี่ยนหน้า...</p>
+            <h1 className="text-2xl font-semibold text-slate-900">เข้าสู่ระบบสำเร็จ</h1>
+            <p className="mt-1 text-sm text-slate-600">กำลังนำคุณไปยังหน้าที่ร้องขอ</p>
           </div>
 
-          <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" aria-label="loading" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-100 border-t-blue-600" role="status" aria-label="กำลังเปลี่ยนหน้า" />
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4 sm:px-6 lg:px-8 py-12 flex items-center justify-center">
-      <div className="w-full max-w-md">
-        <div className="bg-white shadow-xl rounded-2xl p-8 border border-gray-100">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-6 mb-4">
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
+      <section className="grid w-full max-w-5xl overflow-hidden rounded-xl border border-slate-200 bg-white lg:grid-cols-[0.9fr_1.1fr]" aria-labelledby="login-title">
+        <aside className="hidden flex-col justify-between border-r border-blue-100 bg-blue-50 p-10 lg:flex">
+          <div>
+            <div className="flex items-center gap-5">
               <Image
                 src="/image_icon/iconcpkku.png"
-                alt="CPKKU Icon"
-                width={175}
-                height={100}
+                alt="วิทยาลัยการคอมพิวเตอร์ มหาวิทยาลัยขอนแก่น"
+                width={176}
+                height={92}
+                className="h-auto object-contain"
+                priority
+              />
+              <span className="h-14 w-px bg-blue-200" aria-hidden="true" />
+              <Image
+                src="/image_icon/fund_cpkku_logo.png"
+                alt="ระบบกองทุนวิจัย"
+                width={82}
+                height={82}
+                className="object-contain"
+                priority
+              />
+            </div>
+            <div className="mt-12 max-w-sm">
+              <h2 className="text-3xl font-semibold leading-tight text-slate-900">ระบบบริหารจัดการทุนวิจัย</h2>
+              <p className="mt-4 text-base leading-relaxed text-slate-600">วิทยาลัยการคอมพิวเตอร์ มหาวิทยาลัยขอนแก่น</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 border-t border-blue-200 pt-6 text-sm text-slate-600">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" aria-hidden="true" />
+            <p>เข้าสู่ระบบด้วยบัญชี หรือใช้บัญชี KKU SSO</p>
+          </div>
+        </aside>
+
+        <div className="p-6 sm:p-10 lg:p-12">
+          <div className="mx-auto w-full max-w-md">
+          <div className="mb-8 text-center lg:text-left">
+            <div className="mb-5 flex items-center justify-center gap-5 lg:hidden">
+              <Image
+                src="/image_icon/iconcpkku.png"
+                alt="วิทยาลัยการคอมพิวเตอร์ มหาวิทยาลัยขอนแก่น"
+                width={150}
+                height={84}
                 className="object-contain"
                 priority
               />
               <Image
                 src="/image_icon/fund_cpkku_logo.png"
-                alt="Fund CPKKU Logo"
-                width={100}
-                height={100}
+                alt="ระบบกองทุนวิจัย"
+                width={76}
+                height={76}
                 className="object-contain"
                 priority
               />
             </div>
 
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{modeTitle}</h1>
+            <h1 id="login-title" className="text-2xl font-semibold text-slate-900">{modeTitle}</h1>
 
-            <p className="text-gray-600">{modeDescription}</p>
+            <p className="mt-2 text-slate-600">{modeDescription}</p>
             <button
               type="button"
               onClick={() => router.push('/')}
-              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-700 underline-offset-4 hover:text-blue-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               กลับหน้าหลัก
             </button>
           </div>
 
           {globalMessage && mode === 'login' && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-sm text-green-700 flex items-start">
-              <CheckCircle2 className="w-5 h-5 mt-0.5 text-green-500" />
+            <div className="mb-6 flex items-start rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600" />
               <span className="ml-3">{globalMessage}</span>
             </div>
           )}
@@ -359,12 +389,12 @@ export default function LoginPage() {
           {mode === 'login' && (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-700">
                   อีเมล
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
+                    <Mail className="h-5 w-5 text-slate-400" aria-hidden="true" />
                   </div>
                   <input
                     id="email"
@@ -374,19 +404,19 @@ export default function LoginPage() {
                     required
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 text-gray-600 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="block min-h-12 w-full rounded-lg border border-slate-300 py-3 pl-10 pr-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     placeholder='กรุณากรอกอีเมล'
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password" className="mb-2 block text-sm font-semibold text-slate-700">
                   รหัสผ่าน
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
+                    <Lock className="h-5 w-5 text-slate-400" aria-hidden="true" />
                   </div>
                   <input
                     id="password"
@@ -396,18 +426,19 @@ export default function LoginPage() {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-12 py-3 text-gray-600 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="block min-h-12 w-full rounded-lg border border-slate-300 py-3 pl-10 pr-12 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     placeholder='กรุณากรอกรหัสผ่าน'
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    className="absolute inset-y-0 right-0 flex min-w-11 items-center justify-center rounded-r-lg text-slate-400 transition hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+                    aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                      <EyeOff className="h-5 w-5" aria-hidden="true" />
                     ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                      <Eye className="h-5 w-5" aria-hidden="true" />
                     )}
                   </button>
                 </div>
@@ -415,7 +446,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => handleModeChange('forgot')}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    className="text-sm font-medium text-blue-700 underline-offset-4 hover:text-blue-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   >
                     ลืมรหัสผ่าน?
                   </button>
@@ -423,22 +454,22 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4" role="alert">
                   <div className="flex">
-                    <AlertCircle className="h-5 w-5 text-red-400" />
+                    <AlertCircle className="h-5 w-5 text-red-600" aria-hidden="true" />
                     <div className="ml-3">
-                      <p className="text-sm text-red-800">{error}</p>
+                      <p className="text-sm text-red-700">{error}</p>
                     </div>
                   </div>
                 </div>
               )}
 
               {ssoErrorMessage && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4" role="alert">
                   <div className="flex">
-                    <AlertCircle className="h-5 w-5 text-red-400" />
+                    <AlertCircle className="h-5 w-5 text-red-600" aria-hidden="true" />
                     <div className="ml-3">
-                      <p className="text-sm text-red-800">{ssoErrorMessage}</p>
+                      <p className="text-sm text-red-700">{ssoErrorMessage}</p>
                     </div>
                   </div>
                 </div>
@@ -446,8 +477,8 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={isLoading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                disabled={isLoading || !formData.email || !formData.password}
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 {isLoading ? (
                   <>
@@ -456,7 +487,7 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
-                    <LogIn className="w-5 h-5 mr-2" />
+                    <LogIn className="mr-2 h-5 w-5" aria-hidden="true" />
                     เข้าสู่ระบบ
                   </>
                 )}
@@ -464,20 +495,20 @@ export default function LoginPage() {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-gray-200" aria-hidden="true"></span>
+                  <span className="w-full border-t border-slate-200" aria-hidden="true"></span>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className='px-2 bg-white text-gray-500'>หรือเข้าสู่ระบบด้วย</span>
+                  <span className="bg-white px-3 text-slate-500">หรือเข้าสู่ระบบด้วย</span>
                 </div>
               </div>
 
               <div>
                 <button
                   type="button"
-                  className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:border-blue-400 hover:text-blue-600 transition-colors duration-200"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-100"
                   onClick={handleSSOLogin}
                 >
-                  <KeyRound className="w-5 h-5" />
+                  <KeyRound className="h-5 w-5" aria-hidden="true" />
                   Login with KKU SSO
                 </button>
               </div>
@@ -487,26 +518,26 @@ export default function LoginPage() {
           {mode === 'forgot' && (
             <form onSubmit={handleForgotSubmit} className="space-y-6">
               {forgotStatus.error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 flex items-start">
+                <div className="flex items-start rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
                   <AlertCircle className="w-5 h-5 mt-0.5 text-red-500" />
                   <span className="ml-3">{forgotStatus.error}</span>
                 </div>
               )}
 
               {forgotStatus.message && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700 flex items-start">
+                <div className="flex items-start rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700" role="status">
                   <Send className="w-5 h-5 mt-0.5 text-blue-500" />
                   <span className="ml-3">{forgotStatus.message}</span>
                 </div>
               )}
 
               <div>
-                <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="forgot-email" className="mb-2 block text-sm font-semibold text-slate-700">
                   อีเมลที่ใช้ลงทะเบียน
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
+                    <Mail className="h-5 w-5 text-slate-400" aria-hidden="true" />
                   </div>
                   <input
                     id="forgot-email"
@@ -516,7 +547,7 @@ export default function LoginPage() {
                     required
                     value={forgotEmail}
                     onChange={event => setForgotEmail(event.target.value)}
-                    className="block w-full pl-10 pr-3 py-3 text-gray-600 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="block min-h-12 w-full rounded-lg border border-slate-300 py-3 pl-10 pr-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     placeholder="example@domain.com"
                   />
                 </div>
@@ -526,7 +557,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={forgotLoading}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   {forgotLoading ? (
                     <>
@@ -544,7 +575,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => handleModeChange('login')}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   กลับเข้าสู่ระบบ
@@ -556,21 +587,21 @@ export default function LoginPage() {
           {mode === 'reset' && (
             <form onSubmit={handleResetSubmit} className="space-y-6">
               {resetStatus.error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 flex items-start">
+                <div className="flex items-start rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
                   <AlertCircle className="w-5 h-5 mt-0.5 text-red-500" />
                   <span className="ml-3">{resetStatus.error}</span>
                 </div>
               )}
 
               {resetStatus.message && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-700 flex items-start">
+                <div className="flex items-start rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700" role="status">
                   <ShieldCheck className="w-5 h-5 mt-0.5 text-green-500" />
                   <span className="ml-3">{resetStatus.message}</span>
                 </div>
               )}
 
               <div>
-                <label htmlFor="reset-token" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="reset-token" className="mb-2 block text-sm font-semibold text-slate-700">
                   โทเคนสำหรับตั้งรหัสผ่านใหม่
                 </label>
                 <input
@@ -579,18 +610,18 @@ export default function LoginPage() {
                   type="text"
                   value={resetForm.token}
                   onChange={handleResetChange}
-                  className="block w-full px-3 py-3 text-gray-600 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="block min-h-12 w-full rounded-lg border border-slate-300 px-3 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                   placeholder='วางโทเคนจากอีเมลที่ได้รับ'
                 />
               </div>
 
               <div>
-                <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="new-password" className="mb-2 block text-sm font-semibold text-slate-700">
                   รหัสผ่านใหม่
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
+                    <Lock className="h-5 w-5 text-slate-400" aria-hidden="true" />
                   </div>
                   <input
                     id="new-password"
@@ -600,19 +631,19 @@ export default function LoginPage() {
                     required
                     value={resetForm.new_password}
                     onChange={handleResetChange}
-                    className="block w-full pl-10 pr-3 py-3 text-gray-600 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="block min-h-12 w-full rounded-lg border border-slate-300 py-3 pl-10 pr-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     placeholder='กรอกรหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)'
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="confirm-password" className="mb-2 block text-sm font-semibold text-slate-700">
                   ยืนยันรหัสผ่านใหม่
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
+                    <Lock className="h-5 w-5 text-slate-400" aria-hidden="true" />
                   </div>
                   <input
                     id="confirm-password"
@@ -622,7 +653,7 @@ export default function LoginPage() {
                     required
                     value={resetForm.confirm_password}
                     onChange={handleResetChange}
-                    className="block w-full pl-10 pr-3 py-3 text-gray-600 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="block min-h-12 w-full rounded-lg border border-slate-300 py-3 pl-10 pr-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     placeholder='ยืนยันรหัสผ่านใหม่'
                   />
                 </div>
@@ -632,7 +663,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={resetLoading}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   {resetLoading ? (
                     <>
@@ -650,7 +681,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => handleModeChange('login')}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   กลับเข้าสู่ระบบ
@@ -658,8 +689,9 @@ export default function LoginPage() {
               </div>
             </form>
           )}
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

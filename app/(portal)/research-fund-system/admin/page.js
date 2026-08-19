@@ -274,7 +274,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
       case 'notifications':
         return <AdminNotificationCenter />;
       default:
-        return <UnderDevelopmentContent currentPage={currentPage} />;
+        return <UnderDevelopmentContent currentPage={currentPage} homeHref={basePath} />;
     }
   };
 
@@ -318,6 +318,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
         setIsOpen={setIsOpen}
         currentPageTitle={getPageTitle()}
         Navigation={navigationMenu}
+        onNotificationViewAll={() => handleNavigate('notifications')}
       />
 
       <div className="portal-shell-offset flex">

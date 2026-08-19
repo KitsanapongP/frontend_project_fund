@@ -1,7 +1,6 @@
-// NotificationBell.js
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import NotificationList from "./NotificationList";
 import { notificationsAPI } from "../../lib/notifications_api";
@@ -31,7 +30,7 @@ export default function NotificationBell({ onViewAll }) {
       setNotifications(items);
       const unread = typeof countRes?.unread === "number"
         ? countRes.unread
-        : items.filter((n) => !n.is_read).length;
+        : items.filter((item) => !item.is_read).length;
       setUnreadCount(unread);
     } catch (error) {
       console.error("Failed to load notifications", error);
@@ -45,15 +44,24 @@ export default function NotificationBell({ onViewAll }) {
     loadNotifications();
   }, [loadNotifications]);
 
+  useEffect(() => {
+    if (!showDropdown) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setShowDropdown(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showDropdown]);
+
   const markAsRead = async (id) => {
     try {
       await notificationsAPI.markRead(id);
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.notification_id === id ? { ...n, is_read: true } : n
+      setNotifications((current) =>
+        current.map((item) =>
+          item.notification_id === id ? { ...item, is_read: true } : item
         )
       );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      setUnreadCount((current) => Math.max(0, current - 1));
     } catch (error) {
       console.error("Failed to mark notification as read", error);
     }
@@ -62,7 +70,7 @@ export default function NotificationBell({ onViewAll }) {
   const markAllAsRead = async () => {
     try {
       await notificationsAPI.markAllRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setNotifications((current) => current.map((item) => ({ ...item, is_read: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error("Failed to mark all notifications as read", error);
@@ -70,46 +78,58 @@ export default function NotificationBell({ onViewAll }) {
   };
 
   const handleViewAll = () => {
-    if (onViewAll) {
-      onViewAll();
-    }
+    if (onViewAll) onViewAll();
     setShowDropdown(false);
   };
 
   return (
-    <div className="relative">
+    <div className="relative shrink-0">
       <button
-        onClick={() => setShowDropdown(!showDropdown)}
-        className="relative inline-flex items-center justify-center rounded-full border border-slate-200 bg-white p-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow"
-        aria-label="notification-toggle"
+        type="button"
+        onClick={() => setShowDropdown((open) => !open)}
+        className={`relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+          showDropdown
+            ? "border-amber-200 bg-amber-50 text-amber-700"
+            : unreadCount > 0
+              ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+        }`}
+        aria-label={unreadCount > 0 ? `การแจ้งเตือน ยังไม่อ่าน ${unreadCount} รายการ` : "การแจ้งเตือน"}
+        aria-haspopup="dialog"
+        aria-expanded={showDropdown}
+        title="การแจ้งเตือน"
       >
-        <Bell size={22} className="text-slate-700" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[22px] h-5 rounded-full bg-rose-500 px-1 text-xs font-semibold text-white shadow-sm flex items-center justify-center">
+        <Bell className="h-5 w-5" aria-hidden="true" />
+        {unreadCount > 0 ? (
+          <span className="absolute -right-1.5 -top-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-md bg-amber-400 px-1 text-xs font-semibold leading-none text-amber-950 ring-2 ring-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
-        )}
+        ) : null}
       </button>
 
-      {showDropdown && (
+      {showDropdown ? (
         <>
-          <div
-            className="fixed inset-0 z-40"
+          <button
+            type="button"
+            className="fixed inset-0 z-40 cursor-default bg-transparent"
             onClick={() => setShowDropdown(false)}
+            aria-label="ปิดการแจ้งเตือน"
+            tabIndex={-1}
           />
-          <div className="absolute right-0 mt-3 w-[420px] z-50">
+          <div className="fixed inset-x-3 top-[calc(var(--portal-header-height)+0.5rem)] z-50 lg:absolute lg:inset-auto lg:right-0 lg:top-auto lg:mt-2 lg:w-[30rem]" role="dialog" aria-label="การแจ้งเตือนล่าสุด">
             <NotificationList
               notifications={notifications}
               onMarkAsRead={markAsRead}
               onMarkAllAsRead={markAllAsRead}
               onClose={() => setShowDropdown(false)}
-              onViewAll={handleViewAll}
+              onViewAll={onViewAll ? handleViewAll : undefined}
+              onRetry={loadNotifications}
               isLoading={isLoading}
               errorMessage={errorMessage}
             />
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }
