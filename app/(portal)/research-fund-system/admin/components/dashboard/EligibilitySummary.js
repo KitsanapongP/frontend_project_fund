@@ -166,7 +166,7 @@ export default function EligibilitySummary({ summary = [], usageRows = [] }) {
 
   if (!userGroups.length) {
     return (
-      <p className="text-center text-gray-500 py-4">
+      <p className="py-8 text-center text-sm text-slate-500">
         ยังไม่มีข้อมูลการใช้งานสิทธิ์ในปีนี้
       </p>
     );
@@ -174,45 +174,47 @@ export default function EligibilitySummary({ summary = [], usageRows = [] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+          <label htmlFor="dashboard-eligibility-search" className="sr-only">ค้นหาชื่อผู้ใช้</label>
           <input
+            id="dashboard-eligibility-search"
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="ค้นหาชื่อผู้ใช้..."
-            className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            className="min-h-11 w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
           />
         </div>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-slate-500" aria-live="polite">
           พบ {formatNumber(filteredGroups.length)} ผู้ใช้
         </p>
       </div>
 
       {filteredGroups.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 py-8 text-center text-sm text-gray-500">
+        <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 py-8 text-center text-sm text-slate-500">
           ไม่พบผู้ใช้ที่ตรงกับคำค้นหา
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="divide-y divide-slate-200">
           {filteredGroups.map((group) => {
             const isExpanded = expandedKeys.has(group.key);
 
             return (
               <div
                 key={group.key}
-                className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+                className="overflow-hidden py-1 first:pt-0 last:pb-0"
               >
                 <button
                   type="button"
                   onClick={() => handleToggle(group.key)}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-gray-50"
+                  className="flex min-h-16 w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   aria-expanded={isExpanded}
                   aria-controls={`${group.key}-details`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-500">
+                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500">
                       {isExpanded ? (
                         <ChevronDown className="h-4 w-4" />
                       ) : (
@@ -220,11 +222,11 @@ export default function EligibilitySummary({ summary = [], usageRows = [] }) {
                       )}
                     </span>
                     <div>
-                      <p className="font-semibold text-gray-900">{group.userName}</p>
-                      <p className="text-xs text-gray-500">ใช้สิทธิ์ {formatNumber(group.rows.length)} ทุน</p>
+                      <p className="font-semibold text-slate-900">{group.userName}</p>
+                      <p className="text-xs text-slate-500">ใช้สิทธิ์ {formatNumber(group.rows.length)} ทุน</p>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-slate-500">
                     {isExpanded ? "ย่อรายละเอียด" : "ขยายรายละเอียด"}
                   </div>
                 </button>
@@ -232,9 +234,9 @@ export default function EligibilitySummary({ summary = [], usageRows = [] }) {
                 {isExpanded && (
                   <div
                     id={`${group.key}-details`}
-                    className="border-t border-gray-100 bg-gray-50 px-4 py-5"
+                    className="rounded-lg bg-slate-50 px-3 py-4"
                   >
-                    <div className="space-y-4">
+                    <div className="divide-y divide-slate-200">
                       {group.rows.map((row) => {
                         const grantLabel = row.maxGrants > 0
                           ? `${formatNumber(row.usedGrants)} / ${formatNumber(row.maxGrants)}`
@@ -243,29 +245,29 @@ export default function EligibilitySummary({ summary = [], usageRows = [] }) {
                         return (
                           <div
                             key={row.key}
-                            className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                            className="py-4 first:pt-0 last:pb-0"
                           >
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <div>
-                                <p className="font-medium text-gray-900">{row.subcategoryName}</p>
-                                <p className="text-xs text-gray-500">{row.categoryName}</p>
+                                <p className="font-medium text-slate-900">{row.subcategoryName}</p>
+                                <p className="text-xs text-slate-500">{row.categoryName}</p>
                               </div>
                               <div className="grid grid-cols-2 gap-3 text-sm sm:flex sm:items-center sm:gap-6">
                                 <div>
-                                  <p className="font-semibold text-blue-600">{grantLabel}</p>
-                                  <p className="text-xs text-gray-500">ใช้สิทธิ์</p>
+                                  <p className="font-semibold tabular-nums text-blue-700">{grantLabel}</p>
+                                  <p className="text-xs text-slate-500">ใช้สิทธิ์</p>
                                 </div>
                                 <div>
-                                  <p className="font-semibold text-gray-900">{formatCurrency(row.allocatedAmount)}</p>
-                                  <p className="text-xs text-gray-500">สิทธิ์รวม</p>
+                                  <p className="font-semibold tabular-nums text-slate-900">{formatCurrency(row.allocatedAmount)}</p>
+                                  <p className="text-xs text-slate-500">สิทธิ์รวม</p>
                                 </div>
                                 <div>
-                                  <p className="font-semibold text-emerald-600">{formatCurrency(row.usedAmount)}</p>
-                                  <p className="text-xs text-gray-500">งบที่ใช้ไป</p>
+                                  <p className="font-semibold tabular-nums text-blue-700">{formatCurrency(row.usedAmount)}</p>
+                                  <p className="text-xs text-slate-500">งบที่ใช้ไป</p>
                                 </div>
                                 <div>
-                                  <p className="font-semibold text-gray-700">{formatCurrency(row.remainingBudget)}</p>
-                                  <p className="text-xs text-gray-500">งบคงเหลือ</p>
+                                  <p className="font-semibold tabular-nums text-slate-700">{formatCurrency(row.remainingBudget)}</p>
+                                  <p className="text-xs text-slate-500">งบคงเหลือ</p>
                                 </div>
                               </div>
                             </div>
