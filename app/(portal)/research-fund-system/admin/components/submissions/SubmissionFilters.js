@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { Search, X } from 'lucide-react';
 import { adminAPI } from '../../../../../lib/admin_api';
 import { useStatusMap } from '@/app/hooks/useStatusMap';
 
@@ -214,13 +215,47 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch, s
     }
   };
 
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    onFilterChange({ category: '', subcategory: '', status: '' });
+    onSearch('');
+  };
+
+  const hasActiveFilters = Boolean(
+    filters.category || filters.subcategory || filters.status || filters.search
+  );
+
+  const fieldClassName =
+    'min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500';
+
+  const filterChipClassName =
+    'inline-flex min-h-9 items-center gap-1 rounded-md border border-blue-200 bg-blue-50 pl-3 pr-1 text-sm font-medium text-blue-800';
+
+  const dismissButtonClassName =
+    'inline-flex h-8 w-8 items-center justify-center rounded-md text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+
   return (
-    <div className="px-4 py-5 sm:px-6 border-b border-gray-200 bg-gray-50">
-      {/* Main Filters Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-end">
-        {/* Category (หมวดทุน - ทุนหลัก) */}
+    <section className="border-b border-slate-200 bg-slate-50 px-4 py-5 sm:px-5" aria-label="ตัวกรองรายการคำร้อง">
+      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div>
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+          <h2 className="font-semibold text-slate-900">ค้นหาและกรองคำร้อง</h2>
+          <p className="mt-1 text-sm text-slate-500">เลือกเงื่อนไขเพื่อค้นหารายการที่ต้องดำเนินการ</p>
+        </div>
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={clearAllFilters}
+            className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-lg px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:mt-0"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+            ล้างตัวกรองทั้งหมด
+          </button>
+        ) : null}
+      </div>
+
+      <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div>
+          <label htmlFor="category" className="mb-2 block text-sm font-medium text-slate-700">
             หมวดทุน (ทุนหลัก)
           </label>
           <select
@@ -229,7 +264,7 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch, s
             value={filters.category || ''}
             onChange={(e) => handleChange('category', e.target.value)}
             disabled={!selectedYear}
-            className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+            className={fieldClassName}
           >
             <option value="">ทั้งหมด</option>
             {categories.map((category) => (
@@ -240,9 +275,8 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch, s
           </select>
         </div>
 
-        {/* Subcategory (ประเภททุน - ทุนย่อย) */}
         <div>
-          <label htmlFor="subcategory" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="subcategory" className="mb-2 block text-sm font-medium text-slate-700">
             ประเภททุน (ทุนย่อย)
           </label>
           <select
@@ -251,7 +285,7 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch, s
             value={filters.subcategory || ''}
             onChange={(e) => handleChange('subcategory', e.target.value)}
             disabled={!filters.category}
-            className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white disabled:bg-gray-100 disabled:text-gray-500"
+            className={fieldClassName}
           >
             <option value="">ทั้งหมด</option>
             {subcategories.map((subcategory) => (
@@ -262,9 +296,8 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch, s
           </select>
         </div>
 
-        {/* Status */}
         <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="status" className="mb-2 block text-sm font-medium text-slate-700">
             สถานะ
           </label>
           <select
@@ -272,7 +305,7 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch, s
             name="status"
             value={filters.status}
             onChange={(e) => handleChange('status', e.target.value)}
-            className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white"
+            className={fieldClassName}
             disabled={statusLoading && statusOptions.length === 0}
           >
             <option value="">ทั้งหมด</option>
@@ -287,18 +320,13 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch, s
           </select>
         </div>
 
-        {/* Search */}
         <div>
-          <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="search" className="mb-2 block text-sm font-medium text-slate-700">
             ค้นหา
           </label>
           <form onSubmit={handleSearchSubmit}>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
               <input
                 type="text"
                 name="search"
@@ -311,73 +339,76 @@ export default function SubmissionFilters({ filters, onFilterChange, onSearch, s
                   onSearch(val);
                 }}
                 placeholder="เลขที่คำร้อง, ชื่อเรื่อง, ผู้ยื่น..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className={`${fieldClassName} pl-9`}
               />
             </div>
           </form>
         </div>
       </div>
 
-      {/* Active Filters Display */}
-      {(filters.category || filters.subcategory || filters.status || filters.search) && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
+      {hasActiveFilters ? (
+        <div className="mt-4 border-t border-slate-200 pt-4">
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm font-medium text-gray-700">ตัวกรองที่เลือก:</span>
+            <span className="mr-1 text-sm font-medium text-slate-700">ตัวกรองที่เลือก</span>
 
             {filters.category && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+              <span className={filterChipClassName}>
                 หมวด: {categories.find(c => c.category_id.toString() === filters.category)?.category_name || filters.category}
                 <button
                   type="button"
                   onClick={() => handleChange('category', '')}
-                  className="ml-2 text-blue-600 hover:text-blue-800"
+                  className={dismissButtonClassName}
+                  aria-label="ล้างตัวกรองหมวดทุน"
                 >
-                  ×
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               </span>
             )}
 
             {filters.subcategory && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200">
+              <span className={filterChipClassName}>
                 ประเภท: {subcategories.find(s => s.subcategory_id.toString() === filters.subcategory)?.subcategory_name || filters.subcategory}
                 <button
                   type="button"
                   onClick={() => handleChange('subcategory', '')}
-                  className="ml-2 text-purple-600 hover:text-purple-800"
+                  className={dismissButtonClassName}
+                  aria-label="ล้างตัวกรองประเภททุน"
                 >
-                  ×
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               </span>
             )}
             
             {filters.status && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
+              <span className={filterChipClassName}>
                 สถานะ: {getLabelById(filters.status) || filters.status}
                 <button
                   type="button"
                   onClick={() => handleChange('status', '')}
-                  className="ml-2 text-green-600 hover:text-green-800"
+                  className={dismissButtonClassName}
+                  aria-label="ล้างตัวกรองสถานะ"
                 >
-                  ×
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               </span>
             )}
 
             {filters.search && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200">
+              <span className={filterChipClassName}>
                 ค้นหา: "{filters.search}"
                 <button
                   type="button"
                   onClick={() => { setSearchTerm(''); onSearch(''); }}
-                  className="ml-2 text-gray-600 hover:text-gray-800"
+                  className={dismissButtonClassName}
+                  aria-label="ล้างคำค้นหา"
                 >
-                  ×
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               </span>
             )}
           </div>
         </div>
-      )}
-    </div>
+      ) : null}
+    </section>
   );
 }

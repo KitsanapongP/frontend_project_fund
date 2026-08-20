@@ -1,7 +1,7 @@
 // app/admin/components/submissions/SubmissionTable.js
 'use client';
 
-import { ChevronDown, ChevronUp, Eye } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, ChevronUp, Eye, FileText } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
 
 export default function SubmissionTable({
@@ -31,23 +31,22 @@ export default function SubmissionTable({
   const formatCurrency = (amount) => {
     const n = Number(amount ?? 0);
     if (!isFinite(n) || n <= 0) return '-';
-    return `฿${n.toLocaleString()}`;
+    return `${n.toLocaleString('th-TH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}฿`;
   };
 
   const handleSort = (column) => onSort(column);
 
   const getSortIcon = (column) => {
     if (sortBy !== column) {
-      return (
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-        </svg>
-      );
+      return <ArrowUpDown className="h-4 w-4 text-slate-400" aria-hidden="true" />;
     }
     return sortOrder === 'asc' ? (
-      <ChevronUp className="w-4 h-4 text-indigo-600" />
+      <ChevronUp className="h-4 w-4 text-blue-600" aria-hidden="true" />
     ) : (
-      <ChevronDown className="w-4 h-4 text-indigo-600" />
+      <ChevronDown className="h-4 w-4 text-blue-600" aria-hidden="true" />
     );
   };
 
@@ -225,177 +224,184 @@ export default function SubmissionTable({
     return `${type}:${id}:${ts}`;
   };
 
+  const getRowData = (submission) => ({
+    amount: getAmount(submission),
+    categoryName: getCategoryName(submission),
+    subcategoryName: getSubcategoryName(submission),
+    articleTitle: getArticleTitle(submission),
+    authorName: getAuthorName(submission),
+    id: submission.submission_id || submission.id,
+  });
+
+  const viewButtonClassName =
+    'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+
   // ---------- UI states ----------
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        <div className="ml-3 text-gray-600">กำลังโหลดข้อมูล...</div>
+      <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-slate-600" aria-live="polite">
+        <span className="h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600 motion-reduce:animate-none" aria-hidden="true" />
+        <p className="font-medium">กำลังโหลดข้อมูลคำร้อง...</p>
       </div>
     );
   }
 
   if (!submissions || submissions.length === 0) {
     return (
-      <div className="text-center py-12">
-        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">ไม่พบข้อมูลคำร้อง</h3>
-        <p className="mt-1 text-sm text-gray-500">ลองปรับเปลี่ยนตัวกรองการค้นหา หรือสร้างคำร้องใหม่</p>
+      <div className="px-5 py-12 text-center">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">
+          <FileText className="h-6 w-6" aria-hidden="true" />
+        </span>
+        <h3 className="mt-4 text-lg font-semibold text-slate-900">ไม่พบข้อมูลคำร้อง</h3>
+        <p className="mx-auto mt-1 max-w-lg text-sm text-slate-500">ลองเปลี่ยนปีงบประมาณ ตัวกรอง หรือคำค้นหา</p>
       </div>
     );
   }
 
-  // ---------- Table ----------
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div>
+      <div className="hidden overflow-x-auto lg:block">
+      <table className="min-w-[1080px] w-full text-sm">
+        <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium text-slate-600">
           <tr>
-            {/* Request number (sortable) */}
-            <th
-              scope="col"
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-              onClick={() => handleSort('submission_number')}
-            >
-              <div className="flex items-center space-x-1">
+            <th scope="col" className="px-5 py-3">
+              <button
+                type="button"
+                onClick={() => handleSort('submission_number')}
+                className="inline-flex min-h-11 items-center gap-1 rounded-md px-1 text-left font-medium transition-colors hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label="เรียงตามเลขที่คำร้อง"
+              >
                 <span>เลขที่คำร้อง</span>
                 {getSortIcon('submission_number')}
-              </div>
+              </button>
             </th>
-
-            {/* Fund category */}
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              หมวดทุน
-            </th>
-
-            {/* Fund subcategory */}
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ประเภททุน
-            </th>
-
-            {/* Article or project title */}
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ชื่อบทความ
-            </th>
-
-            {/* Applicant */}
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ผู้ยื่น
-            </th>
-
-            {/* Amount */}
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              จำนวนเงิน
-            </th>
-
-            {/* Status (sortable) */}
-            <th
-              scope="col"
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-              onClick={() => handleSort('status_id')}
-            >
-              <div className="flex items-center space-x-1">
+            <th scope="col" className="w-1/5 px-5 py-3">ทุน</th>
+            <th scope="col" className="w-1/4 px-5 py-3">ชื่อเรื่อง</th>
+            <th scope="col" className="px-5 py-3">ผู้ยื่น</th>
+            <th scope="col" className="px-5 py-3 text-center">จำนวนเงิน</th>
+            <th scope="col" className="px-5 py-3 text-center">
+              <button
+                type="button"
+                onClick={() => handleSort('status_id')}
+                className="mx-auto inline-flex min-h-11 items-center gap-1 rounded-md px-1 font-medium transition-colors hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label="เรียงตามสถานะ"
+              >
                 <span>สถานะ</span>
                 {getSortIcon('status_id')}
-              </div>
+              </button>
             </th>
-
-            {/* Submission date (sortable) */}
-            <th
-              scope="col"
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-              onClick={() => handleSort('created_at')}
-            >
-              <div className="flex items-center space-x-1">
+            <th scope="col" className="px-5 py-3">
+              <button
+                type="button"
+                onClick={() => handleSort('created_at')}
+                className="inline-flex min-h-11 items-center gap-1 rounded-md px-1 font-medium transition-colors hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label="เรียงตามวันที่ส่งคำร้อง"
+              >
                 <span>วันที่ส่งคำร้อง</span>
                 {getSortIcon('created_at')}
-              </div>
+              </button>
             </th>
-
-            {/* Actions */}
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              จัดการ
-            </th>
-
+            <th scope="col" className="px-5 py-3 text-center">จัดการ</th>
           </tr>
         </thead>
 
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="divide-y divide-slate-200 bg-white">
           {submissions.map((s) => {
-            const amount = getAmount(s);
-            const catName = getCategoryName(s);
-            const subName = getSubcategoryName(s);
-            const articleTitle = getArticleTitle(s);
-            const author = getAuthorName(s);
+            const row = getRowData(s);
             return (
-              <tr key={makeRowKey(s)} className="hover:bg-gray-50 transition-colors duration-150">
-                {/* Request number */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <tr key={makeRowKey(s)} className="transition-colors hover:bg-blue-50/60">
+                <td className="whitespace-nowrap px-5 py-4 font-semibold text-slate-900 tabular-nums">
                   {s.submission_number || s.id || '-'}
                 </td>
-
-                {/* Fund category */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {catName}
+                <td className="px-5 py-4 text-slate-700">
+                  <span className="block max-w-72 break-words font-medium text-slate-800" title={row.subcategoryName}>
+                    {row.subcategoryName}
+                  </span>
+                  <span className="mt-1 block text-xs text-slate-500">{row.categoryName}</span>
                 </td>
-
-                {/* Fund subcategory */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <span className="block max-w-[260px] truncate" title={subName}>
-                    {subName}
+                <td className="px-5 py-4 text-slate-700">
+                  <span title={row.articleTitle} className="line-clamp-2 break-words leading-6">
+                    {row.articleTitle}
                   </span>
                 </td>
-
-                {/* Article or project title */}
-                <td className="px-6 py-4 text-sm text-gray-700">
-                  <span title={articleTitle} className="line-clamp-2">
-                    {articleTitle}
-                  </span>
+                <td className="px-5 py-4 text-slate-700">{row.authorName}</td>
+                <td className="whitespace-nowrap px-5 py-4 text-right font-medium text-slate-900 tabular-nums">
+                  {formatCurrency(row.amount)}
                 </td>
-
-                {/* Applicant */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {author || 'ไม่ระบุผู้ยื่น'}
-                </td>
-
-                {/* Amount */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {formatCurrency(amount)}
-                </td>
-
-                {/* Status */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <td className="whitespace-nowrap px-5 py-4 text-center">
                   <StatusBadge
                     statusId={s.status_id}
                     fallbackLabel={s.display_status || s.status?.status_name}
                   />
                 </td>
-
-                {/* Submission date */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="whitespace-nowrap px-5 py-4 text-slate-500 tabular-nums">
                   {formatDate(getDisplayDate(s))}
                 </td>
-
-                {/* Actions */}
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center justify-end">
-                    <button
-                      onClick={() => onView(s.submission_id || s.id)}
-                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
-                      title="ดูรายละเอียด"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      ดูรายละเอียด
-                    </button>
-                  </div>
+                <td className="whitespace-nowrap px-5 py-4 text-center">
+                  <button type="button" onClick={() => onView(row.id)} className={viewButtonClassName} aria-label={`ดูรายละเอียดคำร้อง ${s.submission_number || s.id || ''}`}>
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                    ดูรายละเอียด
+                  </button>
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+      </div>
+
+      <div className="divide-y divide-slate-200 lg:hidden">
+        {submissions.map((submission) => {
+          const row = getRowData(submission);
+          return (
+            <article key={makeRowKey(submission)} className="p-4 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-blue-700 tabular-nums">
+                    {submission.submission_number || submission.id || '-'}
+                  </p>
+                  <h3 className="mt-1 break-words font-semibold leading-6 text-slate-900">{row.articleTitle}</h3>
+                </div>
+                <StatusBadge
+                  statusId={submission.status_id}
+                  fallbackLabel={submission.display_status || submission.status?.status_name}
+                  className="self-start"
+                />
+              </div>
+
+              <dl className="mt-4 grid grid-cols-1 gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-slate-500">ผู้ยื่น</dt>
+                  <dd className="mt-0.5 font-medium text-slate-800">{row.authorName}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">จำนวนเงิน</dt>
+                  <dd className="mt-0.5 font-medium text-slate-900 tabular-nums">{formatCurrency(row.amount)}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">หมวดทุน</dt>
+                  <dd className="mt-0.5 text-slate-800">{row.categoryName}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">ประเภททุน</dt>
+                  <dd className="mt-0.5 text-slate-800">{row.subcategoryName}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">วันที่ส่งคำร้อง</dt>
+                  <dd className="mt-0.5 text-slate-800 tabular-nums">{formatDate(getDisplayDate(submission))}</dd>
+                </div>
+              </dl>
+
+              <div className="mt-4 flex justify-end border-t border-slate-100 pt-3">
+                <button type="button" onClick={() => onView(row.id)} className={`${viewButtonClassName} w-full sm:w-auto`} aria-label={`ดูรายละเอียดคำร้อง ${submission.submission_number || submission.id || ''}`}>
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                  ดูรายละเอียด
+                </button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
     </div>
   );
 }

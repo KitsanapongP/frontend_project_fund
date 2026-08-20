@@ -34,10 +34,10 @@ export default function PageHeader({ title, subtitle, icon: Icon, actions, bread
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-3">
             {Icon ? (
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
-                <Icon className="h-5 w-5" aria-hidden="true" />
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+                <Icon className="h-6 w-6" aria-hidden="true" />
               </span>
             ) : null}
             <div className="min-w-0">

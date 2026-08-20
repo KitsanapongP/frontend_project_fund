@@ -2,7 +2,16 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Download, FileText } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  CircleCheckBig,
+  CircleX,
+  Clock3,
+  Download,
+  FileText,
+  Hourglass,
+} from 'lucide-react';
 import PageLayout from '../common/PageLayout';
 import SubmissionTable from './SubmissionTable';
 import SubmissionFilters from './SubmissionFilters';
@@ -1589,54 +1598,57 @@ export default function SubmissionsManagement() {
       subtitle="บันทึกข้อมูลคำร้องขอทุนและจัดการคำร้องทั้งหมด"
       icon={FileText}
       breadcrumbs={[
-        { label: "หน้าแรก", href: "/research-fund-system/admin" },
+        { label: "หน้าหลัก", href: "/research-fund-system/admin" },
         { label: "จัดการคำร้อง" }
       ]}
     >
-      {/* Year Selector */}
-      <div className="mb-6">
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <select
-                value={selectedYear}
-                onChange={(e) => handleYearChange(e.target.value)}
-                className="block w-full sm:w-64 pl-3 pr-10 py-3 text-base border-2 border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg bg-white font-medium"
-              >
-                <option value="">ทุกปีงบประมาณ</option>
-                {years.map((year) => (
-                  <option key={year.year_id} value={year.year_id}>
-                    ปีงบประมาณ {year.year} {year.is_current ? '(ปีปัจจุบัน)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="mt-4 sm:mt-0">
-              <button
-                type="button"
-                onClick={handleOpenExportModal}
-                disabled={loading || exporting}
-                className="inline-flex items-center px-4 py-2 rounded-lg border border-indigo-500 text-indigo-600 font-semibold bg-white hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed gap-2"
-              >
-                <Download className="h-5 w-5" />
-                {exporting ? 'กำลังเตรียมไฟล์...' : 'ส่งออกเป็น Excel'}
-              </button>
-            </div>
+      <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 sm:p-5" aria-label="ปีงบประมาณและการส่งออก">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+            <label htmlFor="submission-year" className="shrink-0 text-sm font-medium text-slate-700">ปีงบประมาณ</label>
+            <select
+              id="submission-year"
+              value={selectedYear}
+              onChange={(e) => handleYearChange(e.target.value)}
+              className="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 sm:min-w-64 sm:flex-none"
+            >
+              <option value="">ทุกปีงบประมาณ</option>
+              {years.map((year) => (
+                <option key={year.year_id} value={year.year_id}>
+                  ปีงบประมาณ {year.year} {year.is_current ? '(ปีปัจจุบัน)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={handleOpenExportModal}
+            disabled={loading || exporting}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          >
+            <Download className="h-4 w-4" aria-hidden="true" />
+            {exporting ? 'กำลังเตรียมไฟล์...' : 'ส่งออกเป็น Excel'}
+          </button>
+        </div>
+      </section>
+
+      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5" aria-label="สรุปสถานะคำร้อง">
+        <SubmissionStatCard label="คำร้องทั้งหมด" value={statistics.total_submissions} icon={FileText} tone="info" />
+        <SubmissionStatCard label="รอหัวหน้าสาขาพิจารณา" value={statistics.dept_head_pending_count} icon={Hourglass} tone="warning" />
+        <SubmissionStatCard label="อยู่ระหว่างการพิจารณา" value={statistics.pending_count} icon={Clock3} tone="warning" />
+        <SubmissionStatCard label="คำร้องที่อนุมัติแล้ว" value={statistics.approved_count} icon={CircleCheckBig} tone="success" />
+        <SubmissionStatCard label="คำร้องที่ไม่อนุมัติ" value={statistics.rejected_count} icon={CircleX} tone="danger" />
+      </section>
+
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 px-4 py-4 sm:px-5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <h2 className="font-semibold text-slate-900">รายการคำร้อง</h2>
+            <p className="text-sm text-slate-500" aria-live="polite">
+              พบ {serverPagination.total_count.toLocaleString('th-TH')} รายการ
+            </p>
           </div>
         </div>
-      </div>
-
-      {/* Statistics (client-side over current year) */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5 mb-6">
-        <StatCard label="คำร้องทั้งหมด" value={statistics.total_submissions} />
-        <StatCard label="อยู่ระหว่างการพิจารณาจากหัวหน้าสาขา" value={statistics.dept_head_pending_count} color="text-amber-600" />
-        <StatCard label="อยู่ระหว่างการพิจารณา" value={statistics.pending_count} color="text-yellow-600" />
-        <StatCard label="อนุมัติแล้ว" value={statistics.approved_count} color="text-green-600" />
-        <StatCard label="ไม่อนุมัติ" value={statistics.rejected_count} color="text-red-600" />
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white shadow-md rounded-lg border border-gray-200">
         <SubmissionFilters
           filters={filters}
           onFilterChange={handleFilterChange}
@@ -1660,53 +1672,60 @@ export default function SubmissionsManagement() {
           userMap={userMap}
         />
 
-        {/* Simple Prev / Next controls (no page numbers) */}
         {!loading && (
-          <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-b-lg">
-            <div className="text-sm text-gray-700">
+          <nav className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5" aria-label="การแบ่งหน้ารายการคำร้อง">
+            <p className="text-center text-sm text-slate-600 sm:text-left" aria-live="polite">
               แสดง <span className="font-medium">{serverPagination.total_count === 0 ? 0 : ((currentPage - 1) * PAGE_SIZE) + 1}</span>{' '}
               ถึง{' '}
               <span className="font-medium">
                 {Math.min(currentPage * PAGE_SIZE, serverPagination.total_count)}
               </span>{' '}
               จาก <span className="font-medium">{serverPagination.total_count}</span> รายการ
-            </div>
+            </p>
 
-            <div className="space-x-2">
+            <div className="flex items-center justify-between gap-2 sm:justify-end">
               <button
+                type="button"
                 onClick={handlePrev}
                 disabled={cursor <= 0}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                ◀ ก่อนหน้า
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                ก่อนหน้า
               </button>
-              {/* page numbers with ellipses */}
-              {getPageItems(currentPage, totalPages).map((it, idx) =>
-                it === '...' ? (
-                  <span key={`dots-${idx}`} className="px-2 text-gray-500 select-none">…</span>
-                ) : (
-                  <button
-                    key={`p-${it}`}
-                    onClick={() => setCurrentPage(it)}
-                    className={
-                      it === currentPage
-                        ? 'inline-flex items-center px-3 py-2 border border-indigo-600 text-sm font-semibold rounded-md text-white bg-indigo-600'
-                        : 'inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50'
-                    }
-                  >
-                    {it}
-                  </button>
-                )
-              )}
+              <div className="hidden items-center gap-1 sm:flex">
+                {getPageItems(currentPage, totalPages).map((it, idx) =>
+                  it === '...' ? (
+                    <span key={`dots-${idx}`} className="select-none px-2 text-slate-500">…</span>
+                  ) : (
+                    <button
+                      type="button"
+                      key={`p-${it}`}
+                      onClick={() => setCurrentPage(it)}
+                      className={
+                        it === currentPage
+                          ? 'inline-flex h-11 min-w-11 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2'
+                          : 'inline-flex h-11 min-w-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+                      }
+                      aria-label={`ไปหน้าที่ ${it}`}
+                      aria-current={it === currentPage ? 'page' : undefined}
+                    >
+                      {it}
+                    </button>
+                  )
+                )}
+              </div>
               <button
+                type="button"
                 onClick={handleNext}
                 disabled={currentPage >= totalPages}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                ถัดไป ▶
+                ถัดไป
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
-          </div>
+          </nav>
         )}
       </div>
 
@@ -1725,14 +1744,39 @@ export default function SubmissionsManagement() {
   );
 }
 
-// Small presentational helper
-function StatCard({ label, value, color = 'text-gray-900' }) {
+const STAT_TONES = {
+  info: {
+    icon: 'border-blue-200 bg-blue-50 text-blue-700',
+    value: 'text-blue-700',
+  },
+  warning: {
+    icon: 'border-amber-200 bg-amber-50 text-amber-700',
+    value: 'text-amber-700',
+  },
+  success: {
+    icon: 'border-green-200 bg-green-50 text-green-700',
+    value: 'text-green-700',
+  },
+  danger: {
+    icon: 'border-red-200 bg-red-50 text-red-700',
+    value: 'text-red-700',
+  },
+};
+
+function SubmissionStatCard({ label, value, icon: Icon, tone = 'info' }) {
+  const styles = STAT_TONES[tone] || STAT_TONES.info;
+
   return (
-    <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
-      <div className="px-4 py-5 sm:p-6">
-        <dt className="text-sm font-medium text-gray-500 truncate">{label}</dt>
-        <dd className={`mt-1 text-3xl font-semibold ${color}`}>{value}</dd>
-      </div>
-    </div>
+    <article className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
+      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border ${styles.icon}`}>
+        <Icon className="h-6 w-6" aria-hidden="true" />
+      </span>
+      <dl className="min-w-0">
+        <dt className="text-sm leading-5 text-slate-600">{label}</dt>
+        <dd className={`mt-1 text-2xl font-semibold tabular-nums ${styles.value}`}>
+          {Number(value || 0).toLocaleString('th-TH')}
+        </dd>
+      </dl>
+    </article>
   );
 }
