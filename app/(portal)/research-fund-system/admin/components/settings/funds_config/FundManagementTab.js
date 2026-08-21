@@ -10,6 +10,8 @@ import {
   RefreshCw,
   Layers,
   PlusCircle,
+  CalendarDays,
+  SearchX,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { targetRolesUtils } from "@/app/lib/target_roles_utils";
@@ -370,7 +372,14 @@ const FundManagementTab = ({
       showCancelButton: true,
       confirmButtonText: "ลบ",
       cancelButtonText: "ยกเลิก",
-      confirmButtonColor: "#d33",
+      buttonsStyling: false,
+      reverseButtons: true,
+      customClass: {
+        popup: "rounded-xl",
+        actions: "gap-3",
+        confirmButton: "inline-flex min-h-11 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2",
+        cancelButton: "inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+      },
       focusCancel: true,
     });
 
@@ -404,7 +413,14 @@ const FundManagementTab = ({
       showCancelButton: true,
       confirmButtonText: "ลบ",
       cancelButtonText: "ยกเลิก",
-      confirmButtonColor: "#d33",
+      buttonsStyling: false,
+      reverseButtons: true,
+      customClass: {
+        popup: "rounded-xl",
+        actions: "gap-3",
+        confirmButton: "inline-flex min-h-11 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2",
+        cancelButton: "inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+      },
       focusCancel: true,
     });
 
@@ -452,7 +468,14 @@ const FundManagementTab = ({
       showCancelButton: true,
       confirmButtonText: "ลบ",
       cancelButtonText: "ยกเลิก",
-      confirmButtonColor: "#d33",
+      buttonsStyling: false,
+      reverseButtons: true,
+      customClass: {
+        popup: "rounded-xl",
+        actions: "gap-3",
+        confirmButton: "inline-flex min-h-11 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2",
+        cancelButton: "inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+      },
     });
 
     if (res.isConfirmed && onDeleteBudget) {
@@ -464,8 +487,8 @@ const FundManagementTab = ({
     <>
       <SettingsSectionCard
         icon={Layers}
-        iconBgClass="bg-indigo-100"
-        iconColorClass="text-indigo-600"
+        iconBgClass="border border-blue-200 bg-blue-50"
+        iconColorClass="text-blue-700"
         title="จัดการทุน"
         description="เพิ่ม/แก้ไข หมวดหมู่ ทุนย่อย และเงื่อนไขงบประมาณตามโครงสร้างใหม่"
         actions={
@@ -495,7 +518,7 @@ const FundManagementTab = ({
         }
         contentClassName="space-y-6"
       >
-      <div className="flex flex-col gap-1 rounded-lg border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm text-blue-900 shadow-sm">
+      <div className="flex flex-col gap-1 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
         <p className="font-medium">
           {selectedYear
             ? `กำลังตั้งค่าทุนสำหรับปี พ.ศ. ${selectedYearDisplay}`
@@ -506,13 +529,14 @@ const FundManagementTab = ({
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">ปีงบประมาณ</label>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <label htmlFor="fund-year-filter" className="shrink-0 text-sm font-medium text-slate-700">ปีงบประมาณ</label>
           <select
+            id="fund-year-filter"
             value={getSelectedYearValue(selectedYear)}
             onChange={(event) => onYearChange?.(event.target.value)}
-            className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="min-h-11 min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:min-w-48"
           >
             {years.map((year) => {
               const value = year.year_id || year.year || year;
@@ -525,15 +549,15 @@ const FundManagementTab = ({
             })}
           </select>
         </div>
-        <div className="flex items-center gap-3 ml-auto">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row lg:ml-auto">
+          <div className="relative min-w-0 sm:w-72">
+            <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchTerm}
               onChange={(event) => onSearchChange?.(event.target.value)}
               placeholder="ค้นหาหมวดหมู่หรือทุนย่อย"
-              className="pl-9 pr-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-72"
+              className="min-h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
 
@@ -541,7 +565,7 @@ const FundManagementTab = ({
             type="button"
             onClick={onAddCategory}
             disabled={!selectedYear}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-300"
           >
             <PlusCircle size={16} />
             เพิ่มหมวดหมู่
@@ -550,16 +574,16 @@ const FundManagementTab = ({
       </div>
 
       {!selectedYear ? (
-        <div className="text-center py-16 border border-dashed rounded-lg">
-          <div className="text-4xl mb-2">📅</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">กรุณาเลือกปีงบประมาณ</h3>
-          <p className="text-gray-600">เลือกปีงบประมาณจากบัตรด้านบนเพื่อจัดการโครงสร้างทุน</p>
+        <div className="flex flex-col items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-14 text-center">
+          <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700"><CalendarDays size={24} /></span>
+          <h3 className="mb-2 text-lg font-semibold text-slate-900">กรุณาเลือกปีงบประมาณ</h3>
+          <p className="text-slate-600">เลือกปีงบประมาณจากบัตรด้านบนเพื่อจัดการโครงสร้างทุน</p>
         </div>
       ) : filteredCategories.length === 0 ? (
-        <div className="text-center py-16 border border-dashed rounded-lg">
-          <div className="text-4xl mb-2">🔍</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">ไม่พบรายการที่ตรงกับการค้นหา</h3>
-          <p className="text-gray-600">ลองเปลี่ยนคำค้นหาหรือเพิ่มหมวดหมู่ใหม่</p>
+        <div className="flex flex-col items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-14 text-center">
+          <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700"><SearchX size={24} /></span>
+          <h3 className="mb-2 text-lg font-semibold text-slate-900">ไม่พบรายการที่ตรงกับการค้นหา</h3>
+          <p className="text-slate-600">ลองเปลี่ยนคำค้นหาหรือเพิ่มหมวดหมู่ใหม่</p>
         </div>
       ) : (
         <div className="space-y-5">
@@ -568,8 +592,8 @@ const FundManagementTab = ({
             const subcategories = category.subcategories || [];
 
             return (
-              <div key={category.category_id} className="border border-gray-200 rounded-xl">
-                <div className="flex flex-wrap gap-3 items-center justify-between px-5 py-4 bg-gray-50 rounded-t-xl">
+              <div key={category.category_id} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-5">
                   <button
                     type="button"
                     className="flex items-center gap-3 text-left"
@@ -577,8 +601,8 @@ const FundManagementTab = ({
                   >
                     {categoryExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                     <div>
-                      <p className="text-base font-semibold text-gray-900">{category.category_name}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-base font-semibold text-slate-900">{category.category_name}</p>
+                      <p className="text-sm text-slate-500">
                         {subcategories.length > 0
                           ? `${subcategories.length} ทุนย่อย`
                           : "ยังไม่มีทุนย่อย"}
@@ -724,15 +748,15 @@ const FundManagementTab = ({
                                   </div>
 
                                   {hasOverallBudget && (
-                                    <div className="rounded-lg border border-indigo-200 bg-indigo-50/60 p-4">
+                                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
                                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
                                         <div className="flex flex-1 items-start gap-3">
-                                          <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600">
+                                          <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-white text-blue-700">
                                             <Layers size={18} />
                                           </div>
                                           <div>
-                                            <p className="font-semibold text-indigo-900">เงื่อนไขหลัก</p>
-                                            <p className="text-sm text-indigo-700 mt-0.5">
+                                            <p className="font-semibold text-blue-950">เงื่อนไขหลัก</p>
+                                            <p className="mt-0.5 text-sm text-blue-800">
                                               {overall.fund_description?.trim() || "ยังไม่มีคำอธิบายเงื่อนไข"}
                                             </p>
                                           </div>
@@ -798,7 +822,7 @@ const FundManagementTab = ({
                                     <button
                                       type="button"
                                       onClick={() => onAddBudget?.(subcategory, category)}
-                                      className="flex items-center gap-2 px-3 py-1.5 text-sm bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100"
+                                      className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-700 hover:bg-blue-100"
                                     >
                                       <Plus size={14} /> เพิ่มเงื่อนไขรอง
                                     </button>
@@ -918,13 +942,13 @@ const FundManagementTab = ({
         bodyClassName="max-h-[75vh] overflow-y-auto px-6 py-6"
         footerClassName="flex items-center justify-end gap-3 px-6 py-4"
         headerContent={
-          <div className="flex items-center gap-3 text-gray-700">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+          <div className="flex items-center gap-3 text-slate-700">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
               <Copy size={18} />
             </span>
             <div>
-              <p className="text-base font-semibold text-gray-900">คัดลอกโครงสร้างทุน</p>
-              <p className="text-sm text-gray-500">นำโครงสร้างทุนจากปีที่เลือกไปยังปีใหม่หรือปีที่มีอยู่</p>
+              <p className="text-base font-semibold text-slate-900">คัดลอกโครงสร้างทุน</p>
+              <p className="text-sm text-slate-500">นำโครงสร้างทุนจากปีที่เลือกไปยังปีใหม่หรือปีที่มีอยู่</p>
             </div>
           </div>
         }

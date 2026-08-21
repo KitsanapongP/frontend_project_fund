@@ -4,8 +4,6 @@ import {
   Edit,
   Trash2,
   Copy,
-  ToggleRight,
-  ToggleLeft,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -523,8 +521,8 @@ const RewardConfigManager = () => {
   return (
     <SettingsSectionCard
       icon={Trophy}
-      iconBgClass="bg-amber-100"
-      iconColorClass="text-amber-600"
+      iconBgClass="border border-amber-200 bg-amber-50"
+      iconColorClass="text-amber-700"
       title="จัดการเงินรางวัลการตีพิมพ์"
       description="กำหนดอัตราเงินรางวัลและวงเงินสนับสนุนค่าธรรมเนียม"
       actions={
@@ -541,13 +539,14 @@ const RewardConfigManager = () => {
       }
       contentClassName="space-y-5"
     >
-      <div className="flex items-center gap-3">
-        <label className="text-sm font-semibold text-gray-700">ปีงบประมาณ:</label>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <label htmlFor="reward-budget-year" className="text-sm font-semibold text-slate-700">ปีงบประมาณ</label>
         {years.length ? (
           <select
+            id="reward-budget-year"
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:min-w-48"
           >
             {years.map((y) => <option key={y} value={y}>พ.ศ. {y}</option>)}
           </select>
@@ -557,24 +556,28 @@ const RewardConfigManager = () => {
       </div>
 
       {/* Sub Tabs */}
-      <div className="border-b border-gray-200 mb-4">
-        <nav className="-mb-px flex gap-6">
+      <div className="mb-4 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1">
+        <nav className="flex min-w-max gap-1" role="tablist" aria-label="ประเภทการตั้งค่าเงินรางวัล">
           <button
             onClick={() => setActiveSubTab('rates')}
-            className={`py-2 border-b-2 text-sm ${
+            role="tab"
+            aria-selected={activeSubTab === 'rates'}
+            className={`min-h-11 rounded-lg px-4 text-sm font-medium ${
               activeSubTab === 'rates'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'bg-white text-blue-700 ring-1 ring-blue-200'
+                : 'text-slate-600 hover:bg-white hover:text-slate-900'
             }`}
           >
             อัตราเงินรางวัล (Reward Rates)
           </button>
           <button
             onClick={() => setActiveSubTab('configs')}
-            className={`py-2 border-b-2 text-sm ${
+            role="tab"
+            aria-selected={activeSubTab === 'configs'}
+            className={`min-h-11 rounded-lg px-4 text-sm font-medium ${
               activeSubTab === 'configs'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'bg-white text-blue-700 ring-1 ring-blue-200'
+                : 'text-slate-600 hover:bg-white hover:text-slate-900'
             }`}
           >
             วงเงินค่าธรรมเนียม (Fee Limits)
@@ -599,16 +602,16 @@ const RewardConfigManager = () => {
                   reward_amount: ''
                 });
               }}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 ml-auto"
+              className="ml-auto flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700"
             >
               <PlusCircle size={16} />
               เพิ่มอัตราใหม่
             </button>
           </div>
 
-          <div className="overflow-x-auto border border-gray-300 rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full min-w-[760px] divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">
                     <button
@@ -626,23 +629,23 @@ const RewardConfigManager = () => {
                       Quartile {sortIcon(rateSort, 'journal_quartile')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700">
                     <button
-                      className="inline-flex items-center justify-start gap-1 hover:text-blue-600"
+                      className="inline-flex w-full items-center justify-end gap-1 hover:text-blue-600"
                       onClick={() => toggleSort('rates', 'reward_amount')}
                     >
                       จำนวนเงินรางวัล {sortIcon(rateSort, 'reward_amount')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700">
                     <button
-                      className="inline-flex items-center gap-1 justify-start hover:text-blue-600"
+                      className="inline-flex w-full items-center justify-end gap-1 hover:text-blue-600"
                       onClick={() => toggleSort('rates', 'is_active')}
                     >
                       สถานะ {sortIcon(rateSort, 'is_active')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">จัดการ</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-700">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
@@ -661,10 +664,10 @@ const RewardConfigManager = () => {
                       <td className="px-3 py-3 text-left text-sm text-gray-700 whitespace-nowrap">
                         {quartileOptions.find(q => q.value === rate.journal_quartile)?.label || rate.journal_quartile}
                       </td>
-                      <td className="px-3 py-3 text-left text-sm font-semibold text-gray-900 whitespace-nowrap">
-                        {new Intl.NumberFormat('th-TH').format(rate.reward_amount)} บาท
+                      <td className="px-3 py-3 text-right text-sm font-semibold text-gray-900 whitespace-nowrap">
+                        {new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(rate.reward_amount)}฿
                       </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-left">
+                      <td className="px-3 py-3 whitespace-nowrap text-right">
                         <StatusBadge
                           status={!!rate.is_active}
                           interactive
@@ -672,7 +675,7 @@ const RewardConfigManager = () => {
                           onChange={() => toggleStatus(rate.rate_id, rate.is_active, 'rate')}
                         />
                       </td>
-                      <td className="flex justify-start gap-2 px-3 py-3 whitespace-nowrap text-sm font-medium">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm font-medium"><div className="flex justify-center gap-2">
                         <button
                           onClick={() => {
                             setEditingRate(rate);
@@ -696,7 +699,7 @@ const RewardConfigManager = () => {
                         >
                           <Trash2 size={16} /> ลบ
                         </button>
-                      </td>
+                      </div></td>
                     </tr>
                   ))
                 )}
@@ -719,16 +722,16 @@ const RewardConfigManager = () => {
                   condition_description: ''
                 });
               }}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 ml-auto"
+              className="ml-auto flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700"
             >
               <PlusCircle size={16} />
               เพิ่มการกำหนดค่าใหม่
             </button>
           </div>
 
-          <div className="overflow-x-auto border border-gray-300 rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full min-w-[760px] divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">
                     <button
@@ -754,15 +757,15 @@ const RewardConfigManager = () => {
                       เงื่อนไข/หมายเหตุ {sortIcon(configSort, 'condition_description')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700">
                     <button
-                      className="inline-flex items-center gap-1 justify-start hover:text-blue-600"
+                      className="inline-flex w-full items-center justify-end gap-1 hover:text-blue-600"
                       onClick={() => toggleSort('configs', 'is_active')}
                     >
                       สถานะ {sortIcon(configSort, 'is_active')}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">จัดการ</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-700">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
@@ -778,15 +781,15 @@ const RewardConfigManager = () => {
                       <td className="px-4 py-3 text-left text-sm font-medium text-gray-900 whitespace-nowrap">
                         {quartileOptions.find(q => q.value === config.journal_quartile)?.label || config.journal_quartile}
                       </td>
-                      <td className="px-4 py-3 text-left text-sm font-semibold text-gray-900 whitespace-nowrap">
+                      <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900 whitespace-nowrap">
                         {config.max_amount > 0
-                          ? `${new Intl.NumberFormat('th-TH').format(config.max_amount)} บาท`
+                          ? `${new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(config.max_amount)}฿`
                           : 'ไม่สนับสนุน'}
                       </td>
                       <td className="px-4 py-3 text-left text-sm text-gray-700">
                         {config.condition_description || '-'}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-left">
+                      <td className="px-4 py-3 whitespace-nowrap text-right">
                         <StatusBadge
                           status={!!config.is_active}
                           interactive
@@ -794,7 +797,7 @@ const RewardConfigManager = () => {
                           onChange={() => toggleStatus(config.config_id, config.is_active, 'config')}
                         />
                       </td>
-                      <td className="flex justify-start gap-2 px-3 py-3 whitespace-nowrap text-sm font-medium">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm font-medium"><div className="flex justify-center gap-2">
                         <button
                           onClick={() => {
                             setEditingConfig(config);
@@ -818,7 +821,7 @@ const RewardConfigManager = () => {
                         >
                           <Trash2 size={16} /> ลบ
                         </button>
-                      </td>
+                      </div></td>
                     </tr>
                   ))
                 )}
@@ -835,8 +838,8 @@ const RewardConfigManager = () => {
         bodyClassName="max-h-[75vh] overflow-y-auto px-6 py-6"
         footerClassName="flex items-center justify-end gap-3 px-6 py-4"
         headerContent={
-          <div className="flex items-center gap-3 text-gray-700">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+          <div className="flex items-center gap-3 text-slate-700">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
               <Copy size={18} />
             </span>
             <div>
@@ -946,8 +949,8 @@ const RewardConfigManager = () => {
         size="md"
         bodyClassName="max-h-[70vh] overflow-y-auto px-6 py-6"
         headerContent={
-          <div className="flex items-center gap-3 text-gray-700">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+          <div className="flex items-center gap-3 text-slate-700">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700">
               <Trophy size={18} />
             </span>
             <div>
@@ -1036,8 +1039,8 @@ const RewardConfigManager = () => {
         size="md"
         bodyClassName="max-h-[70vh] overflow-y-auto px-6 py-6"
         headerContent={
-          <div className="flex items-center gap-3 text-gray-700">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+          <div className="flex items-center gap-3 text-slate-700">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700">
               <Trophy size={18} />
             </span>
             <div>

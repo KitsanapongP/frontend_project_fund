@@ -189,8 +189,8 @@ const SubcategoryModal = ({
       size="3xl"
       bodyClassName="max-h-[85vh] overflow-y-auto px-6 py-6"
       headerContent={
-        <div className="flex items-center gap-3 text-gray-700">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+        <div className="flex items-center gap-3 text-slate-700">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
             <Layers size={18} />
           </span>
           <div>
@@ -430,7 +430,7 @@ const SubcategoryModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               ยกเลิก
             </button>

@@ -448,7 +448,7 @@ const DocumentTypeManager = () => {
             <button
               type="button"
               onClick={handleAddDocumentType}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700"
             >
               <PlusCircle size={18} />
               เพิ่มประเภทเอกสาร
@@ -458,7 +458,7 @@ const DocumentTypeManager = () => {
         contentClassName="space-y-4"
       >
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-slate-500">
             ทั้งหมด {documentTypes.length} รายการ | แสดง {filteredTypes.length} รายการ
           </div>
           <div className="relative w-full md:w-72">
@@ -466,15 +466,15 @@ const DocumentTypeManager = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="min-h-11 w-full rounded-lg border border-slate-300 px-4 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="ค้นหาโดยชื่อ รหัส หรือประเภททุน"
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full min-w-[880px] divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50">
               <tr>
                 <th className="w-16 px-3 py-3 text-center font-bold text-gray-600">ลำดับ</th>
                 <th className="px-3 py-3 text-center font-bold text-gray-600">ชื่อเอกสาร</th>
@@ -532,7 +532,7 @@ const DocumentTypeManager = () => {
 
                           if (inactive) {
                             return (
-                              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                              <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                                 ไม่ได้ใช้งาน
                               </span>
                             );
@@ -540,7 +540,7 @@ const DocumentTypeManager = () => {
 
                           if (mode === "all" || fundTypes.length === 0) {
                             return (
-                              <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                              <span className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
                                 ทุกประเภททุน
                               </span>
                             );
@@ -549,7 +549,7 @@ const DocumentTypeManager = () => {
                           return fundTypes.map((fund) => (
                             <span
                               key={`${item.document_type_id}-${fund.toLowerCase()}`}
-                              className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 shadow-sm"
+                              className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
                             >
                               {FUND_TYPE_DISPLAY_NAMES[fund] ||
                                 FUND_TYPE_LABELS[fund] ||

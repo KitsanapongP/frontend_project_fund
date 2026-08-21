@@ -28,8 +28,8 @@ const InstallmentFormModal = ({
       onClose={onClose}
       size="lg"
       headerContent={
-        <div className="flex items-center gap-3 text-gray-700">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+        <div className="flex items-center gap-3 text-slate-700">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
             <CalendarClock size={18} />
           </span>
           <div>
@@ -42,7 +42,7 @@ const InstallmentFormModal = ({
         <>
           <button
             type="button"
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 px-4 text-sm text-slate-700 transition-colors hover:bg-slate-50"
             onClick={onClose}
             disabled={submitting}
           >
@@ -50,7 +50,7 @@ const InstallmentFormModal = ({
           </button>
           <button
             type="button"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700 disabled:opacity-70"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm text-white transition-colors hover:bg-blue-700 disabled:opacity-70"
             onClick={onSubmit}
             disabled={submitting}
           >

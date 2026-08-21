@@ -31,15 +31,15 @@ import systemConfigAPI from "@/app/lib/system_config_api";
 import { adminInstallmentAPI } from "@/app/lib/admin_installment_api";
 
 const TAB_ITEMS = [
-  { id: "funds", label: "จัดการทุนและปีงบประมาณ", icon: DollarSign },
-  { id: "reward-config", label: "จัดการเงินรางวัล", icon: Settings },
-  { id: "installments", label: "ตั้งค่าวันตัดรอบการพิจารณา", icon: CalendarRange },
-  { id: "document-types", label: "ตั้งค่าเอกสารทุนแนบ", icon: FileStack },
+  { id: "funds", label: "ทุนและปีงบประมาณ", icon: DollarSign },
+  { id: "reward-config", label: "เงินรางวัล", icon: Settings },
+  { id: "installments", label: "วันตัดรอบ", icon: CalendarRange },
+  { id: "document-types", label: "เอกสารทุนแนบ", icon: FileStack },
   { id: "reward-terms", label: "ข้อตกลงเงินรางวัล", icon: ListChecks },
-  { id: "system", label: "ตั้งค่าระบบ", icon: PencilLine },
+  { id: "system", label: "ระบบ", icon: PencilLine },
   { id: "announcements", label: "ประกาศ", icon: FileText },
-  { id: "notification-templates", label: "การแจ้งเตือน", icon: BellRing },
-  { id: "sdgs", label: "เป้าหมายการพัฒนาที่ยั่งยืน (SDGs)", icon: Globe2 },
+  { id: "notification-templates", label: "ข้อความแจ้งเตือน", icon: BellRing },
+  { id: "sdgs", label: "SDGs", icon: Globe2 },
 ];
 
 // SweetAlert2 configuration
@@ -140,11 +140,18 @@ export default function FundSettingsContent({ onNavigate }) {
       text: text,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6b7280',
       confirmButtonText: confirmButtonText,
       cancelButtonText: 'ยกเลิก',
-      reverseButtons: true
+      reverseButtons: true,
+      buttonsStyling: false,
+      customClass: {
+        popup: 'rounded-xl',
+        title: 'text-xl font-semibold text-slate-900',
+        htmlContainer: 'text-sm text-slate-600',
+        actions: 'gap-2',
+        confirmButton: 'min-h-11 rounded-lg bg-red-600 px-5 font-medium text-white hover:bg-red-700',
+        cancelButton: 'min-h-11 rounded-lg border border-slate-300 bg-white px-5 font-medium text-slate-700 hover:bg-slate-50',
+      },
     });
     return result.isConfirmed;
   };
@@ -1447,32 +1454,28 @@ export default function FundSettingsContent({ onNavigate }) {
     return (
       <PageLayout
         title="ตั้งค่าทุน"
-        subtitle="จัดการหมวดหมู่ ประเภทย่อย และงบประมาณของทุน"
+        subtitle="กำหนดข้อมูลทุน นโยบาย เอกสาร และการสื่อสารของระบบ"
         icon={Settings}
         breadcrumbs={[
-          { label: "หน้าแรก", href: "/research-fund-system/admin" },
+          { label: "หน้าหลัก", href: "/research-fund-system/admin" },
           { label: "ตั้งค่าทุน" }
         ]}
       >
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="text-center py-12">
-            <div className="mb-4">
-              <div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center">
-                <Settings size={40} className="text-red-500" />
-              </div>
+        <div className="rounded-xl border border-red-200 bg-white px-6 py-12 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-600">
+              <AlertTriangle size={26} aria-hidden="true" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">เกิดข้อผิดพลาด</h3>
-            <p className="text-red-600 mb-4">{error}</p>
+            <h3 className="mb-2 text-lg font-semibold text-slate-900">ไม่สามารถโหลดหน้าการตั้งค่าได้</h3>
+            <p className="mb-5 text-sm text-red-700">{error}</p>
             <button
               onClick={() => {
                 setError(null);
                 loadYears();
               }}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="min-h-11 rounded-lg bg-blue-600 px-4 font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               ลองใหม่
             </button>
-          </div>
         </div>
       </PageLayout>
     );
@@ -1555,16 +1558,17 @@ export default function FundSettingsContent({ onNavigate }) {
   return (
     <PageLayout
       title="ตั้งค่าทุน"
-      subtitle="จัดการหมวดหมู่ ประเภทย่อย และงบประมาณของทุน"
+      subtitle="กำหนดข้อมูลทุน นโยบาย เอกสาร และการสื่อสารของระบบ"
       icon={Settings}
       breadcrumbs={[
-        { label: "หน้าแรก", href: "/research-fund-system/admin" },
+        { label: "หน้าหลัก", href: "/research-fund-system/admin" },
         { label: "ตั้งค่าทุน" }
       ]}
       loading={loading}
     >
       {alertChecking ? (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-200 border-t-amber-700" aria-hidden="true" />
           กำลังตรวจสอบข้อมูลปีงบประมาณ {currentYearValue || ''}...
         </div>
       ) : null}
@@ -1588,29 +1592,46 @@ export default function FundSettingsContent({ onNavigate }) {
       )}
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-lg shadow-sm mb-6">
-        <div className="flex flex-wrap">
+      <div className="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 px-4 py-3 sm:px-5">
+          <h2 className="text-base font-semibold text-slate-900">หมวดการตั้งค่า</h2>
+          <p className="mt-0.5 text-sm text-slate-500">เลือกหมวดที่ต้องการตรวจสอบหรือแก้ไข</p>
+        </div>
+        <div className="overflow-x-auto" role="tablist" aria-label="หมวดการตั้งค่าทุน">
+          <div className="flex min-w-max gap-1 p-2">
           {TAB_ITEMS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
+              id={`settings-tab-${id}`}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === id}
+              aria-controls="settings-tab-panel"
               onClick={() => setActiveTab(id)}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                 activeTab === id
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`}
             >
-              <div className="flex items-center gap-2">
-                <Icon size={20} />
-                {label}
-              </div>
+                <Icon size={18} aria-hidden="true" />
+                <span>{label}</span>
             </button>
           ))}
+          </div>
         </div>
       </div>
 
       {/* Content */}
-      {renderActiveContent()}
+      <div
+        id="settings-tab-panel"
+        role="tabpanel"
+        aria-labelledby={`settings-tab-${activeTab}`}
+        tabIndex={0}
+        className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-4"
+      >
+        {renderActiveContent()}
+      </div>
 
       {/* Modals */}
       <CategoryModal

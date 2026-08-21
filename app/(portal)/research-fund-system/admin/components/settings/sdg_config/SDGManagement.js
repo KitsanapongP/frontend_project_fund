@@ -106,17 +106,17 @@ export default function SDGManagement() {
 
     return <div className="space-y-3">
       {items.map((item) => (
-        <div key={item.sdg_id} className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white px-4 py-3 transition-colors hover:border-blue-200 hover:bg-blue-50/30">
+        <div key={item.sdg_id} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 transition-colors hover:border-blue-200 hover:bg-blue-50/30">
           <div className="flex min-w-[240px] items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">{item.sdg_number}</div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-sm font-bold text-blue-700">{item.sdg_number}</div>
             <div>
               <div className="text-sm font-semibold text-gray-900">{item.name_th || "-"}</div>
               <div className="text-xs text-gray-500">{item.name_en || "ไม่มีชื่อภาษาอังกฤษ"}</div>
             </div>
           </div>
           <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
-            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">SDG {item.sdg_number}</span>
-            <button type="button" onClick={() => handleOpenEdit(item)} className="inline-flex items-center gap-1 text-sm text-blue-600 transition-colors hover:text-blue-800"><Pencil size={14} />แก้ไข</button>
+            <span className="rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">SDG {item.sdg_number}</span>
+            <button type="button" onClick={() => handleOpenEdit(item)} className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-blue-200 px-3 text-sm text-blue-700 transition-colors hover:bg-blue-50"><Pencil size={14} />แก้ไข</button>
           </div>
         </div>
       ))}
@@ -126,13 +126,13 @@ export default function SDGManagement() {
   return <>
     <SettingsSectionCard
       icon={Globe2}
-      iconBgClass="bg-purple-100"
-      iconColorClass="text-purple-600"
+      iconBgClass="border border-blue-200 bg-blue-50"
+      iconColorClass="text-blue-700"
       title="เป้าหมายการพัฒนาที่ยั่งยืน (SDGs)"
       description="สร้างและแก้ไขข้อมูล SDGs"
       actions={<div className="flex items-center gap-3">
         <button type="button" onClick={loadSDGs} className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"><RefreshCcw size={16} />รีเฟรช</button>
-        <button type="button" onClick={handleOpenCreate} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"><PlusCircle size={16} />เพิ่ม SDG</button>
+        <button type="button" onClick={handleOpenCreate} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"><PlusCircle size={16} />เพิ่ม SDG</button>
       </div>}
       contentClassName="space-y-4"
     >
@@ -146,7 +146,7 @@ export default function SDGManagement() {
       description="แก้ไขข้อมูลภาษาไทย ภาษาอังกฤษ และคำอธิบายของ SDGs"
       footer={<>
         <button type="button" onClick={handleCloseModal} disabled={saving} className="rounded-lg border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100 disabled:opacity-60">ยกเลิก</button>
-        <button form="sdg-form" type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-60">
+        <button form="sdg-form" type="submit" disabled={saving} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
           {saving ? <RefreshCcw size={16} className="animate-spin" /> : <PlusCircle size={16} />}
           {saving ? "กำลังบันทึก..." : editingItem ? "อัปเดตข้อมูล" : "บันทึกข้อมูล"}
         </button>

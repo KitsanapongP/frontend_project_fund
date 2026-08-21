@@ -315,7 +315,7 @@ const EndOfContractManager = () => {
       : "border border-blue-200 text-blue-600 hover:bg-blue-50 disabled:opacity-70"
   } disabled:cursor-not-allowed`;
   const operationButtonBaseClasses =
-    "inline-flex items-center gap-1 rounded-lg border px-3 py-1 text-xs font-medium transition focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex min-h-11 items-center gap-1 rounded-lg border px-3 text-xs font-medium transition focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60";
   const editOperationButtonClasses =
     `${operationButtonBaseClasses} border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:ring-offset-2`;
   const deleteOperationButtonClasses =
@@ -344,7 +344,7 @@ const EndOfContractManager = () => {
       <button
         type="button"
         onClick={openCreateModal}
-        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700"
       >
         <PlusCircle className="h-4 w-4" /> เพิ่มข้อตกลง
       </button>
@@ -377,10 +377,10 @@ const EndOfContractManager = () => {
                   onDragStart={(event) => handleDragStart(event, term.eoc_id)}
                   onDragOver={(event) => handleDragOver(event, term.eoc_id)}
                   onDragEnd={handleDragEnd}
-                  className={`flex flex-col gap-3 rounded-lg border bg-white p-4 shadow-sm transition md:flex-row md:items-start md:justify-between ${
+                  className={`flex flex-col gap-3 rounded-xl border bg-white p-4 transition md:flex-row md:items-start md:justify-between ${
                     draggingId === term.eoc_id
                       ? "border-blue-200 ring-2 ring-blue-100"
-                      : "border-gray-200 hover:shadow-md"
+                      : "border-slate-200 hover:border-blue-200 hover:bg-blue-50/20"
                   } ${
                     orderedTerms.length > 1 && !loading && !savingOrder
                       ? draggingId === term.eoc_id
@@ -394,7 +394,7 @@ const EndOfContractManager = () => {
                     <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-gray-800">{term.content}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-gray-300 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600">
+                    <div className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 text-xs font-medium text-slate-600">
                       <GripVertical className="h-4 w-4 text-gray-400" />
                       <span>ลากเพื่อจัดลำดับ</span>
                     </div>

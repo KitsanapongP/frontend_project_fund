@@ -769,8 +769,8 @@ const InstallmentManagementTab = ({ years = [] }) => {
     <>
       <SettingsSectionCard
         icon={CalendarRange}
-        iconBgClass="bg-indigo-100"
-        iconColorClass="text-indigo-600"
+        iconBgClass="border border-blue-200 bg-blue-50"
+        iconColorClass="text-blue-700"
         title="ตั้งค่าวันตัดรอบการพิจารณาของทุน"
         description="กำหนดเลขรอบการพิจารณาและวันตัดต่อปี เพื่อใช้คำนวณรอบการพิจารณาอัตโนมัติในการยื่นขอทุน"
         actions={
@@ -805,13 +805,14 @@ const InstallmentManagementTab = ({ years = [] }) => {
         }
         contentClassName="space-y-6"
       >
-        <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">ปีงบประมาณ</span>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+            <span className="shrink-0 text-sm font-medium text-slate-700">ปีงบประมาณ</span>
             <select
               value={selectedYearId ?? ""}
               onChange={handleYearChange}
-              className="min-w-[160px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              className="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               {yearOptions.map((option) => (
                 <option key={option.id ?? option.label} value={option.id ?? ""}>
@@ -819,11 +820,13 @@ const InstallmentManagementTab = ({ years = [] }) => {
                 </option>
               ))}
             </select>
-            <span className="text-sm font-medium text-gray-700">ชื่อทุน</span>
+            </label>
+            <label className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+            <span className="shrink-0 text-sm font-medium text-slate-700">ชื่อทุน</span>
             <select
               value={selectedFundKeyword}
               onChange={handleFundChoiceChange}
-              className="min-w-[260px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              className="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               {FUND_CHOICES.map((option) => (
                 <option key={option.keyword} value={option.keyword}>
@@ -831,12 +834,13 @@ const InstallmentManagementTab = ({ years = [] }) => {
                 </option>
               ))}
             </select>
+            </label>
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full min-w-[880px] divide-y divide-slate-200">
+            <thead className="bg-slate-50">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">เลขรอบการพิจารณา</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">วันตัดรอบการพิจารณา</th>
@@ -846,7 +850,7 @@ const InstallmentManagementTab = ({ years = [] }) => {
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">การจัดการ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody className="divide-y divide-slate-200 bg-white">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
@@ -906,14 +910,14 @@ const InstallmentManagementTab = ({ years = [] }) => {
         </div>
 
         {totalPages > 1 ? (
-          <div className="flex items-center justify-between text-sm text-gray-600">
+          <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
             <div>
               แสดง {paging.offset + 1}-{Math.min(paging.offset + paging.limit, paging.total)} จาก {paging.total} รายการ
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="rounded-md border border-gray-300 px-3 py-1 transition-colors hover:bg-gray-100 disabled:opacity-60"
+                className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-3 transition-colors hover:bg-slate-50 disabled:opacity-60"
                 onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
                 disabled={page <= 0}
               >
@@ -924,7 +928,7 @@ const InstallmentManagementTab = ({ years = [] }) => {
               </span>
               <button
                 type="button"
-                className="rounded-md border border-gray-300 px-3 py-1 transition-colors hover:bg-gray-100 disabled:opacity-60"
+                className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-3 transition-colors hover:bg-slate-50 disabled:opacity-60"
                 onClick={() => setPage((prev) => Math.min(prev + 1, totalPages - 1))}
                 disabled={page >= totalPages - 1}
               >
@@ -942,8 +946,8 @@ const InstallmentManagementTab = ({ years = [] }) => {
         bodyClassName="max-h-[75vh] overflow-y-auto px-6 py-6"
         footerClassName="flex items-center justify-end gap-3 px-6 py-4"
         headerContent={
-          <div className="flex items-center gap-3 text-gray-700">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+          <div className="flex items-center gap-3 text-slate-700">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
               <Copy size={18} />
             </span>
             <div>

@@ -10,13 +10,13 @@ import {
   RefreshCcw,
   RotateCcw,
   Save,
-  ToggleLeft,
-  ToggleRight,
+  Search,
   X,
 } from "lucide-react";
 
 import SettingsSectionCard from "@/app/(portal)/research-fund-system/admin/components/settings/common/SettingsSectionCard";
 import SettingsModal from "@/app/(portal)/research-fund-system/admin/components/settings/common/SettingsModal";
+import StatusBadge from "@/app/(portal)/research-fund-system/admin/components/settings/StatusBadge";
 import { notificationMessagesAPI } from "@/app/lib/notification_messages_api";
 
 const AUDIENCE_OPTIONS = [
@@ -90,8 +90,8 @@ function TemplateEditor({ open, onClose, onSubmit, initial }) {
       onClose={onClose}
       size="3xl"
       headerContent={
-        <div className="flex items-center gap-3 text-gray-800">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+        <div className="flex items-center gap-3 text-slate-800">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700">
             <BellRing className="h-5 w-5" />
           </span>
           <div className="space-y-0.5">
@@ -115,7 +115,7 @@ function TemplateEditor({ open, onClose, onSubmit, initial }) {
           <button
             type="submit"
             form={formId}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700"
             disabled={saving}
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -129,7 +129,7 @@ function TemplateEditor({ open, onClose, onSubmit, initial }) {
           <div>
             <label className="block text-sm font-medium text-gray-700">Event Key</label>
               <input
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
+                className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 value={form.event_key}
                 onChange={(e) => handleChange("event_key", e.target.value)}
                 required
@@ -139,7 +139,7 @@ function TemplateEditor({ open, onClose, onSubmit, initial }) {
             <div>
               <label className="block text-sm font-medium text-gray-700">ส่งถึง</label>
               <select
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
+                className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 value={form.send_to}
                 onChange={(e) => handleChange("send_to", e.target.value)}
               >
@@ -155,7 +155,7 @@ function TemplateEditor({ open, onClose, onSubmit, initial }) {
           <div>
             <label className="block text-sm font-medium text-gray-700">หัวเรื่อง</label>
             <input
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
+              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               value={form.title_template}
               onChange={(e) => handleChange("title_template", e.target.value)}
               required
@@ -165,7 +165,7 @@ function TemplateEditor({ open, onClose, onSubmit, initial }) {
           <div>
             <label className="block text-sm font-medium text-gray-700">ข้อความ</label>
             <textarea
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               rows={4}
               value={form.body_template}
               onChange={(e) => handleChange("body_template", e.target.value)}
@@ -180,7 +180,7 @@ function TemplateEditor({ open, onClose, onSubmit, initial }) {
             <div>
               <label className="block text-sm font-medium text-gray-700">ตัวแปร (คั่นด้วยคอมมา)</label>
               <input
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
+                className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 value={form.variables.join(", ")}
                 onChange={(e) =>
                   handleChange(
@@ -197,7 +197,7 @@ function TemplateEditor({ open, onClose, onSubmit, initial }) {
             <div>
               <label className="block text-sm font-medium text-gray-700">บันทึกย่อ</label>
               <input
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
+                className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 value={form.description}
                 onChange={(e) => handleChange("description", e.target.value)}
                 placeholder="ตัวอย่าง: แจ้งผู้ยื่นเมื่อส่งคำร้อง"
@@ -205,39 +205,17 @@ function TemplateEditor({ open, onClose, onSubmit, initial }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 rounded-lg bg-gray-50 px-4 py-3">
-            <button
-              type="button"
-              onClick={() => handleChange("is_active", !form.is_active)}
-              className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-blue-400"
-            >
-              {form.is_active ? (
-                <>
-                  <ToggleRight className="h-4 w-4 text-green-500" /> ใช้งานอยู่
-                </>
-              ) : (
-                <>
-                  <ToggleLeft className="h-4 w-4 text-gray-400" /> ปิดการใช้งาน
-                </>
-              )}
-            </button>
+          <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center">
+            <StatusBadge
+              status={form.is_active}
+              interactive
+              confirm={false}
+              onChange={(next) => handleChange("is_active", next)}
+            />
             <span className="text-xs text-gray-500">ปิดใช้งานเมื่อไม่ต้องการให้ข้อความนี้ถูกเลือกใช้</span>
           </div>
         </form>
     </SettingsModal>
-  );
-}
-
-function StatusBadge({ active }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-        active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
-      }`}
-    >
-      <span className={`h-2 w-2 rounded-full ${active ? "bg-green-500" : "bg-gray-400"}`} />
-      {active ? "ใช้งาน" : "ปิดไว้"}
-    </span>
   );
 }
 
@@ -250,46 +228,36 @@ function TemplateRow({ item, onEdit, onToggle, onReset, saving = false, resettin
     JSON.stringify(variableList) !== JSON.stringify(defaultVariables);
 
   return (
-    <div className="grid items-start gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm transition hover:shadow">
+    <div className="grid items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-blue-200 hover:bg-blue-50/20">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
-          <span className="rounded-full bg-blue-50 px-3 py-1 font-semibold text-blue-700">{item.event_key}</span>
-          <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700">
+            <BellRing className="h-4 w-4" />
+          </span>
+          <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1 font-semibold text-slate-700">{item.event_key}</span>
+          <span className="rounded-md border border-slate-200 bg-slate-100 px-3 py-1 font-medium text-slate-700">
             {AUDIENCE_OPTIONS.find((a) => a.value === item.send_to)?.label || item.send_to}
           </span>
-          <StatusBadge active={item.is_active} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge
+            status={item.is_active}
+            interactive
+            confirm={false}
+            disabled={saving}
+            onChange={() => onToggle(item)}
+          />
           <button
             onClick={() => onReset(item)}
             disabled={resetting || !isModified}
             className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1 text-xs font-semibold transition ${
               resetting || !isModified
-                ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
+                ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
                 : "border-amber-200 text-amber-700 hover:border-amber-400 hover:bg-amber-50"
             }`}
           >
             {resetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
             รีเซ็ตเป็นค่าเริ่มต้น
-          </button>
-          <button
-            onClick={() => onToggle(item)}
-            disabled={saving}
-            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1 text-xs font-semibold transition ${
-              saving
-                ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
-                : "border-gray-200 text-gray-700 hover:border-blue-400"
-            }`}
-          >
-            {item.is_active ? (
-              <>
-                <ToggleRight className="h-4 w-4 text-green-500" /> ปิดการใช้งาน
-              </>
-            ) : (
-              <>
-                <ToggleLeft className="h-4 w-4 text-gray-400" /> เปิดใช้งาน
-              </>
-            )}
           </button>
           <button
             onClick={() => onEdit(item)}
@@ -314,7 +282,7 @@ function TemplateRow({ item, onEdit, onToggle, onReset, saving = false, resettin
       <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
         {variableList.length > 0 ? (
           variableList.map((variable) => (
-            <span key={variable} className="rounded-full bg-gray-100 px-3 py-1 font-semibold text-gray-700">
+            <span key={variable} className="rounded-md border border-slate-200 bg-slate-100 px-3 py-1 font-semibold text-slate-700">
               {`{{${variable}}}`}
             </span>
           ))
@@ -324,7 +292,7 @@ function TemplateRow({ item, onEdit, onToggle, onReset, saving = false, resettin
           </span>
         )}
         {item.description ? (
-          <span className="rounded-full bg-amber-50 px-3 py-1 font-medium text-amber-700">{item.description}</span>
+          <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-600">{item.description}</span>
         ) : null}
       </div>
     </div>
@@ -433,11 +401,14 @@ export default function NotificationTemplateManager() {
         title="ข้อความแจ้งเตือน"
         subtitle="จัดการข้อความที่ใช้ส่งแจ้งเตือนเหตุการณ์ต่าง ๆ"
         icon={BellRing}
+        iconBgClass="border border-amber-200 bg-amber-50"
+        iconColorClass="text-amber-700"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
+            <div className="relative w-full sm:w-72">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
-                className="w-72 rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none"
+                className="min-h-11 w-full rounded-lg border border-slate-300 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 placeholder="ค้นหาจาก event, ผู้รับ หรือข้อความ"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -445,7 +416,7 @@ export default function NotificationTemplateManager() {
             </div>
             <button
               onClick={loadTemplates}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-blue-400"
+              className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-blue-400"
               type="button"
             >
               <RefreshCcw className="h-4 w-4" /> รีเฟรช
@@ -455,7 +426,7 @@ export default function NotificationTemplateManager() {
                 setEditing(null);
                 setEditorOpen(true);
               }}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-700"
               type="button"
             >
               <PlusCircle className="h-4 w-4" /> เพิ่มข้อความ
@@ -464,27 +435,27 @@ export default function NotificationTemplateManager() {
         }
       >
         {error ? (
-          <div className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <AlertCircle className="h-4 w-4" />
             {error}
           </div>
         ) : null}
 
         {loading ? (
-          <div className="flex items-center gap-2 rounded-lg border border-gray-100 bg-white px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-            <span className="text-sm text-gray-700">กำลังโหลดข้อมูล...</span>
+            <span className="text-sm text-blue-800">กำลังโหลดข้อมูล...</span>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-6 py-10 text-center text-gray-600">
-            <BellRing className="h-8 w-8 text-gray-400" />
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-slate-600">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-700"><BellRing className="h-6 w-6" /></span>
             <div className="text-sm">ยังไม่มีข้อความแจ้งเตือน</div>
             <button
               onClick={() => {
                 setEditing(null);
                 setEditorOpen(true);
               }}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-700"
               type="button"
             >
               <PlusCircle className="h-4 w-4" /> เพิ่มข้อความแรก

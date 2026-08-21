@@ -2,7 +2,20 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
-import { Save, RefreshCw, Calendar as CalendarIcon, Clock, Settings as SettingsIcon } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  CalendarRange,
+  ChevronRight,
+  Clock,
+  FileCheck2,
+  History,
+  Mail,
+  Megaphone,
+  RefreshCw,
+  Save,
+  Settings as SettingsIcon,
+  UserCog,
+} from "lucide-react";
 import systemConfigAPI from "@/app/lib/system_config_api";
 import apiClient from "@/app/lib/api";
 import { adminAPI } from "@/app/lib/admin_api";
@@ -855,13 +868,18 @@ export default function SystemConfigSettings() {
     const disabled = savingSlot === valueKey || (hasId && !okWindow);
 
     return (
-      <div className="space-y-3  border border-gray-300 rounded-xl p-3 md:p-4">
-        <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium text-gray-800">{label}</label>
+      <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3 md:p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700">
+              <Megaphone size={16} />
+            </span>
+            <label className="block text-sm font-semibold text-slate-800">{label}</label>
+          </div>
           <button
             onClick={() => handleSaveAnnouncement(valueKey)}
             disabled={disabled}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
             title={
               hasId && !okWindow
                 ? "ต้องตั้งวัน-เวลาเริ่มและสิ้นสุดของประกาศก่อนบันทึก"
@@ -936,8 +954,8 @@ export default function SystemConfigSettings() {
   return (
     <SettingsSectionCard
       icon={SettingsIcon}
-      iconBgClass="bg-slate-100"
-      iconColorClass="text-slate-700"
+      iconBgClass="border border-blue-200 bg-blue-50"
+      iconColorClass="text-blue-700"
       title="ตั้งค่าระบบ"
       description="กำหนดปีงบประมาณ ช่วงเวลาเปิด–ปิด และประกาศหลักเกณฑ์"
       actions={
@@ -954,7 +972,7 @@ export default function SystemConfigSettings() {
               loadAnnouncementHistory(),
             ]).finally(() => setLoading(false));
           }}
-          className="inline-flex items-center gap-2 rounded-lg border border-green-200 px-4 py-2 text-sm font-medium text-green-600 transition hover:bg-green-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
           disabled={loading}
         >
           <RefreshCw size={16} />
@@ -963,150 +981,219 @@ export default function SystemConfigSettings() {
       }
       contentClassName="space-y-6"
     >
+        <nav aria-label="ส่วนต่าง ๆ ของการตั้งค่าระบบ" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <a
+            href="#system-window"
+            className="group flex min-h-24 items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 transition hover:border-blue-300 hover:bg-blue-100/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-white text-blue-700"><CalendarRange size={21} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-blue-950">ปีงบประมาณและช่วงเวลา</span>
+              <span className="mt-1 block truncate text-xs text-blue-800">{form.current_year ? `พ.ศ. ${form.current_year}` : "ยังไม่ได้กำหนดปีปัจจุบัน"}</span>
+            </span>
+            <ChevronRight size={18} className="shrink-0 text-blue-500 transition group-hover:translate-x-0.5" />
+          </a>
+          <a
+            href="#system-announcements"
+            className="group flex min-h-24 items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 transition hover:border-amber-300 hover:bg-amber-100/70 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+          >
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-amber-200 bg-white text-amber-700"><Megaphone size={21} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-amber-950">ประกาศที่ใช้งาน</span>
+              <span className="mt-1 block text-xs text-amber-800">เลือกแล้ว {selectedAnnTitles.length} รายการ</span>
+            </span>
+            <ChevronRight size={18} className="shrink-0 text-amber-500 transition group-hover:translate-x-0.5" />
+          </a>
+          <a
+            href="#system-announcement-history"
+            className="group flex min-h-24 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-200 hover:bg-blue-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700"><History size={21} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-slate-900">ประวัติประกาศ</span>
+              <span className="mt-1 block text-xs text-slate-600">{annHistoryMerged.length} รายการ</span>
+            </span>
+            <ChevronRight size={18} className="shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
+          </a>
+          <a
+            href="#system-department-head"
+            className="group flex min-h-24 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-200 hover:bg-blue-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700"><UserCog size={21} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-slate-900">หัวหน้าสาขา</span>
+              <span className="mt-1 block truncate text-xs text-slate-600">{currentHead?.head_user_id ? userDisplay(currentHead.head_user_id) : "ยังไม่ได้มอบหมาย"}</span>
+            </span>
+            <ChevronRight size={18} className="shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
+          </a>
+        </nav>
+
         {/* Section 1: ปีงบประมาณ + Window */}
-        <section>
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <section id="system-window" className="scroll-mt-28">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-4">
-              <div>
-                <h3 className="text-base font-semibold text-gray-900">ปีงบประมาณ & ช่วงเวลา</h3>
-                <p className="text-sm text-gray-500">กำหนดปีงบประมาณและช่วงเวลาเปิด/ปิดการยื่นคำร้องของระบบ</p>
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700"><CalendarRange size={19} /></span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">ส่วนที่ 1</p>
+                  <h3 className="text-base font-semibold text-slate-900">ปีงบประมาณและช่วงเวลา</h3>
+                  <p className="text-sm text-slate-500">กำหนดปีงบประมาณและช่วงเวลาเปิด/ปิดการยื่นคำร้องของระบบ</p>
+                </div>
               </div>
               <button
                 onClick={handleSave}
                 disabled={saving || loading}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
               >
                 <Save size={16} />
                 {saving ? "กำลังบันทึก..." : "บันทึกปีงบประมาณและช่วงเวลา"}
               </button>
             </div>
 
-            <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">ปีงบประมาณปัจจุบัน</label>
+            <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="mb-4 flex items-start gap-3">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700"><CalendarRange size={18} /></span>
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-900">ปีงบประมาณปัจจุบัน</h4>
+                      <p className="text-xs text-slate-500">ปีหลักที่ระบบใช้อ้างอิง</p>
+                    </div>
+                  </div>
                   <select
                     value={form.current_year}
                     onChange={(e) => setForm((f) => ({ ...f, current_year: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="">เลือกปีงบประมาณ</option>
                     {selectableYearOptions.map((year) => (
-                      <option key={year} value={year}>
-                        พ.ศ. {year}
-                      </option>
+                      <option key={year} value={year}>พ.ศ. {year}</option>
                     ))}
                   </select>
-                  {selectableYearOptions.length === 0 && (
-                    <p className="text-xs text-gray-500">เพิ่มปีงบประมาณในเมนูจัดการทุน เพื่อให้เลือกตั้งเป็นปีปัจจุบัน</p>
-                  )}
+                  {selectableYearOptions.length === 0 ? <p className="mt-2 text-xs text-amber-700">เพิ่มปีงบประมาณในเมนูจัดการทุนก่อน</p> : null}
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">ช่องทางติดต่อ (สำหรับแจ้งในอีเมล)</label>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="mb-4 flex items-start gap-3">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700"><FileCheck2 size={18} /></span>
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-900">โควตาการยื่นคำร้อง</h4>
+                      <p className="text-xs text-slate-500">จำนวนครั้งต่อคนในหนึ่งปี</p>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.max_submissions_per_year}
+                      onChange={(e) => setForm((f) => ({ ...f, max_submissions_per_year: e.target.value }))}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-4 pr-20 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="เช่น 2"
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500">ครั้ง/ปี</span>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-4 sm:col-span-2">
+                  <div className="mb-3 flex items-start gap-3">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700"><Mail size={18} /></span>
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-900">ช่องทางติดต่อ</h4>
+                      <p className="text-xs text-slate-500">ข้อมูลนี้จะแทนค่า {"{{contact_info}}"} ในอีเมลแจ้งเตือน</p>
+                    </div>
+                  </div>
                   <textarea
                     value={form.contact_info}
                     onChange={(e) => setForm((f) => ({ ...f, contact_info: e.target.value }))}
                     rows={3}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     placeholder="เช่น researchfund@kku.ac.th, โทร 043-xxx หรือช่องทางติดต่ออื่น ๆ"
                   />
-                  <p className="text-xs text-gray-500">{"ข้อความนี้จะถูกใช้แทน {{contact_info}} ในอีเมลแจ้งเตือน"}</p>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">จำนวนยื่นขอทุนต่อปี (ต่อคน)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.max_submissions_per_year}
-                    onChange={(e) => setForm((f) => ({ ...f, max_submissions_per_year: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    placeholder="เช่น 2"
-                  />
-                  <p className="text-xs text-gray-500">กำหนดจำนวนครั้งที่ผู้ใช้สามารถยื่นขอทุนได้ต่อปีงบประมาณ</p>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium text-gray-700">วัน-เวลา เปิดรับคำร้อง</span>
-                    <div className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-200">
-                      <CalendarIcon size={18} className="text-gray-500" />
-                      <input
-                        type="datetime-local"
-                        value={form.start_date}
-                        onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))}
-                        className="w-full border-none bg-transparent text-sm text-gray-700 focus:outline-none"
-                      />
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 sm:col-span-2">
+                  <div className="mb-4 flex items-start gap-3">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-white text-blue-700"><Clock size={18} /></span>
+                    <div>
+                      <h4 className="text-sm font-semibold text-blue-950">กำหนดช่วงเวลาเปิดรับคำร้อง</h4>
+                      <p className="text-xs text-blue-800">ระบบจะเปิดและปิดรับคำร้องอัตโนมัติตามเวลาที่กำหนด</p>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium text-gray-700">วัน-เวลา ปิดรับคำร้อง</span>
-                    <div className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-200">
-                      <Clock size={18} className="text-gray-500" />
-                      <input
-                        type="datetime-local"
-                        value={form.end_date}
-                        onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))}
-                        className="w-full border-none bg-transparent text-sm text-gray-700 focus:outline-none"
-                      />
-                    </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="space-y-2">
+                      <span className="block text-sm font-medium text-blue-950">เริ่มเปิดรับคำร้อง</span>
+                      <div className="relative">
+                        <CalendarIcon size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-blue-600" />
+                        <input
+                          type="datetime-local"
+                          value={form.start_date}
+                          onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))}
+                          className="w-full rounded-lg border border-blue-200 bg-white pl-10 pr-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                    </label>
+                    <label className="space-y-2">
+                      <span className="block text-sm font-medium text-blue-950">สิ้นสุดการรับคำร้อง</span>
+                      <div className="relative">
+                        <Clock size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-blue-600" />
+                        <input
+                          type="datetime-local"
+                          value={form.end_date}
+                          onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))}
+                          className="w-full rounded-lg border border-blue-200 bg-white pl-10 pr-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                    </label>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-sm font-semibold text-slate-700">ช่วงเวลาที่ตั้งค่า</p>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{prettyWindowRange}</p>
-                </div>
-                <div className="rounded-xl bg-slate-100 p-4">
-                  <dl className="space-y-3 text-sm text-slate-600">
-                    <div className="flex items-center justify-between gap-3">
-                      <dt className="font-medium text-slate-700">สถานะโดยรวม</dt>
-                      <dd>
-                        <span
-                          className={
-                            "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-white " +
-                            (windowInfo?.is_open_effective ? "bg-green-600" : "bg-gray-500")
-                          }
-                        >
-                          {windowInfo?.is_open_effective ? "เปิด (effective)" : "ปิด (effective)"}
-                        </span>
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <dt className="font-medium text-slate-700">เวลาระบบ</dt>
-                      <dd className="text-slate-600">{windowInfo?.now ? formatThaiFull(windowInfo.now) : "-"}</dd>
-                    </div>
-                  </dl>
-                </div>
-                {selectedAnnTitles.length ? (
-                  <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/60 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">ประกาศที่เลือกใช้งาน</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {selectedAnnTitles.map((title) => (
-                        <span
-                          key={title}
-                          className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-medium text-blue-700 shadow-sm ring-1 ring-blue-100"
-                        >
-                          {title}
-                        </span>
-                      ))}
-                    </div>
+              <aside className="h-fit rounded-xl border border-blue-200 bg-blue-50 p-5 xl:sticky xl:top-28">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">สถานะระบบ</p>
+                    <h4 className="mt-1 text-lg font-semibold text-blue-950">การรับคำร้อง</h4>
                   </div>
-                ) : null}
-              </div>
+                  <span
+                    className={
+                      windowInfo?.is_open_effective
+                        ? "inline-flex items-center rounded-md border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700"
+                        : "inline-flex items-center rounded-md border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
+                    }
+                  >
+                    {windowInfo?.is_open_effective ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                  </span>
+                </div>
+                <div className="my-5 h-px bg-blue-200" />
+                <dl className="space-y-5">
+                  <div>
+                    <dt className="text-xs font-medium text-blue-700">ช่วงเวลาที่ตั้งค่า</dt>
+                    <dd className="mt-1 text-sm leading-relaxed text-blue-950">{prettyWindowRange}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-blue-700">เวลาระบบล่าสุด</dt>
+                    <dd className="mt-1 text-sm text-blue-950">{windowInfo?.now ? formatThaiFull(windowInfo.now) : "-"}</dd>
+                  </div>
+                  <div className="rounded-lg border border-blue-200 bg-white p-3">
+                    <dt className="text-xs font-medium text-blue-700">ปีงบประมาณที่เลือก</dt>
+                    <dd className="mt-1 text-xl font-semibold text-blue-950">{form.current_year ? `พ.ศ. ${form.current_year}` : "ยังไม่กำหนด"}</dd>
+                  </div>
+                </dl>
+              </aside>
             </div>
           </div>
         </section>
 
         {/* Section 2: ประกาศที่ใช้งาน */}
-        <section>
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-gray-100">
-              <h3 className="text-base font-semibold text-gray-900">ประกาศที่ใช้งาน</h3>
-              <p className="text-sm text-gray-500 max-w-xl">เลือกประกาศที่ต้องการให้แสดงในแต่ละหมวด พร้อมกำหนดช่วงเวลาที่ประกาศมีผล</p>
+        <section id="system-announcements" className="scroll-mt-28">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+            <div className="flex items-start gap-3 border-b border-slate-100 pb-4">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700"><Megaphone size={19} /></span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">ส่วนที่ 2</p>
+                <h3 className="text-base font-semibold text-slate-900">ประกาศที่ใช้งาน</h3>
+                <p className="max-w-2xl text-sm text-slate-500">เลือกประกาศที่ต้องการให้แสดงในแต่ละหมวด พร้อมกำหนดช่วงเวลาที่ประกาศมีผล</p>
+              </div>
             </div>
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {renderAnnSelect("ประกาศหลักเกณฑ์การใช้จ่ายเงินกองทุน", "main_annoucement")}
@@ -1119,17 +1206,21 @@ export default function SystemConfigSettings() {
         </section>
 
         {/* Section 2.1: ประวัติประกาศ */}
-        <section>
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <section id="system-announcement-history" className="scroll-mt-28">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-4">
-              <div>
-                <h3 className="text-base font-semibold text-gray-900">ประวัติการตั้งค่าประกาศ</h3>
-                <p className="text-sm text-gray-500">ตรวจสอบการเปลี่ยนแปลงย้อนหลังของแต่ละช่องประกาศ</p>
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700"><History size={19} /></span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">ส่วนที่ 3</p>
+                  <h3 className="text-base font-semibold text-slate-900">ประวัติการตั้งค่าประกาศ</h3>
+                  <p className="text-sm text-slate-500">ตรวจสอบการเปลี่ยนแปลงย้อนหลังของแต่ละช่องประกาศ</p>
+                </div>
               </div>
               <button
                 onClick={loadAnnouncementHistory}
                 disabled={annHistoryLoading}
-                className="text-xs inline-flex items-center gap-1 rounded-full border border-green-200 px-3 py-1 font-medium text-green-600 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                 title="รีเฟรชประวัติ"
               >
                 <RefreshCw size={14} />
@@ -1138,7 +1229,7 @@ export default function SystemConfigSettings() {
             </div>
 
             <div className="mt-4 overflow-x-auto rounded-xl border border-gray-100">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <table className="w-full min-w-[820px] divide-y divide-slate-200 text-sm">
                 <thead className="bg-gray-50 text-gray-600">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium">ช่อง</th>
@@ -1179,7 +1270,7 @@ export default function SystemConfigSettings() {
                 <button
                   type="button"
                   onClick={() => setShowAllAnnHistory((prev) => !prev)}
-                  className="inline-flex items-center gap-1 rounded-full border border-blue-200 px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
+                  className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
                 >
                   {showAllAnnHistory ? "แสดงน้อยลง" : "ดูเพิ่มเติม"}
                 </button>
@@ -1193,17 +1284,21 @@ export default function SystemConfigSettings() {
         </section>
 
         {/* Section 3: หัวหน้าสาขา */}
-        <section>
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <section id="system-department-head" className="scroll-mt-28">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-4">
-              <div>
-                <h3 className="text-base font-semibold text-gray-900">ตั้งค่าหัวหน้าสาขา</h3>
-                <p className="text-sm text-gray-500">กำหนดผู้รับผิดชอบและติดตามประวัติการมอบหมาย</p>
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700"><UserCog size={19} /></span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">ส่วนที่ 4</p>
+                  <h3 className="text-base font-semibold text-slate-900">ตั้งค่าหัวหน้าสาขา</h3>
+                  <p className="text-sm text-slate-500">กำหนดผู้รับผิดชอบและติดตามประวัติการมอบหมาย</p>
+                </div>
               </div>
               <button
                 onClick={handleAssignDeptHead}
                 disabled={headSaving || !deptHeadForm.head_user_id}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
                 title="บันทึก/เปลี่ยนหัวหน้าสาขา"
               >
                 <Save size={16} />
@@ -1332,7 +1427,7 @@ export default function SystemConfigSettings() {
                       type="button"
                       onClick={handleRefreshHeadData}
                       disabled={headLoading}
-                      className="inline-flex items-center gap-1 rounded-full border border-green-200 px-3 py-1 font-medium text-green-600 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1 font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <RefreshCw size={14} />
                       {headLoading ? "กำลังโหลด..." : "รีเฟรช"}
@@ -1340,7 +1435,7 @@ export default function SystemConfigSettings() {
                   </div>
                 </div>
                 <div className="overflow-x-auto border-t border-gray-100">
-                  <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <table className="w-full min-w-[760px] divide-y divide-slate-200 text-sm">
                     <thead className="bg-gray-50 text-gray-600">
                       <tr>
                         <th className="px-3 py-2 text-left font-medium">ผู้ใช้</th>
@@ -1384,7 +1479,7 @@ export default function SystemConfigSettings() {
                       type="button"
                       onClick={() => setShowAllHeadHistory((prev) => !prev)}
                       disabled={headLoading}
-                      className="inline-flex items-center gap-1 rounded-full border border-blue-200 px-3 py-1 font-medium text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-1 font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {showAllHeadHistory ? "แสดงน้อยลง" : "ดูเพิ่มเติม"}
                     </button>
