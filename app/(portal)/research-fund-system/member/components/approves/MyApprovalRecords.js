@@ -338,7 +338,7 @@ export default function MyApprovalRecords() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-ml font-medium text-gray-700">ทุนย่อย / งบประมาณ</label>
+              <label className="block text-ml font-medium text-gray-700">ชื่อทุน</label>
               <select
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-ml"
                 value={budgetFilter}
@@ -417,7 +417,7 @@ export default function MyApprovalRecords() {
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-3 text-left text-ml font-medium text-gray-700">ทุนย่อย / งบประมาณ</th>
+                        <th className="px-4 py-3 text-left text-ml font-medium text-gray-700">ชื่อทุน</th>
                         <th className="px-4 py-3 text-right text-ml font-medium text-gray-700 w-48">จำนวนเงิน (บาท)</th>
                       </tr>
                     </thead>
