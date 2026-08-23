@@ -13,7 +13,7 @@ export default function RecentApplications({ applications = [] }) {
   const items = Array.isArray(applications) ? applications : [];
 
   if (items.length === 0) {
-    return <p className="text-center text-gray-500 py-8">ไม่มีคำร้องล่าสุด</p>;
+    return <p className="py-8 text-center text-slate-500">ไม่มีคำร้องล่าสุด</p>;
   }
 
   return (
@@ -26,13 +26,13 @@ export default function RecentApplications({ applications = [] }) {
           `${app.project_title}-${app.submitted_at}`;
 
         return (
-          <div key={key} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+          <div key={key} className="rounded-xl border border-slate-200 p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/40">
             <div className="flex justify-between items-start mb-2 gap-4">
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-gray-800 truncate">
+                <h4 className="truncate font-semibold text-slate-900">
                   {app.project_title || app.title || "-"}
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-slate-600">
                   เลขที่: {app.application_number || app.submission_number || "-"}
                 </p>
               </div>
@@ -47,7 +47,7 @@ export default function RecentApplications({ applications = [] }) {
                 fallbackLabel={app.status}
               />
             </div>
-            <div className="flex justify-between text-sm text-gray-600 gap-4">
+            <div className="flex justify-between gap-4 text-sm text-slate-600">
               <span className="truncate">
                 {app.subcategory_name || app.category_name || "ไม่ระบุหมวดหมู่"}
               </span>

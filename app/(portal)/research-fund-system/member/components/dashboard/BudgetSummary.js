@@ -35,15 +35,17 @@ export default function BudgetSummary({ budget }) {
       label: "งบประมาณที่ขอทั้งหมด",
       value: formatCurrency(safeTotal),
       icon: DollarSign,
-      bgColor: "bg-gray-50",
-      textColor: "text-gray-700",
-      iconColor: "text-gray-500"
+      bgColor: "bg-slate-50",
+      borderColor: "border-slate-200",
+      textColor: "text-slate-900",
+      iconColor: "text-slate-600"
     },
     {
       label: "ใช้ไปในปีนี้",
       value: formatCurrency(safeUsed),
       icon: TrendingDown,
       bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
       textColor: "text-blue-700",
       iconColor: "text-blue-500",
       percentage: `${percentageUsed}%`
@@ -53,6 +55,7 @@ export default function BudgetSummary({ budget }) {
       value: formatCurrency(safeRemaining),
       icon: TrendingUp,
       bgColor: "bg-green-50",
+      borderColor: "border-green-200",
       textColor: "text-green-700",
       iconColor: "text-green-500",
       percentage: `${percentageRemaining}%`
@@ -65,16 +68,16 @@ export default function BudgetSummary({ budget }) {
       {budgetItems.map((item, index) => (
         <div
           key={index}
-          className={`flex items-center justify-between p-4 ${item.bgColor} rounded-lg transition-all hover:shadow-md`}
+          className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between ${item.bgColor} ${item.borderColor}`}
         >
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${item.bgColor}`}>
+            <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${item.bgColor}`}>
               <item.icon size={20} className={item.iconColor} />
             </div>
             <div>
-              <p className="text-sm text-gray-600">{item.label}</p>
+              <p className="text-sm text-slate-600">{item.label}</p>
               {item.percentage && (
-                <p className="text-xs text-gray-500">{item.percentage} ของทั้งหมด</p>
+                <p className="text-xs text-slate-500">{item.percentage} ของทั้งหมด</p>
               )}
             </div>
           </div>
@@ -85,12 +88,12 @@ export default function BudgetSummary({ budget }) {
       ))}
 
       {/* Visual Progress Bar */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+      <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">การใช้งบประมาณ</span>
-          <span className="text-sm text-gray-600">{percentageUsed}%</span>
+          <span className="text-sm font-medium text-slate-700">การใช้งบประมาณ</span>
+          <span className="text-sm text-slate-600">{percentageUsed}%</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+        <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200">
           <div className="h-full flex">
             <div 
               className="bg-blue-500 transition-all duration-500"
@@ -109,12 +112,12 @@ export default function BudgetSummary({ budget }) {
       </div>
 
       {/* Summary Card */}
-      <div className="mt-4 p-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg">
+      <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-950">
         <div className="flex items-center gap-2 mb-2">
           <PieChart size={20} />
           <h4 className="font-semibold">สรุปการใช้งบประมาณ</h4>
         </div>
-        <p className="text-sm opacity-90">
+        <p className="text-sm text-blue-800">
           คุณได้ใช้งบประมาณไปแล้ว {percentageUsed}% จากงบประมาณทั้งหมดที่ได้รับ
         </p>
       </div>
