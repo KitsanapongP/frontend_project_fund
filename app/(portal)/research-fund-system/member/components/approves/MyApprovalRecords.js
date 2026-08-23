@@ -4,9 +4,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { FileCheck, FileText, Filter } from 'lucide-react';
 
-import PageLayout from '@/app/(portal)/research-fund-system/admin/components/common/PageLayout';
-import Card from '@/app/(portal)/research-fund-system/admin/components/common/Card';
-import StatusBadge from '@/app/(portal)/research-fund-system/admin/components/common/StatusBadge';
+import PageLayout from '../common/PageLayout';
+import Card from '../common/Card';
+import StatusBadge from '../common/StatusBadge';
 import { useStatusMap } from '@/app/hooks/useStatusMap';
 import { toast } from 'react-hot-toast';
 
@@ -16,7 +16,7 @@ import { systemConfigAPI } from '@/app/lib/system_config_api';
 import { systemAPI } from '@/app/lib/api';
 
 const ApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
-const CHART_PALETTE = ['#2563eb', '#16a34a', '#f59e0b', '#db2777', '#0d9488', '#7c3aed', '#ea580c', '#0891b2'];
+const CHART_PALETTE = ['#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#0f766e', '#15803d', '#64748b'];
 
 const fmtTHB2 = (n) =>
   typeof n === 'number' && !Number.isNaN(n)
@@ -290,12 +290,12 @@ export default function MyApprovalRecords() {
       ]}
     >
       <div className="mb-6">
-        <Card title="ตัวกรอง (Filters)" icon={Filter} collapsible={false}>
+        <Card title="ตัวกรอง" icon={Filter} collapsible={false}>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <label className="block text-ml font-medium text-gray-700">ปีงบประมาณ (พ.ศ.)</label>
+              <label className="block text-sm font-medium text-slate-700">ปีงบประมาณ (พ.ศ.)</label>
               <select
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-ml"
+                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={yearId ?? ''}
                 disabled={loadingMeta || !years.length}
                 onChange={(e) => {
@@ -318,9 +318,9 @@ export default function MyApprovalRecords() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-ml font-medium text-gray-700">หมวดทุน</label>
+              <label className="block text-sm font-medium text-slate-700">หมวดทุน</label>
               <select
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-ml"
+                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={categoryFilter}
                 onChange={(e) => {
                   setCategoryFilter(e.target.value);
@@ -338,9 +338,9 @@ export default function MyApprovalRecords() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-ml font-medium text-gray-700">ชื่อทุน</label>
+              <label className="block text-sm font-medium text-slate-700">ชื่อทุน</label>
               <select
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-ml"
+                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={budgetFilter}
                 onChange={(e) => setBudgetFilter(e.target.value)}
                 disabled={loadingData || !budgetOptions.length}
@@ -372,14 +372,14 @@ export default function MyApprovalRecords() {
         headerClassName="items-center"
       >
         {loadingData ? (
-          <div className="py-16 text-center text-sm text-gray-500">กำลังโหลดข้อมูล…</div>
+          <div className="py-16 text-center text-sm text-slate-500">กำลังโหลดข้อมูล…</div>
         ) : filteredCategories.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-500">ไม่พบบันทึกการอนุมัติ</div>
+          <div className="py-16 text-center text-sm text-slate-500">ไม่พบบันทึกการอนุมัติ</div>
         ) : (
           <div className="space-y-8">
-            <div className="rounded-md border border-gray-200 bg-white p-4 space-y-3">
+            <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="text-sm font-medium text-gray-700">กราฟเปรียบเทียบยอดอนุมัติรายหมวด</div>
+                <div className="text-sm font-medium text-slate-700">กราฟเปรียบเทียบยอดอนุมัติรายหมวด</div>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { id: 'bar', label: 'แท่งแนวตั้ง' },
@@ -390,7 +390,7 @@ export default function MyApprovalRecords() {
                       key={item.id}
                       type="button"
                       onClick={() => setChartType(item.id)}
-                      className={`rounded-md border px-3 py-1 text-xs ${chartType === item.id ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-700'}`}
+                      className={`min-h-11 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${chartType === item.id ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white text-blue-700 hover:border-blue-200 hover:bg-blue-50'}`}
                     >
                       {item.label}
                     </button>
@@ -413,28 +413,28 @@ export default function MyApprovalRecords() {
             {filteredCategories.map((cat) => (
               <div key={cat.categoryId ?? cat.categoryName} className="space-y-3">
                 <div className="font-bold">{cat.categoryName}</div>
-                <div className="overflow-hidden rounded-md border border-gray-200">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="w-full min-w-[36rem]">
+                    <thead className="bg-slate-50">
                       <tr>
-                        <th className="px-4 py-3 text-left text-ml font-medium text-gray-700">ชื่อทุน</th>
-                        <th className="px-4 py-3 text-right text-ml font-medium text-gray-700 w-48">จำนวนเงิน (บาท)</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">ชื่อทุน</th>
+                        <th className="w-48 px-4 py-3 text-right text-sm font-medium text-slate-700">จำนวนเงิน</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 bg-white">
+                    <tbody className="divide-y divide-slate-100 bg-white">
                       {cat.items?.map((it, idx) => (
                         <tr key={idx}>
-                          <td className="px-4 py-3 text-ml">{it.label}</td>
-                          <td className="px-4 py-3 text-ml text-right">{fmtTHB2(it.amount)}</td>
+                          <td className="px-4 py-3 text-sm">{it.label}</td>
+                          <td className="px-4 py-3 text-right text-sm tabular-nums">{fmtTHB2(it.amount)}฿</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
                 <div className="flex justify-end">
-                  <div className="bg-gray-50 rounded px-4 py-2 text-ml">
-                    <span className="text-gray-600">รวมหมวด:</span>
-                    <span className="ml-2 font-medium">{fmtTHB2(cat.total)} บาท</span>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                    <span className="text-slate-600">รวมหมวด:</span>
+                    <span className="ml-2 font-semibold tabular-nums text-slate-900">{fmtTHB2(cat.total)}฿</span>
                   </div>
                 </div>
               </div>
@@ -442,14 +442,14 @@ export default function MyApprovalRecords() {
           </div>
         )}
 
-        <div className="mt-10 pt-6 border-t flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="text-base md:text-lg text-gray-700">
-            ยอดเงินที่อาจารย์ <span className="font-semibold text-gray-900">{currentUserName}</span> ได้รับอนุมัติให้เบิกในปีงบประมาณ{' '}
-            <span className="font-semibold text-gray-900">{yearLabel || '—'}</span>
+        <div className="mt-10 flex flex-col gap-3 border-t border-slate-200 pt-6 md:flex-row md:items-center md:justify-between">
+          <div className="text-base md:text-lg text-slate-700">
+            ยอดเงินที่อาจารย์ <span className="font-semibold text-slate-900">{currentUserName}</span> ได้รับอนุมัติให้เบิกในปีงบประมาณ{' '}
+            <span className="font-semibold text-slate-900">{yearLabel || '—'}</span>
           </div>
           <div className="text-right">
-            <div className="text-sm md:text-base text-gray-500">รวมทั้งสิ้น</div>
-            <div className="text-3xl md:text-4xl font-extrabold">{fmtTHB2(grandTotal)} บาท</div>
+            <div className="text-sm md:text-base text-slate-500">รวมทั้งสิ้น</div>
+            <div className="text-3xl font-semibold tabular-nums text-blue-700 md:text-4xl">{fmtTHB2(grandTotal)}฿</div>
           </div>
         </div>
       </Card>
