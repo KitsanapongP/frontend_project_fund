@@ -39,11 +39,10 @@ const formatDate = (value) => {
 
 const formatCurrency = (amount) => {
   const numeric = Number(amount) || 0;
-  return new Intl.NumberFormat("th-TH", {
-    style: "currency",
-    currency: "THB",
+  return `${numeric.toLocaleString("th-TH", {
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(numeric);
+  })}฿`;
 };
 
 const formatParticipants = (value) => {
@@ -494,24 +493,24 @@ export default function ProjectsList() {
       ]}
     >
       {showInitialLoading ? (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white">
           <div className="py-16 flex flex-col items-center gap-3 text-center">
             <LoadingSpinner size="large" />
-            <p className="text-sm text-gray-500">กำลังโหลดข้อมูลโครงการ...</p>
+            <p className="text-sm text-slate-500">กำลังโหลดข้อมูลโครงการ...</p>
           </div>
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="bg-white shadow-sm rounded-lg p-5 border border-gray-200">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
             <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
               <div className="relative w-full lg:max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   placeholder="ค้นหาโครงการตามชื่อ ประเภท หรือแผนงบประมาณ"
-                  className="w-full border border-gray-300 rounded-md py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -520,7 +519,7 @@ export default function ProjectsList() {
                   <select
                     value={typeFilter}
                     onChange={(event) => setTypeFilter(event.target.value)}
-                    className="border border-gray-300 rounded-md py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="all">ทุกประเภทโครงการ</option>
                     {typeOptions.map((option) => (
@@ -533,7 +532,7 @@ export default function ProjectsList() {
                   <select
                     value={planFilter}
                     onChange={(event) => setPlanFilter(event.target.value)}
-                    className="border border-gray-300 rounded-md py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="all">ทุกแผนงบประมาณ</option>
                     {planOptions.map((option) => (
@@ -548,7 +547,7 @@ export default function ProjectsList() {
                   <select
                     value={sortField}
                     onChange={(event) => setSortField(event.target.value)}
-                    className="border border-gray-300 rounded-md py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {SORT_FIELDS.map((option) => (
                       <option key={option.id} value={option.id}>
@@ -560,7 +559,7 @@ export default function ProjectsList() {
                   <select
                     value={sortDirection}
                     onChange={(event) => setSortDirection(event.target.value)}
-                    className="border border-gray-300 rounded-md py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2.5 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {SORT_DIRECTIONS.map((option) => (
                       <option key={option.id} value={option.id}>
@@ -573,7 +572,7 @@ export default function ProjectsList() {
                 <button
                   type="button"
                   onClick={handleRefresh}
-                  className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md px-4 py-2.5 transition-colors"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                 >
                   <RefreshCcw size={18} className={loading ? "animate-spin" : ""} />
                   รีเฟรช
@@ -582,11 +581,11 @@ export default function ProjectsList() {
             </div>
 
             <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-slate-600">
                 แสดง {filteredProjects.length.toLocaleString("th-TH")} จาก {projects.length.toLocaleString("th-TH")} โครงการ
               </p>
               {lastUpdated && (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-slate-500">
                   อัปเดตล่าสุด {lastUpdated.toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" })}
                 </p>
               )}
@@ -608,7 +607,7 @@ export default function ProjectsList() {
               <button
                 type="button"
                 onClick={handleRefresh}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
                 <RefreshCcw size={18} className={loading ? "animate-spin" : ""} />
                 ลองใหม่อีกครั้ง
@@ -650,82 +649,82 @@ export default function ProjectsList() {
                     title={
                       <span className="flex flex-col items-start gap-1 text-left">
                         <span>{project.project_name || "ไม่พบชื่อโครงการ"}</span>
-                        <span className="text-sm font-normal text-gray-500">
+                        <span className="text-sm font-normal text-slate-500">
                           {formatDate(project.event_date)} · {getProjectTypeLabel(project)}
                         </span>
                       </span>
                     }
                   >
-                    <div className="grid gap-5 md:grid-cols-2">
+                    <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-4">
-                        <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-full bg-blue-50 text-blue-600">
+                        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
                             <Layers size={18} />
                             </div>
                             <div>
-                            <p className="text-sm text-gray-500">ประเภทโครงการ</p>
-                            <p className="text-base font-medium text-gray-900">{getProjectTypeLabel(project)}</p>
+                            <p className="text-sm text-slate-500">ประเภทโครงการ</p>
+                            <p className="text-base font-medium text-slate-900">{getProjectTypeLabel(project)}</p>
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-full bg-emerald-50 text-emerald-600">
+                        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
                             <Wallet size={18} />
                             </div>
                             <div>
-                            <p className="text-sm text-gray-500">แผนงบประมาณ</p>
-                            <p className="text-base font-medium text-gray-900">{getBudgetPlanLabel(project)}</p>
-                            <p className="text-sm text-gray-600 mt-1">งบประมาณ {formatCurrency(project.budget_amount)}</p>
+                            <p className="text-sm text-slate-500">แผนงบประมาณ</p>
+                            <p className="text-base font-medium text-slate-900">{getBudgetPlanLabel(project)}</p>
+                            <p className="text-sm text-slate-600 mt-1">งบประมาณ {formatCurrency(project.budget_amount)}</p>
                             </div>
                         </div>
                       </div>
 
                       <div className="space-y-4">
-                        <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-full bg-amber-50 text-amber-600">
+                        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
                             <CalendarDays size={18} />
                             </div>
                             <div>
-                            <p className="text-sm text-gray-500">วันที่จัดโครงการ</p>
-                            <p className="text-base font-medium text-gray-900">{formatDate(project.event_date)}</p>
+                            <p className="text-sm text-slate-500">วันที่จัดโครงการ</p>
+                            <p className="text-base font-medium text-slate-900">{formatDate(project.event_date)}</p>
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-full bg-purple-50 text-purple-600">
+                        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
                             <Users size={18} />
                             </div>
                             <div>
-                            <p className="text-sm text-gray-500">จำนวนผู้เข้าร่วม</p>
-                            <p className="text-base font-medium text-gray-900">{formatParticipants(project.participants)}</p>
+                            <p className="text-sm text-slate-500">จำนวนผู้เข้าร่วม</p>
+                            <p className="text-base font-medium text-slate-900">{formatParticipants(project.participants)}</p>
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-full bg-indigo-50 text-indigo-600">
+                        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
                             <Users size={18} />
                             </div>
                             <div>
-                            <p className="text-sm text-gray-500">หน่วยงาน/ชุมชนที่ได้รับประโยชน์</p>
-                            <p className="text-base font-medium text-gray-900">{formatBeneficiaries(project.beneficiaries_count)}</p>
+                            <p className="text-sm text-slate-500">หน่วยงาน/ชุมชนที่ได้รับประโยชน์</p>
+                            <p className="text-base font-medium text-slate-900">{formatBeneficiaries(project.beneficiaries_count)}</p>
                             </div>
                         </div>
                       </div>
                     </div>
 
                     {project.notes && (
-                        <div className="mt-6">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
                             <Info size={18} className="text-blue-500" />
                             รายละเอียดเพิ่มเติม
                         </h4>
-                        <p className="text-gray-700 whitespace-pre-line leading-relaxed">{project.notes}</p>
+                        <p className="text-slate-700 whitespace-pre-line leading-relaxed">{project.notes}</p>
                         </div>
                     )}
 
                     <div className="mt-6">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                        <User size={18} className="text-gray-500" />
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                        <User size={18} className="text-blue-600" />
                         ผู้ร่วมโครงการ
                       </h4>
                       {members.length ? (
@@ -743,15 +742,15 @@ export default function ProjectsList() {
                             return (
                               <li
                                 key={memberId}
-                                className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white/80 px-3 py-3 md:flex-row md:items-center md:justify-between"
+                                className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 md:flex-row md:items-center md:justify-between"
                               >
                                 <div>
-                                  <p className="font-medium text-gray-900">
+                                  <p className="font-medium text-slate-900">
                                     {buildMemberDisplayName(member)}
                                   </p>
-                                  <p className="text-sm text-gray-600"> หน้าที่: {duty}</p>
+                                  <p className="text-sm text-slate-600"> หน้าที่: {duty}</p>
                                   {notesValue ? (
-                                    <p className="text-xs text-gray-500 mt-1 whitespace-pre-line">
+                                    <p className="text-xs text-slate-500 mt-1 whitespace-pre-line">
                                       หมายเหตุ: {notesValue}
                                     </p>
                                   ) : null}
@@ -761,15 +760,15 @@ export default function ProjectsList() {
                           })}
                         </ul>
                       ) : (
-                        <p className="text-sm text-gray-500 italic">
+                        <p className="text-sm text-slate-500 italic">
                           ยังไม่มีการบันทึกผู้ร่วมโครงการ
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                        <Paperclip size={18} className="text-gray-500" />
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                        <Paperclip size={18} className="text-blue-600" />
                         ไฟล์แนบโครงการ
                       </h4>
                       {attachments.length ? (
@@ -788,7 +787,7 @@ export default function ProjectsList() {
                                     type="button"
                                     onClick={() => handleOpenAttachment(project, attachment, index)}
                                     disabled={isOpening}
-                                    className="flex w-full items-center justify-between gap-3 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800 transition hover:border-blue-200 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
+                                    className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
                                   >
                                     <span className="font-medium text-left">
                                       {displayName}
@@ -810,15 +809,15 @@ export default function ProjectsList() {
                             }
 
                             return (
-                              <li key={attachmentKey} className="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
+                              <li key={attachmentKey} className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                                 <span>{displayName}</span>
-                                {sizeLabel && <span className="text-xs text-gray-500">{sizeLabel}</span>}
+                                {sizeLabel && <span className="text-xs text-slate-500">{sizeLabel}</span>}
                               </li>
                             );
                           })}
                         </ul>
                       ) : (
-                        <p className="text-sm text-gray-500 italic">
+                        <p className="text-sm text-slate-500 italic">
                           ยังไม่มีไฟล์แนบที่เผยแพร่สำหรับโครงการนี้
                         </p>
                       )}

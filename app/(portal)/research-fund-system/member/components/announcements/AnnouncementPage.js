@@ -7,7 +7,7 @@ import apiClient, { announcementAPI, fundFormAPI, systemAPI } from "../../../../
 import { getSignedFileUrl, openSignedFileInNewTab } from "../../../../../lib/file_access";
 import { systemConfigAPI } from "../../../../../lib/system_config_api";
 import { fundInstallmentAPI } from "../../../../../lib/fund_installment_api";
-import DataTable from "../../../admin/components/common/DataTable";
+import DataTable from "../common/DataTable";
 import PageLayout from "../common/PageLayout";
 
 const parseISODate = (value) => {
@@ -48,43 +48,29 @@ const FUND_KEYWORD_SECTIONS = [
     keyword: "ทุนส่งเสริมการวิจัย",
     title: "ทุนส่งเสริมการวิจัย",
     description: "รอบการพิจารณาสำหรับทุนส่งเสริมการวิจัยและนวัตกรรม",
-    accent: "indigo",
+    accent: "blue",
   },
   {
     keyword: "ทุนอุดหนุนกิจกรรม",
     title: "ทุนอุดหนุนกิจกรรม",
     description: "รอบการพิจารณาสำหรับทุนอุดหนุนกิจกรรม",
-    accent: "emerald",
+    accent: "blue",
   },
   {
     keyword: "ทุนสนับสนุนผู้เชี่ยวชาญต่างประเทศ",
     title: "ทุนสนับสนุนผู้เชี่ยวชาญต่างประเทศ",
     description: "รอบการพิจารณาสำหรับทุนสนับสนุนผู้เชี่ยวชาญต่างประเทศ",
-    accent: "amber",
+    accent: "blue",
   },
 ];
 
 const SECTION_STYLES = {
-  indigo: {
-    nextCard: "border-indigo-100 bg-indigo-50",
-    nextText: "text-indigo-900",
-    nextSubText: "text-indigo-800",
-    nextLabel: "text-indigo-700",
-    nextBadge: "bg-white text-indigo-700",
-  },
-  emerald: {
-    nextCard: "border-emerald-100 bg-emerald-50",
-    nextText: "text-emerald-900",
-    nextSubText: "text-emerald-800",
-    nextLabel: "text-emerald-700",
-    nextBadge: "bg-white text-emerald-700",
-  },
-  amber: {
-    nextCard: "border-amber-100 bg-amber-50",
-    nextText: "text-amber-900",
-    nextSubText: "text-amber-800",
-    nextLabel: "text-amber-700",
-    nextBadge: "bg-white text-amber-700",
+  blue: {
+    nextCard: "border-blue-200 bg-blue-50",
+    nextText: "text-blue-950",
+    nextSubText: "text-blue-800",
+    nextLabel: "text-blue-700",
+    nextBadge: "bg-white text-blue-700 ring-1 ring-blue-200",
   },
 };
 
@@ -884,9 +870,9 @@ export default function AnnouncementPage() {
       case 'research_fund':
         return 'bg-blue-100 text-blue-800';
       case 'promotion_fund':
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-slate-100 text-slate-700';
     }
   };
 
@@ -906,7 +892,7 @@ export default function AnnouncementPage() {
       case 'urgent':
         return 'bg-red-100 text-red-800';
       case 'high':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-amber-100 text-amber-800';
       default:
         return 'bg-blue-100 text-blue-800';
     }
@@ -927,17 +913,38 @@ export default function AnnouncementPage() {
     {
       header: "ชื่อประกาศ",
       accessor: "title",
-      className: "font-medium",
-      render: (value) => <span className="font-medium text-gray-900">{value || "-"}</span>
+      className: "min-w-[24rem] align-top font-medium",
+      headerClassName: "min-w-[24rem] text-left",
+      render: (value, row) => {
+        const fileName = row?.file_name || (row?.file_path ? getDownloadFileName(row.file_path) : null);
+        return (
+          <div className="flex max-w-md flex-col gap-1">
+            <span className="font-semibold text-slate-950">{value || "-"}</span>
+            {fileName ? (
+              <button
+                type="button"
+                onClick={() => handleViewFile(row, 'announcement')}
+                className="w-fit break-all text-left text-sm font-medium text-blue-700 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                {fileName}
+              </button>
+            ) : null}
+          </div>
+        );
+      }
     },
     {
       header: "ปี",
       accessor: "year",
-      render: (_, row) => <span className="text-gray-700">{row.year || '-'}</span>
+      className: "w-20 whitespace-nowrap align-top",
+      headerClassName: "w-20 whitespace-nowrap text-left",
+      render: (_, row) => <span className="text-slate-700">{row.year || '-'}</span>
     },
     {
       header: "หมวดหมู่กองทุน",
       accessor: "announcement_type",
+      className: "min-w-28 align-top",
+      headerClassName: "min-w-28 whitespace-nowrap text-left",
       render: (value) => (
         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getAnnouncementTypeColor(value)}`}>
           {getAnnouncementTypeName(value)}
@@ -956,9 +963,11 @@ export default function AnnouncementPage() {
     {
       header: "รายละเอียด",
       accessor: "description",
+      className: "min-w-24 align-top",
+      headerClassName: "min-w-24 text-left",
       render: (value) => (
         <span
-          className="text-gray-700 whitespace-pre-wrap break-words max-h-24 overflow-auto"
+          className="text-slate-700 whitespace-pre-wrap break-words max-h-24 overflow-auto"
           title={value || "-"}
         >
           {value || "-"}
@@ -968,11 +977,13 @@ export default function AnnouncementPage() {
     {
       header: "ดูไฟล์/ดาวน์โหลด",
       accessor: "actions",
+      className: "min-w-[12rem] whitespace-nowrap align-top text-center",
+      headerClassName: "min-w-[12rem] whitespace-nowrap text-center",
       render: (_, row) => (
-        <div className="flex gap-2">
+        <div className="flex flex-nowrap justify-center gap-2">
           <button
             onClick={() => handleViewFile(row, 'announcement')}
-            className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+            className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             title="ดูไฟล์"
           >
             <Eye size={16} />
@@ -980,7 +991,7 @@ export default function AnnouncementPage() {
           </button>
           <button
             onClick={() => handleDownloadFile(row, 'announcement')}
-            className="inline-flex items-center gap-1 px-3 py-1 text-sm text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
+            className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             title="ดาวน์โหลดไฟล์"
           >
             <Download size={16} />
@@ -995,17 +1006,22 @@ export default function AnnouncementPage() {
     {
       header: "ชื่อแบบฟอร์ม",
       accessor: "title",
-      className: "font-medium",
-      render: (value) => <span className="font-medium text-gray-900">{value || "-"}</span>
+      className: "min-w-[20rem] align-top font-medium",
+      headerClassName: "min-w-[20rem] text-left",
+      render: (value) => <span className="font-medium text-slate-900">{value || "-"}</span>
     },
     {
       header: "ปี",
       accessor: "year",
-      render: (_, row) => <span className="text-gray-700">{row.year || '-'}</span>
+      className: "w-20 whitespace-nowrap align-top",
+      headerClassName: "w-20 whitespace-nowrap text-left",
+      render: (_, row) => <span className="text-slate-700">{row.year || '-'}</span>
     },
     {
       header: "ประเภทฟอร์ม",
       accessor: "form_type",
+      className: "min-w-32 align-top",
+      headerClassName: "min-w-32 whitespace-nowrap text-left",
       render: (value) => {
         const typeNames = {
           application: 'แบบฟอร์มสมัคร',
@@ -1015,7 +1031,7 @@ export default function AnnouncementPage() {
           other: 'อื่นๆ'
         };
         return (
-          <span className="inline-flex px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
+          <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
             {typeNames[value] || value}
           </span>
         );
@@ -1024,6 +1040,8 @@ export default function AnnouncementPage() {
     {
       header: "หมวดหมู่กองทุน",
       accessor: "fund_category",
+      className: "min-w-32 align-top",
+      headerClassName: "min-w-32 whitespace-nowrap text-left",
       render: (value) => {
         const categoryNames = {
           research_fund: 'ทุนวิจัย',
@@ -1032,8 +1050,8 @@ export default function AnnouncementPage() {
         };
         const colors = {
           research_fund: 'bg-blue-100 text-blue-800',
-          promotion_fund: 'bg-green-100 text-green-800',
-          both: 'bg-gray-100 text-gray-800'
+          promotion_fund: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+          both: 'bg-slate-100 text-slate-800'
         };
         return (
           <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${colors[value] || colors.both}`}>
@@ -1045,9 +1063,11 @@ export default function AnnouncementPage() {
     {
       header: "รายละเอียด",
       accessor: "description",
+      className: "min-w-24 align-top",
+      headerClassName: "min-w-24 text-left",
       render: (value) => (
         <span
-          className="text-gray-700 whitespace-pre-wrap break-words max-h-24 overflow-auto"
+          className="text-slate-700 whitespace-pre-wrap break-words max-h-24 overflow-auto"
           title={value || "-"}
         >
           {value || "-"}
@@ -1057,11 +1077,13 @@ export default function AnnouncementPage() {
     {
       header: "ดูไฟล์/ดาวน์โหลด",
       accessor: "actions",
+      className: "min-w-[12rem] whitespace-nowrap align-top text-center",
+      headerClassName: "min-w-[12rem] whitespace-nowrap text-center",
       render: (_, row) => (
-        <div className="flex gap-2">
+        <div className="flex flex-nowrap justify-center gap-2">
           <button
             onClick={() => handleViewFile(row, 'fundForm')}
-            className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+            className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             title="ดูไฟล์"
           >
             <Eye size={16} />
@@ -1069,7 +1091,7 @@ export default function AnnouncementPage() {
           </button>
           <button
             onClick={() => handleDownloadFile(row, 'fundForm')}
-            className="inline-flex items-center gap-1 px-3 py-1 text-sm text-green-600 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
+            className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             title="ดาวน์โหลดไฟล์"
           >
             <Download size={16} />
@@ -1090,32 +1112,32 @@ export default function AnnouncementPage() {
         { label: "ประกาศ" },
       ]}
     >
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Announcements Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="rounded-xl border border-slate-200 bg-white">
+          <div className="px-6 py-4 border-b border-slate-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Bell size={20} className="text-blue-600" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                <Bell size={22} />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800">ประกาศ</h2>
-                <p className="text-sm text-gray-600">ข่าวสารและประกาศจากกองทุน</p>
+                <h2 className="text-lg font-semibold text-slate-800">ประกาศ</h2>
+                <p className="text-sm text-slate-600">ข่าวสารและประกาศจากกองทุน</p>
               </div>
             </div>
           </div>
 
           <div className="p-6">
-            <div className="mb-4 flex flex-wrap items-center gap-4">
+            <div className="mb-5 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center gap-2">
-                <label htmlFor="announcement-visibility-filter" className="text-sm font-medium text-gray-700">
+                <label htmlFor="announcement-visibility-filter" className="text-sm font-medium text-slate-700">
                   แสดง
                 </label>
                 <select
                   id="announcement-visibility-filter"
                   value={announcementVisibilityFilter}
                   onChange={(event) => setAnnouncementVisibilityFilter(event.target.value)}
-                  className="block rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="current">ประกาศปัจจุบัน</option>
                   <option value="all">ทั้งหมด</option>
@@ -1124,7 +1146,7 @@ export default function AnnouncementPage() {
 
               {announcementVisibilityFilter === "all" && (
                 <div className="flex items-center gap-2">
-                  <label htmlFor="announcement-year-filter" className="text-sm font-medium text-gray-700">
+                  <label htmlFor="announcement-year-filter" className="text-sm font-medium text-slate-700">
                     ปี
                   </label>
                   <select
@@ -1132,7 +1154,7 @@ export default function AnnouncementPage() {
                     value={selectedYearId}
                     onChange={(event) => setSelectedYearId(event.target.value)}
                     disabled={yearsLoading}
-                    className="block rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                    className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                   >
                     <option value="all">ทั้งหมด</option>
                     {sortedYears.map((year) => (
@@ -1148,7 +1170,7 @@ export default function AnnouncementPage() {
             {isLoadingAnnouncementTable ? (
               <div className="flex items-center justify-center py-8">
                 <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                <span className="ml-2 text-gray-600">กำลังโหลด...</span>
+                <span className="ml-2 text-slate-600">กำลังโหลด...</span>
               </div>
             ) : (
               <DataTable
@@ -1161,15 +1183,15 @@ export default function AnnouncementPage() {
         </div>
 
         {/* Evaluation Windows Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="rounded-xl border border-slate-200 bg-white">
+          <div className="px-6 py-4 border-b border-slate-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <CalendarClock size={20} className="text-indigo-600" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                <CalendarClock size={22} />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800">รอบการพิจารณา</h2>
-                <p className="text-sm text-gray-600">
+                <h2 className="text-lg font-semibold text-slate-800">รอบการพิจารณา</h2>
+                <p className="text-sm text-slate-600">
                   รอบการพิจารณาขอทุนส่งเสริมการวิจัยและนวัตกรรม และทุนอุดหนุนกิจกรรม
                 </p>
               </div>
@@ -1178,27 +1200,27 @@ export default function AnnouncementPage() {
 
           <div className="p-6">
             {loadingInstallments ? (
-              <div className="flex items-center justify-center py-8 text-gray-600">
-                <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+              <div className="flex items-center justify-center py-8 text-slate-600">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"></div>
                 <span className="ml-2">กำลังโหลด...</span>
               </div>
             ) : installmentCards.length > 0 ? (
               <div className="space-y-8">
                 {FUND_KEYWORD_SECTIONS.map((section) => {
                   const sectionCards = installmentCardsByKeyword.get(section.keyword) ?? [];
-                  const styles = SECTION_STYLES[section.accent] ?? SECTION_STYLES.indigo;
+                  const styles = SECTION_STYLES[section.accent] ?? SECTION_STYLES.blue;
 
                   return (
                     <div key={section.keyword} className="space-y-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <h3 className="text-base font-semibold text-gray-900">
+                          <h3 className="text-base font-semibold text-slate-900">
                             {section.title}
                           </h3>
-                          <p className="text-sm text-gray-600">{section.description}</p>
+                          <p className="text-sm text-slate-600">{section.description}</p>
                         </div>
                         {currentYearLabelNormalized ? (
-                          <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                             ปีงบประมาณ {currentYearLabelNormalized}
                           </span>
                         ) : null}
@@ -1207,16 +1229,16 @@ export default function AnnouncementPage() {
                       {sectionCards.length > 0 ? (
                         <div className="grid gap-4 md:grid-cols-3">
                           {sectionCards.map((card) => {
-                            const nextCardClass = card.isNext ? styles.nextCard : "border-gray-200 bg-white";
-                            const titleClass = card.isNext ? styles.nextText : "text-gray-900";
-                            const subTextClass = card.isNext ? styles.nextSubText : "text-gray-700";
-                            const labelClass = card.isNext ? styles.nextLabel : "text-gray-600";
-                            const badgeClass = card.isNext ? styles.nextBadge : "bg-gray-100 text-gray-700";
+                            const nextCardClass = card.isNext ? styles.nextCard : "border-slate-200 bg-white";
+                            const titleClass = card.isNext ? styles.nextText : "text-slate-900";
+                            const subTextClass = card.isNext ? styles.nextSubText : "text-slate-700";
+                            const labelClass = card.isNext ? styles.nextLabel : "text-slate-600";
+                            const badgeClass = card.isNext ? styles.nextBadge : "bg-slate-100 text-slate-700";
 
                             return (
                               <div
                                 key={card.key}
-                                className={`rounded-xl border p-4 shadow-sm ${nextCardClass}`}
+                                className={`rounded-xl border p-4 ${nextCardClass}`}
                               >
                                 <div className="flex items-center">
                                   <p className={`text-sm font-medium ${labelClass}`}>
@@ -1230,7 +1252,7 @@ export default function AnnouncementPage() {
                                   วันที่สิ้นสุดรอบพิจารณา: {card.cutoffLabel}
                                 </p>
                                 {card.yearLabel ? (
-                                  <p className="text-sm text-gray-600">ปีงบประมาณ {card.yearLabel}</p>
+                                  <p className="text-sm text-slate-600">ปีงบประมาณ {card.yearLabel}</p>
                                 ) : null}
                                 {card.countdownLabel ? (
                                   <span className={`mt-2 inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>
@@ -1242,7 +1264,7 @@ export default function AnnouncementPage() {
                           })}
                         </div>
                       ) : (
-                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
                           ยังไม่มีรอบการพิจารณาสำหรับหมวดนี้ในปีปัจจุบัน
                         </div>
                       )}
@@ -1271,7 +1293,7 @@ export default function AnnouncementPage() {
                 ) : null}
               </div>
             ) : (
-              <div className="py-10 text-center text-sm text-gray-500">
+              <div className="py-10 text-center text-sm text-slate-500">
                 ยังไม่มีข้อมูลงวดการพิจารณาในระบบ
               </div>
             )}
@@ -1279,23 +1301,23 @@ export default function AnnouncementPage() {
         </div>
 
         {/* Fund Forms Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="rounded-xl border border-slate-200 bg-white">
+          <div className="px-6 py-4 border-b border-slate-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <BookOpen size={20} className="text-green-600" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                <BookOpen size={22} />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-800">แบบฟอร์มการขอทุน</h2>
-                <p className="text-sm text-gray-600">แบบฟอร์มและเอกสารที่จำเป็น</p>
+                <h2 className="text-lg font-semibold text-slate-800">แบบฟอร์มการขอทุน</h2>
+                <p className="text-sm text-slate-600">แบบฟอร์มและเอกสารที่จำเป็น</p>
               </div>
             </div>
           </div>
 
           <div className="p-6">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center gap-2">
-                <label htmlFor="fund-form-year-filter" className="text-sm font-medium text-gray-700">
+                <label htmlFor="fund-form-year-filter" className="text-sm font-medium text-slate-700">
                   ปี
                 </label>
                 <select
@@ -1303,7 +1325,7 @@ export default function AnnouncementPage() {
                   value={selectedFormYearId}
                   onChange={(event) => setSelectedFormYearId(event.target.value)}
                   disabled={yearsLoading}
-                  className="block rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                  className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                 >
                   <option value="all">ทั้งหมด</option>
                   {sortedYears.map((year) => (
@@ -1317,8 +1339,8 @@ export default function AnnouncementPage() {
 
             {loadingForms ? (
               <div className="flex items-center justify-center py-8">
-                <div className="w-8 h-8 border-4 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
-                <span className="ml-2 text-gray-600">กำลังโหลด...</span>
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"></div>
+                <span className="ml-2 text-slate-600">กำลังโหลด...</span>
               </div>
             ) : (
               <DataTable
@@ -1332,7 +1354,7 @@ export default function AnnouncementPage() {
       </div>
 
       {/* Info Card */}
-      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+      <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-6">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-blue-100 rounded-lg">
             <FileText size={20} className="text-blue-600" />
