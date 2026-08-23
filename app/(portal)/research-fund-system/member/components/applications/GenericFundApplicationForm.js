@@ -439,7 +439,7 @@ function FileUpload({ onFileSelect, accept, multiple = false, error, compact = f
             ? "border-blue-400 bg-blue-50"
             : error
             ? "border-red-400 bg-red-50"
-            : "border-gray-300 hover:border-gray-400"
+            : "border-slate-300 hover:border-slate-400"
         } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -454,18 +454,18 @@ function FileUpload({ onFileSelect, accept, multiple = false, error, compact = f
       >
         <Upload
           className={`mx-auto mb-2 ${compact ? "h-5 w-5" : "h-8 w-8"} ${
-            disabled ? "text-gray-300" : error ? "text-red-400" : "text-gray-400"
+            disabled ? "text-slate-300" : error ? "text-red-400" : "text-slate-400"
           }`}
         />
         <p
           className={`${compact ? "text-xs" : "text-sm"} ${
-            disabled ? "text-gray-400" : error ? "text-red-600" : "text-gray-600"
+            disabled ? "text-slate-400" : error ? "text-red-600" : "text-slate-600"
           }`}
         >
           {compact ? "แนบไฟล์ (PDF)" : "คลิกหรือลากไฟล์มาวางที่นี่ (เฉพาะไฟล์ PDF)"}
         </p>
         {!compact && (
-          <p className={`text-xs mt-1 ${disabled ? "text-gray-400" : "text-gray-500"}`}>
+          <p className={`text-xs mt-1 ${disabled ? "text-slate-400" : "text-slate-500"}`}>
             ขนาดไฟล์สูงสุด 10MB
           </p>
         )}
@@ -2627,8 +2627,8 @@ export default function GenericFundApplicationForm({
     let previewViewed = attachmentsPreviewState.hasPreviewed;
 
     const applicantInfoHTML = `
-      <div class="bg-gray-50 p-4 rounded-lg space-y-2">
-        <h4 class="font-semibold text-gray-700">ข้อมูลผู้ยื่นขอ</h4>
+      <div class="bg-slate-50 p-4 rounded-lg space-y-2">
+        <h4 class="font-semibold text-slate-700">ข้อมูลผู้ยื่นขอ</h4>
         <p class="text-sm"><span class="font-medium">ชื่อผู้ยื่น:</span> ${formData.name || '-'}</p>
         <p class="text-sm"><span class="font-medium">เบอร์โทรศัพท์:</span> ${formData.phone || '-'}</p>
       </div>
@@ -2651,17 +2651,17 @@ export default function GenericFundApplicationForm({
 
     const attachmentsHTML = attachments.length === 0
       ? `
-        <div class="bg-yellow-50 p-4 rounded-lg">
-          <h4 class="font-semibold text-yellow-700 mb-2">เอกสารแนบ</h4>
-          <p class="text-sm text-yellow-800">ไม่มีไฟล์แนบ</p>
+        <div class="bg-amber-50 p-4 rounded-lg">
+          <h4 class="font-semibold text-amber-700 mb-2">เอกสารแนบ</h4>
+          <p class="text-sm text-amber-800">ไม่มีไฟล์แนบ</p>
         </div>
       `
       : `
-        <div class="bg-yellow-50 p-4 rounded-lg space-y-3">
+        <div class="bg-amber-50 p-4 rounded-lg space-y-3">
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h4 class="font-semibold text-yellow-700">เอกสารแนบ (${attachments.length} ไฟล์)</h4>
-              <p class="text-xs text-yellow-800">กรุณาดูตัวอย่างเอกสารรวมก่อนยืนยันส่งคำร้อง</p>
+              <h4 class="font-semibold text-amber-700">เอกสารแนบ (${attachments.length} ไฟล์)</h4>
+              <p class="text-xs text-amber-800">กรุณาดูตัวอย่างเอกสารรวมก่อนยืนยันส่งคำร้อง</p>
             </div>
             <button
               id="attachments-preview-btn"
@@ -2671,31 +2671,31 @@ export default function GenericFundApplicationForm({
                 : 'px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors'}"
             >${attachmentsPreviewState.hasPreviewed ? '✅ ดูแล้ว' : '👀 ดูตัวอย่างเอกสารรวม'}</button>
           </div>
-          <div class="bg-white border border-yellow-200 rounded-lg overflow-hidden">
+          <div class="bg-white border border-amber-200 rounded-lg overflow-hidden">
             <table class="w-full text-sm">
-              <thead class="bg-yellow-100">
+              <thead class="bg-amber-100">
                 <tr>
-                  <th class="px-3 py-2 text-left font-medium text-yellow-800">ประเภทเอกสาร</th>
-                  <th class="px-3 py-2 text-left font-medium text-yellow-800">ไฟล์</th>
+                  <th class="px-3 py-2 text-left font-medium text-amber-800">ประเภทเอกสาร</th>
+                  <th class="px-3 py-2 text-left font-medium text-amber-800">ไฟล์</th>
                 </tr>
               </thead>
               <tbody class="divide-y">
                 ${attachments.map(item => `
                   <tr>
                     <td class="px-3 py-2 align-top">
-                      <div class="font-medium text-gray-800">${item.typeLabel}</div>
+                      <div class="font-medium text-slate-800">${item.typeLabel}</div>
                       ${item.required ? '<div class="text-xs text-red-500">เอกสารจำเป็น</div>' : ''}
                     </td>
                     <td class="px-3 py-2 align-top">
-                      <div class="font-medium text-gray-800">${item.name}</div>
-                      <div class="text-xs text-gray-500">${formatFileSize(item.size)}</div>
+                      <div class="font-medium text-slate-800">${item.name}</div>
+                      <div class="text-xs text-slate-500">${formatFileSize(item.size)}</div>
                     </td>
                   </tr>
                 `).join('')}
               </tbody>
             </table>
           </div>
-          <div id="attachments-preview-status" class="text-xs ${attachmentsPreviewState.hasPreviewed ? 'text-green-700' : 'text-yellow-800'}">
+          <div id="attachments-preview-status" class="text-xs ${attachmentsPreviewState.hasPreviewed ? 'text-green-700' : 'text-amber-800'}">
             ${attachmentsPreviewState.hasPreviewed ? '✅ ดูตัวอย่างเอกสารแล้ว' : '⚠️ ยังไม่ได้ดูตัวอย่างเอกสารรวม'}
           </div>
         </div>
@@ -3303,7 +3303,7 @@ export default function GenericFundApplicationForm({
         <div className="flex justify-center items-center h-64">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">กำลังโหลดข้อมูล...</p>
+            <p className="text-slate-600">กำลังโหลดข้อมูล...</p>
           </div>
         </div>
       </PageLayout>
@@ -3315,18 +3315,18 @@ export default function GenericFundApplicationForm({
       <PageLayout title="เกิดข้อผิดพลาด" icon={AlertCircle}>
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">เกิดข้อผิดพลาด</h3>
-          <p className="text-gray-600 mb-6">{errors.general}</p>
+          <h3 className="text-xl font-semibold text-slate-900 mb-2">เกิดข้อผิดพลาด</h3>
+          <p className="text-slate-600 mb-6">{errors.general}</p>
           <div className="flex gap-4">
             <button
               onClick={() => loadInitialData()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="inline-flex min-h-11 items-center rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               ลองใหม่
             </button>
             <button
               onClick={handleBack}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 bg-white px-4 py-2 font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               กลับ
             </button>
@@ -3392,7 +3392,7 @@ export default function GenericFundApplicationForm({
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             ย้อนกลับ
@@ -3405,7 +3405,7 @@ export default function GenericFundApplicationForm({
         ]}
       >
         <div className="space-y-6">
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 shadow-sm">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" aria-hidden="true" />
               <div>
@@ -3416,9 +3416,9 @@ export default function GenericFundApplicationForm({
           </div>
 
           <SimpleCard title="เงื่อนไขและวงเงินสนับสนุน" icon={Info} bodyClassName="space-y-4">
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100">
                   <Info className="h-5 w-5 text-blue-600" aria-hidden="true" />
                 </div>
                 <div className="flex-1 space-y-3">
@@ -3456,24 +3456,24 @@ export default function GenericFundApplicationForm({
 
           <SimpleCard title="เอกสารที่ใช้ประกอบการยื่นขอทุน" icon={FileText}>
             {documentRequirements.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center">
-                <FileText className="mx-auto mb-3 h-10 w-10 text-gray-400" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-600">ไม่มีเอกสารที่กำหนดสำหรับทุนนี้</p>
+              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
+                <FileText className="mx-auto mb-3 h-10 w-10 text-slate-400" aria-hidden="true" />
+                <p className="text-sm font-medium text-slate-600">ไม่มีเอกสารที่กำหนดสำหรับทุนนี้</p>
               </div>
             ) : (
-              <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
-                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead className="bg-gray-50">
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full min-w-[36rem] divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50">
                     <tr>
-                      <th scope="col" className="w-16 px-4 py-3 text-center font-medium text-gray-600">ลำดับ</th>
-                      <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">ชื่อเอกสาร</th>
+                      <th scope="col" className="w-16 px-4 py-3 text-center font-medium text-slate-600">ลำดับ</th>
+                      <th scope="col" className="px-4 py-3 text-left font-medium text-slate-600">ชื่อเอกสาร</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
+                  <tbody className="divide-y divide-slate-200 bg-white">
                     {documentRequirements.map((docType, index) => (
                       <tr key={docType.document_type_id}>
-                        <td className="px-4 py-3 text-center text-gray-600">{index + 1}</td>
-                        <td className="px-4 py-3 font-medium text-gray-800">
+                        <td className="px-4 py-3 text-center text-slate-600">{index + 1}</td>
+                        <td className="px-4 py-3 font-medium text-slate-800">
                           {docType.document_type_name}
                           {docType.required && (
                             <span className="ml-1 text-red-500" aria-label="เอกสารบังคับ">*จำเป็น*</span>
@@ -3491,7 +3491,7 @@ export default function GenericFundApplicationForm({
             <button
               type="button"
               onClick={handleBack}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               ย้อนกลับ
@@ -3500,7 +3500,7 @@ export default function GenericFundApplicationForm({
               <button
                 type="button"
                 onClick={handleApplyFromDetails}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
                 <Send className="h-4 w-4" aria-hidden="true" />
                 ไปที่หน้ายื่นคำร้องของทุนนี้
@@ -3521,7 +3521,7 @@ export default function GenericFundApplicationForm({
         <button
           type="button"
           onClick={handleBack}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-gray-600 transition-colors hover:bg-gray-50"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>ย้อนกลับ</span>
@@ -3529,9 +3529,12 @@ export default function GenericFundApplicationForm({
       )}
       breadcrumbs={breadcrumbs}
     >
-      <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
+      <form
+        className="space-y-6 [&_button]:min-h-11 [&_button]:focus-visible:outline-none [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-blue-500 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:min-h-11 [&_select]:min-h-11 [&_textarea]:min-h-28"
+        onSubmit={(e) => e.preventDefault()}
+      >
         {errors.general && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 flex-shrink-0" />
               <div>
@@ -3543,7 +3546,7 @@ export default function GenericFundApplicationForm({
         )}
 
         {isReadOnly && (
-          <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
             {fundClosedReadOnly ? (
               <>ทุนนี้ปิดรับคำขอแล้ว — สามารถดูรายละเอียดได้เท่านั้น ไม่สามารถแก้ไขหรือส่งคำร้องได้</>
             ) : (
@@ -3576,22 +3579,22 @@ export default function GenericFundApplicationForm({
         )}
 
         {shouldShowReviewerComments && (
-          <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-orange-500" aria-hidden="true" />
+              <AlertCircle className="h-5 w-5 text-amber-500" aria-hidden="true" />
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <p className="font-semibold text-orange-800">คำร้องต้องการข้อมูลเพิ่มเติม</p>
-                  <p className="text-sm text-orange-700">
+                  <p className="font-semibold text-amber-800">คำร้องต้องการข้อมูลเพิ่มเติม</p>
+                  <p className="text-sm text-amber-700">
                     กรุณาตรวจสอบและแก้ไขข้อมูลตามคำแนะนำก่อนส่งคำร้องอีกครั้ง
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-orange-600">ผู้ดูแลระบบ</p>
+                  <p className="text-xs uppercase tracking-wide text-amber-600">ผู้ดูแลระบบ</p>
                   <p className="whitespace-pre-wrap text-sm">{adminCommentDisplay}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-orange-600">หัวหน้าสาขา</p>
+                  <p className="text-xs uppercase tracking-wide text-amber-600">หัวหน้าสาขา</p>
                   <p className="whitespace-pre-wrap text-sm">{headCommentDisplay}</p>
                 </div>
               </div>
@@ -3610,7 +3613,7 @@ export default function GenericFundApplicationForm({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="applicant-name">
+                  <label className="text-sm font-medium text-slate-700" htmlFor="applicant-name">
                     ชื่อผู้ยื่นขอ
                   </label>
                   <input
@@ -3618,14 +3621,14 @@ export default function GenericFundApplicationForm({
                     type="text"
                     value={formData.name}
                     readOnly
-                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-4 py-2.5 text-gray-700 shadow-sm"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-100 px-4 py-2.5 text-slate-700"
                     placeholder="ชื่อ-นามสกุล"
                   />
-                  <p className="text-xs text-gray-500">ระบบจะแสดงคำนำหน้าและชื่อ-นามสกุลจากข้อมูลผู้ใช้โดยอัตโนมัติ</p>
+                  <p className="text-xs text-slate-500">ระบบจะแสดงคำนำหน้าและชื่อ-นามสกุลจากข้อมูลผู้ใช้โดยอัตโนมัติ</p>
                 </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700" htmlFor="applicant-phone">
+                <label className="text-sm font-medium text-slate-700" htmlFor="applicant-phone">
                   เบอร์โทรศัพท์
                 </label>
                 <input
@@ -3636,8 +3639,8 @@ export default function GenericFundApplicationForm({
                     placeholder="081-234-5678"
                     maxLength={12}
                     disabled={!canEdit}
-                    className={`w-full rounded-lg border px-4 py-2.5 text-gray-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 ${
-                      errors.phone ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-gray-300'
+                    className={`w-full rounded-lg border px-4 py-2.5 text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
+                      errors.phone ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300'
                     }`}
                   />
                   {errors.phone ? (
@@ -3646,12 +3649,12 @@ export default function GenericFundApplicationForm({
                       {errors.phone}
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-500">รูปแบบที่แนะนำ: XXX-XXX-XXXX (ข้อมูลนี้ใช้สำหรับติดต่อกลับเท่านั้น)</p>
+                    <p className="text-xs text-slate-500">รูปแบบที่แนะนำ: XXX-XXX-XXXX (ข้อมูลนี้ใช้สำหรับติดต่อกลับเท่านั้น)</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700" htmlFor="bank-account">
+                <label className="text-sm font-medium text-slate-700" htmlFor="bank-account">
                   เลขบัญชีธนาคาร <span className="text-red-500">*</span>
                 </label>
                   <input
@@ -3662,8 +3665,8 @@ export default function GenericFundApplicationForm({
                     placeholder="กรอกเลขบัญชี 10-15 หลัก"
                     maxLength={15}
                     disabled={!canEdit}
-                    className={`w-full rounded-lg border px-4 py-2.5 text-gray-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 ${
-                      errors.bank_account ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-gray-300'
+                    className={`w-full rounded-lg border px-4 py-2.5 text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
+                      errors.bank_account ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300'
                     }`}
                   />
                   {errors.bank_account ? (
@@ -3672,12 +3675,12 @@ export default function GenericFundApplicationForm({
                       {errors.bank_account}
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-500">กรอกเฉพาะตัวเลข</p>
+                    <p className="text-xs text-slate-500">กรอกเฉพาะตัวเลข</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700" htmlFor="bank-account-name">
+                <label className="text-sm font-medium text-slate-700" htmlFor="bank-account-name">
                   ชื่อบัญชีธนาคาร <span className="text-red-500">*</span>
                 </label>
                   <input
@@ -3687,8 +3690,8 @@ export default function GenericFundApplicationForm({
                     onChange={(e) => handleInputChange('bank_account_name', e.target.value)}
                     placeholder="ชื่อ-นามสกุลเจ้าของบัญชี"
                     disabled={!canEdit}
-                    className={`w-full rounded-lg border px-4 py-2.5 text-gray-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 ${
-                      errors.bank_account_name ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-gray-300'
+                    className={`w-full rounded-lg border px-4 py-2.5 text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
+                      errors.bank_account_name ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300'
                     }`}
                   />
                   {errors.bank_account_name ? (
@@ -3697,12 +3700,12 @@ export default function GenericFundApplicationForm({
                       {errors.bank_account_name}
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-500">กรอกชื่อ-นามสกุลตามหน้าสมุดบัญชี</p>
+                    <p className="text-xs text-slate-500">กรอกชื่อ-นามสกุลตามหน้าสมุดบัญชี</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700" htmlFor="bank-name">
+                <label className="text-sm font-medium text-slate-700" htmlFor="bank-name">
                   ชื่อธนาคาร <span className="text-red-500">*</span>
                 </label>
                   <input
@@ -3712,8 +3715,8 @@ export default function GenericFundApplicationForm({
                     onChange={(e) => handleInputChange('bank_name', e.target.value)}
                     placeholder="เช่น ธนาคารกรุงเทพ"
                     disabled={!canEdit}
-                    className={`w-full rounded-lg border px-4 py-2.5 text-gray-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 ${
-                      errors.bank_name ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-gray-300'
+                    className={`w-full rounded-lg border px-4 py-2.5 text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
+                      errors.bank_name ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300'
                     }`}
                   />
                   {errors.bank_name ? (
@@ -3722,12 +3725,12 @@ export default function GenericFundApplicationForm({
                       {errors.bank_name}
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-500">ระบุชื่อธนาคารที่ต้องการรับเงิน</p>
+                    <p className="text-xs text-slate-500">ระบุชื่อธนาคารที่ต้องการรับเงิน</p>
                   )}
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="project-title">
+                  <label className="text-sm font-medium text-slate-700" htmlFor="project-title">
                     ชื่อโครงการ/กิจกรรม
                   </label>
                   <input
@@ -3737,8 +3740,8 @@ export default function GenericFundApplicationForm({
                     onChange={(e) => handleInputChange('project_title', e.target.value)}
                     placeholder="ระบุชื่อโครงการหรือกิจกรรมที่ต้องการขอรับการสนับสนุน"
                     disabled={!canEdit}
-                    className={`w-full rounded-lg border px-4 py-2.5 text-gray-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 ${
-                      errors.project_title ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-gray-300'
+                    className={`w-full rounded-lg border px-4 py-2.5 text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
+                      errors.project_title ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300'
                     }`}
                   />
                   {errors.project_title ? (
@@ -3747,12 +3750,12 @@ export default function GenericFundApplicationForm({
                       {errors.project_title}
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-500"></p>
+                    <p className="text-xs text-slate-500"></p>
                   )}
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="project-description">
+                  <label className="text-sm font-medium text-slate-700" htmlFor="project-description">
                     รายละเอียดโครงการโดยย่อ
                   </label>
                   <textarea
@@ -3762,8 +3765,8 @@ export default function GenericFundApplicationForm({
                     placeholder="อธิบายวัตถุประสงค์หรือรายละเอียดสำคัญของโครงการ"
                     rows={4}
                     disabled={!canEdit}
-                    className={`w-full rounded-lg border px-4 py-3 text-gray-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 ${
-                      errors.project_description ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-gray-300'
+                    className={`w-full rounded-lg border px-4 py-3 text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
+                      errors.project_description ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300'
                     }`}
                   />
                   {errors.project_description ? (
@@ -3772,7 +3775,7 @@ export default function GenericFundApplicationForm({
                       {errors.project_description}
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-500"></p>
+                    <p className="text-xs text-slate-500"></p>
                   )}
                 </div>
               </div>
@@ -3785,7 +3788,7 @@ export default function GenericFundApplicationForm({
             >
               <div className="grid gap-4 md:grid-cols-2 md:items-start">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="requested-amount">
+                  <label className="text-sm font-medium text-slate-700" htmlFor="requested-amount">
                     จำนวนเงินที่ขอ (บาท) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -3797,8 +3800,8 @@ export default function GenericFundApplicationForm({
                     onChange={(e) => handleInputChange('requested_amount', e.target.value)}
                     placeholder="0.00"
                     disabled={!canEdit}
-                    className={`w-full rounded-lg border bg-gray-50 px-4 py-3 text-2xl font-semibold text-gray-800 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 ${
-                      errors.requested_amount ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-gray-200'
+                    className={`w-full rounded-lg border bg-slate-50 px-4 py-3 text-2xl font-semibold text-slate-800 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
+                      errors.requested_amount ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-200'
                     }`}
                   />
                   {errors.requested_amount ? (
@@ -3807,20 +3810,20 @@ export default function GenericFundApplicationForm({
                       {errors.requested_amount}
                     </p>
                   ) : (
-                    <div className="space-y-1 text-xs text-gray-500">
+                    <div className="space-y-1 text-xs text-slate-500">
                       <p>กรอกตัวเลขจำนวนเต็มหรือทศนิยมได้ เช่น 50000 หรือ 50000.00</p>
                     </div>
                   )}
                 </div>
 
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
                       <Info className="h-5 w-5 text-blue-600" aria-hidden="true" />
                     </div>
                     <div className="flex-1 space-y-3">
                       <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-blue-600">Hint</p>
+                        <p className="text-xs font-medium text-blue-700">คำแนะนำวงเงิน</p>
                         <p className="text-sm font-semibold text-blue-900">{budgetHintTitle}</p>
                       </div>
                       {budgetHintsLoading && !hasBudgetHints ? (
@@ -3866,33 +3869,33 @@ export default function GenericFundApplicationForm({
               bodyClassName="space-y-4"
             >
               {documentRequirements.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 py-10 text-center text-gray-500">
-                  <Upload className="mb-3 h-10 w-10 text-gray-400" />
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-slate-500">
+                  <Upload className="mb-3 h-10 w-10 text-slate-400" />
                   <p className="text-sm font-medium">ไม่มีเอกสารที่ต้องส่งสำหรับทุนนี้</p>
-                  <p className="mt-1 text-xs text-gray-400">คุณสามารถส่งคำร้องได้ทันทีเมื่อกรอกข้อมูลครบถ้วน</p>
+                  <p className="mt-1 text-xs text-slate-400">คุณสามารถส่งคำร้องได้ทันทีเมื่อกรอกข้อมูลครบถ้วน</p>
                 </div>
               ) : (
                 <>
-                  <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                      <thead className="bg-gray-50">
+                  <div className="overflow-x-auto rounded-xl border border-slate-200">
+                    <table className="w-full min-w-[48rem] divide-y divide-slate-200 text-sm">
+                      <thead className="bg-slate-50">
                         <tr>
-                          <th scope="col" className="w-16 px-3 py-2 text-center font-medium text-gray-600">ลำดับ</th>
-                          <th scope="col" className="px-3 py-2 text-left font-medium text-gray-600">ชื่อเอกสาร</th>
-                          <th scope="col" className="px-3 py-2 text-left font-medium text-gray-600">จัดการไฟล์</th>
+                          <th scope="col" className="w-16 px-3 py-2 text-center font-medium text-slate-600">ลำดับ</th>
+                          <th scope="col" className="px-3 py-2 text-left font-medium text-slate-600">ชื่อเอกสาร</th>
+                          <th scope="col" className="px-3 py-2 text-left font-medium text-slate-600">จัดการไฟล์</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200 bg-white">
+                      <tbody className="divide-y divide-slate-200 bg-white">
                         {documentRequirements.map((docType, index) => (
-                          <tr key={docType.document_type_id} className="hover:bg-gray-50">
-                            <td className="px-3 py-2 text-center text-gray-700">{index + 1}</td>
-                            <td className="px-3 py-2 text-gray-700">
+                          <tr key={docType.document_type_id} className="hover:bg-slate-50">
+                            <td className="px-3 py-2 text-center text-slate-700">{index + 1}</td>
+                            <td className="px-3 py-2 text-slate-700">
                               <div className="flex flex-col">
-                                <span className="font-medium text-gray-800">
+                                <span className="font-medium text-slate-800">
                                   {docType.document_type_name}
                                   {docType.required && <span className="ml-1 inline-flex items-center text-xs font-semibold text-red-500">*</span>}
                                 </span>
-                                <span className="text-xs text-gray-500">รองรับเฉพาะไฟล์ PDF ขนาดไม่เกิน 10MB</span>
+                                <span className="text-xs text-slate-500">รองรับเฉพาะไฟล์ PDF ขนาดไม่เกิน 10MB</span>
                               </div>
                             </td>
                             <td className="px-3 py-2">
@@ -3919,7 +3922,7 @@ export default function GenericFundApplicationForm({
                                         <button
                                           type="button"
                                           onClick={() => viewFile(docTypeId)}
-                                          className="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-2 py-1 text-xs font-medium text-blue-600 shadow-sm transition hover:border-blue-100 hover:bg-blue-50"
+                                          className="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-2 py-1 text-xs font-medium text-blue-600 transition hover:border-blue-100 hover:bg-blue-50"
                                         >
                                           <Eye className="h-4 w-4" />
                                           <span className="ml-1 hidden sm:inline">ดูไฟล์</span>
@@ -3928,7 +3931,7 @@ export default function GenericFundApplicationForm({
                                           type="button"
                                           onClick={() => handleRemoveFile(docTypeId)}
                                           disabled={!canEdit || saving || submitting}
-                                          className="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-2 py-1 text-xs font-medium text-red-600 shadow-sm transition hover:border-red-100 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                          className="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-2 py-1 text-xs font-medium text-red-600 transition hover:border-red-100 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                           <X className="h-4 w-4" />
                                           <span className="ml-1 hidden sm:inline">ลบ</span>
@@ -3958,7 +3961,7 @@ export default function GenericFundApplicationForm({
                                           type="button"
                                           onClick={() => handleDownloadServerFile(docTypeId)}
                                           disabled={!serverDoc.file_id}
-                                          className="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-2 py-1 text-xs font-medium text-blue-600 shadow-sm transition hover:border-blue-100 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                          className="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-2 py-1 text-xs font-medium text-blue-600 transition hover:border-blue-100 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                           <Download className="h-4 w-4" />
                                           <span className="ml-1 hidden sm:inline">ดาวน์โหลด</span>
@@ -3967,7 +3970,7 @@ export default function GenericFundApplicationForm({
                                           type="button"
                                           onClick={() => handleRemoveServerDocument(docTypeId)}
                                           disabled={!canEdit || saving || submitting}
-                                          className="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-2 py-1 text-xs font-medium text-red-600 shadow-sm transition hover:border-red-100 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                          className="inline-flex items-center justify-center rounded-md border border-transparent bg-white px-2 py-1 text-xs font-medium text-red-600 transition hover:border-red-100 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                           <X className="h-4 w-4" />
                                           <span className="ml-1 hidden sm:inline">ลบ</span>
@@ -4000,10 +4003,10 @@ export default function GenericFundApplicationForm({
               )}
             </SimpleCard>
 
-            <div className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-800">ดำเนินการกับแบบคำร้อง</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-sm font-medium text-slate-800">ดำเนินการกับแบบคำร้อง</p>
+                <p className="text-xs text-slate-500">
                   {isNeedsMoreInfo
                     ? 'กรุณาแก้ไขข้อมูลตามคำแนะนำและกดส่งคำร้องอีกครั้ง'
                     : 'คุณสามารถบันทึกเป็นร่างเพื่อแก้ไขภายหลัง หรือส่งคำร้องเพื่อเข้าสู่การพิจารณา'}
@@ -4026,10 +4029,10 @@ export default function GenericFundApplicationForm({
                     type="button"
                     onClick={saveDraft}
                     disabled={!canEdit || saving || submitting}
-                    className="w-full sm:flex-1 flex items-center justify-center gap-2 rounded-lg bg-gray-600 px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-300 bg-white px-6 py-3 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-1"
                   >
                     {saving ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                     ) : (
                       <Save className="h-4 w-4" />
                     )}
@@ -4044,10 +4047,10 @@ export default function GenericFundApplicationForm({
                   type="button"
                   onClick={submitApplication}
                   disabled={!canEdit || saving || submitting}
-                  className="w-full sm:flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full sm:flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
@@ -4056,7 +4059,7 @@ export default function GenericFundApplicationForm({
               </div>
             </div>
 
-            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-5 text-sm text-yellow-800 shadow-sm">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
               <div className="flex items-start gap-3">
                 <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
                 <div className="space-y-1">

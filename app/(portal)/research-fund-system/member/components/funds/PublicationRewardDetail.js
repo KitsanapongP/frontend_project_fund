@@ -58,11 +58,11 @@ const getStatusIconColor = (statusCode) => {
     case "rejected":
       return "text-red-600";
     case "revision":
-      return "text-orange-600";
+      return "text-amber-600";
     case "draft":
-      return "text-gray-600";
+      return "text-slate-600";
     default:
-      return "text-yellow-600";
+      return "text-amber-600";
   }
 };
 
@@ -987,8 +987,8 @@ export default function PublicationRewardDetail({
       >
         <div className="flex justify-center items-center py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">กำลังโหลดข้อมูล... (Loading...)</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-100 border-t-blue-600 mx-auto"></div>
+            <p className="mt-4 text-slate-600">กำลังโหลดข้อมูล... (Loading...)</p>
           </div>
         </div>
       </PageLayout>
@@ -1005,8 +1005,8 @@ export default function PublicationRewardDetail({
         <Card collapsible={false}>
           <div className="text-center py-12">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <p className="text-gray-600">ไม่พบข้อมูลคำร้องที่ต้องการ (Requested submission not found)</p>
-            <button onClick={handleBack} className="btn btn-primary mt-4">
+            <p className="text-slate-600">ไม่พบข้อมูลคำร้องที่ต้องการ (Requested submission not found)</p>
+            <button onClick={handleBack} className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
               กลับไปหน้ารายการ (Back to list)
             </button>
           </div>
@@ -1167,12 +1167,12 @@ export default function PublicationRewardDetail({
       icon={Award}
       actions={
         <div className="flex gap-2">
-          <button onClick={handleBack} className="btn btn-secondary">
+          <button onClick={handleBack} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
             <ArrowLeft size={20} />
             กลับ (Back)
           </button>
           {submission.status_id === 5 && ( // Draft status
-            <button onClick={handleEdit} className="btn btn-primary">
+            <button onClick={handleEdit} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
               <Edit size={20} />
               แก้ไข (Edit)
             </button>
@@ -1205,31 +1205,31 @@ export default function PublicationRewardDetail({
           <div className="flex-1">
             <div className="flex flex-col gap-3 mt-4 text-sm">
               <div className="flex flex-wrap items-start gap-2">
-                <span className="text-gray-500 shrink-0 min-w-[80px]">ชื่อทุน:</span>
-                <span className="font-bold text-gray-700 break-words flex-1">
+                <span className="text-slate-500 shrink-0 min-w-[80px]">ชื่อทุน:</span>
+                <span className="font-bold text-slate-700 break-words flex-1">
                   {subcategoryDisplay}
                 </span>
               </div>
               <div className="flex flex-wrap items-start gap-2">
-                <span className="text-gray-500 shrink-0 min-w-[80px]">ผู้ขอทุน:</span>
-                <span className="font-bold text-gray-700 break-words flex-1">
+                <span className="text-slate-500 shrink-0 min-w-[80px]">ผู้ขอทุน:</span>
+                <span className="font-bold text-slate-700 break-words flex-1">
                   {getUserFullName(applicant)}
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 mt-2">
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">รอบการพิจารณา:</span>
+                  <span className="text-slate-500 shrink-0">รอบการพิจารณา:</span>
                   <span className="font-medium">
                     {installmentLoading ? "กำลังโหลด..." : installmentLabel}
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">เบอร์ติดต่อ:</span>
+                  <span className="text-slate-500 shrink-0">เบอร์ติดต่อ:</span>
                   <span className="font-medium break-words">{contactPhone || "-"}</span>
                 </div>
                 {submission.created_at && (
                   <div className="flex items-start gap-2">
-                    <span className="text-gray-500 shrink-0">วันที่สร้างคำร้อง:</span>
+                    <span className="text-slate-500 shrink-0">วันที่สร้างคำร้อง:</span>
                     <span className="font-medium">
                       {formatDate(submission.created_at)}
                     </span>
@@ -1237,19 +1237,19 @@ export default function PublicationRewardDetail({
                 )}
                 {submittedAt && (
                   <div className="flex items-start gap-2">
-                    <span className="text-gray-500 shrink-0">วันที่ส่งคำร้อง:</span>
+                    <span className="text-slate-500 shrink-0">วันที่ส่งคำร้อง:</span>
                     <span className="font-medium">{formatDate(submittedAt)}</span>
                   </div>
                 )}
                 {approvedAt && (
                   <div className="flex items-start gap-2">
-                    <span className="text-gray-500 shrink-0">วันที่อนุมัติ:</span>
+                    <span className="text-slate-500 shrink-0">วันที่อนุมัติ:</span>
                     <span className="font-medium">{formatDate(approvedAt)}</span>
                   </div>
                 )}
                 <div className="flex items-start gap-2 lg:col-span-3">
-                  <span className="text-gray-500 shrink-0">ข้อมูลธนาคาร:</span>
-                  <div className="flex flex-col text-sm font-medium text-gray-700">
+                  <span className="text-slate-500 shrink-0">ข้อมูลธนาคาร:</span>
+                  <div className="flex flex-col text-sm font-medium text-slate-700">
                     <span>
                       เลขที่บัญชี: <span className="font-semibold">{bankAccount || "-"}</span>
                     </span>
@@ -1263,13 +1263,13 @@ export default function PublicationRewardDetail({
                 </div>
                 {announceReference && (
                   <div className="flex items-start gap-2 lg:col-span-3">
-                    <span className="text-gray-500 shrink-0">หมายเลขอ้างอิงประกาศผลการพิจารณา:</span>
+                    <span className="text-slate-500 shrink-0">หมายเลขอ้างอิงประกาศผลการพิจารณา:</span>
                     <span className="font-medium break-all">{announceReference}</span>
                   </div>
                 )}
                 {mainAnnouncement && (
                   <div className="flex items-start gap-2 lg:col-span-3">
-                    <span className="text-gray-500 shrink-0">ประกาศหลักเกณฑ์:</span>
+                    <span className="text-slate-500 shrink-0">ประกาศหลักเกณฑ์:</span>
                     {mainAnnouncement.filePath ? (
                       <a
                         href="#"
@@ -1280,13 +1280,13 @@ export default function PublicationRewardDetail({
                         {mainAnnouncement.label}
                       </a>
                     ) : (
-                      <span className="text-gray-400">{mainAnnouncement.label || "-"}</span>
+                      <span className="text-slate-400">{mainAnnouncement.label || "-"}</span>
                     )}
                   </div>
                 )}
                 {rewardAnnouncement && (
                   <div className="flex items-start gap-2 lg:col-span-3">
-                    <span className="text-gray-500 shrink-0">ประกาศเงินรางวัล:</span>
+                    <span className="text-slate-500 shrink-0">ประกาศเงินรางวัล:</span>
                     {rewardAnnouncement.filePath ? (
                       <a
                         href="#"
@@ -1297,7 +1297,7 @@ export default function PublicationRewardDetail({
                         {rewardAnnouncement.label}
                       </a>
                     ) : (
-                      <span className="text-gray-400">{rewardAnnouncement.label || "-"}</span>
+                      <span className="text-slate-400">{rewardAnnouncement.label || "-"}</span>
                     )}
                   </div>
                 )}
@@ -1308,13 +1308,13 @@ export default function PublicationRewardDetail({
             <div className="text-2xl font-bold text-blue-600">
               {formatCurrency(pubDetail.reward_amount || 0)}
             </div>
-            <div className="text-sm text-gray-500">จำนวนเงินที่ขอ</div>
+            <div className="text-sm text-slate-500">จำนวนเงินที่ขอ</div>
             {showApprovedColumn && (
               <div className="mt-2">
                 <div className="text-lg font-bold text-green-600">
                   {formatCurrency(approvedTotal)}
                 </div>
-                <div className="text-sm text-gray-500">จำนวนเงินที่อนุมัติ</div>
+                <div className="text-sm text-slate-500">จำนวนเงินที่อนุมัติ</div>
               </div>
             )}
           </div>
@@ -1322,44 +1322,44 @@ export default function PublicationRewardDetail({
       </Card>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8">
+      <div className="mb-6 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1">
+        <nav className="flex min-w-max gap-1" aria-label="รายละเอียดคำร้องเงินรางวัล">
           <button
             onClick={() => setActiveTab('details')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
               activeTab === 'details'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'bg-white text-blue-700 ring-1 ring-blue-200'
+                : 'text-slate-600 hover:bg-white hover:text-blue-700'
             }`}
           >
             รายละเอียดบทความ (Article Details)
           </button>
           <button
             onClick={() => setActiveTab('authors')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
               activeTab === 'authors'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'bg-white text-blue-700 ring-1 ring-blue-200'
+                : 'text-slate-600 hover:bg-white hover:text-blue-700'
             }`}
           >
             ผู้แต่งร่วม (Co-Authors)
           </button>
           <button
             onClick={() => setActiveTab('documents')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
               activeTab === 'documents'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'bg-white text-blue-700 ring-1 ring-blue-200'
+                : 'text-slate-600 hover:bg-white hover:text-blue-700'
             }`}
           >
             เอกสารแนบ (Attachments)
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
               activeTab === 'history'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'bg-white text-blue-700 ring-1 ring-blue-200'
+                : 'text-slate-600 hover:bg-white hover:text-blue-700'
             }`}
           >
             ประวัติการดำเนินการ (Status History)
@@ -1375,25 +1375,25 @@ export default function PublicationRewardDetail({
           <Card title="ข้อมูลบทความ (Article Information)" icon={BookOpen} collapsible={false}>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">ชื่อบทความ (Article Title)</label>
+                <label className="text-sm text-slate-500">ชื่อบทความ (Article Title)</label>
                 <p className="font-medium">{pubDetail.paper_title || '-'}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">ชื่อวารสาร (Journal Name)</label>
+                <label className="text-sm text-slate-500">ชื่อวารสาร (Journal Name)</label>
                 <p className="font-medium">{pubDetail.journal_name || '-'}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-gray-500">Volume/Issue</label>
+                  <label className="text-sm text-slate-500">Volume/Issue</label>
                   <p className="font-medium">{pubDetail.volume_issue || '-'}</p>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-500">หน้า (Pages)</label>
+                  <label className="text-sm text-slate-500">หน้า (Pages)</label>
                   <p className="font-medium">{pubDetail.page_numbers || '-'}</p>
                 </div>
               </div>
               <div>
-                <label className="text-sm text-gray-500">วันที่ตีพิมพ์ (Publication Date)</label>
+                <label className="text-sm text-slate-500">วันที่ตีพิมพ์ (Publication Date)</label>
                 <p className="font-medium">
                   {pubDetail.publication_date 
                     ? new Date(pubDetail.publication_date).toLocaleDateString('th-TH', {
@@ -1405,7 +1405,7 @@ export default function PublicationRewardDetail({
                 </p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">DOI (Digital Object Identifier)</label>
+                <label className="text-sm text-slate-500">DOI (Digital Object Identifier)</label>
                 <p className="font-medium">
                   {pubDetail.doi ? (
                     <a href={`https://doi.org/${pubDetail.doi}`} 
@@ -1425,28 +1425,28 @@ export default function PublicationRewardDetail({
           <Card title="ข้อมูลวารสาร (Journal Information)" icon={Award} collapsible={false}>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">ควอร์ไทล์ (Quartile)</label>
+                <label className="text-sm text-slate-500">ควอร์ไทล์ (Quartile)</label>
                 <div className="mt-1">
                   <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium
                     ${pubDetail.quartile === 'Q1' ? 'bg-green-100 text-green-800' :
                       pubDetail.quartile === 'Q2' ? 'bg-blue-100 text-blue-800' :
-                      pubDetail.quartile === 'Q3' ? 'bg-yellow-100 text-yellow-800' :
-                      pubDetail.quartile === 'Q4' ? 'bg-orange-100 text-orange-800' :
-                      'bg-gray-100 text-gray-800'}`}>
+                      pubDetail.quartile === 'Q3' ? 'bg-amber-100 text-amber-800' :
+                      pubDetail.quartile === 'Q4' ? 'bg-amber-100 text-amber-800' :
+                      'bg-slate-100 text-slate-800'}`}>
                     {pubDetail.quartile || 'N/A'}
                   </span>
                 </div>
               </div>
               <div>
-                <label className="text-sm text-gray-500">Impact Factor</label>
+                <label className="text-sm text-slate-500">Impact Factor</label>
                 <p className="font-medium text-lg">{pubDetail.impact_factor || '-'}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">ฐานข้อมูลที่ปรากฏ (Database Indexed)</label>
+                <label className="text-sm text-slate-500">ฐานข้อมูลที่ปรากฏ (Database Indexed)</label>
                 <p className="font-medium">{pubDetail.indexing || '-'}</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">ประเภทการตีพิมพ์ (Publication Type)</label>
+                <label className="text-sm text-slate-500">ประเภทการตีพิมพ์ (Publication Type)</label>
                 <p className="font-medium">{pubDetail.publication_type || 'journal'}</p>
               </div>
             </div>
@@ -1462,27 +1462,27 @@ export default function PublicationRewardDetail({
               )}
               {/* Column headers */}
               <div
-                className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} pb-2 border-b text-sm text-gray-600`}
+                className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} pb-2 border-b text-sm text-slate-600`}
               >
                 <div></div>
                 <div className="text-right">
                   <div>จำนวนที่ขอ</div>
-                  <div className="text-xs text-gray-500">Requested Amount</div>
+                  <div className="text-xs text-slate-500">Requested Amount</div>
                 </div>
                 {showApprovedColumn && (
                   <div className="text-right">
                     <div>จำนวนที่อนุมัติ</div>
-                    <div className="text-xs text-gray-500">Approved Amount</div>
+                    <div className="text-xs text-slate-500">Approved Amount</div>
                   </div>
                 )}
               </div>
 
               {/* Requested reward */}
               <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-700">
                   เงินรางวัลที่ขอ
                   <br />
-                  <span className="text-xs font-normal text-gray-600">Requested Reward Amount</span>
+                  <span className="text-xs font-normal text-slate-600">Requested Reward Amount</span>
                 </label>
                 <span className="text-right font-semibold">
                   {formatCurrency(pubDetail.reward_amount || 0)}
@@ -1497,10 +1497,10 @@ export default function PublicationRewardDetail({
               {/* Revision fee */}
               {pubDetail.revision_fee > 0 && (
                 <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-700">
                     ค่าปรับปรุงบทความ
                     <br />
-                    <span className="text-xs font-normal text-gray-600">Manuscript Editing Fee (Baht)</span>
+                    <span className="text-xs font-normal text-slate-600">Manuscript Editing Fee (Baht)</span>
                   </label>
                   <span className="text-right">{formatCurrency(pubDetail.revision_fee)}</span>
                   {showApprovedColumn && (
@@ -1514,10 +1514,10 @@ export default function PublicationRewardDetail({
               {/* Publication fee */}
               {pubDetail.publication_fee > 0 && (
                 <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-700">
                     ค่าธรรมเนียมการตีพิมพ์
                     <br />
-                    <span className="text-xs font-normal text-gray-600">Page Charge</span>
+                    <span className="text-xs font-normal text-slate-600">Page Charge</span>
                   </label>
                   <span className="text-right">{formatCurrency(pubDetail.publication_fee)}</span>
                   {showApprovedColumn && (
@@ -1531,10 +1531,10 @@ export default function PublicationRewardDetail({
               {/* External funding */}
               {pubDetail.external_funding_amount > 0 && (
                 <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-700">
                     เงินสนับสนุนจากภายนอก
                     <br />
-                    <span className="text-xs font-normal text-gray-600">External Funding Sources</span>
+                    <span className="text-xs font-normal text-slate-600">External Funding Sources</span>
                   </label>
                   <span className="text-right text-red-600">
                     {formatCurrency(-pubDetail.external_funding_amount)}
@@ -1547,10 +1547,10 @@ export default function PublicationRewardDetail({
               <div
                 className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center pt-2 border-t`}
               >
-                <label className="block font-medium text-gray-700">
+                <label className="block font-medium text-slate-700">
                   รวมเบิกจากวิทยาลัยการคอม
                   <br />
-                  <span className="text-xs font-normal text-gray-600">Total Reimbursement from CP-KKU</span>
+                  <span className="text-xs font-normal text-slate-600">Total Reimbursement from CP-KKU</span>
                 </label>
                 <span className="text-right font-bold text-blue-600">
                   {formatCurrency(pubDetail.total_amount || pubDetail.reward_amount || 0)}
@@ -1568,7 +1568,7 @@ export default function PublicationRewardDetail({
           <Card title="ข้อมูลเพิ่มเติม (Additional Information)" icon={FileCheck} collapsible={false}>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">สถานะผู้ยื่น (Author Status)</label>
+                <label className="text-sm text-slate-500">สถานะผู้ยื่น (Author Status)</label>
                 <p className="font-medium">
                   {pubDetail.author_type === 'first_author' ? 'ผู้แต่งหลัก (First Author)' :
                    pubDetail.author_type === 'corresponding_author' ? 'ผู้แต่งที่รับผิดชอบบทความ (Corresponding Author)' :
@@ -1576,18 +1576,18 @@ export default function PublicationRewardDetail({
                 </p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">จำนวนผู้แต่ง (Number of Authors)</label>
+                <label className="text-sm text-slate-500">จำนวนผู้แต่ง (Number of Authors)</label>
                 <p className="font-medium">{pubDetail.author_count || 1} คน</p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">ได้รับทุนสนับสนุนจากมหาวิทยาลัย (Receive funding support from the university)</label>
+                <label className="text-sm text-slate-500">ได้รับทุนสนับสนุนจากมหาวิทยาลัย (Receive funding support from the university)</label>
                 <p className="font-medium">
                   {pubDetail.has_university_funding === 'yes' ? 'ใช่' : 'ไม่ใช่'}
                 </p>
               </div>
               {pubDetail.funding_references && (
                 <div>
-                  <label className="text-sm text-gray-500">หมายเลขอ้างอิงทุน (Fund Reference Number)</label>
+                  <label className="text-sm text-slate-500">หมายเลขอ้างอิงทุน (Fund Reference Number)</label>
                   <p className="font-medium">{pubDetail.funding_references}</p>
                 </div>
               )}
@@ -1604,15 +1604,15 @@ export default function PublicationRewardDetail({
             <div className="space-y-6">
               {/* Applicant */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">ผู้ยื่นคำร้อง (Applicant)</h4>
+                <h4 className="text-sm font-medium text-slate-700 mb-3">ผู้ยื่นคำร้อง (Applicant)</h4>
                 <div className="bg-blue-50 rounded-lg p-4">
                   <div className="flex items-center">
                     <User className="h-5 w-5 text-blue-600 mr-3" />
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-slate-900">
                         {getUserFullName(getApplicant())}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-slate-500">
                         {getUserEmail(getApplicant())}
                       </div>
                     </div>
@@ -1622,7 +1622,7 @@ export default function PublicationRewardDetail({
 
               {/* Co-authors */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">
+                <h4 className="text-sm font-medium text-slate-700 mb-3">
                   รายชื่อผู้แต่งร่วม (Co-Authors) {getCoAuthors().length > 0 && `(${getCoAuthors().length} คน)`}
                 </h4>
 
@@ -1632,16 +1632,16 @@ export default function PublicationRewardDetail({
                       const userData = submissionUser.user || submissionUser.User;
                       
                       return (
-                        <div key={submissionUser.user_id || index} className="bg-gray-50 rounded-lg p-4">
+                        <div key={submissionUser.user_id || index} className="bg-slate-50 rounded-lg p-4">
                           <div className="flex items-center">
-                            <span className="text-sm font-medium text-gray-500 w-8">
+                            <span className="text-sm font-medium text-slate-500 w-8">
                               {index + 1}.
                             </span>
                             <div className="flex-1 ml-3">
-                              <div className="font-medium text-gray-900">
+                              <div className="font-medium text-slate-900">
                                 {getUserFullName(userData)}
                               </div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-slate-500">
                                 {getUserEmail(userData)}
                               </div>
                             </div>
@@ -1651,7 +1651,7 @@ export default function PublicationRewardDetail({
                     })}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-8">ไม่มีข้อมูลผู้แต่งร่วม</p>
+                  <p className="text-slate-500 text-center py-8">ไม่มีข้อมูลผู้แต่งร่วม</p>
                 )}
               </div>
             </div>
@@ -1676,17 +1676,17 @@ export default function PublicationRewardDetail({
                   return (
                     <div
                       key={doc.document_id || fileId || index}
-                      className="bg-gray-50/50 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200"
+                      className="rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50/40"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                            <span className="text-gray-600 font-semibold text-sm">{index + 1}</span>
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50">
+                            <span className="text-slate-600 font-semibold text-sm">{index + 1}</span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <FileText size={16} className="text-gray-600 flex-shrink-0" />
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                              <FileText size={16} className="text-slate-600 flex-shrink-0" />
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700">
                                 {docType}
                               </span>
                             </div>
@@ -1703,7 +1703,7 @@ export default function PublicationRewardDetail({
                                 {fileName}
                               </a>
                             ) : (
-                              <span className="font-medium text-gray-400 truncate" title={fileName}>
+                              <span className="font-medium text-slate-400 truncate" title={fileName}>
                                 {fileName}
                               </span>
                             )}
@@ -1711,7 +1711,7 @@ export default function PublicationRewardDetail({
                         </div>
                         <div className="flex items-center gap-2 ml-4">
                           <button
-                            className="inline-flex items-center gap-1 border border-blue-200 px-3 py-2 text-sm text-blue-600 hover:bg-blue-100 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex min-h-11 items-center gap-2 border border-blue-200 px-3 py-2 text-sm text-blue-600 hover:bg-blue-100 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={() => handleView(fileId)}
                             disabled={!fileId}
                             title="เปิดดูไฟล์"
@@ -1720,7 +1720,7 @@ export default function PublicationRewardDetail({
                             <span>ดู</span>
                           </button>
                           <button
-                            className="inline-flex items-center gap-1 border border-green-200 px-3 py-2 text-sm text-green-600 hover:bg-green-100 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex min-h-11 items-center gap-2 border border-blue-200 bg-white px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={() => handleDownload(fileId, downloadName)}
                             disabled={!fileId}
                             title="ดาวน์โหลดไฟล์"
@@ -1736,18 +1736,18 @@ export default function PublicationRewardDetail({
               </div>
             ) : (
               <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="w-8 h-8 text-gray-400" />
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100">
+                  <FileText className="w-8 h-8 text-slate-400" />
                 </div>
-                <p className="text-gray-500 text-lg font-medium mb-2">ไม่มีเอกสารแนบ</p>
-                <p className="text-gray-400 text-sm">ยังไม่มีการอัปโหลดเอกสารสำหรับคำร้องนี้</p>
+                <p className="text-slate-500 text-lg font-medium mb-2">ไม่มีเอกสารแนบ</p>
+                <p className="text-slate-400 text-sm">ยังไม่มีการอัปโหลดเอกสารสำหรับคำร้องนี้</p>
               </div>
             )}
 
             {visibleDocuments.length > 0 && (
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
                 <button
-                  className="inline-flex items-center gap-1 border border-blue-200 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex min-h-11 items-center gap-2 border border-blue-200 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleViewMerged}
                   disabled={visibleDocuments.length === 0 || merging}
                   title="เปิดดูไฟล์แนบที่ถูกรวมเป็น PDF"
@@ -1755,7 +1755,7 @@ export default function PublicationRewardDetail({
                   <Eye size={16} /> ดูไฟล์รวม (PDF)
                 </button>
                 <button
-                  className="inline-flex items-center gap-1 border border-green-200 px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex min-h-11 items-center gap-2 border border-blue-200 bg-white px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleDownloadMerged}
                   disabled={visibleDocuments.length === 0 || merging}
                   title="ดาวน์โหลดไฟล์แนบที่ถูกรวมเป็น PDF เดียว"
@@ -1777,7 +1777,7 @@ export default function PublicationRewardDetail({
                 {/* Created */}
                 <li>
                   <div className="relative pb-8">
-                    <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"></span>
+                    <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-200"></span>
                     <div className="relative flex space-x-3">
                       <div>
                         <span className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
@@ -1785,10 +1785,10 @@ export default function PublicationRewardDetail({
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900">
+                        <p className="text-sm text-slate-900">
                           สร้างคำร้อง
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-slate-500">
                           {new Date(submission.created_at).toLocaleString('th-TH')}
                         </p>
                       </div>
@@ -1800,7 +1800,7 @@ export default function PublicationRewardDetail({
                 {submission.submitted_at && (
                   <li>
                     <div className="relative pb-8">
-                      <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"></span>
+                      <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-200"></span>
                       <div className="relative flex space-x-3">
                         <div>
                           <span className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
@@ -1808,10 +1808,10 @@ export default function PublicationRewardDetail({
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900">
+                          <p className="text-sm text-slate-900">
                             ส่งคำร้อง
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-slate-500">
                             {new Date(submission.submitted_at).toLocaleString('th-TH')}
                           </p>
                         </div>
@@ -1831,26 +1831,26 @@ export default function PublicationRewardDetail({
                               ? 'bg-green-500'
                               : submission.status_id === 3
                               ? 'bg-red-500'
-                              : 'bg-orange-500'
+                              : 'bg-amber-500'
                           }`}>
                             {renderStatusIcon(statusCode, "h-4 w-4 text-white")}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900">
+                          <p className="text-sm text-slate-900">
                             {getLabelById(submission.status_id) || submission.Status?.status_name || 'ไม่ทราบสถานะ'}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-slate-500">
                             {new Date(approvedAt || submission.updated_at).toLocaleString('th-TH')}
                           </p>
                           {submission.admin_comment && submission.status_id === 2 && (
-                            <p className="text-sm text-gray-600 mt-1">
+                            <p className="text-sm text-slate-600 mt-1">
                               หมายเหตุ: {submission.admin_comment}
                             </p>
                           )}
                           {(submission.admin_rejection_reason || submission.head_rejection_reason || pubDetail.reject_reason) &&
                             submission.status_id === 3 && (
-                              <p className="text-sm text-gray-600 mt-1">
+                              <p className="text-sm text-slate-600 mt-1">
                                 เหตุผลที่ไม่อนุมัติ: {submission.admin_rejection_reason ||
                                   submission.head_rejection_reason ||
                                   pubDetail.reject_reason}

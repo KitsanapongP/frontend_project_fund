@@ -48,12 +48,12 @@ const statusIconColor = (statusCode) => {
     case "rejected":
       return "text-red-600";
     case "revision":
-      return "text-orange-600";
+      return "text-amber-600";
     case "draft":
-      return "text-gray-500";
+      return "text-slate-500";
     case "pending":
     default:
-      return "text-yellow-600";
+      return "text-amber-600";
   }
 };
 
@@ -1038,8 +1038,8 @@ export default function FundApplicationDetail({
       >
         <div className="flex justify-center items-center py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">กำลังโหลดข้อมูล...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-100 border-t-blue-600 mx-auto"></div>
+            <p className="mt-4 text-slate-600">กำลังโหลดข้อมูล...</p>
           </div>
         </div>
       </PageLayout>
@@ -1056,8 +1056,8 @@ export default function FundApplicationDetail({
         <Card collapsible={false}>
           <div className="text-center py-12">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <p className="text-gray-600">ไม่พบข้อมูลคำร้องที่ต้องการ</p>
-            <button onClick={handleBack} className="btn btn-primary mt-4">
+            <p className="text-slate-600">ไม่พบข้อมูลคำร้องที่ต้องการ</p>
+            <button onClick={handleBack} className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
               กลับไปหน้ารายการ
             </button>
           </div>
@@ -1082,7 +1082,7 @@ export default function FundApplicationDetail({
       subtitle="รายละเอียดคำร้องขอรับทุน"
       icon={FileText}
       actions={
-        <button onClick={handleBack} className="btn btn-secondary">
+        <button onClick={handleBack} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
           <ArrowLeft size={20} />
           กลับ
         </button>
@@ -1113,7 +1113,7 @@ export default function FundApplicationDetail({
           <div className="flex-1">
             <div className="flex flex-col gap-3 mt-4 text-sm">
               <div className="flex flex-wrap items-start gap-2">
-                <span className="text-gray-500 shrink-0 min-w-[80px]">
+                <span className="text-slate-500 shrink-0 min-w-[80px]">
                   ผู้ขอทุน:
                 </span>
                 <span className="font-medium break-words flex-1">
@@ -1122,26 +1122,26 @@ export default function FundApplicationDetail({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 mt-2">
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">เลขที่คำร้อง:</span>
+                  <span className="text-slate-500 shrink-0">เลขที่คำร้อง:</span>
                   <span className="font-medium">
                     {submission.submission_number || "-"}
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">รอบการพิจารณา:</span>
+                  <span className="text-slate-500 shrink-0">รอบการพิจารณา:</span>
                   <span className="font-medium">
                     {installmentLoading ? "กำลังโหลด..." : installmentLabel}
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">เบอร์ติดต่อ:</span>
+                  <span className="text-slate-500 shrink-0">เบอร์ติดต่อ:</span>
                   <span className="font-medium break-words">
                     {contactPhone || "-"}
                   </span>
                 </div>
                 {submittedAt && (
                   <div className="flex items-start gap-2">
-                    <span className="text-gray-500 shrink-0">วันที่ส่งคำร้อง:</span>
+                    <span className="text-slate-500 shrink-0">วันที่ส่งคำร้อง:</span>
                     <span className="font-medium">
                       {new Date(submittedAt).toLocaleDateString("th-TH", {
                         year: "numeric",
@@ -1153,7 +1153,7 @@ export default function FundApplicationDetail({
                 )}
                 {(submission.admin_approved_at || submission.head_approved_at) && (
                   <div className="flex items-start gap-2">
-                    <span className="text-gray-500 shrink-0">วันที่อนุมัติ:</span>
+                    <span className="text-slate-500 shrink-0">วันที่อนุมัติ:</span>
                     <span className="font-medium">
                       {new Date(submission.admin_approved_at || submission.head_approved_at).toLocaleDateString(
                         "th-TH",
@@ -1167,8 +1167,8 @@ export default function FundApplicationDetail({
                   </div>
                 )}
                 <div className="flex items-start gap-2 lg:col-span-2 xl:col-span-3">
-                  <span className="text-gray-500 shrink-0">ข้อมูลธนาคาร:</span>
-                  <div className="flex flex-col text-sm font-medium text-gray-700">
+                  <span className="text-slate-500 shrink-0">ข้อมูลธนาคาร:</span>
+                  <div className="flex flex-col text-sm font-medium text-slate-700">
                     <span>
                       เลขที่บัญชี: <span className="font-semibold">{bankAccount || "-"}</span>
                     </span>
@@ -1182,7 +1182,7 @@ export default function FundApplicationDetail({
                 </div>
                 {announceReference && (
                   <div className="flex items-start gap-2 lg:col-span-2 xl:col-span-3">
-                    <span className="text-gray-500 shrink-0">
+                    <span className="text-slate-500 shrink-0">
                       หมายเลขอ้างอิงประกาศผลการพิจารณา:
                     </span>
                     <span className="font-medium break-all">
@@ -1192,7 +1192,7 @@ export default function FundApplicationDetail({
                 )}
                 {submission.subcategory_name && (
                   <div className="flex items-start gap-2 lg:col-span-2 xl:col-span-3">
-                    <span className="text-gray-500 shrink-0">ชื่อทุน:</span>
+                    <span className="text-slate-500 shrink-0">ชื่อทุน:</span>
                     <span className="font-medium break-words">
                       {submission.subcategory_name}
                     </span>
@@ -1200,7 +1200,7 @@ export default function FundApplicationDetail({
                 )}
                 {mainAnnouncement && (
                   <div className="flex items-start gap-2 lg:col-span-2 xl:col-span-3">
-                    <span className="text-gray-500 shrink-0">ประกาศหลักเกณฑ์:</span>
+                    <span className="text-slate-500 shrink-0">ประกาศหลักเกณฑ์:</span>
                     {mainAnnouncement.filePath ? (
                       <a
                         href="#"
@@ -1211,7 +1211,7 @@ export default function FundApplicationDetail({
                         {mainAnnouncement.label}
                       </a>
                     ) : (
-                      <span className="text-gray-400">
+                      <span className="text-slate-400">
                         {mainAnnouncement.label || "-"}
                       </span>
                     )}
@@ -1219,7 +1219,7 @@ export default function FundApplicationDetail({
                 )}
                 {activityAnnouncement && (
                   <div className="flex items-start gap-2 lg:col-span-2 xl:col-span-3">
-                    <span className="text-gray-500 shrink-0">ประกาศสนับสนุนกิจกรรม:</span>
+                    <span className="text-slate-500 shrink-0">ประกาศสนับสนุนกิจกรรม:</span>
                     {activityAnnouncement.filePath ? (
                       <a
                         href="#"
@@ -1230,7 +1230,7 @@ export default function FundApplicationDetail({
                         {activityAnnouncement.label}
                       </a>
                     ) : (
-                      <span className="text-gray-400">
+                      <span className="text-slate-400">
                         {activityAnnouncement.label || "-"}
                       </span>
                     )}
@@ -1243,13 +1243,13 @@ export default function FundApplicationDetail({
             <div className="text-2xl font-bold text-blue-600">
               {formatCurrency(detail.requested_amount || 0)}
             </div>
-            <div className="text-sm text-gray-500">จำนวนเงินที่ขอ</div>
+            <div className="text-sm text-slate-500">จำนวนเงินที่ขอ</div>
             {detail.approved_amount != null && (
               <div className="mt-2">
                 <div className="text-lg font-bold text-green-600">
                   {formatCurrency(detail.approved_amount || 0)}
                 </div>
-                <div className="text-sm text-gray-500">จำนวนเงินที่อนุมัติ</div>
+                <div className="text-sm text-slate-500">จำนวนเงินที่อนุมัติ</div>
               </div>
             )}
           </div>
@@ -1274,19 +1274,19 @@ export default function FundApplicationDetail({
                 return (
                   <div
                     key={doc.document_id || fileId || index}
-                    className="bg-gray-50/50 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200"
+                    className="rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50/40"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                          <span className="text-gray-600 font-semibold text-sm">
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50">
+                          <span className="text-slate-600 font-semibold text-sm">
                             {index + 1}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <FileText size={16} className="text-gray-600 flex-shrink-0" />
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                            <FileText size={16} className="text-slate-600 flex-shrink-0" />
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700">
                               {docType}
                             </span>
                           </div>
@@ -1304,7 +1304,7 @@ export default function FundApplicationDetail({
                             </a>
                           ) : (
                             <span
-                              className="font-medium text-gray-400 truncate"
+                              className="font-medium text-slate-400 truncate"
                               title={fileName}
                             >
                               {fileName}
@@ -1315,7 +1315,7 @@ export default function FundApplicationDetail({
 
                       <div className="flex items-center gap-2 ml-4">
                         <button
-                          className="inline-flex items-center gap-1 border border-blue-200 px-3 py-2 text-sm text-blue-600 hover:bg-blue-100 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors duration-200 hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                           onClick={() => handleView(fileId)}
                           disabled={!fileId}
                           title="เปิดดูไฟล์"
@@ -1324,7 +1324,7 @@ export default function FundApplicationDetail({
                           <span>ดู</span>
                         </button>
                         <button
-                          className="inline-flex items-center gap-1 border border-green-200 px-3 py-2 text-sm text-green-600 hover:bg-green-100 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition-colors duration-200 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                           onClick={() => handleDownload(fileId, downloadName)}
                           disabled={!fileId}
                           title="ดาวน์โหลดไฟล์"
@@ -1340,18 +1340,18 @@ export default function FundApplicationDetail({
             </div>
           ) : (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-gray-400" />
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100">
+                <FileText className="w-8 h-8 text-slate-400" />
               </div>
-              <p className="text-gray-500 text-lg font-medium mb-2">ไม่มีเอกสารแนบ</p>
-              <p className="text-gray-400 text-sm">ยังไม่มีการอัปโหลดเอกสารสำหรับคำร้องนี้</p>
+              <p className="text-slate-500 text-lg font-medium mb-2">ไม่มีเอกสารแนบ</p>
+              <p className="text-slate-400 text-sm">ยังไม่มีการอัปโหลดเอกสารสำหรับคำร้องนี้</p>
             </div>
           )}
 
           {visibleDocuments.length > 0 && (
-            <div className="flex justify-end gap-3 pt-4 border-t-1 border-gray-300">
+            <div className="flex justify-end gap-3 pt-4 border-t-1 border-slate-300">
               <button
-                className="inline-flex items-center gap-1 border border-blue-200 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex min-h-11 items-center gap-2 border border-blue-200 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => handleViewMerged(visibleDocuments)}
                 disabled={visibleDocuments.length === 0 || merging || creatingMerged}
                 title="เปิดดูไฟล์แนบที่ถูกรวมเป็น PDF"
@@ -1359,7 +1359,7 @@ export default function FundApplicationDetail({
                 <Eye size={16} /> ดูไฟล์รวม (PDF)
               </button>
               <button
-                className="inline-flex items-center gap-1 border border-green-200 px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex min-h-11 items-center gap-2 border border-blue-200 bg-white px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() =>
                   handleDownloadMerged(
                     visibleDocuments,
