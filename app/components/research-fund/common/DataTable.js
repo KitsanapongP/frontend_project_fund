@@ -9,14 +9,14 @@ export default function DataTable({ columns = [], data = [], emptyMessage = "ไ
 
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200">
-      <table className="min-w-[36rem] table-auto">
+      <table className="w-full min-w-[36rem] table-auto">
         <thead className="bg-slate-100">
           <tr>
             {columns.map((column, index) => (
               <th
                 key={column.key || column.accessor || index}
                 scope="col"
-                className={`border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold text-slate-700 ${column.headerClassName || ""}`}
+                className={`border-b border-slate-200 px-4 py-3 text-xs font-semibold text-slate-700 ${column.headerClassName || "text-left"}`}
               >
                 {column.header}
               </th>
