@@ -1225,6 +1225,19 @@ export const scopusConfigAPI = {
   async getAuthorHIndexGraph(params = {}) {
     return apiClient.get('/admin/scopus/author-metrics/hgraph', params);
   },
+  // Hirsch h-graph ระดับคณะ (นับเฉพาะผลงานสังกัด KKU, dedupe ต่อ document) — params: year_from, year_to
+  async getFacultyHIndexGraph(params = {}) {
+    return apiClient.get('/admin/scopus/author-metrics/faculty-hgraph', params);
+  },
+  // ดาวน์โหลดไฟล์ Excel ผลงานระดับคณะ (ชีต Data + Summary) — params: year_from, year_to
+  async exportFacultyHIndex({ year_from, year_to } = {}) {
+    const qs = new URLSearchParams();
+    if (year_from) qs.set('year_from', year_from);
+    if (year_to) qs.set('year_to', year_to);
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    const filename = `scopus-hindex-faculty-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    return apiClient.downloadFile(`/admin/scopus/author-metrics/faculty-export${suffix}`, filename);
+  },
   // สรุป h-index อาจารย์ทุกคน (สำหรับ export CSV)
   async getAuthorHIndexSummary() {
     return apiClient.get('/admin/scopus/author-metrics/summary');

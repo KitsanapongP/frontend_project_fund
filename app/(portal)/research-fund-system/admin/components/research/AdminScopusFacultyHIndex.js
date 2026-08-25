@@ -3,18 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Download, ZoomIn, ZoomOut, Maximize2, Info } from "lucide-react";
-import { usersAPI, scopusConfigAPI } from "@/app/lib/api";
+import { scopusConfigAPI } from "@/app/lib/api";
 import { formatNumber } from "@/app/utils/format";
 
 const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
+const CHART_ID = "faculty-hindex-graph";
 const toBE = (ce) => (ce == null || ce === "" ? "" : Number(ce) + 543);
-
-function csvEscape(value) {
-  const text = value == null ? "" : String(value);
-  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text; // กัน CSV injection
-  return `"${safe.replaceAll('"', '""')}"`;
-}
 
 function htmlEscape(value) {
   return String(value == null ? "" : value)
@@ -36,65 +31,19 @@ function downloadFile(filename, content, mime) {
   URL.revokeObjectURL(url);
 }
 
-function downloadCSV(filename, rows) {
-  const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\r\n");
-  const blob = new Blob(["﻿", csv], { type: "text/csv;charset=utf-8" }); // BOM ให้ Excel อ่านไทยได้
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-// Hirsch h-graph รายอาจารย์ (เอกสารเรียงตาม citations vs เส้น y=x) จาก scopus_documents
-export default function AdminScopusAuthorHIndex() {
-  const [users, setUsers] = useState([]);
-  const [usersError, setUsersError] = useState("");
-  const [usersLoading, setUsersLoading] = useState(true);
-  const [selectedScopusId, setSelectedScopusId] = useState("");
-
+// Hirsch h-graph ระดับคณะ (เอกสารเรียงตาม citations vs เส้น y=x) จาก scopus_documents
+// นับเฉพาะผลงานที่อาจารย์สังกัด KKU ตอนตีพิมพ์ และ dedupe ต่อ document (paper ที่ร่วมกันหลายคนนับครั้งเดียว)
+export default function AdminScopusFacultyHIndex() {
   const [yearFrom, setYearFrom] = useState("");
   const [yearTo, setYearTo] = useState("");
 
   const [graph, setGraph] = useState(null);
-  const [authorYears, setAuthorYears] = useState([]); // ปี (ค.ศ.) ที่มีเอกสารจริงของอาจารย์คนที่เลือก
+  const [facultyYears, setFacultyYears] = useState([]); // ปี (ค.ศ.) ที่มีเอกสารจริงของคณะ
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [exportingAll, setExportingAll] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [showDesc, setShowDesc] = useState(false);
-
-  // โหลดรายชื่ออาจารย์ที่มี Scopus ID
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setUsersLoading(true);
-      try {
-        const res = await usersAPI.listScopusUsers({ limit: 200 });
-        const items = Array.isArray(res?.data) ? res.data : [];
-        if (cancelled) return;
-        setUsers(items);
-        if (items.length > 0) {
-          setSelectedScopusId(String(items[0].scopus_id || ""));
-        }
-      } catch (e) {
-        if (!cancelled) setUsersError(e?.message || "ไม่สามารถโหลดรายชื่ออาจารย์ได้");
-      } finally {
-        if (!cancelled) setUsersLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const selectedUser = useMemo(
-    () => users.find((u) => String(u.scopus_id) === String(selectedScopusId)) || null,
-    [users, selectedScopusId]
-  );
 
   // ===== Zoom + Pan (ทำเองเพื่อคุม cap/ตำแหน่งการซูม + ให้ smooth) =====
   const chartWrapRef = useRef(null);
@@ -106,7 +55,7 @@ export default function AdminScopusAuthorHIndex() {
     return Math.max(n, maxCit, 1);
   }, [graph]);
   const zoomRef = useRef({ min: 0, max: 1 });
-  const rafRef = useRef(null); // batch xaxis redraws into one frame (จุดเยอะ -> ไม่กระตุก)
+  const rafRef = useRef(null); // batch xaxis redraws into one frame (บทความเยอะ -> ไม่กระตุก)
   const markersHiddenRef = useRef(false); // ซ่อนจุดชั่วคราวระหว่างซูม/ลากให้วาดไว แล้วโชว์คืนเมื่อหยุด
   const markerTimerRef = useRef(null);
   useEffect(() => {
@@ -116,7 +65,7 @@ export default function AdminScopusAuthorHIndex() {
   // เข้าถึง instance ApexCharts แบบ sync (ไว้ pan/wheel ให้ลื่น ไม่ต้อง await import)
   function getChart() {
     const list = (typeof window !== "undefined" && window.Apex && window.Apex._chartInstances) || [];
-    const f = list.find((c) => c.id === "author-hindex-graph");
+    const f = list.find((c) => c.id === CHART_ID);
     return f ? f.chart : null;
   }
   function getGridRect() {
@@ -188,6 +137,8 @@ export default function AdminScopusAuthorHIndex() {
     const el = chartWrapRef.current;
     if (!el || !graph) return;
 
+    const clientXOf = (e) => (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX);
+    const clientYOf = (e) => (e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY);
     const centerFromClientX = (clientX) => {
       const gr = getGridRect();
       if (!gr || !gr.width) return null;
@@ -195,8 +146,6 @@ export default function AdminScopusAuthorHIndex() {
       const { min, max } = zoomRef.current;
       return min + frac * (max - min);
     };
-    const clientXOf = (e) => (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX);
-    const clientYOf = (e) => (e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY);
 
     const pan = { active: false };
     const onWheel = (e) => {
@@ -262,43 +211,21 @@ export default function AdminScopusAuthorHIndex() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graph, axisMax]);
 
-  // Export CSV: h-index ของอาจารย์ทุกคน
-  async function exportAllCSV() {
-    setExportingAll(true);
+  // Export Excel: ไฟล์ .xlsx จาก backend (ชีต Data รายบทความ + ชีต Summary) ตามช่วงปีที่แสดง
+  async function exportFacultyExcel() {
+    setExporting(true);
     setError("");
     try {
-      const res = await scopusConfigAPI.getAuthorHIndexSummary();
-      const data = Array.isArray(res?.data) ? res.data : [];
-      const header = [
-        "ลำดับ", "รหัสอาจารย์", "ชื่อ-สกุล", "Scopus Author ID",
-        "h-index", "จำนวนเอกสาร", "การอ้างอิงรวม", "ผู้เขียนร่วม", "ช่วงปีผลงาน (พ.ศ.)",
-      ];
-      const rows = data.map((r) => [
-        r.rank, r.user_id, r.name, r.scopus_author_id,
-        r.h_index, r.document_count, r.citation_total, r.scopus_coauthor_count ?? "-",
-        r.year_min != null ? `${toBE(r.year_min)}–${toBE(r.year_max)}` : "-",
-      ]);
-      downloadCSV(`scopus-hindex-all-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+      await scopusConfigAPI.exportFacultyHIndex({ year_from: yearFrom, year_to: yearTo });
     } catch (e) {
-      setError(e?.message || "ส่งออกข้อมูลทุกคนไม่สำเร็จ");
+      setError(e?.message || "ส่งออกไฟล์ Excel ไม่สำเร็จ");
     } finally {
-      setExportingAll(false);
+      setExporting(false);
     }
   }
 
-  // Export CSV รายบุคคล: รายการบทความของอาจารย์ที่เลือก ตามช่วงปีที่แสดง
-  function exportPersonCSV() {
-    if (!graph || !Array.isArray(graph.points) || graph.points.length === 0) return;
-    const h = graph.h_index;
-    const header = ["ลำดับ", "ชื่อบทความ", "ปี (พ.ศ.)", "จำนวนการอ้างอิง", "อยู่ใน h-core", "EID"];
-    const rows = graph.points.map((p) => [
-      p.rank, p.title || "", p.year != null ? toBE(p.year) : "-", p.citations, p.rank <= h ? "ใช่" : "ไม่", p.eid || "",
-    ]);
-    downloadCSV(`scopus-hindex-${selectedScopusId}-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
-  }
-
-  // Export รายงานรายบุคคล: ไฟล์ HTML ฝังภาพกราฟ + ตารางบทความ (เปิดในเบราว์เซอร์/พิมพ์เป็น PDF ได้)
-  async function exportPersonReport() {
+  // Export รายงานระดับคณะ: ไฟล์ HTML ฝังภาพกราฟ + ตารางบทความ (เปิดในเบราว์เซอร์/พิมพ์เป็น PDF ได้)
+  async function exportFacultyReport() {
     if (!graph || !Array.isArray(graph.points) || graph.points.length === 0) return;
     const h = graph.h_index;
 
@@ -308,18 +235,17 @@ export default function AdminScopusAuthorHIndex() {
       // รีเซ็ตซูมให้กราฟเต็มก่อนแคปเป็นรูป กันภาพที่ผู้ใช้ซูมค้างไว้ออกไปในรายงาน
       try {
         zoomRef.current = { min: 0, max: axisMax };
-        ApexCharts.exec("author-hindex-graph", "updateOptions", { xaxis: { min: 0, max: axisMax } }, false, false);
+        ApexCharts.exec(CHART_ID, "updateOptions", { xaxis: { min: 0, max: axisMax } }, false, false);
         await new Promise((r) => setTimeout(r, 80));
       } catch (_) {}
-      const res = await ApexCharts.exec("author-hindex-graph", "dataURI", { scale: 2 });
+      const res = await ApexCharts.exec(CHART_ID, "dataURI", { scale: 2 });
       if (res?.imgURI) {
-        imgTag = `<img src="${res.imgURI}" alt="กราฟ h-index" style="max-width:100%;border:1px solid #e2e8f0;border-radius:8px;margin-top:8px" />`;
+        imgTag = `<img src="${res.imgURI}" alt="กราฟ h-index ระดับคณะ" style="max-width:100%;border:1px solid #e2e8f0;border-radius:8px;margin-top:8px" />`;
       }
     } catch (e) {
       // ถ้าดึงภาพกราฟไม่ได้ ก็ยังออกรายงานพร้อมตารางได้
     }
 
-    const name = selectedUser?.name || selectedScopusId;
     const yearLabel =
       yearFrom || yearTo ? `${yearFrom ? toBE(yearFrom) : "ต้น"}–${yearTo ? toBE(yearTo) : "ล่าสุด"} พ.ศ.` : "ทั้งหมด";
     const rowsHtml = graph.points
@@ -336,7 +262,7 @@ export default function AdminScopusAuthorHIndex() {
       .join("");
 
     const html = `<!doctype html>
-<html lang="th"><head><meta charset="utf-8"><title>h-index — ${htmlEscape(name)}</title>
+<html lang="th"><head><meta charset="utf-8"><title>h-index ระดับคณะ (Scopus)</title>
 <style>
   body{font-family:'Sarabun',Tahoma,-apple-system,'Segoe UI',sans-serif;color:#0f172a;margin:28px;max-width:960px}
   h1{font-size:20px;margin:0 0 4px}.muted{color:#64748b;font-size:13px}
@@ -347,8 +273,8 @@ export default function AdminScopusAuthorHIndex() {
   th,td{border:1px solid #e2e8f0;padding:6px 9px;vertical-align:top}th{background:#f1f5f9;text-align:left}
   @media print{body{margin:0}}
 </style></head><body>
-  <h1>h-index รายบุคคล — ${htmlEscape(name)}</h1>
-  <div class="muted">Scopus Author ID: ${htmlEscape(selectedScopusId)} · ช่วงปี: ${yearLabel} · ออกรายงาน ${new Date().toLocaleDateString("th-TH")}</div>
+  <h1>h-index ระดับคณะ (Scopus)</h1>
+  <div class="muted">นับเฉพาะผลงานที่สังกัด KKU (dedupe ต่อบทความ) · ช่วงปี: ${yearLabel} · ออกรายงาน ${new Date().toLocaleDateString("th-TH")}</div>
   <div class="stats">
     <div class="stat"><span>h-index</span><b>${h}</b></div>
     <div class="stat"><span>เอกสาร</span><b>${graph.document_count}</b></div>
@@ -361,58 +287,54 @@ export default function AdminScopusAuthorHIndex() {
   </table>
 </body></html>`;
 
-    downloadFile(`scopus-hindex-${selectedScopusId}-${new Date().toISOString().slice(0, 10)}.html`, html, "text/html;charset=utf-8");
+    downloadFile(`scopus-hindex-faculty-${new Date().toISOString().slice(0, 10)}.html`, html, "text/html;charset=utf-8");
   }
 
-  async function fetchGraph(scopusId, yf, yt) {
-    if (!scopusId) return;
+  async function fetchGraph(yf, yt) {
     setLoading(true);
     setError("");
     try {
-      const params = { scopus_id: scopusId };
+      const params = {};
       if (yf) params.year_from = yf;
       if (yt) params.year_to = yt;
-      const res = await scopusConfigAPI.getAuthorHIndexGraph(params);
+      const res = await scopusConfigAPI.getFacultyHIndexGraph(params);
       const data = res?.data || null;
       setGraph(data);
-      // ตอนโหลดช่วงเต็ม (ไม่กรองปี) เก็บรายการปีที่มีเอกสารจริง + ตั้ง default เป็นช่วงเต็ม (h-index เป็นค่าสะสมทั้งอาชีพ)
+      // ตอนโหลดช่วงเต็ม (ไม่กรองปี) เก็บรายการปีที่มีเอกสารจริง + ตั้ง default เป็นช่วงเต็ม (h-index เป็นค่าสะสม)
       if (data && !yf && !yt) {
         let ys = Array.isArray(data.available_years) ? data.available_years.map(Number) : [];
         if (ys.length === 0 && Array.isArray(data.points)) {
           ys = [...new Set(data.points.map((p) => p.year).filter((y) => y != null).map(Number))];
         }
         ys.sort((a, b) => b - a);
-        setAuthorYears(ys);
+        setFacultyYears(ys);
         if (data.available_year_min != null) setYearFrom(String(data.available_year_min));
         if (data.available_year_max != null) setYearTo(String(data.available_year_max));
       }
     } catch (e) {
-      setError(e?.message || "ไม่สามารถโหลดกราฟ h-index ได้");
+      setError(e?.message || "ไม่สามารถโหลดกราฟ h-index ระดับคณะได้");
       setGraph(null);
     } finally {
       setLoading(false);
     }
   }
 
-  // เมื่อเปลี่ยนอาจารย์ -> โหลดกราฟช่วงเต็ม (fetchGraph จะตั้ง default ช่วงปีเป็นช่วงที่มีข้อมูลจริง)
+  // โหลดกราฟช่วงเต็มครั้งแรก (fetchGraph จะตั้ง default ช่วงปีเป็นช่วงที่มีข้อมูลจริง)
   useEffect(() => {
-    if (!selectedScopusId) return;
-    setYearFrom("");
-    setYearTo("");
-    fetchGraph(selectedScopusId, "", "");
+    fetchGraph("", "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedScopusId]);
+  }, []);
 
   // ตัวเลือกปี (ค.ศ.) = ปีที่มีเอกสารจริงจาก backend (available_years) + ปีที่เลือกไว้ (กันช่องว่าง)
   // แสดงผลเป็น พ.ศ. ในหน้าจอ แต่เก็บ/ส่งค่าเป็น ค.ศ. ให้ตรงกับ endpoint
   const yearOptions = useMemo(() => {
-    const set = new Set(authorYears.map(Number));
+    const set = new Set(facultyYears.map(Number));
     const selFrom = Number(yearFrom);
     const selTo = Number(yearTo);
     if (Number.isFinite(selFrom) && selFrom > 0) set.add(selFrom);
     if (Number.isFinite(selTo) && selTo > 0) set.add(selTo);
     return Array.from(set).sort((a, b) => b - a);
-  }, [authorYears, yearFrom, yearTo]);
+  }, [facultyYears, yearFrom, yearTo]);
 
   const chart = useMemo(() => {
     if (!graph || !Array.isArray(graph.points) || graph.points.length === 0) return null;
@@ -430,10 +352,9 @@ export default function AdminScopusAuthorHIndex() {
     const h = graph.h_index;
     const options = {
       chart: {
-        id: "author-hindex-graph",
+        id: CHART_ID,
         type: "line",
-        // ปิด zoom/toolbar ในตัว ApexCharts (drag ไม่มีประโยชน์ + wheel มัน debounce กระตุก)
-        // แล้วใช้ปุ่ม + wheel handler ของเราเองที่ clamp ช่วงได้ (ดู applyZoom/zoomBy)
+        // ปิด zoom/toolbar ในตัว ApexCharts แล้วใช้ปุ่ม + wheel handler ของเราเอง (ดู zoomBy/applyZoomRange)
         toolbar: { show: false },
         zoom: { enabled: false },
         selection: { enabled: false },
@@ -515,9 +436,9 @@ export default function AdminScopusAuthorHIndex() {
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Author h-index</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Faculty h-index</div>
           <div className="flex items-center gap-1.5">
-            <div className="text-xl font-semibold text-slate-900">h-index รายอาจารย์ (Scopus)</div>
+            <div className="text-xl font-semibold text-slate-900">h-index ระดับคณะ (Scopus)</div>
             <div className="relative">
               <button
                 type="button"
@@ -532,45 +453,18 @@ export default function AdminScopusAuthorHIndex() {
               </button>
               {showDesc && (
                 <div className="absolute left-0 top-7 z-20 w-80 rounded-lg border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-600 shadow-lg">
-                  ดู h-index ของอาจารย์แต่ละคนจากผลงานใน Scopus เลือกอาจารย์และช่วงปีได้ตามต้องการ
-                  ตัวเลขนับจากข้อมูลที่นำเข้าระบบ อาจน้อยกว่าใน scopus.com หากยังไม่ได้อัปเดตจำนวนการอ้างอิงล่าสุด
+                  h-index ของทั้งคณะ รวมผลงานของอาจารย์ทุกคนที่มี Scopus ID โดย
+                  <span className="font-medium text-slate-700"> นับเฉพาะผลงานที่สังกัด KKU ตอนตีพิมพ์</span> และ
+                  นับบทความที่อาจารย์ร่วมมือกันหลายคนเพียงครั้งเดียว ตัวเลขนับจากข้อมูลที่นำเข้าระบบ
+                  อาจน้อยกว่าใน scopus.com หากยังไม่ได้อัปเดตจำนวนการอ้างอิงล่าสุด
                 </div>
               )}
             </div>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={exportAllCSV}
-          disabled={exportingAll}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Download size={14} />
-          {exportingAll ? "กำลังส่งออก..." : "ส่งออก CSV (ทั้งหมด)"}
-        </button>
       </div>
 
-      {usersError && <p className="mt-3 text-sm text-rose-600">{usersError}</p>}
-
       <div className="mt-5 flex flex-wrap items-end gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs font-medium text-slate-600">อาจารย์</span>
-          <select
-            value={selectedScopusId}
-            onChange={(e) => setSelectedScopusId(e.target.value)}
-            disabled={usersLoading || users.length === 0}
-            className="min-w-[260px] rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm disabled:bg-slate-100"
-          >
-            {usersLoading && <option value="">กำลังโหลด...</option>}
-            {!usersLoading && users.length === 0 && <option value="">— ไม่มีอาจารย์ที่มี Scopus ID —</option>}
-            {users.map((u) => (
-              <option key={u.user_id} value={u.scopus_id}>
-                {u.name || `User ${u.user_id}`} ({u.scopus_id})
-              </option>
-            ))}
-          </select>
-        </label>
-
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-xs font-medium text-slate-600">ตั้งแต่ปี (พ.ศ.)</span>
           <select
@@ -605,8 +499,8 @@ export default function AdminScopusAuthorHIndex() {
 
         <button
           type="button"
-          onClick={() => fetchGraph(selectedScopusId, yearFrom, yearTo)}
-          disabled={loading || !selectedScopusId}
+          onClick={() => fetchGraph(yearFrom, yearTo)}
+          disabled={loading}
           className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "กำลังโหลด..." : "อัปเดตกราฟ"}
@@ -614,21 +508,21 @@ export default function AdminScopusAuthorHIndex() {
 
         <button
           type="button"
-          onClick={exportPersonCSV}
-          disabled={!graph || !(graph.points?.length > 0)}
+          onClick={exportFacultyExcel}
+          disabled={exporting || !graph || !(graph.points?.length > 0)}
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          title="ส่งออกรายการบทความของอาจารย์ที่เลือกเป็น CSV ตามช่วงปีที่แสดง"
+          title="ส่งออกไฟล์ Excel ของคณะ (ชีต Data รายบทความ + ชีต Summary) ตามช่วงปีที่แสดง"
         >
           <Download size={14} />
-          ส่งออกบทความ (CSV)
+          {exporting ? "กำลังส่งออก..." : "ส่งออก Excel"}
         </button>
 
         <button
           type="button"
-          onClick={exportPersonReport}
+          onClick={exportFacultyReport}
           disabled={!graph || !(graph.points?.length > 0)}
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          title="ส่งออกรายงานของอาจารย์ที่เลือก (กราฟ + ตารางบทความ) ตามช่วงปีที่แสดง"
+          title="ส่งออกรายงานระดับคณะ (กราฟ + ตารางบทความ) ตามช่วงปีที่แสดง"
         >
           <Download size={14} />
           ส่งออกรายงาน (พร้อมกราฟ)
@@ -642,7 +536,7 @@ export default function AdminScopusAuthorHIndex() {
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="text-xs font-medium uppercase tracking-wide text-slate-500">h-index</div>
             <div className="mt-1 text-4xl font-bold text-slate-900">{graph ? formatNumber(graph.h_index) : "-"}</div>
-            {selectedUser && <div className="mt-1 text-xs text-slate-500">{selectedUser.name}</div>}
+            <div className="mt-1 text-xs text-slate-500">ทั้งคณะ (เฉพาะผลงานสังกัด KKU)</div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm">
@@ -697,10 +591,10 @@ export default function AdminScopusAuthorHIndex() {
                 </button>
                 {showHint && (
                   <div className="absolute right-0 top-9 z-20 w-72 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 shadow-lg">
-                    แต่ละจุดคือ 1 บทความ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่ม/เลื่อนเมาส์ (โฟกัสที่ h-index) · เมื่อซูมแล้วกดค้างลากเพื่อเลื่อนดูช่วงอื่นได้
+                    แต่ละจุดคือ 1 บทความของคณะ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่ม/เลื่อนเมาส์ (โฟกัสที่ h-index) · เมื่อซูมแล้วกดค้างลากเพื่อเลื่อนดูช่วงอื่นได้
                     {graph?.h_index > 0 && (
                       <span className="mt-1.5 block text-slate-700">
-                        h-index = {graph.h_index} หมายถึงมี {graph.h_index} บทความที่ถูกอ้างอิงอย่างน้อยบทความละ {graph.h_index} ครั้ง (บทความทางซ้ายของเส้นประ)
+                        h-index = {graph.h_index} หมายถึงคณะมี {graph.h_index} บทความที่ถูกอ้างอิงอย่างน้อยบทความละ {graph.h_index} ครั้ง (บทความทางซ้ายของเส้นประ)
                       </span>
                     )}
                   </div>
@@ -715,7 +609,7 @@ export default function AdminScopusAuthorHIndex() {
               <ApexChart options={chart.options} series={chart.series} type="line" height={360} />
             ) : (
               <div className="flex h-[360px] items-center justify-center text-sm text-slate-500">
-                {selectedScopusId ? "ไม่มีเอกสารสำหรับช่วงที่เลือก" : "เลือกอาจารย์เพื่อดูกราฟ"}
+                ไม่มีเอกสารสำหรับช่วงที่เลือก
               </div>
             )}
           </div>
