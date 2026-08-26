@@ -1056,7 +1056,7 @@ function FundApprovalPanel({
         {/* Approved input - suffix ฿ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
           <label className="block text-sm font-medium text-gray-700 leading-tight">
-            จำนวนเงินที่จะอนุมัติ
+            จำนวนเงินที่อนุมัติ
             <br /><span className="text-xs font-normal text-gray-600">Approved Amount</span>
           </label>
             <div className="flex flex-col w-full">

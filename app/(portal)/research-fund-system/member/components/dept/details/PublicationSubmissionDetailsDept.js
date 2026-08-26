@@ -2850,7 +2850,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                 </div>
                 {submission?.status_id === 2 && (
                   <div className="text-right">
-                    <div>จำนวนเงินที่จะอนุมัติ</div>
+                    <div>จำนวนเงินที่อนุมัติ</div>
                     <div className="text-xs text-slate-500">Approve Amount</div>
                   </div>
                 )}
