@@ -915,23 +915,9 @@ export default function AnnouncementPage() {
       accessor: "title",
       className: "min-w-[24rem] align-top font-medium",
       headerClassName: "min-w-[24rem] text-left",
-      render: (value, row) => {
-        const fileName = row?.file_name || (row?.file_path ? getDownloadFileName(row.file_path) : null);
-        return (
-          <div className="flex max-w-md flex-col gap-1">
-            <span className="font-semibold text-slate-950">{value || "-"}</span>
-            {fileName ? (
-              <button
-                type="button"
-                onClick={() => handleViewFile(row, 'announcement')}
-                className="w-fit break-all text-left text-sm font-medium text-blue-700 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                {fileName}
-              </button>
-            ) : null}
-          </div>
-        );
-      }
+      render: (value) => (
+        <span className="block max-w-md font-semibold text-slate-950">{value || "-"}</span>
+      )
     },
     {
       header: "ปี",
