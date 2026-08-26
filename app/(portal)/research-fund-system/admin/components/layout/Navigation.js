@@ -26,7 +26,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { normalizeRoleName } from "@/app/lib/access_routing";
 import { MEMBER_BASE_MENU_ITEMS, MEMBER_DEPT_REVIEW_ITEM } from "@/app/lib/member_menu_config";
 import { ADMIN_BASE_MENU_ITEMS } from "@/app/lib/admin_menu_config";
-import { PortalBackLink } from "@/app/components/portal/PortalChrome";
+import { PortalBackLink, PortalNavIcon } from "@/app/components/portal/PortalChrome";
 
 export default function Navigation({ 
   currentPage, 
@@ -61,9 +61,26 @@ export default function Navigation({
     "access-control": ShieldCheck,
   };
 
+  const adminToneById = {
+    dashboard: "blue",
+    "research-dashboard": "violet",
+    "research-fund": "emerald",
+    "promotion-fund": "amber",
+    "applications-list": "sky",
+    "scopus-research-search": "violet",
+    "scopus-benchmark": "indigo",
+    "fund-settings": "slate",
+    projects: "teal",
+    "approval-records": "emerald",
+    "import-export": "sky",
+    "academic-imports": "violet",
+    "access-control": "rose",
+  };
+
   const menuItemsWithPermissions = ADMIN_BASE_MENU_ITEMS.map((item) => ({
     ...item,
     icon: adminIconById[item.id] || LayoutDashboard,
+    tone: adminToneById[item.id] || "blue",
     hasSubmenu: false,
   }));
 
@@ -96,6 +113,18 @@ export default function Navigation({
     "dept-review": ArrowLeftRight,
   };
 
+  const memberShortcutToneById = {
+    profile: "indigo",
+    "research-fund": "emerald",
+    "promotion-fund": "amber",
+    applications: "sky",
+    "received-funds": "teal",
+    "approval-records": "emerald",
+    announcements: "amber",
+    projects: "violet",
+    "dept-review": "rose",
+  };
+
   const memberShortcutBase = [...MEMBER_BASE_MENU_ITEMS, ...(normalizedRole === "dept_head" ? [MEMBER_DEPT_REVIEW_ITEM] : [])];
 
   const memberShortcutItems = canAccessMemberPortal
@@ -103,6 +132,7 @@ export default function Navigation({
         id: `member-${item.id}`,
         label: item.label,
         icon: memberShortcutIconById[item.id] || User,
+        tone: memberShortcutToneById[item.id] || "blue",
         route: `${MEMBER_BASE_PATH}/${item.id}`,
       }))
     : [];
@@ -183,9 +213,9 @@ export default function Navigation({
           <button
             onClick={() => handleMenuClick(item)}
             disabled={pendingRoute === (item.route || `${ADMIN_BASE_PATH}/${item.id}`)}
-            className={`portal-nav-item disabled:cursor-wait disabled:opacity-60 ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
+            className={`portal-nav-item group disabled:cursor-wait disabled:opacity-60 ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
           >
-            <item.icon size={20} />
+            <PortalNavIcon icon={item.icon} tone={item.tone} />
             <div className="flex-1 text-left">
               <span>{pendingRoute === (item.route || `${ADMIN_BASE_PATH}/${item.id}`) ? "กำลังเปิด..." : item.label}</span>
               {item.description && (
@@ -206,9 +236,9 @@ export default function Navigation({
               <button
                 onClick={() => handleMenuClick(item)}
                 disabled={pendingRoute === item.route}
-                className="portal-nav-item disabled:cursor-wait disabled:opacity-60"
+                className="portal-nav-item group disabled:cursor-wait disabled:opacity-60"
               >
-                <item.icon size={20} />
+                <PortalNavIcon icon={item.icon} tone={item.tone} />
                 <div className="flex-1 text-left">
                   <span>{pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
                 </div>
@@ -223,9 +253,9 @@ export default function Navigation({
         <PortalBackLink placement="nav" />
         <button
           onClick={handleLogout}
-          className="portal-nav-item portal-nav-item--danger"
+          className="portal-nav-item portal-nav-item--danger group"
         >
-          <LogOut size={20} />
+          <PortalNavIcon icon={LogOut} tone="red" />
           <span>ออกจากระบบ</span>
         </button>
       </div>

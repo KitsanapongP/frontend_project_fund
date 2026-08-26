@@ -25,7 +25,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { hasAdminPortalAccess } from "@/app/lib/access_routing";
 import { MEMBER_BASE_MENU_ITEMS, MEMBER_DEPT_REVIEW_ITEM } from "@/app/lib/member_menu_config";
 import { ADMIN_BASE_MENU_ITEMS } from "@/app/lib/admin_menu_config";
-import { PortalBackLink } from "@/app/components/portal/PortalChrome";
+import { PortalBackLink, PortalNavIcon } from "@/app/components/portal/PortalChrome";
 
 export default function Navigation({
   currentPage,
@@ -62,6 +62,21 @@ export default function Navigation({
     "access-control": ShieldCheck,
   };
 
+  const adminToneById = {
+    dashboard: "blue",
+    "research-dashboard": "violet",
+    "research-fund": "emerald",
+    "promotion-fund": "amber",
+    "applications-list": "sky",
+    "scopus-research-search": "violet",
+    "fund-settings": "slate",
+    projects: "teal",
+    "approval-records": "emerald",
+    "import-export": "sky",
+    "academic-imports": "violet",
+    "access-control": "rose",
+  };
+
   const adminShortcutItems = ADMIN_BASE_MENU_ITEMS.filter((item) => {
     if (!hasPermissionSnapshot) {
       return true;
@@ -71,6 +86,7 @@ export default function Navigation({
     id: `admin-${item.id}`,
     label: item.label,
     icon: adminIconById[item.id] || LayoutDashboard,
+    tone: adminToneById[item.id] || "blue",
     route: item.route,
   }));
 
@@ -86,12 +102,25 @@ export default function Navigation({
     "dept-review": HandHelping,
   };
 
+  const toneByMemberMenuId = {
+    profile: "indigo",
+    "research-fund": "emerald",
+    "promotion-fund": "amber",
+    applications: "sky",
+    "received-funds": "teal",
+    "approval-records": "emerald",
+    announcements: "amber",
+    projects: "violet",
+    "dept-review": "rose",
+  };
+
   const menuItems = [
     ...MEMBER_BASE_MENU_ITEMS,
     ...(isDeptHead ? [MEMBER_DEPT_REVIEW_ITEM] : []),
   ].map((item) => ({
     ...item,
     icon: iconByMemberMenuId[item.id] || FileText,
+    tone: toneByMemberMenuId[item.id] || "blue",
     hasSubmenu: false,
   }));
 
@@ -198,9 +227,9 @@ export default function Navigation({
               <button
                 onClick={() => handleMenuClick({ ...item, hasSubmenu: false })}
                 disabled={pendingRoute === item.route}
-                className="portal-nav-item disabled:cursor-wait disabled:opacity-60"
+                className="portal-nav-item group disabled:cursor-wait disabled:opacity-60"
               >
-                <item.icon size={20} />
+                <PortalNavIcon icon={item.icon} tone={item.tone} />
                 <span className="flex-1 text-left">{pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
               </button>
             </div>
@@ -216,9 +245,9 @@ export default function Navigation({
         <div key={item.id}>
           <button
             onClick={() => handleMenuClick(item)}
-            className={`portal-nav-item ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
+            className={`portal-nav-item group ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
           >
-            <item.icon size={20} />
+            <PortalNavIcon icon={item.icon} tone={item.tone} />
             <span className="flex-1 text-left">{item.label}</span>
             {item.hasSubmenu && (
               <ChevronDown
@@ -236,9 +265,9 @@ export default function Navigation({
                 <button
                   key={subItem.id}
                   onClick={() => handleSubmenuClick(item.id, subItem)}
-                  className={`portal-nav-item min-h-10 py-1.5 ${currentPage === subItem.id ? "portal-nav-item--active" : ""}`}
+                  className={`portal-nav-item group min-h-10 py-1.5 ${currentPage === subItem.id ? "portal-nav-item--active" : ""}`}
                 >
-                  <subItem.icon size={16} />
+                  <PortalNavIcon icon={subItem.icon} tone="sky" size={16} className="h-7 w-7" />
                   <span>{subItem.label}</span>
                 </button>
               ))}
@@ -251,9 +280,9 @@ export default function Navigation({
         <PortalBackLink placement="nav" onNavigate={closeMobileMenu} />
         <button
           onClick={handleLogout}
-          className="portal-nav-item portal-nav-item--danger"
+          className="portal-nav-item portal-nav-item--danger group"
         >
-          <LogOut size={20} />
+          <PortalNavIcon icon={LogOut} tone="red" />
           <span>ออกจากระบบ</span>
         </button>
       </div>
