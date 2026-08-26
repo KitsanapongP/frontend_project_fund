@@ -169,7 +169,7 @@ function FundCatalogTable({ categories, isWithinApplicationPeriod, onShowConditi
             <tr>
               <th className="w-2/5 px-5 py-3">ชื่อทุน</th>
               <th className="px-5 py-3">เงื่อนไข</th>
-              <th className="px-5 py-3 text-right">แบบฟอร์มขอทุน</th>
+              <th className="px-5 py-3 text-center">แบบฟอร์มขอทุน</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
@@ -184,7 +184,7 @@ function FundCatalogTable({ categories, isWithinApplicationPeriod, onShowConditi
                 <td className="px-5 py-3 align-middle">
                   <FundConditionButton fund={fund} onShowCondition={onShowCondition} />
                 </td>
-                <td className="px-5 py-3 text-right align-middle">
+                <td className="px-5 py-3 text-center align-middle">
                   <FundAction fund={fund} onViewDetails={onViewDetails} />
                 </td>
               </tr>
