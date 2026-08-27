@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import { ChevronDown, LogOut } from "lucide-react";
 import { HiMenu } from "react-icons/hi";
@@ -9,6 +8,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { BRANDING } from "../../../../../config/branding";
 import NotificationBell from "@/app/components/notifications/NotificationBell";
+import {
+  PortalBrandLogo,
+  PortalFontSizeControl,
+} from "@/app/components/portal/PortalChrome";
 
 const roleLabels = {
   teacher: "อาจารย์",
@@ -98,43 +101,8 @@ export default function Header({
 
   const {
     appName,
-    appAcronym,
     subtitles = {},
-    logo: {
-      text: logoText,
-      imageSrc: logoImageSrc,
-      imageAlt: logoImageAlt,
-      backgroundClass: logoBackgroundClass,
-    } = {},
   } = BRANDING;
-
-  const logoContainerClass = [
-    "w-10 h-10 rounded-lg flex items-center justify-center",
-    logoBackgroundClass ?? "bg-gradient-to-br from-blue-500 to-purple-600",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const renderLogoContent = () => {
-    if (logoImageSrc) {
-      return (
-        <Image
-          src={logoImageSrc}
-          alt={logoImageAlt || appName || "Application logo"}
-          width={32}
-          height={32}
-          className="w-8 h-8 object-contain"
-          priority
-        />
-      );
-    }
-
-    return (
-      <span className="text-white font-bold text-xl">
-        {logoText || appAcronym || "F"}
-      </span>
-    );
-  };
 
   const displayName = useMemo(() => getDisplayName(user), [user]);
   const roleLabel = useMemo(() => resolveRoleLabel(user), [user]);
@@ -176,48 +144,47 @@ export default function Header({
   };
 
   return (
-    <header className="fixed top-0 z-40 w-full border-b border-gray-200 bg-white/95 backdrop-blur">
-      <div className="flex items-start justify-between gap-3 px-4 py-3 sm:items-center sm:px-6">
+    <header className="portal-header">
+      <div className="portal-header__inner">
         {/* Logo Section */}
-        <div className="flex items-start gap-3 sm:items-center">
-            <div className="flex items-start gap-3 sm:items-center">
-            <div className={logoContainerClass}>{renderLogoContent()}</div>
-            <div className="min-w-0">
-              <h1 className="text-lg font-bold text-gray-800 sm:text-xl">
+        <div className="flex min-w-0 items-center gap-3">
+            <PortalBrandLogo onNavigate={handleCloseMenu} />
+            <div className="hidden min-w-0 sm:block">
+              <h1 className="truncate text-base font-semibold text-slate-900 lg:text-lg">
                 {brandTitle || subtitles.member || "กองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์"}
               </h1>
-              <p className="text-sm text-gray-700 leading-tight">
+              <p className="truncate text-xs leading-tight text-slate-600 lg:text-sm">
                 {appName || "Fund Management"}
               </p>
-              <p className="mt-1 text-xs text-gray-500 truncate" title={currentPageTitle}>
+              <p className="mt-1 truncate text-xs text-slate-500" title={currentPageTitle}>
                 {currentPageTitle}
               </p>
             </div>
-          </div>
         </div>
 
         <div className="flex items-center gap-3">
           <button
-            className="inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-sm text-gray-600 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 md:hidden"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 p-2 text-sm text-slate-600 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 md:hidden"
             onClick={handleToggleMenu}
             aria-label={isOpen ? "close-mobile-menu" : "open-mobile-menu"}
             aria-expanded={isOpen}
           >
             {isOpen ? (
-              <RxCross2 className="w-5 h-5 text-gray-700" />
+              <RxCross2 className="h-5 w-5 text-slate-700" />
             ) : (
-              <HiMenu className="w-5 h-5 text-gray-700" />
+              <HiMenu className="h-5 w-5 text-slate-700" />
             )}
           </button>
 
           {/* Desktop User Menu */}
-          <div className="hidden items-center gap-4 md:flex">
+          <div className="hidden items-center gap-3 md:flex">
+            <PortalFontSizeControl />
             <NotificationBell onViewAll={goToNotifications} />
 
             <div className="text-right">
-              <p className="text-sm font-medium text-gray-800">{displayName}</p>
+              <p className="max-w-48 truncate text-sm font-medium text-slate-800">{displayName}</p>
               {roleLabel ? (
-                <p className="text-xs text-gray-600">{roleLabel}</p>
+                <p className="text-xs text-slate-500">{roleLabel}</p>
               ) : null}
             </div>
 
@@ -225,22 +192,22 @@ export default function Header({
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100"
+                className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white font-semibold">
                   {initials}
                 </div>
-                <ChevronDown size={16} className="text-gray-600" />
+                <ChevronDown size={16} className="text-slate-500" />
               </button>
 
               {/* Dropdown Menu */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-2 shadow-lg z-10">
+                <div className="absolute right-0 z-10 mt-2 w-48 rounded-lg border border-slate-200 bg-white py-2 shadow-lg">
                   <button
                     onClick={() => {
                       goToNotifications();
                     }}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-50"
+                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-slate-700 hover:bg-slate-50"
                   >
                     <BellIcon size={16} />
                     <span>การแจ้งเตือน</span>
@@ -264,33 +231,34 @@ export default function Header({
 
       {/* Mobile Menu Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 bg-gray-200/50 z-40" onClick={handleCloseMenu}>
+        <div className="fixed inset-0 z-40 bg-slate-900/30" onClick={handleCloseMenu}>
           <div
-            className="absolute top-0 pt-5 right-0 h-screen z-50 w-64 bg-white shadow p-4"
+            className="absolute right-0 top-0 z-50 h-screen w-[min(21rem,88vw)] overflow-y-auto border-l border-slate-200 bg-white p-5 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-end mb-3">
-              <button onClick={handleCloseMenu} aria-label="close-mobile-menu">
-                <RxCross2 className="w-7 h-7 text-gray-600 hover:text-red-500" />
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-800">บัญชีและเมนู</span>
+              <button className="rounded-lg p-2 hover:bg-slate-100" onClick={handleCloseMenu} aria-label="close-mobile-menu">
+                <RxCross2 className="h-6 w-6 text-slate-600" />
               </button>
             </div>
 
             {/* Mobile User Info */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg md:hidden">
+            <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4 md:hidden">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 font-semibold text-white">
                   {initials}
                 </div>
                 <div>
-                  <div className="font-medium text-gray-800">{displayName}</div>
+                  <div className="font-medium text-slate-800">{displayName}</div>
                   {roleLabel ? (
-                    <div className="text-xs text-gray-600">{roleLabel}</div>
+                    <div className="text-xs text-slate-500">{roleLabel}</div>
                   ) : null}
                 </div>
               </div>
               <div className="flex items-center gap-3 mb-3">
                 <NotificationBell onViewAll={goToNotifications} />
-                <span className="text-sm text-gray-700">การแจ้งเตือน</span>
+                <span className="text-sm text-slate-700">การแจ้งเตือน</span>
               </div>
               <button
                 onClick={handleLogout}
@@ -299,6 +267,11 @@ export default function Header({
                 <LogOut size={14} />
                 ออกจากระบบ
               </button>
+            </div>
+
+            <div className="mb-4 space-y-3 rounded-xl border border-slate-200 p-4">
+              <p className="text-xs font-semibold text-slate-600">ขนาดตัวอักษร</p>
+              <PortalFontSizeControl />
             </div>
 
             {renderNavigation()}

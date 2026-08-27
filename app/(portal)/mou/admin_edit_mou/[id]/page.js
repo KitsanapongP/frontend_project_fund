@@ -681,7 +681,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                       <div key={att.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", padding: "12px 16px 10px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", minWidth: "110px", position: "relative" }}>
                         <a href={att.file_path} target="_blank" rel="noopener noreferrer" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", textDecoration: "none", color: "inherit" }}>
                           <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "#fee2e2", borderRadius: 10, color: "#dc2626", fontSize: 13, fontWeight: 700, letterSpacing: "0.5px" }}>PDF</div>
-                          <span style={{ fontSize: "11px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{att.file_name}</span>
+                          <span style={{ fontSize: "12px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{att.file_name}</span>
                         </a>
                         <button type="button" onClick={(e) => { e.stopPropagation(); removeExistingAttachment(att.id); }} style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0, boxShadow: "0 2px 4px rgba(239,68,68,0.3)" }} title="ลบ">×</button>
                       </div>
@@ -689,8 +689,8 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                     {files.map((f, i) => (
                       <div key={`new-${i}`} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", padding: "12px 16px 10px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", minWidth: "110px", position: "relative" }}>
                         <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "#fee2e2", borderRadius: 10, color: "#dc2626", fontSize: 13, fontWeight: 700, letterSpacing: "0.5px" }}>PDF</div>
-                        <span style={{ fontSize: "11px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{f.name}</span>
-                        <span style={{ fontSize: "10px", color: "#9ca3af" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+                        <span style={{ fontSize: "12px", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center", color: "#374151" }}>{f.name}</span>
+                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
                         <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0, boxShadow: "0 2px 4px rgba(239,68,68,0.3)" }} title="ลบ">×</button>
                       </div>
                     ))}
@@ -698,7 +698,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                       onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.color = "#3b82f6"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b7280"; }}>
                       <span style={{ fontSize: 24, fontWeight: 300, lineHeight: 1, color: "inherit" }}>+</span>
-                      <span style={{ fontSize: "11px", textAlign: "center", color: "inherit" }}>เพิ่มไฟล์</span>
+                      <span style={{ fontSize: "12px", textAlign: "center", color: "inherit" }}>เพิ่มไฟล์</span>
                     </div>
                     <span style={{ fontSize: "12px", color: "#6b7280", width: "100%", textAlign: "center", marginTop: "2px" }}>คลิกเพื่อเพิ่มไฟล์ (สูงสุด 3 ไฟล์)</span>
                   </div>
@@ -780,7 +780,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                     </div>
                   </div>
                   <div style={{ width: "280px", border: "1px solid var(--mou-line)", borderRadius: "5px", background: "var(--mou-surface)", padding: "10px", overflowY: "auto" }}>
-                    <div style={{ fontSize: "13px", color: "var(--mou-muted)", marginBottom: "8px", fontWeight: 500 }}>
+                    <div style={{ fontSize: "14px", color: "var(--mou-muted)", marginBottom: "8px", fontWeight: 500 }}>
                       เลือกแล้ว {formData.faculty_ids.length} คณะ
                     </div>
                     {formData.faculty_ids.length > 0 ? (
@@ -788,7 +788,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                         {formData.faculty_ids.map((fid) => {
                           const fac = faculties.find((f) => f.id === fid);
                           return (
-                            <div key={fid} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: "4px", background: "var(--mou-primary-soft)", fontSize: "13px" }}>
+                            <div key={fid} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: "4px", background: "var(--mou-primary-soft)", fontSize: "14px" }}>
                               <span>{fac?.name_th || `#${fid}`}</span>
                               <button type="button" onClick={() => handleFacultyToggle(fid)} style={{ background: "none", border: "none", color: "var(--mou-primary)", cursor: "pointer", fontSize: "16px", fontWeight: 600, padding: "0 2px" }}>×</button>
                             </div>
@@ -796,7 +796,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
                         })}
                       </div>
                     ) : (
-                      <div style={{ fontSize: "13px", color: "var(--mou-muted-soft)", textAlign: "center", padding: "20px 0" }}>ยังไม่เลือกคณะ</div>
+                      <div style={{ fontSize: "14px", color: "var(--mou-muted-soft)", textAlign: "center", padding: "20px 0" }}>ยังไม่เลือกคณะ</div>
                     )}
                   </div>
                 </div>
@@ -1011,7 +1011,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
               }}>
                 <div style={{
                   width: "22px", height: "22px", borderRadius: "50%",
-                  background: "#dc2626", color: "#fff", fontSize: "13px",
+                  background: "#dc2626", color: "#fff", fontSize: "14px",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontWeight: "700", flexShrink: 0, marginTop: "1px",
                 }}>!</div>
@@ -1038,7 +1038,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
               }}>
                 <div style={{
                   width: "22px", height: "22px", borderRadius: "50%",
-                  background: "#16a34a", color: "#fff", fontSize: "13px",
+                  background: "#16a34a", color: "#fff", fontSize: "14px",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontWeight: "700", flexShrink: 0, marginTop: "1px",
                 }}>✓</div>
@@ -1071,7 +1071,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
         .csWrap { position: relative; width: 100%; }
         .csBtn {
           width: 100%; min-height: 30px; border: 1px solid var(--mou-line); border-radius: 999px;
-          background: var(--mou-primary-soft); color: var(--mou-primary); padding: 2px 12px; font-size: 13px;
+          background: var(--mou-primary-soft); color: var(--mou-primary); padding: 2px 12px; font-size: 14px;
           font-weight: 600; outline: none; cursor: pointer; display: flex; align-items: center;
           justify-content: space-between; gap: 8px; text-align: left; font-family: inherit;
           line-height: 1.5; transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
@@ -1080,7 +1080,7 @@ export default function AdminEditMouPage({ params: paramsPromise }) {
         .csBtn.open, .csBtn:focus-visible { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.12); }
         .csBtn.hasVal { color: var(--mou-primary); }
         .csLabel { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .csInput { flex: 1; border: none; outline: none; background: transparent; padding: 2px 12px; font-size: 13px; font-family: inherit; color: var(--mou-primary); min-width: 0; }
+        .csInput { flex: 1; border: none; outline: none; background: transparent; padding: 2px 12px; font-size: 14px; font-family: inherit; color: var(--mou-primary); min-width: 0; }
         .csArrow { flex-shrink: 0; color: var(--mou-primary); transition: transform 0.25s ease; }
         .csArrow.open { transform: rotate(180deg); }
         .csDropdownPortal {

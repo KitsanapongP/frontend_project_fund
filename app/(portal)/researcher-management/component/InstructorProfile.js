@@ -83,7 +83,7 @@ function LevelBadge({ label }) {
       ? "bg-violet-50 text-violet-700 border-violet-200"
       : "bg-amber-50 text-amber-700 border-amber-200";
   return (
-    <span className={`inline-block text-[10px] font-bold border rounded-full px-2 py-0.5 ${color}`}>
+    <span className={`inline-block text-xs font-bold border rounded-full px-2 py-0.5 ${color}`}>
       {label}
     </span>
   );
@@ -258,7 +258,7 @@ export default function InstructorPublicProfile() {
             <ol className="space-y-3">
               {instructor_textbooks.map((t, i) => (
                 <li key={i} className="flex gap-3 items-start">
-                  <span className="mt-0.5 shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-700 text-[10px] font-bold">
+                  <span className="mt-0.5 shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-700 text-xs font-bold">
                     {i + 1}
                   </span>
                   <div>
@@ -322,7 +322,7 @@ export default function InstructorPublicProfile() {
               {educations.map((edu, i) => (
                 <li key={i} className="pl-5 relative">
                   <span className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-cyan-400 border-2 border-white ring-1 ring-cyan-300" />
-                  <span className="inline-block text-[10px] font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-2 py-0.5 mb-1">
+                  <span className="inline-block text-xs font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-2 py-0.5 mb-1">
                     {DEGREE_LABEL[edu.degree_id] || `ระดับ ${edu.degree_id}`}
                   </span>
                   <p className="font-semibold text-slate-800 text-sm leading-snug">
@@ -402,7 +402,7 @@ export default function InstructorPublicProfile() {
             <ul className="space-y-3">
               {instructor_intellectual_properties.map((ip, i) => (
                 <li key={i} className="flex gap-3 items-start">
-                  <span className="mt-1 shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-blue-50 border border-blue-200 text-blue-600 text-[10px] font-bold">
+                  <span className="mt-1 shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-blue-50 border border-blue-200 text-blue-600 text-xs font-bold">
                     {i + 1}
                   </span>
                   <div>

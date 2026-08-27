@@ -7,6 +7,9 @@ import {
   RefreshCcw,
   CalendarDays,
   BarChart3,
+  FileText,
+  Clock3,
+  CircleCheck,
 } from "lucide-react";
 
 import PageLayout from "../common/PageLayout";
@@ -86,28 +89,34 @@ function WelcomeBanner({ user, stats }) {
   const approvedAmount = formatCurrency(stats?.myApplications?.total_approved ?? 0);
 
   return (
-    <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white p-6 rounded-lg shadow-lg">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5 sm:p-6">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">สวัสดี{position ? ` ${position}` : ""} {firstName} {lastName}</h2>
-          <p className="mt-1 text-sm opacity-90">ยินดีต้อนรับสู่ระบบกองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์</p>
+          <p className="text-sm font-medium text-blue-700">ภาพรวมบัญชีของคุณ</p>
+          <h2 className="mt-1 text-2xl font-semibold text-slate-950">
+            สวัสดี{position ? ` ${position}` : ""} {firstName} {lastName}
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">ติดตามคำร้องและงบประมาณล่าสุดได้จากหน้านี้</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-          <div className="bg-white/15 rounded-lg px-4 py-3">
-            <p className="text-white/80">คำร้องทั้งหมด</p>
-            <p className="text-xl font-bold">{totalApplications}</p>
-          </div>
-          <div className="bg-white/15 rounded-lg px-4 py-3">
-            <p className="text-white/80">รอดำเนินการ</p>
-            <p className="text-xl font-bold">{pending}</p>
-          </div>
-          <div className="bg-white/15 rounded-lg px-4 py-3">
-            <p className="text-white/80">อนุมัติแล้ว (บาท)</p>
-            <p className="text-xl font-bold">{approvedAmount}</p>
-          </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:min-w-[34rem]">
+          {[
+            { label: "คำร้องทั้งหมด", value: totalApplications, icon: FileText, iconClass: "bg-blue-50 text-blue-700" },
+            { label: "รอดำเนินการ", value: pending, icon: Clock3, iconClass: "bg-amber-50 text-amber-700" },
+            { label: "ยอดอนุมัติ", value: approvedAmount, icon: CircleCheck, iconClass: "bg-green-50 text-green-700" },
+          ].map(({ label, value, icon: Icon, iconClass }) => (
+            <div key={label} className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center gap-2">
+                <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconClass}`}>
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <p className="text-sm text-slate-600">{label}</p>
+              </div>
+              <p className="mt-3 text-xl font-semibold tabular-nums text-slate-950">{value}</p>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -118,7 +127,7 @@ function BudgetUsageHighlights({ usage }) {
   const usedPercent = total > 0 ? Math.min((used / total) * 100, 100) : 0;
 
   const items = [
-    { label: "งบประมาณประจำปี", value: formatCurrency(total), accent: "text-gray-800" },
+    { label: "งบประมาณประจำปี", value: formatCurrency(total), accent: "text-slate-900" },
     { label: "ใช้ไปแล้ว", value: formatCurrency(used), accent: "text-blue-600" },
     { label: "คงเหลือ", value: formatCurrency(remaining), accent: "text-emerald-600" },
   ];
@@ -127,19 +136,19 @@ function BudgetUsageHighlights({ usage }) {
     <div className="space-y-3">
       {items.map((item) => (
         <div key={item.label} className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">{item.label}</span>
+          <span className="text-slate-600">{item.label}</span>
           <span className={`font-semibold ${item.accent}`}>{item.value}</span>
         </div>
       ))}
 
       <div className="mt-4">
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+        <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
           <span>การใช้จ่าย</span>
           <span>{usedPercent.toFixed(1)}%</span>
         </div>
-        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-indigo-600"
+            className="h-full bg-blue-600"
             style={{ width: `${usedPercent}%` }}
           />
         </div>
@@ -156,7 +165,7 @@ function ErrorState({ message, onRetry }) {
       <button
         type="button"
         onClick={onRetry}
-        className="inline-flex items-center gap-2 rounded-lg bg-red-600 text-white px-4 py-2 text-sm hover:bg-red-700 transition"
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
       >
         <RefreshCcw className="w-4 h-4" />
         ลองอีกครั้ง
@@ -221,7 +230,7 @@ export default function DashboardContent({ onNavigate }) {
           <button
             type="button"
             onClick={() => onNavigate?.("applications")}
-            className="inline-flex items-center gap-2 rounded-lg border border-blue-600 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             จัดการคำร้องของฉัน
           </button>
@@ -229,7 +238,7 @@ export default function DashboardContent({ onNavigate }) {
             type="button"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition disabled:opacity-60"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <RefreshCcw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
             {isRefreshing ? "กำลังรีเฟรช..." : "รีเฟรช"}
@@ -240,17 +249,17 @@ export default function DashboardContent({ onNavigate }) {
       {error ? (
         <ErrorState message={error} onRetry={handleRefresh} />
       ) : stats ? (
-        <div className="space-y-8">
+        <div className="space-y-6">
           <WelcomeBanner user={user} stats={stats} />
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-600">
+          <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <CalendarDays className="w-4 h-4" />
               <span>
                 อัปเดตล่าสุด: {currentDateLabel || "-"}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-gray-500 text-xs sm:text-sm">
+            <div className="flex items-center gap-2 text-xs text-slate-500 sm:text-sm">
               <BarChart3 className="w-4 h-4" />
               <span>ข้อมูลสถิติคำนวณจากคำร้องและงบประมาณในระบบ</span>
             </div>
@@ -278,7 +287,7 @@ export default function DashboardContent({ onNavigate }) {
               <button
                 type="button"
                 onClick={() => onNavigate?.("applications")}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 ดูทั้งหมด →
               </button>

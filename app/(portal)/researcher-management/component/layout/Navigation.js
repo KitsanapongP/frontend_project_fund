@@ -19,6 +19,7 @@ import {
 import { useAuth } from "../../../../contexts/AuthContext"; 
 import { usePathname, useRouter } from "next/navigation";
 import { normalizeRoleName } from "@/app/lib/access_routing";
+import { PortalBackLink } from "@/app/components/portal/PortalChrome";
 
 export default function Navigation({ 
   currentPage, 
@@ -232,21 +233,19 @@ const visibleMenuItems = isExecutive
   };
 
   return (
-    <nav className="pb-40 md:ms-4">
+    <nav className="space-y-1 pb-40" aria-label="เมนูจัดการบุคลากร">
       {visibleMenuItems.map((item) => (
         <div key={item.id}>
           <button
             onClick={() => handleMenuClick(item)}
             disabled={pendingRoute === `${ADMIN_BASE_PATH}/${item.id}`}
-            className={`flex items-center gap-2 mb-2.5 w-full hover:text-blue-500 transition-colors ${
-              isActive(item.id) ? 'text-blue-500 font-semibold' : 'text-gray-700'
-            }`}
+            className={`portal-nav-item disabled:cursor-wait disabled:opacity-60 ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
           >
             <item.icon size={20} />
             <div className="flex-1 text-left">
               <span>{pendingRoute === `${ADMIN_BASE_PATH}/${item.id}` ? "กำลังเปิด..." : item.label}</span>
               {item.description && (
-                <span className="text-xs text-gray-500 block">{item.description}</span>
+                <span className="block text-xs text-slate-500">{item.description}</span>
               )}
             </div>
           </button>
@@ -255,15 +254,15 @@ const visibleMenuItems = isExecutive
 
       {memberShortcutItems.length > 0 && (
         <>
-          <div className="mt-6 mb-3 border-t border-gray-200 pt-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">เมนูบุคลากร</p>
+          <div className="mt-5 border-t border-slate-200 pt-4">
+            <p className="portal-nav-section-label">เมนูบุคลากร</p>
           </div>
           {memberShortcutItems.map((item) => (
             <div key={item.id}>
               <button
                 onClick={() => handleMenuClick(item)}
                 disabled={pendingRoute === item.route}
-                className="flex items-center gap-2 mb-2.5 w-full text-gray-700 hover:text-blue-500 transition-colors disabled:opacity-60"
+                className="portal-nav-item disabled:cursor-wait disabled:opacity-60"
               >
                 <item.icon size={20} />
                 <div className="flex-1 text-left">
@@ -276,10 +275,11 @@ const visibleMenuItems = isExecutive
       )}
 
       {/* Logout Button */}
-      <div className="border-t border-gray-200 mt-6 pt-4">
+      <div className="mt-5 border-t border-slate-200 pt-4">
+        <PortalBackLink placement="nav" />
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 text-gray-700 hover:text-red-600 transition-colors w-full"
+          className="portal-nav-item portal-nav-item--danger"
         >
           <LogOut size={20} />
           <span>ออกจากระบบ</span>

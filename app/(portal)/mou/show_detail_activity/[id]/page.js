@@ -38,18 +38,18 @@ function MouInfo({ label, icon: Icon, value, children, borderColor = "border-gra
 function FileIcon({ fileName, mimeType }) {
   const ext = (fileName || '').split('.').pop()?.toLowerCase() || '';
   if (ext === 'pdf') {
-    return <div className="w-7 h-8 rounded bg-red-50 border border-red-200 flex items-center justify-center shrink-0"><span className="text-red-600 font-extrabold text-[9px] tracking-wider">PDF</span></div>;
+    return <div className="w-7 h-8 rounded bg-red-50 border border-red-200 flex items-center justify-center shrink-0"><span className="text-red-600 font-extrabold text-xs tracking-wider">PDF</span></div>;
   }
   if (['doc', 'docx'].includes(ext)) {
-    return <div className="w-7 h-8 rounded bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><span className="text-blue-600 font-extrabold text-[9px] tracking-wider">DOC</span></div>;
+    return <div className="w-7 h-8 rounded bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0"><span className="text-blue-600 font-extrabold text-xs tracking-wider">DOC</span></div>;
   }
   if (ext === 'txt') {
-    return <div className="w-7 h-8 rounded bg-gray-50 border border-gray-300 flex items-center justify-center shrink-0"><span className="text-gray-500 font-extrabold text-[9px] tracking-wider">TXT</span></div>;
+    return <div className="w-7 h-8 rounded bg-gray-50 border border-gray-300 flex items-center justify-center shrink-0"><span className="text-gray-500 font-extrabold text-xs tracking-wider">TXT</span></div>;
   }
   if (['jpg', 'jpeg', 'png'].includes(ext)) {
-    return <div className="w-7 h-8 rounded bg-pink-50 border border-pink-200 flex items-center justify-center shrink-0"><span className="text-pink-600 font-extrabold text-[9px] tracking-wider">IMG</span></div>;
+    return <div className="w-7 h-8 rounded bg-pink-50 border border-pink-200 flex items-center justify-center shrink-0"><span className="text-pink-600 font-extrabold text-xs tracking-wider">IMG</span></div>;
   }
-  return <div className="w-7 h-8 rounded bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0"><span className="text-gray-400 font-extrabold text-[9px] tracking-wider">FILE</span></div>;
+  return <div className="w-7 h-8 rounded bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0"><span className="text-gray-400 font-extrabold text-xs tracking-wider">FILE</span></div>;
 }
 
 const fmtInputDate = (d) => {
@@ -436,7 +436,7 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
         .formSection .field label { font-weight: 500 !important; }
         .swal-icon-trash { border-color: #dc2626 !important; }
         .swal-icon-save { border-color: #2563eb !important; }
-        .swal2-title { font-size: 1.05rem !important; }
+        .swal2-title { font-size: 1.25rem !important; }
         .swal2-actions { width: 100% !important; justify-content: space-between !important; padding: 0 1rem !important; }
         .swal2-actions .swal2-cancel { order: -1 !important; }
         .swal2-actions .swal2-confirm { order: 0 !important; }
@@ -632,11 +632,11 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
                         <div style={{ padding: "4px 8px", borderBottom: "1px solid #e5e7eb", background: "#fff", display: "flex", alignItems: "center", gap: 4 }}>
                           <Search size={12} className="text-gray-400" />
                           <input type="text" placeholder="ค้นหา..." value={typeSearch} onChange={(e) => setTypeSearch(e.target.value)}
-                            style={{ width: "100%", border: "none", outline: "none", fontSize: "13px", background: "transparent" }} />
+                            style={{ width: "100%", border: "none", outline: "none", fontSize: "14px", background: "transparent" }} />
                         </div>
                         <div style={{ maxHeight: "120px", overflowY: "auto", padding: "2px" }}>
                           {filteredTypes.length > 0 ? filteredTypes.map((t) => (
-                            <label key={t.id} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 8px", cursor: "pointer", fontSize: "13px", borderRadius: "4px" }}>
+                            <label key={t.id} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 8px", cursor: "pointer", fontSize: "14px", borderRadius: "4px" }}>
                               <input type="checkbox" checked={selectedTypeIds.includes(t.id)} onChange={() => toggleType(t.id)}
                                 style={{ width: "14px", height: "14px", accentColor: "#059669" }} />
                               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
@@ -647,22 +647,22 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
                         </div>
                       </div>
                       <div style={{ flex: 1, minHeight: "60px", border: "1px solid #e5e7eb", borderRadius: "8px", background: "#f9fafb", padding: "6px" }}>
-                        <div style={{ fontSize: "11px", color: "#6b7280", marginBottom: "4px", fontWeight: 500 }}>เลือกแล้ว {selectedTypeIds.length} รายการ</div>
+                        <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px", fontWeight: 500 }}>เลือกแล้ว {selectedTypeIds.length} รายการ</div>
                         {selectedTypeIds.length > 0 ? (
                           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                             {selectedTypeIds.slice(0, 5).map((id) => {
                               const t = activityTypes.find((x) => x.id === id);
                               return (
-                                <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 6px", borderRadius: "4px", background: "#eef2ff", fontSize: "11px" }}>
+                                <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 6px", borderRadius: "4px", background: "#eef2ff", fontSize: "12px" }}>
                                   <span className="truncate" style={{ flex: 1 }}>{t?.name || `#${id}`}</span>
                                   <button type="button" onClick={() => toggleType(id)} style={{ background: "none", border: "none", color: "#059669", cursor: "pointer", padding: "0 2px" }}><X size={8} /></button>
                                 </div>
                               );
                             })}
-                            {selectedTypeIds.length > 5 && <div style={{ fontSize: "10px", color: "#6b7280", textAlign: "center" }}>+{selectedTypeIds.length - 5} รายการ</div>}
+                            {selectedTypeIds.length > 5 && <div style={{ fontSize: "12px", color: "#6b7280", textAlign: "center" }}>+{selectedTypeIds.length - 5} รายการ</div>}
                           </div>
                         ) : (
-                          <div style={{ fontSize: "11px", color: "#9ca3af", textAlign: "center", padding: "12px 0" }}>ยังไม่เลือก</div>
+                          <div style={{ fontSize: "12px", color: "#9ca3af", textAlign: "center", padding: "12px 0" }}>ยังไม่เลือก</div>
                         )}
                       </div>
                     </div>
@@ -674,11 +674,11 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
                         <div style={{ padding: "4px 8px", borderBottom: "1px solid #e5e7eb", background: "#fff", display: "flex", alignItems: "center", gap: 4 }}>
                           <Search size={12} className="text-gray-400" />
                           <input type="text" placeholder="ค้นหา..." value={okrSearch} onChange={(e) => setOkrSearch(e.target.value)}
-                            style={{ width: "100%", border: "none", outline: "none", fontSize: "13px", background: "transparent" }} />
+                            style={{ width: "100%", border: "none", outline: "none", fontSize: "14px", background: "transparent" }} />
                         </div>
                         <div style={{ maxHeight: "120px", overflowY: "auto", padding: "2px" }}>
                           {filteredOkrs.length > 0 ? filteredOkrs.map((o) => (
-                            <label key={o.id} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 8px", cursor: "pointer", fontSize: "13px", borderRadius: "4px" }}>
+                            <label key={o.id} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 8px", cursor: "pointer", fontSize: "14px", borderRadius: "4px" }}>
                               <input type="checkbox" checked={selectedOkrIds.includes(o.id)} onChange={() => toggleOkr(o.id)}
                                 style={{ width: "14px", height: "14px", accentColor: "#059669" }} />
                               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.title}</span>
@@ -689,22 +689,22 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
                         </div>
                       </div>
                       <div style={{ flex: 1, minHeight: "60px", border: "1px solid #e5e7eb", borderRadius: "8px", background: "#f9fafb", padding: "6px" }}>
-                        <div style={{ fontSize: "11px", color: "#6b7280", marginBottom: "4px", fontWeight: 500 }}>เลือกแล้ว {selectedOkrIds.length} รายการ</div>
+                        <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px", fontWeight: 500 }}>เลือกแล้ว {selectedOkrIds.length} รายการ</div>
                         {selectedOkrIds.length > 0 ? (
                           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                             {selectedOkrIds.slice(0, 5).map((id) => {
                               const o = okrs.find((x) => x.id === id);
                               return (
-                                <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 6px", borderRadius: "4px", background: "#eef2ff", fontSize: "11px" }}>
+                                <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 6px", borderRadius: "4px", background: "#eef2ff", fontSize: "12px" }}>
                                   <span className="truncate" style={{ flex: 1 }}>{o?.title || `#${id}`}</span>
                                   <button type="button" onClick={() => toggleOkr(id)} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", padding: "0 2px" }}><X size={8} /></button>
                                 </div>
                               );
                             })}
-                            {selectedOkrIds.length > 5 && <div style={{ fontSize: "10px", color: "#6b7280", textAlign: "center" }}>+{selectedOkrIds.length - 5} รายการ</div>}
+                            {selectedOkrIds.length > 5 && <div style={{ fontSize: "12px", color: "#6b7280", textAlign: "center" }}>+{selectedOkrIds.length - 5} รายการ</div>}
                           </div>
                         ) : (
-                          <div style={{ fontSize: "11px", color: "#9ca3af", textAlign: "center", padding: "12px 0" }}>ยังไม่เลือก</div>
+                          <div style={{ fontSize: "12px", color: "#9ca3af", textAlign: "center", padding: "12px 0" }}>ยังไม่เลือก</div>
                         )}
                       </div>
                     </div>
@@ -836,7 +836,7 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
                 </div>
                 {editing && (
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-gray-400">สูงสุด 3 ไฟล์ (PDF)</span>
+                    <span className="text-xs text-gray-400">สูงสุด 3 ไฟล์ (PDF)</span>
                     <input type="file" id="fileUpload" onChange={handleUploadFile} style={{ display: "none" }} accept=".pdf" />
                     <button type="button" onClick={() => {
                       const currentFiles = activity.attachments || [];

@@ -227,7 +227,7 @@ export default function RankingWeightsPage() {
       <Header currentPageTitle="จัดการค่าน้ำหนักส่วนกลาง" />
       
       {/* ── Main Layout Wrapper ── */}
-      <main className="w-full pt-28 px-6">
+      <main className="portal-page-offset w-full px-6">
         <div className="max-w-7xl mx-auto space-y-3">
           
           {/* ── Control Bar (ปุ่มย้อนกลับ / ตั้งค่า / คอนโทรลตาราง) ── */}

@@ -87,8 +87,8 @@ const DocumentTypeModal = ({
       size="xl"
       bodyClassName="max-h-[75vh] overflow-y-auto px-6 py-6"
       headerContent={
-        <div className="flex items-center gap-3 text-gray-700">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+        <div className="flex items-center gap-3 text-slate-700">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
             <FileCog size={18} />
           </span>
           <div>
@@ -211,7 +211,7 @@ const DocumentTypeModal = ({
                           <span>{option.label}</span>
                         </div>
                         {checked && (
-                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">เลือกไว้</span>
+                          <span className="rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-700">เลือกไว้</span>
                         )}
                       </label>
                     );

@@ -273,7 +273,7 @@ export function MemberPageContent({ initialPage = 'dashboard', initialMode = nul
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-slate-100">
       <Header
         isOpen={isOpen}
         setIsOpen={setIsOpen}
@@ -291,9 +291,9 @@ export function MemberPageContent({ initialPage = 'dashboard', initialMode = nul
         )}
       />
 
-      <div className="flex mt-24 sm:mt-20 min-h-[calc(100vh-5rem)]">
+      <div className="portal-shell-offset flex">
         {/* Desktop Sidebar */}
-        <div className="hidden md:block w-64 bg-white border-r border-gray-300 fixed h-[calc(100vh-5rem)] overflow-y-auto shadow-sm">
+        <div className="portal-sidebar hidden w-64 md:block">
           <div className="p-5">
             <Navigation
               currentPage={currentPage}

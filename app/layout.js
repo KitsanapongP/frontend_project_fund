@@ -1,7 +1,16 @@
 // app/layout.js - Root Layout with AuthProvider
 import { AuthProvider } from './contexts/AuthContext';
 import ChunkErrorReloader from './components/ChunkErrorReloader';
+import { Sarabun } from 'next/font/google';
 import './globals.css';
+
+const sarabun = Sarabun({
+  weight: ['400', '500', '600', '700', '800'],
+  subsets: ['latin', 'thai'],
+  display: 'swap',
+  variable: '--font-sarabun',
+  fallback: ['Tahoma', 'Arial', 'sans-serif'],
+});
 
 export const metadata = {
   title: 'กองทุนวิจัยฯ วิทยาลัยการคอมพิวเตอร์ - วิทยาลัยการคอมพิวเตอร์ มข.',
@@ -13,7 +22,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="th">
+    <html lang="th" className={sarabun.variable}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />

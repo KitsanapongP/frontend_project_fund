@@ -166,7 +166,7 @@ export default function PublicationSearchPage() {
       : 'hover:border-[#7F77DD]/30';
     return (
       <div className="flex items-center gap-3 whitespace-nowrap">
-        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">
+        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide shrink-0">
           {title}
         </span>
         <div className={gridCols ? "grid gap-1.5" : "flex gap-1.5"} style={gridCols ? { gridTemplateColumns: `repeat(${gridCols}, auto)` } : undefined}>
@@ -179,7 +179,7 @@ export default function PublicationSearchPage() {
               <button
                 key={value}
                 onClick={() => onToggle(value)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-all whitespace-nowrap ${
+                className={`px-2 py-0.5 rounded-md text-xs font-medium border transition-all whitespace-nowrap ${
                   isSelected
                     ? btnSelected
                     : `bg-white text-gray-400 border-gray-200 ${btnHover}`
@@ -454,7 +454,7 @@ export default function PublicationSearchPage() {
          <div className="flex flex-wrap items-start gap-3">
           
             <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">แหล่งที่มา</span>
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wide shrink-0">แหล่งที่มา</span>
               <div className="flex items-center gap-1 p-0.5 bg-gray-100 rounded-lg">
                 <button
                   onClick={() => setFilters({ ...filters, sources: [] })}
@@ -541,14 +541,14 @@ export default function PublicationSearchPage() {
             )}
             {(filters.sources.length === 0 || selectedSource === "ai_showcase") && tab === "student" && (
               <div className="grid gap-x-3 gap-y-1.5 whitespace-nowrap" style={{ gridTemplateColumns: 'auto 1fr' }}>
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0 mt-1">ภาคีเครือข่าย</span>
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wide shrink-0 mt-1">ภาคีเครือข่าย</span>
                 <div className="flex gap-1.5 items-center">
                   {AI_TRACKS.slice(0, 3).map(t => {
                     const Icon = t.icon;
                     const isSelected = (filters.tracks || []).includes(t.id);
                     return (
                       <button key={t.id} onClick={() => toggleFilter("tracks", t.id)}
-                        className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-all whitespace-nowrap ${isSelected ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/30' : 'bg-white text-gray-400 border-gray-200 hover:border-[#7F77DD]/30'}`}
+                        className={`px-2 py-0.5 rounded-md text-xs font-medium border transition-all whitespace-nowrap ${isSelected ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/30' : 'bg-white text-gray-400 border-gray-200 hover:border-[#7F77DD]/30'}`}
                       >
                         <span className="flex items-center gap-1">
                           {isSelected && <CheckCircle2 size={12} />}
@@ -566,7 +566,7 @@ export default function PublicationSearchPage() {
                     const isSelected = (filters.tracks || []).includes(t.id);
                     return (
                       <button key={t.id} onClick={() => toggleFilter("tracks", t.id)}
-                        className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-all whitespace-nowrap ${isSelected ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/30' : 'bg-white text-gray-400 border-gray-200 hover:border-[#7F77DD]/30'}`}
+                        className={`px-2 py-0.5 rounded-md text-xs font-medium border transition-all whitespace-nowrap ${isSelected ? 'bg-[#7F77DD]/10 text-[#7F77DD] border-[#7F77DD]/30' : 'bg-white text-gray-400 border-gray-200 hover:border-[#7F77DD]/30'}`}
                       >
                         <span className="flex items-center gap-1">
                           {isSelected && <CheckCircle2 size={12} />}
@@ -583,7 +583,7 @@ export default function PublicationSearchPage() {
 
             <div className="ml-auto flex flex-col items-end min-h-[80px]">
                <div className="flex items-center gap-3">
-                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">ปี ค.ศ. (พ.ศ.)</span>
+                   <span className="text-xs font-bold text-gray-500 uppercase tracking-wide shrink-0">ปี ค.ศ. (พ.ศ.)</span>
                   <div className="flex items-center gap-1.5">
                       <span className="text-xs text-gray-500">จาก:</span>
                       <div className="relative" ref={yearStartRef}>
@@ -648,12 +648,12 @@ export default function PublicationSearchPage() {
                    </div>
                </div>
                 {lastImportDates.length > 0 && (
-                   <div className="flex items-center gap-2 mt-auto text-[10px] text-gray-400">
+                   <div className="flex items-center gap-2 mt-auto text-xs text-gray-400">
                         <span className="font-medium text-gray-500">
                          อัปเดตล่าสุด:
                        </span>
                      {lastImportDates.filter(d => tab === 'teacher' ? d.source !== 'AI Showcase' : d.source === 'AI Showcase').map(d => (
-                      <span key={d.source} className="text-[10px] text-gray-400">
+                      <span key={d.source} className="text-xs text-gray-400">
                         {d.source}: {new Date(d.finished_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     ))}

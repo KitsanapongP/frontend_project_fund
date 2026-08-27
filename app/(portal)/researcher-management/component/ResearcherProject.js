@@ -155,7 +155,7 @@ export default function ResearcherProject({ formData, handleInputChange }) {
 
                   <td className="p-2 align-top space-y-1">
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-bold text-slate-400 w-8">เริ่ม:</span>
+                      <span className="text-xs font-bold text-slate-400 w-8">เริ่ม:</span>
                       <input 
                         type="date" 
                         value={formatDateForInput(project.start_date)} 
@@ -164,7 +164,7 @@ export default function ResearcherProject({ formData, handleInputChange }) {
                       />
                     </div>
                     <div className="flex items-center gap-1 border-t border-dashed border-slate-100 pt-1">
-                      <span className="text-[10px] font-bold text-slate-400 w-8">สิ้นสุด:</span>
+                      <span className="text-xs font-bold text-slate-400 w-8">สิ้นสุด:</span>
                       <input 
                         type="date" 
                         value={formatDateForInput(project.end_date)} 

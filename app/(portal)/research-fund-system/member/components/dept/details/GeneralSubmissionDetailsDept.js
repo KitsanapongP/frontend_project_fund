@@ -59,10 +59,10 @@ const statusIconColor = (statusCode) => {
   switch (statusCode) {
     case 'approved': return 'text-green-600';
     case 'rejected': return 'text-red-600';
-    case 'revision': return 'text-orange-600';
-    case 'draft': return 'text-gray-500';
+    case 'revision': return 'text-amber-600';
+    case 'draft': return 'text-slate-500';
     case 'pending':
-    default: return 'text-yellow-600';
+    default: return 'text-amber-600';
   }
 };
 
@@ -252,9 +252,9 @@ function DecisionDropdown({ value, onChange, disabled = false, className = '' })
         aria-haspopup="listbox"
         aria-expanded={open}
         className={[
-          'inline-flex w-full items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2',
-          'text-sm font-medium text-gray-700 shadow-sm transition',
-          'hover:border-blue-300 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500',
+          'inline-flex w-full items-center gap-3 rounded-lg border border-slate-300 bg-white px-3 py-2',
+          'text-sm font-medium text-slate-700 transition',
+          'hover:border-blue-300 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500',
           'disabled:cursor-not-allowed disabled:opacity-60',
         ].join(' ')}
       >
@@ -265,10 +265,10 @@ function DecisionDropdown({ value, onChange, disabled = false, className = '' })
             <selected.icon className={`h-5 w-5 ${selected.iconClass}`} />
           </span>
           <span className="flex flex-1 flex-col text-left">
-            <span className="text-sm font-semibold text-gray-900">{selected.label}</span>
-            <span className="text-xs text-gray-500">{selected.hint}</span>
+            <span className="text-sm font-semibold text-slate-900">{selected.label}</span>
+            <span className="text-xs text-slate-500">{selected.hint}</span>
           </span>
-          <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} />
         </div>
       </button>
 
@@ -276,7 +276,7 @@ function DecisionDropdown({ value, onChange, disabled = false, className = '' })
         <div
           ref={menuRef}
           role="listbox"
-          className="absolute left-0 bottom-full z-[9999] mb-2 w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5"
+          className="absolute left-0 bottom-full z-[9999] mb-2 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ring-1 ring-black/5"
         >
           <div className="py-1">
             {DEPT_DECISION_OPTIONS.map((option) => {
@@ -290,7 +290,7 @@ function DecisionDropdown({ value, onChange, disabled = false, className = '' })
                   onClick={() => handleSelect(option.value)}
                   className={[
                     'flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition',
-                    active ? 'bg-blue-50/70 text-gray-900' : 'text-gray-700 hover:bg-gray-50',
+                    active ? 'bg-blue-50/70 text-blue-950' : 'text-blue-950 hover:bg-slate-50',
                   ].join(' ')}
                 >
                   <span
@@ -300,7 +300,7 @@ function DecisionDropdown({ value, onChange, disabled = false, className = '' })
                   </span>
                   <span className="flex-1">
                     <span className="block font-semibold">{option.label}</span>
-                    <span className="block text-xs text-gray-500">{option.description}</span>
+                    <span className="block text-xs text-slate-500">{option.description}</span>
                   </span>
                   {active ? <Check className="h-4 w-4 text-blue-600" /> : null}
                 </button>
@@ -386,7 +386,7 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
         ${trimmedComment
           ? `<div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
             <div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${escapeHtml(trimmedComment)}</div>`
-          : `<div style="font-size:12px;color:#6b7280;">(ไม่มีหมายเหตุ)</div>`
+          : `<div style="font-size:12px;color:#64748b;">(ไม่มีหมายเหตุ)</div>`
         }
       </div>
     `;
@@ -453,17 +453,17 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
             <div style="font-weight:500;margin-bottom:.25rem;">ลายเซ็นหัวหน้าสาขา</div>
             ${trimmedSignature
               ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;">${escapeHtml(trimmedSignature)}</div>`
-              : `<div style="font-size:12px;color:#6b7280;">(ไม่ระบุลายเซ็น)</div>`
+              : `<div style="font-size:12px;color:#64748b;">(ไม่ระบุลายเซ็น)</div>`
             }
           </div>
           <div style="margin-top:.75rem;">
             <div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
             ${trimmedComment
               ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${escapeHtml(trimmedComment)}</div>`
-              : `<div style="font-size:12px;color:#6b7280;">(ไม่มีหมายเหตุ)</div>`
+              : `<div style="font-size:12px;color:#64748b;">(ไม่มีหมายเหตุ)</div>`
             }
           </div>
-          <p style="font-size:12px;color:#6b7280;margin-top:.5rem;">
+          <p style="font-size:12px;color:#64748b;margin-top:.5rem;">
             ระบบจะบันทึกเหตุผลและเปลี่ยนสถานะคำร้องเป็น “ไม่อนุมัติ”
           </p>
         </div>
@@ -525,7 +525,7 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
             <div style="font-weight:500;margin-bottom:.25rem;">ลายเซ็นหัวหน้าสาขา</div>
             ${trimmedSignature
               ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;">${escapeHtml(trimmedSignature)}</div>`
-              : `<div style="font-size:12px;color:#6b7280;">(ไม่ระบุลายเซ็น)</div>`
+              : `<div style="font-size:12px;color:#64748b;">(ไม่ระบุลายเซ็น)</div>`
             }
           </div>
         </div>
@@ -594,18 +594,18 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
     <Card title="ผลการพิจารณา (หัวหน้าสาขา)" icon={DollarSign} collapsible={false} className="overflow-visible">
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-700 leading-tight">
+          <label className="text-sm font-medium text-slate-700 leading-tight">
             หมายเหตุของหัวหน้าสาขา
             {isCommentRequired && <span className="text-red-500"> *</span>}
-            <br /><span className="text-xs font-normal text-gray-600">Comment</span>
+            <br /><span className="text-xs font-normal text-slate-600">Comment</span>
           </label>
           {isCommentRequired && (
-            <p className="text-xs text-gray-500">จำเป็นสำหรับคำขอรับเงินทุน</p>
+            <p className="text-xs text-slate-500">จำเป็นสำหรับคำขอรับเงินทุน</p>
           )}
           <div
             className={[
-              'rounded-lg border bg-white shadow-sm transition',
-              'border-gray-300 hover:border-blue-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500',
+              'rounded-lg border bg-white transition',
+              'border-slate-300 hover:border-blue-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500',
               errors.comment ? 'border-red-400 focus-within:border-red-500 focus-within:ring-red-500/40' : '',
             ].join(' ')}
           >
@@ -629,18 +629,18 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
           {errors.comment ? (
             <p className="text-xs text-red-600 text-right">{errors.comment}</p>
           ) : (
-            <p className="text-xs text-gray-400 text-right"></p>
+            <p className="text-xs text-slate-400 text-right"></p>
           )}
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-700 leading-tight">
+          <label className="text-sm font-medium text-slate-700 leading-tight">
             ลายเซ็นหัวหน้าสาขา (พิมพ์ชื่อเต็ม)
-            <br /><span className="text-xs font-normal text-gray-600">Head Signature</span>
+            <br /><span className="text-xs font-normal text-slate-600">Head Signature</span>
           </label>
           <input
             type="text"
-            className="w-full rounded-lg border border-gray-300 p-3 outline-none transition focus:ring-2 focus:ring-blue-500"
+            className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             placeholder="พิมพ์ชื่อเต็มของหัวหน้าสาขา"
             value={headSignature}
             onChange={(e) => setHeadSignature(e.target.value)}
@@ -648,10 +648,10 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
           />
         </div>
 
-        <div className="border-t border-gray-200 pt-4">
+        <div className="border-t border-slate-200 pt-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3 md:max-w-[60%]">
-              <span className="text-sm font-medium text-gray-700 whitespace-nowrap shrink-0">ดำเนินการ</span>
+              <span className="text-sm font-medium text-slate-700 whitespace-nowrap shrink-0">ดำเนินการ</span>
               <DecisionDropdown
                 value={selectedAction}
                 onChange={(next) => {
@@ -671,10 +671,10 @@ function DeptDecisionPanel({ submission, onApprove, onReject, onRequestRevision,
             </div>
             <div className="flex items-center justify-end gap-3 md:self-end">
               {(saving || decisionPending) && (
-                <span className="text-sm text-gray-500">กำลังดำเนินการ…</span>
+                <span className="text-sm text-slate-500">กำลังดำเนินการ…</span>
               )}
               <button
-                className="btn btn-primary min-w-[164px] justify-center gap-2 disabled:opacity-60"
+                className="inline-flex min-h-11 min-w-[164px] items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={handleDecisionSubmit}
                 disabled={saving || decisionPending}
                 title="บันทึกผลการพิจารณา"
@@ -725,22 +725,22 @@ function RequestInfoCard({ submission, detail }) {
     <Card title="ข้อมูลการเงิน (Request Information)" icon={FileText} collapsible={false}>
       <div className="space-y-4 text-sm">
         <div className="flex items-start justify-between">
-          <span className="text-gray-600">จำนวนเงินที่ขอ</span>
+          <span className="text-slate-600">จำนวนเงินที่ขอ</span>
           <span className="font-semibold text-blue-700">{baht(requested)}</span>
         </div>
         {approved != null && (
           <div className="flex items-start justify-between">
-            <span className="text-gray-600">จำนวนเงินที่อนุมัติ</span>
+            <span className="text-slate-600">จำนวนเงินที่อนุมัติ</span>
             <span className="font-semibold text-green-700">{baht(approved)}</span>
           </div>
         )}
 
-        <div className="h-px bg-gray-200 my-2" />
+        <div className="h-px bg-slate-200 my-2" />
         {fields.map((f, idx) => (
           <div key={idx} className={f.long ? '' : 'flex items-start justify-between'}>
-            <div className="text-gray-600">{f.label}</div>
+            <div className="text-slate-600">{f.label}</div>
             {f.long ? (
-              <div className="mt-1 rounded-md border border-gray-200 bg-gray-50 p-2">{f.value}</div>
+              <div className="mt-1 rounded-md border border-slate-200 bg-slate-50 p-2">{f.value}</div>
             ) : (
               <div className="font-medium text-right max-w-[60%] break-words">{f.value}</div>
             )}
@@ -789,8 +789,6 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
       setIsUnauthorized(false);
       try {
         const res = await deptHeadAPI.getSubmissionDetails(submissionId);
-        console.log('[DeptHead] details payload:', res);
-
         let data = res?.submission || res;
 
         if (res?.submission_users) data.submission_users = res.submission_users;
@@ -802,7 +800,6 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
 
         const applicant =
           res?.applicant || res?.applicant_user || data?.user || data?.User;
-        console.log('[DeptHead] resolved applicant:', applicant);
         if (applicant) {
           data.applicant = applicant;
           data.user = applicant;
@@ -810,15 +807,6 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
         if (res?.applicant_user_id) data.applicant_user_id = res.applicant_user_id;
 
         setSubmission(data);
-        console.group('[DeptHead Debug] Submission Payload');
-        console.log('submissionId:', submissionId);
-        console.log('Raw response (res):', res);
-        console.log('Normalized submission object (data):', data);
-        console.log('FundApplicationDetail:', data?.FundApplicationDetail);
-        console.log('Applicant (resolved):', applicant);
-        console.log('Details key paths:', Object.keys(data || {}));
-        console.groupEnd();
-
       } catch (e) {
         console.error('load details failed', e);
         const status = Number(e?.response?.status || e?.status || 0);
@@ -851,8 +839,6 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
             ? deptHeadAPI.getDocumentTypes()
             : Promise.resolve([])),
         ]);
-        console.log('[DeptHead] docRes:', docRes);
-        console.log('[DeptHead] typeRes:', typeRes);
         const docsApi = Array.isArray(docRes?.documents) ? docRes.documents
           : Array.isArray(docRes) ? docRes
           : [];
@@ -917,8 +903,6 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
 
     const mainId = d?.main_annoucement;
     const actId  = d?.activity_support_announcement;
-    console.log('[DEBUG] ann ids =', { mainId, actId, d });
-
     let cancelled = false;
     (async () => {
       try {
@@ -945,18 +929,6 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
     return () => { cancelled = true; };
   }, [submission?.FundApplicationDetail, submission?.details?.data]);
 
-  useEffect(() => {
-    if (!loading && submission) {
-      console.group('[DeptHead Debug] Current State Snapshot');
-      console.log('Submission:', submission);
-      console.log('Detail:', submission?.FundApplicationDetail || submission?.details?.data);
-      console.log('Main Announcement:', mainAnn);
-      console.log('Activity Announcement:', activityAnn);
-      console.log('Attachments:', attachments);
-      console.groupEnd();
-    }
-  }, [loading, submission, attachments, mainAnn, activityAnn]);
-
   const formType = useMemo(() => {
     const t =
       submission?.form_type ||
@@ -980,7 +952,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
         subtitle="กำลังโหลดข้อมูล."
         icon={FileText}
         actions={
-          <button onClick={onBack} className="btn btn-secondary">
+          <button onClick={onBack} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 font-medium text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
             <ArrowLeft size={20} />
             กลับ (Back)
           </button>
@@ -988,8 +960,8 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
       >
         <div className="flex justify-center items-center py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">กำลังโหลดข้อมูล.</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-100 border-t-blue-600 mx-auto"></div>
+            <p className="mt-4 text-slate-600">กำลังโหลดข้อมูล.</p>
           </div>
         </div>
       </PageLayout>
@@ -1001,8 +973,8 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
       <PageLayout title="ไม่พบข้อมูล" subtitle="ไม่พบคำร้องที่ระบุ" icon={FileText}>
         <Card collapsible={false}>
           <div className="text-center py-12">
-            <p className="text-gray-600">ไม่พบข้อมูลคำร้องที่ต้องการ</p>
-            <button onClick={onBack} className="btn btn-primary mt-4">
+            <p className="text-slate-600">ไม่พบข้อมูลคำร้องที่ต้องการ</p>
+            <button onClick={onBack} className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
               กลับไปหน้ารายการ
             </button>
           </div>
@@ -1426,13 +1398,13 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
       subtitle="รายละเอียดคำร้องประเภทกองทุนทั่วไป"
       icon={FileText}
       actions={
-        <button onClick={onBack} className="btn btn-secondary">
+        <button onClick={onBack} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 font-medium text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
           <ArrowLeft size={20} />
           กลับ (Back)
         </button>
       }
       breadcrumbs={[
-        { label: 'หน้าแรก', href: '/research-fund-system/admin' },
+        { label: 'หน้าหลัก', href: '/research-fund-system/member' },
         { label: 'รายการคำร้อง', href: '#', onClick: onBack },
         { label: submission.submission_number || String(submission.submission_id) },
       ]}
@@ -1455,21 +1427,21 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
   }
   className="mb-6"
 >
-  <div className="flex justify-between items-start">
-    <div>
+  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+    <div className="min-w-0 flex-1">
       <div className="flex flex-col gap-3 mt-4 text-sm">
         {/* ชื่อทุน — ทำให้ตัวหนา */}
         <div className="flex flex-wrap items-start gap-2">
-          <span className="text-gray-500 shrink-0 min-w-[80px]">ชื่อทุน:</span>
-          <span className="font-bold text-gray-700 break-words flex-1">
+          <span className="text-slate-500 shrink-0 min-w-[80px]">ชื่อทุน:</span>
+          <span className="font-bold text-slate-700 break-words flex-1">
             {displaySubName}
           </span>
         </div>
 
         {/* ผู้ขอทุน */}
         <div className="flex flex-wrap items-start gap-2">
-          <span className="text-gray-500 shrink-0 min-w-[80px]">ผู้ขอทุน:</span>
-          <span className="font-bold text-gray-700 break-words flex-1">
+          <span className="text-slate-500 shrink-0 min-w-[80px]">ผู้ขอทุน:</span>
+          <span className="font-bold text-slate-700 break-words flex-1">
             {getUserFullName(applicant)}
           </span>
         </div>
@@ -1478,14 +1450,14 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 mt-2">
           {/* เลขที่คำร้อง */}
           <div className="flex items-start gap-2">
-            <span className="text-gray-500 shrink-0">เลขที่คำร้อง:</span>
+            <span className="text-slate-500 shrink-0">เลขที่คำร้อง:</span>
             <span className="font-medium break-all">{submission.submission_number || '-'}</span>
           </div>
 
           {/* วันที่สร้างคำร้อง (ถ้ามี) */}
           {createdAt && (
             <div className="flex items-start gap-2">
-              <span className="text-gray-500 shrink-0">วันที่สร้างคำร้อง:</span>
+              <span className="text-slate-500 shrink-0">วันที่สร้างคำร้อง:</span>
               <span className="font-medium">{formatDate(createdAt)}</span>
             </div>
           )}
@@ -1493,20 +1465,20 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
           {/* วันที่ส่งคำร้อง */}
           {submittedAt && (
             <div className="flex items-start gap-2">
-              <span className="text-gray-500 shrink-0">วันที่ส่งคำร้อง:</span>
+              <span className="text-slate-500 shrink-0">วันที่ส่งคำร้อง:</span>
               <span className="font-medium">{formatDate(submittedAt)}</span>
             </div>
           )}
 
           <div className="flex items-start gap-2">
-            <span className="text-gray-500 shrink-0">เบอร์ติดต่อ:</span>
+            <span className="text-slate-500 shrink-0">เบอร์ติดต่อ:</span>
             <span className="font-medium break-words">{contactPhone || '-'}</span>
           </div>
 
           {/* วันที่อนุมัติ (ใช้ของผู้ดูแลถ้ามี ถ้าไม่มีก็ใช้ของหัวหน้าสาขา) */}
           {(adminApprovedAt || headApprovedAt) && (
             <div className="flex items-start gap-2">
-              <span className="text-gray-500 shrink-0">วันที่อนุมัติ:</span>
+              <span className="text-slate-500 shrink-0">วันที่อนุมัติ:</span>
               <span className="font-medium">{formatDate(adminApprovedAt || headApprovedAt)}</span>
             </div>
           )}
@@ -1514,7 +1486,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
           {/* เหตุผลการไม่อนุมัติ (ถ้ามี) */}
           {(adminRejectedAt || headRejectedAt) && (adminRejectionReason || headRejectionReason) && (
             <div className="flex items-start gap-2 md:col-span-2 lg:col-span-3">
-              <span className="text-gray-500 shrink-0">เหตุผลการไม่อนุมัติ:</span>
+              <span className="text-slate-500 shrink-0">เหตุผลการไม่อนุมัติ:</span>
               <span className="font-medium break-words flex-1">
                 {adminRejectionReason || headRejectionReason}
               </span>
@@ -1524,7 +1496,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
           {/* ประกาศหลักเกณฑ์ */}
           {(mainAnn || detail?.main_annoucement) && (
             <div className="flex items-start gap-2">
-              <span className="text-gray-500 shrink-0">ประกาศหลักเกณฑ์:</span>
+              <span className="text-slate-500 shrink-0">ประกาศหลักเกณฑ์:</span>
               {mainAnn?.file_path ? (
                 <a
                   href="#"
@@ -1535,7 +1507,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
                   {mainAnn?.title || mainAnn?.file_name || `#${detail?.main_annoucement}`}
                 </a>
               ) : (
-                <span className="text-gray-400">-</span>
+                <span className="text-slate-400">-</span>
               )}
             </div>
           )}
@@ -1543,7 +1515,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
           {/* ประกาศกิจกรรม/สนับสนุน */}
           {(activityAnn || detail?.activity_support_announcement) && (
             <div className="flex items-start gap-2">
-              <span className="text-gray-500 shrink-0">ประกาศกิจกรรม:</span>
+              <span className="text-slate-500 shrink-0">ประกาศกิจกรรม:</span>
               {activityAnn?.file_path ? (
                 <a
                   href="#"
@@ -1554,14 +1526,14 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
                   {activityAnn?.title || activityAnn?.file_name || `#${detail?.activity_support_announcement}`}
                 </a>
               ) : (
-                <span className="text-gray-400">-</span>
+                <span className="text-slate-400">-</span>
               )}
             </div>
           )}
 
           <div className="flex items-start gap-2 md:col-span-2 lg:col-span-3">
-            <span className="text-gray-500 shrink-0">ข้อมูลธนาคาร:</span>
-            <div className="flex flex-col text-sm font-medium text-gray-700">
+            <span className="text-slate-500 shrink-0">ข้อมูลธนาคาร:</span>
+            <div className="flex flex-col text-sm font-medium text-slate-700">
               <span>
                 เลขที่บัญชี: <span className="font-semibold">{bankAccount || '-'}</span>
               </span>
@@ -1582,14 +1554,14 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
       <div className="text-2xl font-bold text-blue-600">
         {formatCurrency(requestedAmount ?? 0)}
       </div>
-      <div className="text-sm text-gray-500">จำนวนเงินที่ขอ</div>
+      <div className="text-sm text-slate-500">จำนวนเงินที่ขอ</div>
 
       {approvedAmount != null && (
         <div className="mt-2">
           <div className="text-lg font-bold text-green-600">
             {formatCurrency(approvedAmount ?? 0)}
           </div>
-          <div className="text-xs text-gray-500">จำนวนเงินที่อนุมัติ</div>
+          <div className="text-xs text-slate-500">จำนวนเงินที่อนุมัติ</div>
         </div>
       )}
     </div>
@@ -1616,8 +1588,8 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
         <div className="space-y-6">
           {attachmentsLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="flex items-center gap-3 text-gray-500">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              <div className="flex items-center gap-3 text-slate-500">
+                <div className="animate-spin rounded-full h-5 w-5 border-4 border-blue-100 border-t-blue-600"></div>
                 <span>กำลังโหลดเอกสาร...</span>
               </div>
             </div>
@@ -1641,20 +1613,20 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
                 return (
                   <div
                     key={doc.document_id || fileId || index}
-                    className="bg-gray-50/50 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200"
+                    className="rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/30"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                          <span className="text-gray-600 font-semibold text-sm">
+                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50">
+                          <span className="text-slate-600 font-semibold text-sm">
                             {index + 1}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <FileText size={16} className="text-gray-600 flex-shrink-0" />
-                            <p className="text-sm text-gray-600">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                            <FileText size={16} className="text-slate-600 flex-shrink-0" />
+                            <p className="text-sm text-slate-600">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700">
                                 {docType}
                               </span>
                             </p>
@@ -1671,7 +1643,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
                             </a>
                           ) : (
                             <span
-                              className="font-medium text-gray-400 truncate"
+                              className="font-medium text-slate-400 truncate"
                               title={fileName}
                             >
                               {fileName}
@@ -1680,9 +1652,9 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex flex-wrap items-center gap-2 sm:ml-4">
                         <button
-                          className="inline-flex items-center gap-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-100 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                           onClick={() => handleView(doc)}
                           disabled={!canOpen}
                           title="เปิดดูไฟล์"
@@ -1691,7 +1663,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
                           <span>ดู</span>
                         </button>
                         <button
-                          className="inline-flex items-center gap-1 px-3 py-2 text-sm text-green-600 hover:bg-green-100 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                           onClick={() => handleDownload(doc, fileName)}
                           disabled={!canOpen}
                           title="ดาวน์โหลดไฟล์"
@@ -1707,18 +1679,18 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
             </div>
           ) : (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-gray-400" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
+                <FileText className="w-8 h-8 text-slate-400" />
               </div>
-              <p className="text-gray-500 text-lg font-medium mb-2">ไม่มีเอกสารแนบ</p>
-              <p className="text-gray-400 text-sm">ยังไม่มีการอัปโหลดเอกสารสำหรับคำร้องนี้</p>
+              <p className="text-slate-500 text-lg font-medium mb-2">ไม่มีเอกสารแนบ</p>
+              <p className="text-slate-400 text-sm">ยังไม่มีการอัปโหลดเอกสารสำหรับคำร้องนี้</p>
             </div>
           )}
 
           {attachments.length > 0 && (
-            <div className="flex justify-end gap-3 pt-4 border-t-1 border-gray-300">
+            <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 pt-4">
               <button
-                className="inline-flex items-center gap-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={handleViewMerged}
                 disabled={attachments.length === 0 || merging || creatingMerged}
                 title="เปิดดูไฟล์แนบที่ถูกรวมเป็น PDF"
@@ -1726,7 +1698,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
                 <Eye size={16} /> ดูไฟล์รวม (PDF)
               </button>
               <button
-                className="inline-flex items-center gap-1 px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={handleDownloadMerged}
                 disabled={attachments.length === 0 || merging || creatingMerged}
                 title="ดาวน์โหลดไฟล์แนบที่ถูกรวมเป็น PDF เดียว"

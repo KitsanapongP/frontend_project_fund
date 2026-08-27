@@ -2811,7 +2811,7 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
                                               {fileLabel}
                                             </p>
                                             {displayName && (
-                                              <p className="mt-0.5 text-[11px] text-gray-500 break-all" title={displayName}>
+                                              <p className="mt-0.5 text-xs text-gray-500 break-all" title={displayName}>
                                                 {displayName}
                                               </p>
                                             )}
@@ -3125,7 +3125,7 @@ export default function GeneralSubmissionDetails({ submissionId, onBack }) {
                     <span>ยอดอนุมัติคงเหลือปัจจุบัน: {baht(Math.max(researchRemainingAmount, 0))}</span>
                     <span>คาดว่าจะเหลือหลังบันทึก: {baht(Math.max(projectedRemainingAfterEntry, 0))}</span>
                     {canCloseFund ? (
-                      <span className="text-[11px] font-medium text-emerald-600">
+                      <span className="text-xs font-medium text-emerald-600">
                         ยอดคงเหลือหลังบันทึกเป็น 0 สามารถปิดทุนได้
                       </span>
                     ) : null}

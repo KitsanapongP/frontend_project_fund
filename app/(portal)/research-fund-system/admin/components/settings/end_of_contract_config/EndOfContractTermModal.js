@@ -80,12 +80,12 @@ const EndOfContractTermModal = ({
       closeOnBackdrop={!saving}
       headerContent={
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
             <ListChecks className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-lg font-semibold text-gray-900">{heading}</p>
-            <p className="text-sm text-gray-500">{description}</p>
+            <p className="text-lg font-semibold text-slate-900">{heading}</p>
+            <p className="text-sm text-slate-500">{description}</p>
           </div>
         </div>
       }
@@ -96,7 +96,7 @@ const EndOfContractTermModal = ({
               <label className="mb-2 block text-sm font-semibold text-gray-700">
                 รายละเอียดข้อตกลง <span className="text-red-500">*</span>
               </label>
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <textarea
                   ref={textareaRef}
                   value={content}
@@ -109,7 +109,7 @@ const EndOfContractTermModal = ({
                   rows={8}
                   maxLength={MAX_LENGTH}
                   placeholder="ระบุรายละเอียดข้อตกลง ตัวอย่าง: ผลงานตีพิมพ์ที่ขอรับการสนับสนุนไม่เคยได้รับการจัดสรรทุนของมหาวิทยาลัยมาก่อน"
-                  className="h-48 w-full resize-none rounded-lg border border-transparent bg-white px-4 py-3 text-sm text-gray-800 shadow-inner focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  className="h-48 w-full resize-none rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
                   <span>สามารถเว้นบรรทัดเพื่อแสดงผลหลายบรรทัดได้</span>
@@ -127,14 +127,14 @@ const EndOfContractTermModal = ({
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {saving ? "กำลังบันทึก" : primaryLabel}

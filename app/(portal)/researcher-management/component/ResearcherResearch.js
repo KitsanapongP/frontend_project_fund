@@ -268,14 +268,14 @@ export default function ResearchDocsTab({ targetUserId, hideHeader = false }) {
                     {index + 1}
                   </span>
                   {renderAPAStyle(doc)}
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ml-2 uppercase tracking-wide border self-start ${
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ml-2 uppercase tracking-wide border self-start ${
                     doc.source_type === 'scopus' ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-emerald-50 border-emerald-200 text-emerald-600'
                   }`}>
                     {doc.source_type}
                   </span>
 
                   {doc.tier_details && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border bg-blue-50 border-blue-200 text-blue-600 whitespace-nowrap">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border bg-blue-50 border-blue-200 text-blue-600 whitespace-nowrap">
                       {doc.tier_details.tier_name} · {typeof doc.tier_details.weight === 'number' ? doc.tier_details.weight.toFixed(1) : doc.tier_details.weight}
                     </span>
                   )}

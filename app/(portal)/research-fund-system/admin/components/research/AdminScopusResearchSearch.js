@@ -869,7 +869,7 @@ export default function AdminScopusResearchSearch() {
                 ) : (
                   <>
                     <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-700">
-                      <div className="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-700">รวม {formatNumber(pubMeta.total || 0)} รายการ</div>
+                      <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">รวม {formatNumber(pubMeta.total || 0)} รายการ</div>
                       <div className="text-xs text-slate-500">
                         อัปเดตการค้นหาเพื่อดูเอกสารทั้งหมดที่ตรงกับคำค้น
                       </div>
@@ -928,15 +928,15 @@ export default function AdminScopusResearchSearch() {
                                     <span className="block truncate text-xs text-gray-500">{pub.venue || pub.publication_name}</span>
                                   ) : null}
                                   {pub.scopus_id ? (
-                                    <span className="block text-[11px] text-gray-500">Scopus ID: {pub.scopus_id}</span>
+                                    <span className="block text-xs text-gray-500">Scopus ID: {pub.scopus_id}</span>
                                   ) : null}
-                                  {pub.eid ? <span className="block text-[11px] text-gray-500">EID: {pub.eid}</span> : null}
+                                  {pub.eid ? <span className="block text-xs text-gray-500">EID: {pub.eid}</span> : null}
                                 </div>
                               </td>
                               <td className="px-4 py-2 text-right text-gray-700">{citedByValue ?? "-"}</td>
                               <td className="px-4 py-2 text-center text-gray-700">
                                 {shouldShowCiteScore && formatPercentile(citeScorePercentile) ? (
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-700">
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
                                     Percentile {formatPercentile(citeScorePercentile)}
                                   </span>
                                 ) : (
@@ -1004,7 +1004,7 @@ export default function AdminScopusResearchSearch() {
                       <AlertCircle className="mt-0.5 h-4 w-4" />
                       <div>
                         <p className="font-semibold">หมายเหตุเกี่ยวกับ Percentile และ Quartile</p>
-                        <p className="text-[13px] leading-relaxed text-amber-800/90">
+                        <p className="text-sm leading-relaxed text-amber-800/90">
                           ค่า Percentile และ Quartile จะอ้างอิงตามปีที่บทความตีพิมพ์ และอาจไม่ถูกต้อง 100% แนะนำให้ตรวจสอบข้อมูล
                           เพิ่มเติมหากใช้ประกอบการตัดสินใจสำคัญ
                         </p>

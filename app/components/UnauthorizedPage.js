@@ -1,9 +1,8 @@
-// app/components/UnauthorizedPage.js
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Shield, Home, LogIn, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Home, LogOut, ShieldX } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function UnauthorizedPage() {
@@ -14,88 +13,84 @@ export default function UnauthorizedPage() {
   const handleGoToLogin = async () => {
     try {
       setIsLoggingOut(true);
-
-      // ทำการ logout ก่อน
       await logout();
-      
-      // รอสักครู่เพื่อให้ logout เสร็จ
-      setTimeout(() => {
-        router.replace('/login');
-      }, 500);
-      
+      router.replace("/login");
     } catch (error) {
-      console.error('Logout error:', error);
-      // ถึงแม้ logout จะ error ก็ยัง redirect ไป login
-      router.replace('/login');
+      console.error("Logout error:", error);
+      router.replace("/login");
     } finally {
       setIsLoggingOut(false);
     }
   };
 
   const handleGoHome = () => {
-    router.replace('/');
+    router.replace("/");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full text-center">
-        {/* Icon */}
-        <div className="mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-red-500 to-orange-500 rounded-full mb-4 shadow-lg">
-            <Shield className="w-10 h-10 text-white" />
-          </div>
-          <div className="flex justify-center">
-            <AlertTriangle className="w-6 h-6 text-orange-500 animate-pulse" />
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+    <main className="grid min-h-screen place-items-center bg-slate-50 px-4 py-10 sm:px-6">
+      <section
+        className="w-full max-w-xl overflow-hidden rounded-xl border border-slate-200 bg-white"
+        aria-labelledby="unauthorized-title"
+      >
+        <header className="border-b border-red-200 bg-red-50 px-6 py-7 text-center sm:px-8 sm:py-8">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg border border-red-200 bg-white text-red-700">
+            <ShieldX className="h-7 w-7" aria-hidden="true" />
+          </span>
+          <h1 id="unauthorized-title" className="mt-4 text-2xl font-semibold text-slate-950 sm:text-3xl">
             ไม่มีสิทธิ์เข้าถึง
           </h1>
-          <p className="text-gray-600 mb-2">
-            คุณไม่มีสิทธิ์ในการเข้าถึงหน้านี้
+          <p className="mt-2 text-sm leading-relaxed text-red-900 sm:text-base">
+            บัญชีนี้ไม่มีสิทธิ์เปิดหน้าที่ร้องขอ
           </p>
-          <p className="text-sm text-gray-500">
-            กรุณาตรวจสอบการเข้าสู่ระบบของคุณ หรือติดต่อผู้ดูแลระบบ
-          </p>
+        </header>
+
+        <div className="space-y-5 px-6 py-6 sm:px-8 sm:py-7">
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-left">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden="true" />
+            <div>
+              <p className="font-medium text-amber-950">ตรวจสอบบัญชีหรือสิทธิ์การใช้งาน</p>
+              <p className="mt-1 text-sm leading-relaxed text-amber-900">
+                ลองกลับหน้าหลักเพื่อเลือกเมนูที่ใช้งานได้ หรือติดต่อผู้ดูแลระบบหากคุณควรมีสิทธิ์ในหน้านี้
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={handleGoHome}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+            >
+              <Home className="h-5 w-5" aria-hidden="true" />
+              กลับหน้าหลัก
+            </button>
+
+            <button
+              type="button"
+              onClick={handleGoToLogin}
+              disabled={isLoggingOut}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-3 font-semibold text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isLoggingOut ? (
+                <>
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-red-200 border-t-red-700" aria-hidden="true" />
+                  กำลังออกจากระบบ...
+                </>
+              ) : (
+                <>
+                  <LogOut className="h-5 w-5" aria-hidden="true" />
+                  ออกจากระบบ
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Actions */}
-        <div className="space-y-3">
-          <button
-            onClick={handleGoToLogin}
-            disabled={isLoggingOut}
-            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoggingOut ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                กำลังออกจากระบบ...
-              </>
-            ) : (
-              <>
-                <LogIn className="w-5 h-5" />
-                ออกจากระบบและกลับไปหน้า Login
-              </>
-            )}
-          </button>
-          
-          <button
-            onClick={handleGoHome}
-            className="w-full flex items-center justify-center gap-3 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-200 transition-all duration-200"
-          >
-            <Home className="w-5 h-5" />
-            กลับไปหน้าหลัก
-          </button>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 text-xs text-gray-400">
-          <p>หากคุณคิดว่านี่เป็นข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ</p>
-        </div>
-      </div>
-    </div>
+        <footer className="border-t border-slate-200 bg-slate-50 px-6 py-4 text-center text-xs leading-relaxed text-slate-600 sm:px-8">
+          การกลับหน้าหลักจะไม่เปลี่ยนสิทธิ์ของบัญชี หากต้องการเปลี่ยนบัญชีให้เลือก “ออกจากระบบ”
+        </footer>
+      </section>
+    </main>
   );
 }

@@ -10,13 +10,14 @@ import {
   Trash2,
   RefreshCcw,
   CalendarDays,
-  Users,
-  FileText,
   Paperclip,
   Save,
   Loader2,
   UserPlus,
   UserCog,
+  Search,
+  X,
+  ExternalLink,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import PageLayout from "@/app/(portal)/research-fund-system/admin/components/common/PageLayout";
@@ -35,6 +36,32 @@ const Toast = Swal.mixin({
     toast.onmouseleave = Swal.resumeTimer;
   },
 });
+
+const confirmDestructiveAction = async ({ title, text, confirmText }) => {
+  const result = await Swal.fire({
+    title,
+    text,
+    icon: "warning",
+    iconColor: "#d97706",
+    showCancelButton: true,
+    confirmButtonText: confirmText,
+    cancelButtonText: "ยกเลิก",
+    reverseButtons: true,
+    buttonsStyling: false,
+    customClass: {
+      popup: "rounded-xl",
+      title: "text-xl font-semibold text-slate-900",
+      htmlContainer: "text-sm text-slate-600",
+      actions: "gap-2",
+      confirmButton:
+        "inline-flex min-h-11 items-center justify-center rounded-lg bg-red-600 px-5 font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2",
+      cancelButton:
+        "inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500",
+    },
+  });
+
+  return result.isConfirmed;
+};
 
 const normalizeText = (value) =>
   (value ?? "")
@@ -265,11 +292,10 @@ const getMemberUserId = (member) => {
 
 function formatCurrency(value) {
   const number = Number(value || 0);
-  return new Intl.NumberFormat("th-TH", {
-    style: "currency",
-    currency: "THB",
+  return `${new Intl.NumberFormat("th-TH", {
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(number);
+  }).format(number)}฿`;
 }
 
 function formatDate(dateString) {
@@ -287,137 +313,198 @@ function formatDate(dateString) {
   }
 }
 
-function ProjectsTable({ projects, onEdit, onDelete }) {
+function scrollToProjectEditor() {
+  if (typeof window === "undefined") return;
+  window.requestAnimationFrame(() => {
+    const editor = document.getElementById("project-editor");
+    if (!editor) return;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    editor.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  });
+}
+
+function ProjectsTable({
+  projects,
+  onEdit,
+  onDelete,
+  emptyMessage = "ยังไม่มีข้อมูลโครงการ",
+}) {
   if (!projects.length) {
     return (
-      <div className="border border-dashed border-gray-300 rounded-lg p-10 text-center text-gray-500 bg-white">
-        ยังไม่มีข้อมูลโครงการ
+      <div className="flex min-h-64 flex-col items-center justify-center px-6 py-12 text-center">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400">
+          <Briefcase size={22} aria-hidden="true" />
+        </div>
+        <p className="text-base font-semibold text-slate-900">{emptyMessage}</p>
+        <p className="mt-1 max-w-md text-sm text-slate-500">
+          ลองเปลี่ยนคำค้นหาหรือตัวกรอง หรือเพิ่มโครงการใหม่เพื่อเริ่มบันทึกข้อมูล
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto bg-white shadow-sm rounded-lg border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">ชื่อโครงการ</th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">ประเภทโครงการ</th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">วันที่จัด</th>
-            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">งบประมาณ</th>
-            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">ผู้เข้าร่วม</th>
-            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">หน่วยงาน/ชุมชนที่ได้รับประโยชน์</th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">หมายเหตุ</th>
-            <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">จัดการ</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200 text-sm text-gray-700">
-          {projects.map((project) => (
-            <tr key={project.project_id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-3">
-                <div
-                  className="font-semibold text-gray-900 max-w-xs truncate"
-                  title={project.project_name}
-                >
-                  {project.project_name}
-                </div>
-                <div
-                  className="text-xs text-gray-500 flex items-center gap-1 mt-1 max-w-xs min-w-0"
-                  title={
-                    project.budget_plan?.name_th ||
-                    project.budget_plan?.name_en ||
-                    "-"
-                  }
-                >
-                  <Wallet size={14} className="text-gray-400 shrink-0" />
-                  <span className="truncate">
-                    {project.budget_plan?.name_th || project.budget_plan?.name_en || "-"}
-                  </span>
-                </div>
-              </td>
-              <td className="px-4 py-3">
-                <div
-                  className="flex items-center gap-1 text-gray-700 max-w-[250px] min-w-0"
-                  title={project.type?.name_th || project.type?.name_en || "-"}
-                >
-                  <Layers size={15} className="text-blue-500 shrink-0" />
-                  <span className="truncate">
-                    {project.type?.name_th || project.type?.name_en || "-"}
-                  </span>
-                </div>
-              </td>
-              <td className="px-4 py-3">
-                <span className="inline-flex items-center gap-1">
-                  <CalendarDays size={15} className="text-amber-500" />
-                  {formatDate(project.event_date)}
-                </span>
-              </td>
-              <td className="px-4 py-3 text-right font-medium text-gray-900">
-                {formatCurrency(project.budget_amount)}
-              </td>
-              <td className="px-4 py-3 text-right">
-                <span className="inline-flex items-center gap-1 justify-end">
-                  <Users size={15} className="text-emerald-500" />
+    <div>
+      <div className="hidden overflow-x-auto xl:block">
+        <table className="min-w-full divide-y divide-slate-200 text-sm">
+          <thead className="bg-slate-50 text-xs font-semibold text-slate-600">
+            <tr>
+              <th className="px-4 py-3 text-left">ชื่อโครงการ / แผนงบประมาณ</th>
+              <th className="px-4 py-3 text-left">ประเภท / วันที่จัด</th>
+              <th className="px-4 py-3 text-center">งบประมาณ</th>
+              <th className="px-4 py-3 text-center">จำนวนผู้เข้าร่วม</th>
+              <th className="px-4 py-3 text-center">ผู้ได้รับประโยชน์</th>
+              <th className="w-64 px-4 py-3 text-center">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200 text-slate-700">
+            {projects.map((project) => (
+              <tr key={project.project_id} className="transition-colors hover:bg-blue-50/60">
+                <td className="px-4 py-4 align-top">
+                  <div className="max-w-sm font-semibold text-slate-900" title={project.project_name}>
+                    {project.project_name}
+                  </div>
+                  <div className="mt-1.5 flex max-w-sm min-w-0 items-center gap-1.5 text-xs text-slate-500">
+                    <Wallet size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
+                    <span className="truncate">
+                      {project.budget_plan?.name_th || project.budget_plan?.name_en || "ไม่ระบุแผนงบประมาณ"}
+                    </span>
+                  </div>
+                  {project.notes ? (
+                    <p className="mt-1 max-w-sm truncate text-xs text-slate-500" title={project.notes}>
+                      {project.notes}
+                    </p>
+                  ) : null}
+                </td>
+                <td className="px-4 py-4 align-top">
+                  <div className="flex max-w-xs min-w-0 items-center gap-1.5 text-slate-700">
+                    <Layers size={15} className="shrink-0 text-blue-600" aria-hidden="true" />
+                    <span className="truncate">
+                      {project.type?.name_th || project.type?.name_en || "ไม่ระบุประเภท"}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
+                    <CalendarDays size={14} className="text-amber-600" aria-hidden="true" />
+                    {formatDate(project.event_date)}
+                  </div>
+                </td>
+                <td className="px-4 py-4 text-right align-top font-semibold tabular-nums text-slate-900">
+                  {formatCurrency(project.budget_amount)}
+                </td>
+                <td className="px-4 py-4 text-right align-top tabular-nums">
                   {typeof project.participants === "number"
                     ? project.participants.toLocaleString("th-TH")
                     : project.participants || "-"}
-                </span>
-              </td>
-              <td className="px-4 py-3 text-right">
-                <span className="inline-flex items-center gap-1 justify-end">
-                  <Users size={15} className="text-indigo-500" />
+                </td>
+                <td className="px-4 py-4 text-right align-top tabular-nums">
                   {typeof project.beneficiaries_count === "number"
                     ? project.beneficiaries_count.toLocaleString("th-TH")
                     : project.beneficiaries_count || "-"}
-                </span>
-              </td>
-              <td className="px-4 py-3">
-                {project.notes ? (
-                  <span
-                    className="text-gray-600 max-w-[220px] truncate block"
-                    title={project.notes}
-                  >
-                    {project.notes}
-                  </span>
-                ) : (
-                  <span className="text-gray-400">-</span>
-                )}
-              </td>
-              <td className="px-4 py-3 text-center">
-                <div className="flex items-center justify-center gap-3">
-                  {project.attachments?.length ? (
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        openSignedAttachment(project.attachments[0]);
-                      }}
-                      className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 cursor-pointer"
+                </td>
+                <td className="w-64 px-4 py-3 align-top">
+                  <div className="flex flex-nowrap items-center justify-center gap-1">
+                    {project.attachments?.length ? (
+                      <button
+                        type="button"
+                        onClick={() => openSignedAttachment(project.attachments[0])}
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-blue-600 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      >
+                        <ExternalLink size={16} aria-hidden="true" />
+                        ดูไฟล์
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => onEdit(project)}
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-blue-600 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
-                      <FileText size={16} />
-                      ดูไฟล์
-                    </a>
-                  ) : null}
-                  <button
-                    onClick={() => onEdit(project)}
-                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                  >
-                    <Pencil size={16} />
-                    แก้ไข
-                  </button>
-                  <button
-                    onClick={() => onDelete(project)}
-                    className="inline-flex items-center gap-1 text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 size={16} />
-                    ลบ
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                      <Pencil size={16} aria-hidden="true" />
+                      แก้ไข
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(project)}
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-red-600 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                      ลบ
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="divide-y divide-slate-200 xl:hidden">
+        {projects.map((project) => (
+          <article key={project.project_id} className="p-4 sm:p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600">
+                <Briefcase size={18} aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-slate-900">{project.project_name}</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  {project.type?.name_th || project.type?.name_en || "ไม่ระบุประเภท"}
+                </p>
+              </div>
+            </div>
+
+            <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              <div>
+                <dt className="text-xs text-slate-500">วันที่จัด</dt>
+                <dd className="mt-0.5 text-slate-800">{formatDate(project.event_date)}</dd>
+              </div>
+              <div className="text-right">
+                <dt className="text-xs text-slate-500">งบประมาณ</dt>
+                <dd className="mt-0.5 font-semibold tabular-nums text-slate-900">
+                  {formatCurrency(project.budget_amount)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-slate-500">ผู้เข้าร่วม</dt>
+                <dd className="mt-0.5 tabular-nums text-slate-800">
+                  {project.participants?.toLocaleString?.("th-TH") || project.participants || "-"}
+                </dd>
+              </div>
+              <div className="text-right">
+                <dt className="text-xs text-slate-500">ผู้ได้รับประโยชน์</dt>
+                <dd className="mt-0.5 tabular-nums text-slate-800">
+                  {project.beneficiaries_count?.toLocaleString?.("th-TH") || project.beneficiaries_count || "-"}
+                </dd>
+              </div>
+            </dl>
+
+            <div className="mt-4 flex flex-wrap justify-end gap-1 border-t border-slate-100 pt-3">
+              {project.attachments?.length ? (
+                <button
+                  type="button"
+                  onClick={() => openSignedAttachment(project.attachments[0])}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-blue-600 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  <ExternalLink size={16} aria-hidden="true" /> ดูไฟล์
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => onEdit(project)}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-blue-600 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <Pencil size={16} aria-hidden="true" /> แก้ไข
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete(project)}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-red-600 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                <Trash2 size={16} aria-hidden="true" /> ลบ
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
     </div>
   );
 }
@@ -456,7 +543,7 @@ function ProjectFormMembersSection({
     : "";
   const panelHighlightClass = isEditing
     ? "border-blue-300 bg-blue-50 ring-2 ring-blue-200"
-    : "border-gray-200 bg-white";
+    : "border-slate-200 bg-white";
   const deleteSet =
     deleteLoadingIds instanceof Set
       ? deleteLoadingIds
@@ -479,24 +566,26 @@ function ProjectFormMembersSection({
   return (
     <div className="md:col-span-2">
       <div
-        className={`rounded-lg border shadow-sm ${panelHighlightClass}`}
+        className={`rounded-xl border ${panelHighlightClass}`}
       >
-        <div className="flex flex-col gap-2 border-b border-gray-200 px-4 py-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h4 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <UserCog size={18} className="text-blue-600" />
-              ผู้ร่วมโครงการ
+            <h4 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600">
+                <UserCog size={17} aria-hidden="true" />
+              </span>
+              <span>ผู้ร่วมโครงการ</span>
             </h4>
-            <p className="text-xs text-gray-500">
+            <p className="mt-1 text-sm text-slate-500">
               เพิ่มรายชื่อบุคลากรเพื่อบันทึกพร้อมโครงการ ระบบจะจัดเรียงตามลำดับการเพิ่ม
             </p>
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="w-fit rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium tabular-nums text-slate-600">
             รวมภาระงาน {formatWorkloadHours(totalWorkload)}
           </div>
         </div>
 
-        <div className="px-4 py-4 space-y-4">
+        <div className="space-y-4 px-4 py-5 [&_input]:min-h-11 [&_input]:rounded-lg [&_input]:border-slate-300 [&_input]:text-slate-900 [&_input]:focus:border-blue-500 [&_input]:focus:ring-blue-500 [&_label]:mb-2 [&_label]:text-sm [&_label]:font-medium [&_label]:text-slate-700 [&_select]:min-h-11 [&_select]:rounded-lg [&_select]:border-slate-300 [&_select]:text-slate-900 [&_select]:focus:border-blue-500 [&_select]:focus:ring-blue-500">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -582,18 +671,18 @@ function ProjectFormMembersSection({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-xs text-gray-500">
+            <div className="text-sm text-slate-500">
               {isEditing
                 ? "กำลังแก้ไขข้อมูลผู้ร่วมโครงการในฟอร์ม"
                 : "สามารถเพิ่มได้หลายคนก่อนบันทึกโครงการ"}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
               {isEditing ? (
                 <>
                   <button
                     type="button"
                     onClick={onCancelEdit}
-                    className="px-3 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="min-h-11 rounded-lg border border-slate-300 px-4 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={actionsDisabled}
                   >
                     ยกเลิกแก้ไข
@@ -601,7 +690,7 @@ function ProjectFormMembersSection({
                   <button
                     type="button"
                     onClick={onSubmit}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 font-medium text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={actionsDisabled}
                   >
                     {saving ? (
@@ -622,7 +711,7 @@ function ProjectFormMembersSection({
                   type="button"
                   onClick={onSubmit}
                   disabled={disableAddButton}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 font-medium text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving ? (
                     <>
@@ -640,19 +729,20 @@ function ProjectFormMembersSection({
             </div>
           </div>
 
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+          <div className="overflow-hidden rounded-lg border border-slate-200">
             {loading ? (
-              <div className="flex items-center justify-center gap-2 py-10 text-sm text-gray-600">
-                <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+              <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-600">
+                <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                 กำลังโหลดผู้ร่วมโครงการ...
               </div>
             ) : members.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-500">
+              <div className="px-4 py-8 text-center text-sm text-slate-500">
                 ยังไม่มีผู้ร่วมโครงการในแบบฟอร์ม
               </div>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50 text-xs font-semibold text-gray-600">
+              <>
+              <table className="hidden min-w-full divide-y divide-slate-200 text-sm md:table">
+                <thead className="bg-slate-50 text-xs font-semibold text-slate-600">
                   <tr>
                     <th className="px-4 py-3 text-left">ลำดับ</th>
                     <th className="px-4 py-3 text-left">ชื่อบุคลากร</th>
@@ -662,7 +752,7 @@ function ProjectFormMembersSection({
                     <th className="px-4 py-3 text-center">จัดการ</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-slate-200">
                   {members.map((member, index) => {
                     const snapshot = resolveMemberCandidate(member);
                     const name = snapshot?.display_name ?? `ผู้ใช้ #${member.user_id}`;
@@ -688,26 +778,26 @@ function ProjectFormMembersSection({
                     return (
                       <tr
                         key={rowKey}
-                        className={isActive ? "bg-blue-50" : "bg-white"}
+                        className={isActive ? "bg-blue-50" : "bg-white hover:bg-slate-50"}
                       >
-                        <td className="px-4 py-3 text-gray-600">{orderLabel}</td>
+                        <td className="px-4 py-3 text-slate-600">{orderLabel}</td>
                         <td className="px-4 py-3">
-                          <div className="font-medium text-gray-900">{name}</div>
+                          <div className="font-medium text-slate-900">{name}</div>
                           {position ? (
-                            <div className="text-xs text-gray-500 mt-1">{position}</div>
+                            <div className="mt-1 text-xs text-slate-500">{position}</div>
                           ) : null}
                         </td>
-                        <td className="px-4 py-3 text-gray-700">{member.duty || "-"}</td>
-                        <td className="px-4 py-3 text-gray-700">{workloadLabel}</td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {notesValue ? notesValue : <span className="text-gray-400">-</span>}
+                        <td className="px-4 py-3 text-slate-700">{member.duty || "-"}</td>
+                        <td className="px-4 py-3 tabular-nums text-slate-700">{workloadLabel}</td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {notesValue ? notesValue : <span className="text-slate-400">-</span>}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-2">
                             <button
                               type="button"
                               onClick={() => onEdit(index, member)}
-                              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                               disabled={actionsDisabled}
                             >
                               <Pencil size={16} /> แก้ไข
@@ -715,7 +805,7 @@ function ProjectFormMembersSection({
                             <button
                               type="button"
                               onClick={() => onRemove(index, member)}
-                              className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                               disabled={actionsDisabled || isDeleting}
                             >
                               {isDeleting ? (
@@ -736,6 +826,65 @@ function ProjectFormMembersSection({
                   })}
                 </tbody>
               </table>
+              <div className="divide-y divide-slate-200 md:hidden">
+                {members.map((member, index) => {
+                  const snapshot = resolveMemberCandidate(member);
+                  const name = snapshot?.display_name ?? `ผู้ใช้ #${member.user_id}`;
+                  const position = snapshot?.position_title ?? "";
+                  const notesValue = member.notes?.trim?.() ?? member.notes ?? "";
+                  const memberId = Number(member.member_id ?? member.MemberID ?? member.memberId);
+                  const isDeleting = Number.isFinite(memberId) && deleteSet.has(memberId);
+                  const rowKey = Number.isFinite(memberId) && memberId > 0
+                    ? `member-card-${memberId}`
+                    : `member-card-${member.user_id}-${index}`;
+
+                  return (
+                    <article key={rowKey} className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-900">{name}</p>
+                          {position ? <p className="mt-0.5 text-xs text-slate-500">{position}</p> : null}
+                        </div>
+                        <span className="shrink-0 text-xs tabular-nums text-slate-500">
+                          {formatWorkloadHours(member.workload_hours ?? 0)}
+                        </span>
+                      </div>
+                      <dl className="mt-3 space-y-2 text-sm">
+                        <div className="flex gap-2">
+                          <dt className="w-20 shrink-0 text-slate-500">หน้าที่</dt>
+                          <dd className="text-slate-800">{member.duty || "-"}</dd>
+                        </div>
+                        {notesValue ? (
+                          <div className="flex gap-2">
+                            <dt className="w-20 shrink-0 text-slate-500">หมายเหตุ</dt>
+                            <dd className="text-slate-800">{notesValue}</dd>
+                          </div>
+                        ) : null}
+                      </dl>
+                      <div className="mt-3 flex justify-end gap-1 border-t border-slate-100 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(index, member)}
+                          className="inline-flex min-h-11 items-center gap-1 rounded-lg px-3 text-blue-600 hover:bg-blue-50 disabled:opacity-60"
+                          disabled={actionsDisabled}
+                        >
+                          <Pencil size={16} /> แก้ไข
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRemove(index, member)}
+                          className="inline-flex min-h-11 items-center gap-1 rounded-lg px-3 text-red-600 hover:bg-red-50 disabled:opacity-60"
+                          disabled={actionsDisabled || isDeleting}
+                        >
+                          {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                          {isDeleting ? "กำลังลบ..." : "ลบ"}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+              </>
             )}
           </div>
         </div>
@@ -845,26 +994,36 @@ function ProjectForm({
     );
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
+    <section id="project-editor" className="scroll-mt-24 rounded-xl border border-slate-200 bg-white">
+      <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600">
+            <Pencil size={18} aria-hidden="true" />
+          </div>
+          <div>
+          <h3 className="text-lg font-semibold text-slate-900">
             {isEditing ? "แก้ไขโครงการ" : "เพิ่มโครงการใหม่"}
           </h3>
-          <p className="text-sm text-gray-500">
+          <p className="mt-0.5 text-sm text-slate-500">
             กรอกข้อมูลให้ครบถ้วนตามฟิลด์ที่กำหนดไว้
           </p>
+          </div>
         </div>
         <button
+          type="button"
           onClick={onClose}
-          className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+          className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 text-sm text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          aria-label="ปิดแบบฟอร์มโครงการ"
         >
-          <RefreshCcw size={16} />
-          ยกเลิก
+          <X size={16} aria-hidden="true" />
+          ปิดแบบฟอร์ม
         </button>
       </div>
 
-      <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <form
+        onSubmit={onSubmit}
+        className="grid grid-cols-1 gap-5 p-4 sm:p-6 md:grid-cols-2 [&_input:not([type='file'])]:min-h-11 [&_input:not([type='file'])]:rounded-lg [&_input:not([type='file'])]:border-slate-300 [&_input:not([type='file'])]:text-slate-900 [&_input:not([type='file'])]:focus:border-blue-500 [&_input:not([type='file'])]:focus:ring-blue-500 [&_label]:mb-2 [&_label]:text-sm [&_label]:font-medium [&_label]:text-slate-700 [&_select]:min-h-11 [&_select]:rounded-lg [&_select]:border-slate-300 [&_select]:text-slate-900 [&_select]:focus:border-blue-500 [&_select]:focus:ring-blue-500 [&_textarea]:rounded-lg [&_textarea]:border-slate-300 [&_textarea]:text-slate-900 [&_textarea]:focus:border-blue-500 [&_textarea]:focus:ring-blue-500"
+      >
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             ชื่อโครงการ
@@ -905,12 +1064,12 @@ function ProjectForm({
             ))}
           </select>
           {disableTypeSelect ? (
-            <p className="mt-2 text-xs text-red-500">
+            <p className="mt-2 text-xs text-red-700">
               ไม่มีประเภทโครงการที่เปิดใช้งาน กรุณาเปิดใช้งานก่อนบันทึกโครงการ
             </p>
           ) : null}
           {selectedTypeInactive ? (
-            <p className="mt-2 text-xs text-amber-500">
+            <p className="mt-2 text-xs text-amber-700">
               ประเภทที่เลือกถูกปิดใช้งานอยู่ หากต้องการเปลี่ยนกรุณาเลือกประเภทที่เปิดใช้งาน
             </p>
           ) : null}
@@ -955,12 +1114,12 @@ function ProjectForm({
             ))}
           </select>
           {disablePlanSelect ? (
-            <p className="mt-2 text-xs text-red-500">
+            <p className="mt-2 text-xs text-red-700">
               ไม่มีแผนงบประมาณที่เปิดใช้งาน กรุณาเปิดใช้งานก่อนบันทึกโครงการ
             </p>
           ) : null}
           {selectedPlanInactive ? (
-            <p className="mt-2 text-xs text-amber-500">
+            <p className="mt-2 text-xs text-amber-700">
               แผนงบประมาณที่เลือกถูกปิดใช้งานอยู่ หากต้องการเปลี่ยนกรุณาเลือกแผนที่เปิดใช้งาน
             </p>
           ) : null}
@@ -1035,37 +1194,54 @@ function ProjectForm({
         )}
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="project-attachment" className="block text-sm font-medium text-gray-700 mb-1">
             ไฟล์แนบโครงการ (สูงสุด 1 ไฟล์)
           </label>
-          <input
-            key={fileInputKey}
-            type="file"
-            name="attachment"
-            onChange={onFileChange}
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-            disabled={saving}
-            className="block w-full rounded-md border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-600 hover:file:bg-blue-100 disabled:cursor-not-allowed"
-          />
+          <div className="relative flex min-h-14 flex-col gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-2 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/30 sm:flex-row sm:items-center">
+            <input
+              key={fileInputKey}
+              id="project-attachment"
+              type="file"
+              name="attachment"
+              onChange={onFileChange}
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+              disabled={saving}
+              className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+            />
+            <span
+              aria-hidden="true"
+              className={`inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 text-sm font-medium text-blue-700 ${
+                saving ? "opacity-60" : ""
+              }`}
+            >
+              เลือกไฟล์
+            </span>
+            <span className="min-w-0 truncate px-1 text-sm text-slate-600">
+              {attachmentFile?.name || "ยังไม่ได้เลือกไฟล์"}
+            </span>
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            รองรับ PDF, Word, Excel และรูปภาพ ขนาดตามที่ระบบกำหนด
+          </p>
           {attachmentFile ? (
-            <div className="mt-3 flex items-center justify-between rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700">
-              <span className="flex items-center gap-2">
+            <div className="mt-3 flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-800 sm:flex-row sm:items-center sm:justify-between">
+              <span className="flex min-w-0 items-center gap-2">
                 <Paperclip size={16} />
-                {attachmentFile.name}
+                <span className="truncate">{attachmentFile.name}</span>
               </span>
               <button
                 type="button"
                 onClick={onClearAttachment}
                 disabled={saving}
-                className="text-xs font-medium text-blue-600 hover:text-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-11 rounded-lg px-3 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 ล้างไฟล์
               </button>
             </div>
           ) : existingAttachment ? (
-            <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
+            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
               <div className="flex flex-wrap items-center gap-2">
-                <Paperclip size={16} className="text-gray-400" />
+                <Paperclip size={16} className="text-slate-400" />
                 <a
                   href="#"
                   onClick={(e) => {
@@ -1078,13 +1254,11 @@ function ProjectForm({
                   ไฟล์ที่บันทึกล่าสุด: {existingAttachment.original_name || existingAttachment.stored_path}
                 </a>
               </div>
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-slate-500">
                 การเลือกไฟล์ใหม่จะทับไฟล์เดิมโดยอัตโนมัติ
               </p>
             </div>
-          ) : (
-            <p className="mt-3 text-sm text-gray-400">ยังไม่ได้เลือกไฟล์แนบ</p>
-          )}
+          ) : null}
         </div>
 
         <div className="md:col-span-2">
@@ -1101,18 +1275,18 @@ function ProjectForm({
           />
         </div>
 
-        <div className="md:col-span-2 flex justify-end gap-3">
+        <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end md:col-span-2">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100"
+            className="min-h-11 rounded-lg border border-slate-300 px-4 text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             ยกเลิก
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 font-medium text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? (
               <span className="flex items-center gap-2">
@@ -1121,20 +1295,23 @@ function ProjectForm({
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <Plus size={16} />
+                <Save size={16} />
                 {isEditing ? "อัปเดตข้อมูล" : "บันทึกโครงการ"}
               </span>
             )}
           </button>
         </div>
       </form>
-    </div>
+    </section>
   );
 }
 
 export default function ProjectsContent() {
   const [loading, setLoading] = useState(true);
   const [savingProject, setSavingProject] = useState(false);
+  const [projectSearch, setProjectSearch] = useState("");
+  const [projectTypeFilter, setProjectTypeFilter] = useState("");
+  const [budgetPlanFilter, setBudgetPlanFilter] = useState("");
 
   const [projects, setProjects] = useState([]);
   const [projectTypes, setProjectTypes] = useState([]);
@@ -1173,6 +1350,43 @@ export default function ProjectsContent() {
       plan.is_active || plan.plan_id === selectedPlanId
     );
   }, [budgetPlans, editingProject]);
+
+  const filteredProjects = useMemo(() => {
+    const query = normalizeText(projectSearch);
+    const selectedType = Number(projectTypeFilter);
+    const selectedPlan = Number(budgetPlanFilter);
+
+    return projects.filter((project) => {
+      if (
+        projectTypeFilter &&
+        Number(project.type_id ?? project.type?.type_id) !== selectedType
+      ) {
+        return false;
+      }
+      if (
+        budgetPlanFilter &&
+        Number(project.plan_id ?? project.budget_plan?.plan_id) !== selectedPlan
+      ) {
+        return false;
+      }
+      if (!query) {
+        return true;
+      }
+
+      return [
+        project.project_name,
+        project.type?.name_th,
+        project.type?.name_en,
+        project.budget_plan?.name_th,
+        project.budget_plan?.name_en,
+        project.notes,
+      ].some((value) => normalizeText(value).includes(query));
+    });
+  }, [budgetPlanFilter, projectSearch, projectTypeFilter, projects]);
+
+  const hasProjectFilters = Boolean(
+    projectSearch || projectTypeFilter || budgetPlanFilter
+  );
 
   const availableMemberCandidates = useMemo(() => {
     if (!memberCandidates.length) {
@@ -1802,6 +2016,7 @@ export default function ProjectsContent() {
     }
 
     setShowProjectForm(true);
+    scrollToProjectEditor();
   };
 
   const handleMemberFormChange = (field, value) => {
@@ -1964,19 +2179,13 @@ export default function ProjectsContent() {
     }
 
     const name = buildUserDisplayName(getMemberUser(member));
-    const result = await Swal.fire({
-      title: "ยืนยันการลบ",
+    const confirmed = await confirmDestructiveAction({
+      title: "ยืนยันการลบผู้ร่วมโครงการ",
       text: `ต้องการลบผู้ร่วมโครงการ "${name}" หรือไม่?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "ลบข้อมูล",
-      cancelButtonText: "ยกเลิก",
-      reverseButtons: true,
+      confirmText: "ลบผู้ร่วมโครงการ",
     });
 
-    if (!result.isConfirmed) {
+    if (!confirmed) {
       return;
     }
 
@@ -2054,20 +2263,29 @@ export default function ProjectsContent() {
     }
   };
 
+  const handleCreateProject = () => {
+    setShowProjectForm(true);
+    setEditingProject(null);
+    setProjectForm({ ...initialProjectForm });
+    setProjectFileKey((key) => key + 1);
+    setProjectMembers([]);
+    setProjectDraftMembers([]);
+    setProjectDraftMemberForm(initialMemberForm);
+    setProjectDraftEditingIndex(null);
+    setMemberForm(initialMemberForm);
+    setEditingMember(null);
+    setMemberDeleteLoading(new Set());
+    scrollToProjectEditor();
+  };
+
   const handleDeleteProject = async (project) => {
-    const result = await Swal.fire({
-      title: "ยืนยันการลบ",
+    const confirmed = await confirmDestructiveAction({
+      title: "ยืนยันการลบโครงการ",
       text: `ต้องการลบโครงการ "${project.project_name}" หรือไม่?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "ลบข้อมูล",
-      cancelButtonText: "ยกเลิก",
-      reverseButtons: true,
+      confirmText: "ลบโครงการ",
     });
 
-    if (!result.isConfirmed) return;
+    if (!confirmed) return;
 
     try {
       await adminAPI.deleteProject(project.project_id);
@@ -2086,95 +2304,174 @@ export default function ProjectsContent() {
       icon={Briefcase}
       loading={loading}
       breadcrumbs={[
-        { label: "หน้าแรก", href: "/research-fund-system/admin" },
+        { label: "หน้าหลัก", href: "/research-fund-system/admin" },
         { label: "จัดการโครงการ" },
       ]}
     >
       <div className="space-y-6">
-        <div className="bg-white border border-blue-100 rounded-xl shadow-sm p-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-              <FileText size={18} />
+        <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600">
+              <Briefcase size={20} aria-hidden="true" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">รายการโครงการทั้งหมด</p>
-              <p className="text-2xl font-semibold text-gray-900">{projects.length.toLocaleString("th-TH")} รายการ</p>
+              <h2 className="text-lg font-semibold text-slate-900">รายการโครงการ</h2>
+              <p className="mt-0.5 text-sm text-slate-500">
+                มีข้อมูลทั้งหมด {projects.length.toLocaleString("th-TH")} รายการ
+              </p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setShowProjectForm(true);
-              setEditingProject(null);
-              setProjectForm({ ...initialProjectForm });
-              setProjectFileKey((key) => key + 1);
-              setProjectMembers([]);
-              setProjectDraftMembers([]);
-              setProjectDraftMemberForm(initialMemberForm);
-              setProjectDraftEditingIndex(null);
-              setMemberForm(initialMemberForm);
-              setEditingMember(null);
-              setMemberDeleteLoading(new Set());
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-          >
-            <Plus size={16} />
-            เพิ่มโครงการ
-          </button>
-        </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={loadAll}
+              disabled={loading}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-60"
+            >
+              <RefreshCcw size={16} className={loading ? "animate-spin" : ""} aria-hidden="true" />
+              รีเฟรช
+            </button>
+            <button
+              type="button"
+              onClick={handleCreateProject}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 font-medium text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
+              <Plus size={17} aria-hidden="true" />
+              เพิ่มโครงการ
+            </button>
+          </div>
+        </section>
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
-          <ProjectForm
-            open={showProjectForm}
-            formData={projectForm}
-            types={projectTypeOptions}
-            plans={budgetPlanOptions}
-            onClose={resetProjectForm}
-            onChange={handleProjectChange}
-            onFileChange={handleProjectFileChange}
-            onClearAttachment={handleClearProjectAttachment}
-            onSubmit={handleSubmitProject}
-            saving={savingProject}
-            isEditing={!!editingProject}
-            fileInputKey={projectFileKey}
-            attachmentFile={projectForm.attachment}
-            existingAttachment={editingProject?.attachments?.[0] || null}
-            memberCandidates={memberCandidates}
-            availableMemberCandidates={availableDraftMemberCandidates}
-            draftMembers={projectDraftMembers}
-            draftMemberForm={projectDraftMemberForm}
-            onDraftMemberChange={handleDraftMemberFormChange}
-            onDraftMemberSubmit={handleSubmitDraftMember}
-            onDraftMemberEdit={handleEditDraftMember}
-            onDraftMemberRemove={handleRemoveDraftMember}
-            draftMemberEditingIndex={projectDraftEditingIndex}
-            onDraftMemberCancel={handleCancelDraftMemberEdit}
-            editMembersPanel=
-              {showProjectForm && editingProject ? (
-                <ProjectFormMembersSection
-                  memberOptions={availableMemberCandidates}
-                  allCandidates={memberCandidates}
-                  form={memberForm}
-                  members={projectMemberRows}
-                  onFormChange={handleMemberFormChange}
-                  onSubmit={handleSubmitMember}
-                  onEdit={handleEditMemberAtIndex}
-                  onRemove={handleDeleteMemberAtIndex}
-                  onCancelEdit={handleCancelMemberEdit}
-                  editingIndex={editingMemberIndex}
-                  disabled={savingMember || loadingMembers}
-                  loading={loadingMembers}
-                  deleteLoadingIds={memberDeleteLoading}
-                  saving={savingMember}
-                />
-              ) : null}
-          />
+        <ProjectForm
+          open={showProjectForm}
+          formData={projectForm}
+          types={projectTypeOptions}
+          plans={budgetPlanOptions}
+          onClose={resetProjectForm}
+          onChange={handleProjectChange}
+          onFileChange={handleProjectFileChange}
+          onClearAttachment={handleClearProjectAttachment}
+          onSubmit={handleSubmitProject}
+          saving={savingProject}
+          isEditing={!!editingProject}
+          fileInputKey={projectFileKey}
+          attachmentFile={projectForm.attachment}
+          existingAttachment={editingProject?.attachments?.[0] || null}
+          memberCandidates={memberCandidates}
+          availableMemberCandidates={availableDraftMemberCandidates}
+          draftMembers={projectDraftMembers}
+          draftMemberForm={projectDraftMemberForm}
+          onDraftMemberChange={handleDraftMemberFormChange}
+          onDraftMemberSubmit={handleSubmitDraftMember}
+          onDraftMemberEdit={handleEditDraftMember}
+          onDraftMemberRemove={handleRemoveDraftMember}
+          draftMemberEditingIndex={projectDraftEditingIndex}
+          onDraftMemberCancel={handleCancelDraftMemberEdit}
+          editMembersPanel={showProjectForm && editingProject ? (
+            <ProjectFormMembersSection
+              memberOptions={availableMemberCandidates}
+              allCandidates={memberCandidates}
+              form={memberForm}
+              members={projectMemberRows}
+              onFormChange={handleMemberFormChange}
+              onSubmit={handleSubmitMember}
+              onEdit={handleEditMemberAtIndex}
+              onRemove={handleDeleteMemberAtIndex}
+              onCancelEdit={handleCancelMemberEdit}
+              editingIndex={editingMemberIndex}
+              disabled={savingMember || loadingMembers}
+              loading={loadingMembers}
+              deleteLoadingIds={memberDeleteLoading}
+              saving={savingMember}
+            />
+          ) : null}
+        />
+
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="border-b border-slate-200 bg-slate-50 p-4 sm:p-5">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(12rem,0.75fr)_minmax(12rem,0.75fr)_auto] lg:items-end">
+              <div>
+                <label htmlFor="project-search" className="mb-2 block text-sm font-medium text-slate-700">
+                  ค้นหาโครงการ
+                </label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} aria-hidden="true" />
+                  <input
+                    id="project-search"
+                    type="search"
+                    value={projectSearch}
+                    onChange={(event) => setProjectSearch(event.target.value)}
+                    placeholder="ชื่อโครงการ ประเภท หรือแผนงบประมาณ"
+                    className="min-h-11 w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-3 text-slate-900 placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="project-type-filter" className="mb-2 block text-sm font-medium text-slate-700">
+                  ประเภทโครงการ
+                </label>
+                <select
+                  id="project-type-filter"
+                  value={projectTypeFilter}
+                  onChange={(event) => setProjectTypeFilter(event.target.value)}
+                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">ทั้งหมด</option>
+                  {projectTypes.map((type) => (
+                    <option key={type.type_id} value={type.type_id}>
+                      {type.name_th || type.name_en}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="budget-plan-filter" className="mb-2 block text-sm font-medium text-slate-700">
+                  แผนงบประมาณ
+                </label>
+                <select
+                  id="budget-plan-filter"
+                  value={budgetPlanFilter}
+                  onChange={(event) => setBudgetPlanFilter(event.target.value)}
+                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">ทั้งหมด</option>
+                  {budgetPlans.map((plan) => (
+                    <option key={plan.plan_id} value={plan.plan_id}>
+                      {plan.name_th || plan.name_en}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectSearch("");
+                  setProjectTypeFilter("");
+                  setBudgetPlanFilter("");
+                }}
+                disabled={!hasProjectFilters}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X size={16} aria-hidden="true" />
+                ล้างตัวกรอง
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3 sm:px-5">
+            <h2 className="text-base font-semibold text-slate-900">ผลการค้นหา</h2>
+            <p className="text-sm tabular-nums text-slate-500">
+              พบ {filteredProjects.length.toLocaleString("th-TH")} รายการ
+            </p>
+          </div>
 
           <ProjectsTable
-            projects={projects}
+            projects={filteredProjects}
             onEdit={handleEditProject}
             onDelete={handleDeleteProject}
+            emptyMessage={hasProjectFilters ? "ไม่พบโครงการที่ตรงกับตัวกรอง" : "ยังไม่มีข้อมูลโครงการ"}
           />
-        </div>
+        </section>
       </div>
     </PageLayout>
   );

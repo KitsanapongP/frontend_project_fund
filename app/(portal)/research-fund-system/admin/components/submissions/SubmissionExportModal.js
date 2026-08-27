@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Download, Loader2, X } from "lucide-react";
 import { adminAPI } from "../../../../../lib/admin_api";
 
 const normalizeId = (value) => {
@@ -205,20 +206,37 @@ export default function SubmissionExportModal({
     onConfirm(localFilters);
   };
 
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !isExporting) onClose();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isExporting, onClose, open]);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-gray-900/40"
+        className="absolute inset-0 bg-slate-950/60"
         aria-hidden="true"
         onClick={isExporting ? undefined : onClose}
       />
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">ส่งออกคำร้อง</h2>
-            <p className="text-sm text-gray-500 mt-1">
+      <section
+        className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-[0_12px_32px_rgba(15,23,42,0.16)]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="submission-export-title"
+        aria-describedby="submission-export-description"
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <h2 id="submission-export-title" className="text-lg font-semibold text-slate-900">ส่งออกคำร้อง</h2>
+            <p id="submission-export-description" className="mt-1 text-sm text-slate-500">
               เลือกตัวกรองสำหรับไฟล์ส่งออกก่อนดาวน์โหลด (.xlsx)
             </p>
           </div>
@@ -226,24 +244,26 @@ export default function SubmissionExportModal({
             type="button"
             onClick={onClose}
             disabled={isExporting}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="ปิดหน้าต่างเลือกตัวกรอง"
           >
-            <span className="text-2xl leading-none">×</span>
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
-        </div>
+        </header>
 
-        <form onSubmit={handleSubmit} className="px-6 py-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="export-category" className="mb-2 block text-sm font-medium text-slate-700">
                 หมวดทุน (ทุนหลัก)
               </label>
               <select
+                id="export-category"
                 value={localFilters.category || ""}
                 onChange={(e) => handleChange("category", e.target.value)}
                 disabled={!selectedYear || loadingCategories}
-                className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
               >
                 <option value="">ทั้งหมด</option>
                 {categories.map((category) => (
@@ -255,14 +275,15 @@ export default function SubmissionExportModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="export-subcategory" className="mb-2 block text-sm font-medium text-slate-700">
                 ประเภททุน (ทุนย่อย)
               </label>
               <select
+                id="export-subcategory"
                 value={localFilters.subcategory || ""}
                 onChange={(e) => handleChange("subcategory", e.target.value)}
                 disabled={!localFilters.category || loadingSubcategories}
-                className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
               >
                 <option value="">ทั้งหมด</option>
                 {subcategories.map((subcategory) => (
@@ -274,12 +295,13 @@ export default function SubmissionExportModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">สถานะ</label>
+              <label htmlFor="export-status" className="mb-2 block text-sm font-medium text-slate-700">สถานะ</label>
               <select
+                id="export-status"
                 value={localFilters.status || ""}
                 onChange={(e) => handleChange("status", e.target.value)}
                 disabled={statusLoading && statusOptions.length === 0}
-                className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">ทั้งหมด</option>
                 {statusOptions.map((status) => (
@@ -291,49 +313,48 @@ export default function SubmissionExportModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">ค้นหา</label>
+              <label htmlFor="export-search" className="mb-2 block text-sm font-medium text-slate-700">ค้นหา</label>
               <input
+                id="export-search"
                 type="text"
                 value={localFilters.search || ""}
                 onChange={(e) => handleChange("search", e.target.value)}
                 placeholder="เลขที่คำร้อง, ชื่อเรื่อง, ผู้ยื่น..."
-                className="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
               />
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
-            <div>
-              ปีงบประมาณที่เลือก:{' '}
-              {selectedYearLabel || (selectedYear ? String(selectedYear) : "ทุกปี")}
-            </div>
-            <div className="text-xs text-gray-400">
-              หมายเหตุ: ใช้การกรองแบบเดียวกับหน้ารายการ เพื่อส่งออกเฉพาะคำร้องที่ต้องการ
-            </div>
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+            <p className="font-medium">
+              ปีงบประมาณ: {selectedYearLabel || (selectedYear ? String(selectedYear) : "ทุกปี")}
+            </p>
+            <p className="mt-1 text-blue-800">
+              ระบบจะใช้ตัวกรองเดียวกับหน้ารายการและส่งออกเฉพาะคำร้องที่ตรงกับเงื่อนไข
+            </p>
+          </div>
           </div>
 
-          <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
+          <footer className="flex flex-col-reverse gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3 sm:flex-row sm:justify-end sm:px-6">
             <button
               type="button"
               onClick={onClose}
               disabled={isExporting}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
               disabled={isExporting}
-              className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isExporting && (
-                <span className="inline-block h-4 w-4 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
-              )}
+              {isExporting ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
               ส่งออกไฟล์ Excel
             </button>
-          </div>
+          </footer>
         </form>
-      </div>
+      </section>
     </div>
   );
 }

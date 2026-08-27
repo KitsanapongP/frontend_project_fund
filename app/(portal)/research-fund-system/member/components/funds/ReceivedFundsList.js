@@ -305,7 +305,7 @@ export default function ReceivedFundsList({ onNavigate }) {
               {fundName}
             </span>
             {hasProjectTitle && (
-              <span className="text-xs text-gray-600 break-words" title={String(projectTitle)}>
+              <span className="text-xs text-slate-600 break-words" title={String(projectTitle)}>
                 {projectTitle}
               </span>
             )}
@@ -318,7 +318,7 @@ export default function ReceivedFundsList({ onNavigate }) {
       accessor: "requested_amount",
       className: "text-right tabular-nums",
       headerClassName: "text-right",
-      render: (value) => `${toNumber(value).toLocaleString("th-TH")}฿`,
+      render: (value) => `${toNumber(value).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}฿`,
     },
     {
       header: "วันที่ส่ง",
@@ -328,6 +328,8 @@ export default function ReceivedFundsList({ onNavigate }) {
     {
       header: "สถานะ",
       accessor: "status_id",
+      className: "text-center",
+      headerClassName: "text-center",
       render: (_, row) => (
         <StatusBadge
           statusId={row.status_id ?? row._original?.status_id}
@@ -337,10 +339,12 @@ export default function ReceivedFundsList({ onNavigate }) {
     },
     {
       header: "การดำเนินการ",
+      className: "text-center",
+      headerClassName: "text-center",
       render: (_, row) => (
-        <div className="flex gap-2">
+        <div className="flex justify-center gap-2">
           <button
-            className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             title="ดูรายละเอียด"
             onClick={() => handleViewDetail(row.application_id)}
           >
@@ -368,27 +372,27 @@ export default function ReceivedFundsList({ onNavigate }) {
       action={
           <button 
             onClick={handleRefresh}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition disabled:opacity-60"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={loading}
           >
-	          <RefreshCcw className={`w-4 h-4 ${loading ?? "animate-spin"}`} />
+	          <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             {loading ? 'กำลังโหลด...' : 'รีเฟรช'}
           </button>
         }
       >
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="mb-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 md:flex-row">
           <div className="flex-1">
             <div className="relative">
               <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"
                 size={20}
               />
               <input
                 type="text"
                 placeholder="ค้นหาเลขที่คำร้อง หรือชื่อโครงการ..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                className="min-h-11 w-full rounded-lg border border-slate-300 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -396,7 +400,7 @@ export default function ReceivedFundsList({ onNavigate }) {
           </div>
 
           <select
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            className="min-h-11 rounded-lg border border-slate-300 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             disabled={statusLoading && !approvedStatusOptions.length}
@@ -412,7 +416,7 @@ export default function ReceivedFundsList({ onNavigate }) {
           </select>
 
           <select
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            className="min-h-11 rounded-lg border border-slate-300 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={yearFilter}
             onChange={(e) => setYearFilter(e.target.value)}
             disabled={yearsLoading && !years.length}
@@ -429,8 +433,8 @@ export default function ReceivedFundsList({ onNavigate }) {
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">กำลังโหลดข้อมูล...</p>
+              <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"></div>
+              <p className="mt-4 text-slate-600">กำลังโหลดข้อมูล...</p>
             </div>
           </div>
         ) : filteredFunds.length === 0 ? (
@@ -450,7 +454,7 @@ export default function ReceivedFundsList({ onNavigate }) {
                     setStatusFilter("all");
                     setYearFilter("all");
                   }}
-                  className="btn btn-secondary"
+                  className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   ล้างการค้นหา
                 </button>
@@ -460,7 +464,7 @@ export default function ReceivedFundsList({ onNavigate }) {
         ) : (
           <>
             <DataTable columns={columns} data={filteredFunds} emptyMessage="ไม่พบคำร้องที่ค้นหา" />
-            <div className="mt-4 text-sm text-gray-600">
+            <div className="mt-4 text-sm text-slate-600">
               แสดง {filteredFunds.length} รายการ จากทั้งหมด {funds.length} รายการ
             </div>
           </>
@@ -469,9 +473,9 @@ export default function ReceivedFundsList({ onNavigate }) {
         {!loading && (
           <div className="mt-4 flex justify-end">
             <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-right">
-              <p className="text-sm text-gray-600">ยอดรวมทุนที่เคยได้รับ</p>
+              <p className="text-sm text-slate-600">ยอดรวมทุนที่เคยได้รับ</p>
               <p className="text-xl font-semibold tabular-nums text-blue-700">
-                {totalReceivedAmount.toLocaleString("th-TH")}฿
+                {totalReceivedAmount.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}฿
               </p>
             </div>
           </div>

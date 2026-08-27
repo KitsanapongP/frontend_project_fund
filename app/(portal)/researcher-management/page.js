@@ -37,7 +37,7 @@ export default function ResearcherManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-100">
       <Header
         isOpen={isOpen}
         setIsOpen={setIsOpen}
@@ -51,7 +51,7 @@ export default function ResearcherManagementPage() {
         currentPageTitle="จัดการบุคลากร"
       />
 
-      <div className="flex pt-16">
+      <div className="portal-shell-offset flex">
         <main className="flex-1 p-4 sm:p-6 lg:p-10 transition-all">
           <div className="max-w-6xl mx-auto">
 

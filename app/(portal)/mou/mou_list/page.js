@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
@@ -589,7 +589,7 @@ export default function MouListPage() {
               </div>
               <div>
                 <div className="text-lg font-bold text-gray-900 leading-none">{stat.value}</div>
-                <div className="text-[11px] text-gray-500 mt-0.5 whitespace-nowrap">{stat.label}</div>
+                <div className="text-xs text-gray-500 mt-0.5 whitespace-nowrap">{stat.label}</div>
               </div>
             </div>
           );

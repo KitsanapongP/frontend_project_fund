@@ -248,12 +248,14 @@ export default function DeptHeadReview() {
         header: "วันที่ยื่น",
         accessor: "submitted_at",
         render: (value) => (
-          <span className="text-gray-600">{formatDate(value)}</span>
+          <span className="whitespace-nowrap text-slate-600">{formatDate(value)}</span>
         ),
       },
       {
         header: "สถานะ",
         accessor: "status",
+        className: "text-center",
+        headerClassName: "text-center",
         render: (value, row) => (
           <StatusBadge status={value} statusCode={row.status_code} />
         ),
@@ -261,6 +263,8 @@ export default function DeptHeadReview() {
       {
         header: "ดำเนินการ",
         accessor: "actions",
+        className: "text-center",
+        headerClassName: "text-center",
         render: (_, row) => (
           <button
             onClick={async () => {
@@ -291,7 +295,7 @@ export default function DeptHeadReview() {
               });
             }}
             disabled={openingId === (row.raw?.submission_id ?? row.raw?.SubmissionID ?? row.id)}
-            className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+            className="inline-flex min-h-11 items-center gap-2 whitespace-nowrap rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {openingId === (row.raw?.submission_id ?? row.raw?.SubmissionID ?? row.id) ? (
               <Loader2 size={16} className="animate-spin" />
@@ -353,27 +357,23 @@ export default function DeptHeadReview() {
         { label: "พิจารณาคำร้องของหัวหน้าสาขา" },
       ]}
     >
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800">
-              รายการคำร้องที่รอการตรวจสอบ
-            </h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={load}
-              className="px-3 py-1 text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50"
-            >
-              <RefreshCcw size={16}/>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <Card collapsible={false}>
+      <Card
+        title="รายการคำร้องที่รอการตรวจสอบ"
+        collapsible={false}
+        action={(
+          <button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
+            รีเฟรช
+          </button>
+        )}
+      >
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-gray-600">
+          <div className="flex items-center justify-center py-16 text-slate-600">
             <Loader2 className="animate-spin mr-2" />
             กำลังโหลดข้อมูล...
           </div>

@@ -26,7 +26,7 @@ import { downloadXlsx } from "@/app/(portal)/research-fund-system/admin/utils/xl
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-64 items-center justify-center text-sm text-gray-500">
+    <div className="flex h-64 items-center justify-center text-sm text-slate-500">
       กำลังโหลดกราฟ...
     </div>
   ),
@@ -113,13 +113,13 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
   };
 
   const renderSkeleton = () => (
-    <div className="mt-6 rounded-xl border border-gray-100 bg-gradient-to-br from-white via-white to-slate-50 p-4 shadow-inner">
-      <h3 className="text-lg font-semibold text-gray-900">
+    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+      <h3 className="text-lg font-semibold text-slate-900">
         Documents & Citations by Year (Scopus)
       </h3>
       <div className="mt-4 space-y-3">
-        <div className="h-16 animate-pulse rounded-md bg-gray-100" />
-        <div className="h-28 animate-pulse rounded-md bg-gray-100" />
+        <div className="h-16 animate-pulse rounded-md bg-slate-100" />
+        <div className="h-28 animate-pulse rounded-md bg-slate-100" />
       </div>
     </div>
   );
@@ -226,10 +226,10 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
       legend: {
         position: "top",
         horizontalAlign: "left",
-        fontSize: "13px",
+        fontSize: "14px",
         labels: { colors: "#0f172a" },
       },
-      colors: ["#0ea5e9", "#7c3aed"],
+      colors: ["#2563eb", "#16a34a"],
       tooltip: { shared: true, intersect: false },
       fill: { opacity: [0.85, 1] },
     };
@@ -240,29 +240,29 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
     ];
 
     return (
-      <div className="mt-6 rounded-xl border border-gray-100 bg-gradient-to-br from-white via-white to-slate-50 p-4 shadow-inner">
+      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
         <div className="flex flex-col gap-1">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-slate-900">
             Documents & Citations by Year (Scopus)
           </h3>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate-500">
             ข้อมูลจาก Scopus แสดงจำนวนผลงาน (แท่ง) และการอ้างอิง (เส้น)
           </p>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {summaryItems.map(({ label, value }) => (
-            <div key={label} className="rounded-lg border border-gray-100 bg-white/70 p-4 shadow-sm">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+            <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 {label}
               </p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>
             </div>
           ))}
         </div>
         {hasScopusTrend ? (
           chartHasSeries ? (
             <div className="mt-6">
-              <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-6 rounded-full bg-sky-500" />
                   <span>Documents</span>
@@ -285,7 +285,7 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
               </div>
             </div>
           ) : (
-            <div className="mt-6 rounded-lg border border-dashed border-slate-200 bg-white/70 p-6 text-center text-sm text-gray-500">
+            <div className="mt-6 rounded-lg border border-dashed border-slate-200 bg-white/70 p-6 text-center text-sm text-slate-500">
               ยังไม่มีข้อมูลสำหรับสร้างกราฟ
             </div>
           )
@@ -298,11 +298,11 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
   }
 
   return (
-    <div className="mt-6 rounded-xl border border-gray-100 bg-gradient-to-br from-white via-white to-slate-50 p-4 text-center text-sm text-gray-500">
-      <h3 className="text-lg font-semibold text-gray-900">
+    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-500">
+      <h3 className="text-lg font-semibold text-slate-900">
         Documents & Citations by Year (Scopus)
       </h3>
-      <div className="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4">
+      <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4">
         {scopusUnavailable
           ? "ยังไม่มีข้อมูลจาก Scopus สำหรับผู้ใช้นี้"
           : "ยังไม่มีข้อมูลแนวโน้มจาก Scopus สำหรับสร้างกราฟ"}
@@ -332,11 +332,11 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
   };
 
   const renderSkeleton = (title = "อ้างโดย") => (
-    <div className="mt-6 rounded-xl border border-gray-100 bg-gradient-to-br from-white via-white to-slate-50 p-4 shadow-inner">
-      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+      <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
       <div className="mt-4 space-y-3">
-        <div className="h-16 animate-pulse rounded-md bg-gray-100" />
-        <div className="h-28 animate-pulse rounded-md bg-gray-100" />
+        <div className="h-16 animate-pulse rounded-md bg-slate-100" />
+        <div className="h-28 animate-pulse rounded-md bg-slate-100" />
       </div>
     </div>
   );
@@ -361,12 +361,12 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
     i10Index.recent !== null;
 
   return (
-    <div className="mt-6 rounded-xl border border-gray-100 bg-gradient-to-br from-white via-white to-slate-50 p-4 shadow-inner">
-      <h3 className="text-lg font-semibold text-gray-900">อ้างโดย</h3>
+    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+      <h3 className="text-lg font-semibold text-slate-900">อ้างโดย</h3>
       <>
-        <div className="mt-4 overflow-hidden rounded-lg border border-gray-200">
-          <table className="w-full text-sm text-gray-700">
-            <thead className="bg-gray-50 text-gray-500">
+        <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
+          <table className="w-full text-sm text-slate-700">
+            <thead className="bg-slate-50 text-slate-500">
               <tr>
                 <th className="px-4 py-2 text-left font-medium">&nbsp;</th>
                 <th className="px-4 py-2 text-right font-medium">ทั้งหมด</th>
@@ -376,30 +376,30 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
               </tr>
             </thead>
             <tbody>
-              <tr className="odd:bg-white even:bg-gray-50">
-                <td className="px-4 py-2 font-medium text-gray-600">การอ้างอิง</td>
-                <td className="px-4 py-2 text-right font-semibold text-gray-900">
+              <tr className="odd:bg-white even:bg-slate-50">
+                <td className="px-4 py-2 font-medium text-slate-600">การอ้างอิง</td>
+                <td className="px-4 py-2 text-right font-semibold text-slate-900">
                   {renderValue(totals.all)}
                 </td>
-                <td className="px-4 py-2 text-right font-semibold text-gray-900">
+                <td className="px-4 py-2 text-right font-semibold text-slate-900">
                   {renderValue(totals.recent)}
                 </td>
               </tr>
-              <tr className="odd:bg-white even:bg-gray-50">
-                <td className="px-4 py-2 font-medium text-gray-600">ดัชนี h</td>
-                <td className="px-4 py-2 text-right font-semibold text-gray-900">
+              <tr className="odd:bg-white even:bg-slate-50">
+                <td className="px-4 py-2 font-medium text-slate-600">ดัชนี h</td>
+                <td className="px-4 py-2 text-right font-semibold text-slate-900">
                   {renderValue(hIndex.all)}
                 </td>
-                <td className="px-4 py-2 text-right font-semibold text-gray-900">
+                <td className="px-4 py-2 text-right font-semibold text-slate-900">
                   {renderValue(hIndex.recent)}
                 </td>
               </tr>
-              <tr className="odd:bg-white even:bg-gray-50">
-                <td className="px-4 py-2 font-medium text-gray-600">ดัชนี i10</td>
-                <td className="px-4 py-2 text-right font-semibold text-gray-900">
+              <tr className="odd:bg-white even:bg-slate-50">
+                <td className="px-4 py-2 font-medium text-slate-600">ดัชนี i10</td>
+                <td className="px-4 py-2 text-right font-semibold text-slate-900">
                   {renderValue(i10Index.all)}
                 </td>
-                <td className="px-4 py-2 text-right font-semibold text-gray-900">
+                <td className="px-4 py-2 text-right font-semibold text-slate-900">
                   {renderValue(i10Index.recent)}
                 </td>
               </tr>
@@ -408,10 +408,10 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
         </div>
 
         <div className="mt-6">
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs text-slate-500">
             <span>{chartUnitLabel}</span>
             {chart.isCitations ? null : (
-              <span className="italic text-[11px] text-gray-400">
+              <span className="italic text-xs text-slate-400">
                 TODO: เปลี่ยนเป็นจำนวนการอ้างอิงเมื่อมีข้อมูล
               </span>
             )}
@@ -449,20 +449,20 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
                     return (
                       <div
                         key={year}
-                        className="group flex h-full min-w-[56px] flex-1 flex-col items-center justify-end text-[11px] text-gray-500"
+                        className="group flex h-full min-w-[56px] flex-1 flex-col items-center justify-end text-xs text-slate-500"
                       >
                         <div className="flex h-full w-full items-end">
                           <div
-                            className="relative w-full overflow-visible rounded-lg bg-gradient-to-t from-blue-500/80 via-blue-400 to-blue-300 shadow-sm transition-all duration-200 group-hover:from-blue-600 group-hover:via-blue-500 group-hover:to-blue-400"
+                            className="relative w-full overflow-visible rounded-t-md bg-blue-500 transition-colors duration-200 group-hover:bg-blue-600"
                             style={{ height: `${barPercent}%` }}
                           >
-                            <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-2 whitespace-nowrap rounded-md bg-slate-900/90 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-all duration-150 group-hover:-translate-y-3 group-hover:opacity-100">
+                            <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 transition-all duration-150 group-hover:-translate-y-3 group-hover:opacity-100">
                               <div>{formattedValue ?? "-"} {chartValueLabel}</div>
-                              <div className="text-[10px] font-normal text-slate-300">{year}</div>
+                              <div className="text-xs font-normal text-slate-300">{year}</div>
                             </div>
                           </div>
                         </div>
-                        <span className="mt-3 text-xs font-medium text-gray-600">{year}</span>
+                        <span className="mt-3 text-xs font-medium text-slate-600">{year}</span>
                       </div>
                     );
                   })}
@@ -470,9 +470,9 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
               </div>
             </div>
           ) : hasSummaryData ? (
-            <p className="mt-3 text-sm text-gray-500">ไม่มีข้อมูลเพียงพอสำหรับสร้างกราฟ</p>
+            <p className="mt-3 text-sm text-slate-500">ไม่มีข้อมูลเพียงพอสำหรับสร้างกราฟ</p>
           ) : (
-            <p className="mt-3 text-sm text-gray-500">ยังไม่มีข้อมูลการอ้างอิง</p>
+            <p className="mt-3 text-sm text-slate-500">ยังไม่มีข้อมูลการอ้างอิง</p>
           )}
         </div>
       </>
@@ -635,7 +635,7 @@ export default function ProfileContent() {
       case "Q4":
         return "bg-rose-100 text-rose-700";
       default:
-        return "bg-gray-100 text-gray-600";
+        return "bg-slate-100 text-slate-600";
     }
   };
 
@@ -1498,12 +1498,12 @@ export default function ProfileContent() {
         { label: "ข้อมูลส่วนตัว" },
       ]}
     >
-      <div className="px-4 py-6 lg:px-8">
-        <div className="mx-auto max-w-6xl space-y-8">
-          <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
+      <div className="space-y-6">
+        <div className="space-y-6">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
             <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
               <div className="relative">
-                <div className="h-28 w-28 overflow-hidden rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow-lg sm:h-32 sm:w-32">
+                <div className="h-28 w-28 overflow-hidden rounded-full border-4 border-blue-100 bg-blue-600 sm:h-32 sm:w-32">
                   {teacherData.profileImage ? (
                     <img
                       src={teacherData.profileImage}
@@ -1520,21 +1520,21 @@ export default function ProfileContent() {
                 </div>
               </div>
               <div className="flex-1 text-center sm:text-left">
-                <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
+                <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
                   {displayName || "ไม่ระบุชื่อ"}
                 </h1>
                 {secondaryNameLine && (
-                  <p className="mt-1 text-sm text-gray-500">{secondaryNameLine}</p>
+                  <p className="mt-1 text-sm text-slate-500">{secondaryNameLine}</p>
                 )}
                 {affiliationLine && (
-                  <p className="mt-2 text-base text-gray-700">{affiliationLine}</p>
+                  <p className="mt-2 text-base text-slate-700">{affiliationLine}</p>
                 )}
                 {positionLine && (
-                  <p className="mt-1 text-sm text-gray-500">{positionLine}</p>
+                  <p className="mt-1 text-sm text-slate-500">{positionLine}</p>
                 )}
                 {teacherData.email && (
-                  <div className="mt-3 flex items-center justify-center gap-3 text-sm text-gray-500 sm:justify-start">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <div className="mt-3 flex items-center justify-center gap-3 text-sm text-slate-500 sm:justify-start">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
                       <Mail size={16} />
                     </span>
                     <div className="text-left">
@@ -1546,9 +1546,9 @@ export default function ProfileContent() {
                   <div
                     className={`${
                       teacherData.email ? "mt-2" : "mt-3"
-                    } flex items-center justify-center gap-3 text-sm text-gray-500 sm:justify-start`}
+                    } flex items-center justify-center gap-3 text-sm text-slate-500 sm:justify-start`}
                   >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green-50 text-green-600">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
                       <Phone size={16} />
                     </span>
                     <div className="text-left">
@@ -1559,17 +1559,17 @@ export default function ProfileContent() {
               </div>
             </div>
             {contactDetails.length > 0 && (
-              <div className="mt-6 grid gap-4 border-t border-gray-100 pt-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-6 grid gap-4 border-t border-slate-100 pt-6 sm:grid-cols-2 lg:grid-cols-4">
                 {contactDetails.map(({ key, icon: Icon, label, value }) => (
                   <div key={key} className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50">
-                      <Icon className="h-5 w-5 text-gray-500" />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
+                      <Icon className="h-5 w-5 text-blue-700" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         {label}
                       </p>
-                      <p className="break-all text-sm text-gray-700">{value}</p>
+                      <p className="break-all text-sm text-slate-700">{value}</p>
                     </div>
                   </div>
                 ))}
@@ -1578,9 +1578,9 @@ export default function ProfileContent() {
           </section>
 
           <div className="space-y-8">
-            <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <div className="mb-6 border-b border-gray-200">
-                <nav className="-mb-[1px] flex flex-wrap gap-2 overflow-x-auto">
+            <section className="rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-1">
+                <nav className="flex flex-wrap gap-1 overflow-x-auto" aria-label="ประเภทข้อมูลผลงาน">
                   {[
                     { key: "publications", label: "ผลงานตีพิมพ์ (Publications)" },
                     { key: "innovations", label: "นวัตกรรม (Innovations)" },
@@ -1591,10 +1591,10 @@ export default function ProfileContent() {
                         key={tab.key}
                         type="button"
                         onClick={() => setActiveTab(tab.key)}
-                        className={`whitespace-nowrap rounded-t-md border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                        className={`min-h-11 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                           isActive
-                            ? "border-blue-600 bg-white text-blue-600"
-                            : "border-transparent text-gray-500 hover:border-blue-200 hover:text-blue-600"
+                            ? "bg-white text-blue-700 ring-1 ring-blue-200"
+                            : "text-slate-600 hover:bg-white hover:text-blue-700"
                         }`}
                       >
                         {tab.label}
@@ -1609,18 +1609,18 @@ export default function ProfileContent() {
                   <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex flex-col gap-2">
-                      <h3 className="text-base font-semibold text-gray-900 lg:text-lg">รายการผลงานตีพิมพ์</h3>
-                      <p className="text-sm text-gray-600">
+                      <h3 className="text-base font-semibold text-slate-900 lg:text-lg">รายการผลงานตีพิมพ์</h3>
+                      <p className="text-sm text-slate-600">
                         ค้นหาและกรองรายการผลงานตามปีที่เผยแพร่
                       </p>
                     </div>
                     <div className="flex flex-col items-start gap-2 text-sm lg:items-end">
-                      <div className="flex flex-wrap items-center justify-end gap-2 text-gray-600">
+                      <div className="flex flex-wrap items-center justify-end gap-2 text-slate-600">
                         {isScopusActive ? (
                           <button
                             type="button"
                             onClick={handleExportScopus}
-                            className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
+                            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
                             disabled={!canExportScopus || exporting}
                           >
                             <Download className="h-3.5 w-3.5" />
@@ -1628,7 +1628,7 @@ export default function ProfileContent() {
                           </button>
                         ) : null}
                         <span>แหล่งข้อมูล:</span>
-                        <div className="inline-flex rounded-full border border-gray-200 bg-gray-50 p-0.5">
+                        <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
                           {[{ value: "scopus", label: "Scopus" }, { value: "scholar", label: "Google Scholar" }].map(
                             (option) => {
                               const isActiveSource = activeSource === option.value;
@@ -1637,10 +1637,10 @@ export default function ProfileContent() {
                                   key={option.value}
                                   type="button"
                                   onClick={() => handleSourceChange(option.value)}
-                                  className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+                                  className={`min-h-11 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                                     isActiveSource
-                                      ? "bg-blue-600 text-white shadow"
-                                      : "text-gray-600 hover:bg-white"
+                                      ? "bg-blue-600 text-white"
+                                      : "text-slate-600 hover:bg-white"
                                   }`}
                                 >
                                   {option.label}
@@ -1667,20 +1667,20 @@ export default function ProfileContent() {
                             setCurrentPage(1);
                           }}
                           placeholder="ค้นหาชื่อเรื่อง..."
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-64"
+                          className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-64"
                         />
-                        <div className="flex w-full flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm sm:flex-nowrap sm:gap-3 lg:w-auto">
-                          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <div className="flex min-h-11 w-full flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 sm:flex-nowrap sm:gap-3 lg:w-auto">
+                          <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
                             <Clock className="h-4 w-4 text-blue-500" />
                             <span>ช่วงปีเผยแพร่</span>
                           </div>
-                          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
                             <label className="flex items-center gap-1">
-                              <span className="text-gray-500">จาก</span>
+                              <span className="text-slate-500">จาก</span>
                               <select
                                 value={startYear}
                                 onChange={(e) => setStartYear(e.target.value)}
-                                className="min-w-[4.5rem] rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="min-h-11 min-w-[5.5rem] rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="">ทั้งหมด</option>
                                 {filteredYears.map((year) => (
@@ -1690,13 +1690,13 @@ export default function ProfileContent() {
                                 ))}
                               </select>
                             </label>
-                            <span className="text-gray-400">—</span>
+                            <span className="text-slate-400">—</span>
                             <label className="flex items-center gap-1">
-                              <span className="text-gray-500">ถึง</span>
+                              <span className="text-slate-500">ถึง</span>
                               <select
                                 value={endYear}
                                 onChange={(e) => setEndYear(e.target.value)}
-                                className="min-w-[4.5rem] rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="min-h-11 min-w-[5.5rem] rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="">ทั้งหมด</option>
                                 {filteredYears.map((year) => (
@@ -1710,7 +1710,7 @@ export default function ProfileContent() {
                               <button
                                 type="button"
                                 onClick={clearYearRange}
-                                className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-200"
+                                className="inline-flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                               >
                                 ล้างช่วงปี
                               </button>
@@ -1719,7 +1719,7 @@ export default function ProfileContent() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 lg:flex-row lg:items-center lg:gap-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
                           <span>แสดง</span>
                           <select
                             value={rowsPerPage}
@@ -1727,7 +1727,7 @@ export default function ProfileContent() {
                               setRowsPerPage(Number(e.target.value));
                               setCurrentPage(1);
                             }}
-                            className="rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="min-h-11 rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             {[10, 20, 50].map((size) => (
                               <option key={size} value={size}>
@@ -1739,7 +1739,7 @@ export default function ProfileContent() {
                         <button
                           type="button"
                           onClick={handleResetFilters}
-                          className="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={!searchTerm && !startYear && !endYear}
                         >
                           รีเซ็ตตัวกรอง
@@ -1751,11 +1751,11 @@ export default function ProfileContent() {
                     {tableLoading ? (
                       <div className="space-y-2 animate-pulse">
                         {[...Array(5)].map((_, i) => (
-                          <div key={i} className="h-6 rounded bg-gray-100" />
+                          <div key={i} className="h-6 rounded bg-slate-100" />
                         ))}
                       </div>
                     ) : tablePublications.length === 0 ? (
-                      <div className="py-6 text-center text-gray-500">
+                      <div className="py-6 text-center text-slate-500">
                         {isScopusActive ? (
                           scopusUnavailable ? (
                             <div className="space-y-3">
@@ -1785,14 +1785,14 @@ export default function ProfileContent() {
                       </div>
                     ) : (
                       <>
-                        <table className="min-w-full divide-y divide-gray-200 text-sm">
-                          <thead className="bg-gray-50">
+                        <table className="min-w-full divide-y divide-slate-200 text-sm">
+                          <thead className="bg-slate-50">
                             <tr>
-                              <th className="w-14 px-4 py-2 text-center font-medium text-gray-700">
+                              <th className="w-14 px-4 py-2 text-center font-medium text-slate-700">
                                 ลำดับ
                               </th>
                               <th
-                                className="cursor-pointer px-4 py-2 text-left font-medium text-gray-700"
+                                className="cursor-pointer px-4 py-2 text-left font-medium text-slate-700"
                                 onClick={() => handleSort("title")}
                               >
                                 ชื่อเรื่อง
@@ -1804,13 +1804,13 @@ export default function ProfileContent() {
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                    className="ml-1 inline text-gray-400"
+                                    className="ml-1 inline text-slate-400"
                                     size={14}
                                   />
                                 )}
                               </th>
                               <th
-                                className="w-24 cursor-pointer px-4 py-2 text-right font-medium text-gray-700"
+                                className="w-24 cursor-pointer px-4 py-2 text-right font-medium text-slate-700"
                                 onClick={() => handleSort("cited_by")}
                               >
                                 อ้างโดย
@@ -1822,18 +1822,18 @@ export default function ProfileContent() {
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                    className="ml-1 inline text-gray-400"
+                                    className="ml-1 inline text-slate-400"
                                     size={14}
                                   />
                                 )}
                               </th>
                               {isScopusActive ? (
-                                <th className="w-32 px-4 py-2 text-center font-medium text-gray-700">
+                                <th className="w-32 px-4 py-2 text-center font-medium text-slate-700">
                                   คุณภาพวารสาร
                                 </th>
                               ) : null}
                               <th
-                                className="w-20 cursor-pointer px-4 py-2 text-center font-medium text-gray-700"
+                                className="w-20 cursor-pointer px-4 py-2 text-center font-medium text-slate-700"
                                 onClick={() => handleSort("year")}
                               >
                                 ปี
@@ -1845,14 +1845,14 @@ export default function ProfileContent() {
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                    className="ml-1 inline text-gray-400"
+                                    className="ml-1 inline text-slate-400"
                                     size={14}
                                   />
                                 )}
                               </th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-200">
+                          <tbody className="divide-y divide-slate-200">
                             {tablePublications.map((pub, index) => {
                               const rowNumber = (currentPage - 1) * rowsPerPage + index + 1;
                               const citedByValue =
@@ -1868,8 +1868,8 @@ export default function ProfileContent() {
                               const shouldShowCiteScore = subtypeDescription === "Article";
                               const citeScoreMetrics = resolveCompleteCiteScore(pub);
                               return (
-                                <tr key={key} className="hover:bg-gray-50">
-                                  <td className="px-4 py-2 text-center text-gray-700">
+                                <tr key={key} className="hover:bg-slate-50">
+                                  <td className="px-4 py-2 text-center text-slate-700">
                                     {rowNumber}
                                   </td>
                                   <td className="max-w-xs px-4 py-2 lg:max-w-md">
@@ -1889,7 +1889,7 @@ export default function ProfileContent() {
                                       </span>
                                     )}
                                     {pub.venue || pub.publication_name ? (
-                                      <span className="mt-1 block truncate text-xs text-gray-500">
+                                      <span className="mt-1 block truncate text-xs text-slate-500">
                                         {pub.venue || pub.publication_name}
                                       </span>
                                     ) : null}
@@ -1927,14 +1927,14 @@ export default function ProfileContent() {
                                             </span>
                                           ) : null}
                                           {formatPercentile(citeScoreMetrics?.percentile) ? (
-                                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-700">
+                                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
                                               Percentile{" "}
                                               {formatPercentile(citeScoreMetrics?.percentile)}
                                             </span>
                                           ) : null}
                                         </div>
                                       ) : (
-                                        <span className="text-gray-400">-</span>
+                                        <span className="text-slate-400">-</span>
                                       )}
                                     </td>
                                   ) : null}
@@ -1945,14 +1945,14 @@ export default function ProfileContent() {
                           </tbody>
                         </table>
                         <div className="mt-4 flex items-center justify-between text-sm">
-                          <span className="text-gray-600">
+                          <span className="text-slate-600">
                             แสดง {startRecord}-{endRecord} จาก {totalRecords}
                           </span>
                           <div className="space-x-2">
                             <button
                               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                               disabled={currentPage === 1}
-                              className="rounded border px-3 py-1 disabled:opacity-50"
+                              className="min-h-11 rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               ก่อนหน้า
                             </button>
@@ -1961,7 +1961,7 @@ export default function ProfileContent() {
                                 setCurrentPage((p) => Math.min(totalPages, p + 1))
                               }
                               disabled={currentPage === totalPages}
-                              className="rounded border px-3 py-1 disabled:opacity-50"
+                              className="min-h-11 rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               ถัดไป
                             </button>
@@ -1987,7 +1987,7 @@ export default function ProfileContent() {
               ) : (
                 <div className="space-y-6">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <h3 className="text-base font-semibold text-gray-900 lg:text-lg">
+                    <h3 className="text-base font-semibold text-slate-900 lg:text-lg">
                       รายการนวัตกรรม
                     </h3>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-4">
@@ -1999,9 +1999,9 @@ export default function ProfileContent() {
                           setInnovPage(1);
                         }}
                         placeholder="ค้นหาชื่อเรื่อง..."
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-64"
+                        className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-64"
                       />
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
                         <span>แสดง</span>
                         <select
                           value={innovRowsPerPage}
@@ -2009,7 +2009,7 @@ export default function ProfileContent() {
                             setInnovRowsPerPage(parseInt(e.target.value));
                             setInnovPage(1);
                           }}
-                          className="rounded-md border border-gray-300 px-2 py-2"
+                          className="min-h-11 rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value={10}>10</option>
                           <option value={20}>20</option>
@@ -2022,21 +2022,21 @@ export default function ProfileContent() {
                     {innovLoading ? (
                       <div className="space-y-2 animate-pulse">
                         {[...Array(5)].map((_, i) => (
-                          <div key={i} className="h-6 rounded bg-gray-100" />
+                          <div key={i} className="h-6 rounded bg-slate-100" />
                         ))}
                       </div>
                     ) : sortedInnovations.length === 0 ? (
-                      <p className="py-6 text-center text-gray-500">ยังไม่มีนวัตกรรม</p>
+                      <p className="py-6 text-center text-slate-500">ยังไม่มีนวัตกรรม</p>
                     ) : (
                       <>
-                        <table className="min-w-full divide-y divide-gray-200 text-sm">
-                          <thead className="bg-gray-50">
+                        <table className="min-w-full divide-y divide-slate-200 text-sm">
+                          <thead className="bg-slate-50">
                             <tr>
-                              <th className="w-14 px-4 py-2 text-center font-medium text-gray-700">
+                              <th className="w-14 px-4 py-2 text-center font-medium text-slate-700">
                                 ลำดับ
                               </th>
                               <th
-                                className="w-40 cursor-pointer px-4 py-2 text-left font-medium text-gray-700"
+                                className="w-40 cursor-pointer px-4 py-2 text-left font-medium text-slate-700"
                                 onClick={() => handleInnovSort("submission_number")}
                               >
                                 หมายเลขคำขอ
@@ -2048,13 +2048,13 @@ export default function ProfileContent() {
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                    className="ml-1 inline text-gray-400"
+                                    className="ml-1 inline text-slate-400"
                                     size={14}
                                   />
                                 )}
                               </th>
                               <th
-                                className="cursor-pointer px-4 py-2 text-left font-medium text-gray-700"
+                                className="cursor-pointer px-4 py-2 text-left font-medium text-slate-700"
                                 onClick={() => handleInnovSort("title")}
                               >
                                 ชื่อนวัตกรรม
@@ -2066,13 +2066,13 @@ export default function ProfileContent() {
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                    className="ml-1 inline text-gray-400"
+                                    className="ml-1 inline text-slate-400"
                                     size={14}
                                   />
                                 )}
                               </th>
                               <th
-                                className="w-40 cursor-pointer px-4 py-2 text-left font-medium text-gray-700"
+                                className="w-40 cursor-pointer px-4 py-2 text-left font-medium text-slate-700"
                                 onClick={() => handleInnovSort("innovation_type")}
                               >
                                 ประเภท
@@ -2084,13 +2084,13 @@ export default function ProfileContent() {
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                    className="ml-1 inline text-gray-400"
+                                    className="ml-1 inline text-slate-400"
                                     size={14}
                                   />
                                 )}
                               </th>
                               <th
-                                className="w-36 cursor-pointer px-4 py-2 text-left font-medium text-gray-700"
+                                className="w-36 cursor-pointer px-4 py-2 text-left font-medium text-slate-700"
                                 onClick={() => handleInnovSort("status_name")}
                               >
                                 สถานะคำขอ
@@ -2102,13 +2102,13 @@ export default function ProfileContent() {
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                    className="ml-1 inline text-gray-400"
+                                    className="ml-1 inline text-slate-400"
                                     size={14}
                                   />
                                 )}
                               </th>
                               <th
-                                className="w-32 cursor-pointer px-4 py-2 text-center font-medium text-gray-700"
+                                className="w-32 cursor-pointer px-4 py-2 text-center font-medium text-slate-700"
                                 onClick={() => handleInnovSort("registered_date")}
                               >
                                 วันที่จดทะเบียน
@@ -2120,20 +2120,20 @@ export default function ProfileContent() {
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                    className="ml-1 inline text-gray-400"
+                                    className="ml-1 inline text-slate-400"
                                     size={14}
                                   />
                                 )}
                               </th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-200">
+                          <tbody className="divide-y divide-slate-200">
                             {paginatedInnovations.map((inv, index) => (
                               <tr
                                 key={inv.submission_id || inv.id || index}
-                                className="hover:bg-gray-50"
+                                className="hover:bg-slate-50"
                               >
-                                <td className="px-4 py-2 text-center text-gray-700">
+                                <td className="px-4 py-2 text-center text-slate-700">
                                   {(innovPage - 1) * innovRowsPerPage + index + 1}
                                 </td>
                                 <td className="px-4 py-2">
@@ -2164,7 +2164,7 @@ export default function ProfileContent() {
                           </tbody>
                         </table>
                         <div className="mt-4 flex items-center justify-between text-sm">
-                          <span className="text-gray-600">
+                          <span className="text-slate-600">
                             แสดง {(innovPage - 1) * innovRowsPerPage + 1}-
                             {Math.min(
                               innovPage * innovRowsPerPage,
@@ -2175,7 +2175,7 @@ export default function ProfileContent() {
                             <button
                               onClick={() => setInnovPage((p) => Math.max(1, p - 1))}
                               disabled={innovPage === 1}
-                              className="rounded border px-3 py-1 disabled:opacity-50"
+                              className="min-h-11 rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               ก่อนหน้า
                             </button>
@@ -2184,7 +2184,7 @@ export default function ProfileContent() {
                                 setInnovPage((p) => Math.min(innovTotalPages, p + 1))
                               }
                               disabled={innovPage === innovTotalPages}
-                              className="rounded border px-3 py-1 disabled:opacity-50"
+                              className="min-h-11 rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               ถัดไป
                             </button>

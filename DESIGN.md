@@ -20,34 +20,53 @@ colors:
   danger: "#dc2626"
   danger-tint: "#fee2e2"
   danger-ink: "#991b1b"
+  warning: "#d97706"
   warning-tint: "#fef9c3"
   warning-ink: "#854d0e"
+  notification: "#f59e0b"
+  notification-tint: "#fffbeb"
+  notification-ink: "#92400e"
 typography:
   display:
-    fontFamily: "Anuphan, sans-serif"
+    fontFamily: "Sarabun, sans-serif"
     fontSize: "1.5rem"
     fontWeight: 600
     lineHeight: 1.25
   headline:
-    fontFamily: "Anuphan, sans-serif"
+    fontFamily: "Sarabun, sans-serif"
     fontSize: "1.25rem"
     fontWeight: 600
     lineHeight: 1.3
+  subheading:
+    fontFamily: "Sarabun, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: 600
+    lineHeight: 1.5
   title:
-    fontFamily: "Anuphan, sans-serif"
+    fontFamily: "Sarabun, sans-serif"
     fontSize: "1rem"
     fontWeight: 600
     lineHeight: 1.4
   body:
-    fontFamily: "Anuphan, sans-serif"
+    fontFamily: "Sarabun, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 400
     lineHeight: 1.6
   label:
-    fontFamily: "Anuphan, sans-serif"
+    fontFamily: "Sarabun, sans-serif"
     fontSize: "0.75rem"
     fontWeight: 500
     lineHeight: 1.4
+  pageTitle:
+    fontFamily: "Sarabun, sans-serif"
+    fontSize: "1.875rem"
+    fontWeight: 600
+    lineHeight: 1.25
+  metric:
+    fontFamily: "Sarabun, sans-serif"
+    fontSize: "2.25rem"
+    fontWeight: 700
+    lineHeight: 1.15
 rounded:
   sm: "6px"
   md: "8px"
@@ -93,12 +112,12 @@ components:
 
 This is a working system for a university's research office — the place where faculty submit fund applications and reward claims, staff process them, department reviewers endorse, and executives watch the numbers. The design should read like a well-run institution: clean, modern, confident, and above all *trustworthy*. A researcher filling in a claim and an executive scanning a dashboard should both feel the interface is on their side — orderly, legible, and never showing off.
 
-It is Operate-mode software. Expression lives in precision, not decoration: consistent spacing, one calm accent, generous whitespace around dense data, and typography that stays readable across long Thai and English strings alike. The workhorse is Anuphan, a humanist sans that carries Thai and Latin with the same even texture — the single most important reason the UI feels coherent across both languages.
+It is Operate-mode software. Expression lives in precision, not decoration: consistent spacing, one calm accent, generous whitespace around dense data, and typography that stays readable across long Thai and English strings alike. The workhorse is Sarabun, a humanist sans that carries Thai and Latin with the same even texture — the single most important reason the UI feels coherent across both languages.
 
 The system is being consolidated. Today the code mixes two neutral families (gray and slate) and reaches for gradients and a scattered set of accent colors; this document sets the target it should converge on. Depth is flat by default — surfaces are separated by hairline borders, and shadow is a response to interaction, not a permanent costume.
 
 **Key Characteristics:**
-- One calm blue accent; semantic color reserved for status meaning, not mood.
+- One calm blue accent for interaction; semantic color pairs icons and labels with the meaning they communicate.
 - Slate as the single neutral ramp — no parallel gray family.
 - Flat surfaces divided by 1px borders; shadow appears only on hover/focus/overlay.
 - Bilingual by construction — layouts survive Thai↔English length shifts.
@@ -106,7 +125,7 @@ The system is being consolidated. Today the code mixes two neutral families (gra
 
 ## Colors
 
-A restrained palette: one blue accent over a slate neutral ramp, with semantic colors held in reserve for status only.
+A restrained palette: one blue accent over a slate neutral ramp, with semantic colors used deliberately for status, attention, and meaning-bearing icon/label pairs.
 
 ### Primary
 - **Confident Blue** (#2563eb): The single interactive accent — primary buttons, active nav, links, selected rows, key figures. It marks *what you can act on*, so it stays scarce.
@@ -124,33 +143,40 @@ A restrained palette: one blue accent over a slate neutral ramp, with semantic c
 - **Subtle Surface** (#f1f5f9): Table headers, secondary buttons, inset zones.
 - **Canvas** (#f5f7fb): The page background the whole app sits on.
 
-### Semantic (status only)
+### Semantic (meaning only)
 - **Success Green** (#16a34a / tint #dcfce7 / ink #166534): Approved states, positive confirmations.
 - **Danger Red** (#dc2626 / tint #fee2e2 / ink #991b1b): Rejected states, destructive actions, errors.
-- **Warning** (tint #fef9c3 / ink #854d0e): Pending / awaiting-review states.
+- **Warning Amber** (#d97706 / tint #fef9c3 / ink #854d0e): Pending, awaiting-review, and caution states.
+- **Notification Amber** (#f59e0b / tint #fffbeb / ink #92400e): Notification bells, unread-attention surfaces, and notification-category labels. Individual notification types still use their own semantic status color.
+- **Information Blue** (#2563eb / tint #eff6ff / ink #1d4ed8): Neutral information and references. It must not visually compete with the primary action on the same surface.
 
 ### Named Rules
 **The One Accent Rule.** Blue is the only decorative color. If something is neither interactive nor a status signal, it is slate — not teal, indigo, cyan, or violet. Competing accents are the fastest way this UI slips back into looking machine-generated.
 
-**The Status-Only Color Rule.** Green, red, and yellow carry *meaning* (approved / rejected / pending). Never use them decoratively; a green button that doesn't mean "approve" is a bug.
+**The Meaning-Only Color Rule.** Green, red, amber, and information blue carry meaning — approved, rejected/error, pending/attention, and information/reference. Never assign them randomly by module or for decoration.
+
+**The Semantic Pairing Rule.** When an icon and label describe the same concept, they use the same semantic family across icon foreground, quiet tint, border, and label text. Color never works alone: retain the icon, readable label, status text, or shape so the meaning survives color-vision differences. A notification bell may be amber because it requests attention; a success check is green; a permission-denied shield is red.
 
 ## Typography
 
-**UI Font:** Anuphan (with `sans-serif` fallback) — humanist sans covering Thai + Latin evenly.
+**UI Font:** Sarabun (with `sans-serif` fallback) — humanist sans covering Thai + Latin evenly.
 **Secondary/Display (Latin):** Raleway (loaded; use sparingly for English-only display moments, never for Thai).
 **Document Font:** TH Sarabun New — reserved for generated PDF/DOCX output (official Thai document standard), **not** screen UI.
 
-**Character:** Anuphan keeps Thai and English at the same visual weight and rhythm, so bilingual screens never feel like two fonts stitched together. Hierarchy comes from size and weight, not from switching families.
+**Character:** Sarabun keeps Thai and English at the same visual weight and rhythm, so bilingual screens never feel like two fonts stitched together. Hierarchy comes from size and weight, not from switching families.
 
 ### Hierarchy
 - **Display** (600, 1.5rem/24px, 1.25): Page titles, dashboard section heads.
+- **Page title** (600, 1.875rem/30px, 1.25): Primary titles on spacious landing and overview surfaces.
+- **Metric** (700, 2.25rem/36px, 1.15): Standalone dashboard figures only.
 - **Headline** (600, 1.25rem/20px, 1.3): Card and panel titles.
+- **Subheading** (600, 1.125rem/18px, 1.5): Compact section titles and prominent controls.
 - **Title** (600, 1rem/16px, 1.4): Form-group and table-block labels.
 - **Body** (400, 0.875rem/14px, 1.6): Default reading and data text.
 - **Label** (500, 0.75rem/12px, 1.4): Field labels, badges, table headers, metadata.
 
 ### Named Rules
-**The Two-Family Ceiling Rule.** Anuphan for anything a user reads on screen; TH Sarabun New only inside generated documents. No third UI typeface.
+**The Two-Family Ceiling Rule.** Sarabun for anything a user reads on screen; TH Sarabun New only inside generated documents. No third UI typeface.
 
 ## Layout
 
@@ -202,6 +228,12 @@ Gently rounded, consistent geometry: 8px (`md`) on the vast majority of controls
 - **Shape:** 6px radius, 2px 10px padding, Label typography.
 - **Approved:** Success tint bg / Success ink text. **Pending:** Warning tint / Warning ink. **Rejected:** Danger tint / Danger ink.
 
+### Semantic Icon + Label Pairs
+- Use a quiet semantic tint and 1px semantic border behind the icon; use the matching ink color for the icon and adjacent badge or label.
+- Keep the readable label even when the icon is familiar. Examples: amber bell + “การแจ้งเตือน”, green check + “อนุมัติแล้ว”, red shield + “ไม่มีสิทธิ์เข้าถึง”.
+- The container stays white or slate unless the whole region communicates that state. Do not wash an entire data-heavy page in semantic color.
+- Unread notification attention uses amber plus a text/count cue; the notification’s own success/warning/error/info badge retains its specific semantic family.
+
 ### Navigation (side)
 - **Style:** Vertical list on Surface; items in slate, Body weight.
 - **Active:** Blue Tint background + Confident Blue text/indicator.
@@ -210,17 +242,19 @@ Gently rounded, consistent geometry: 8px (`md`) on the vast majority of controls
 ## Do's and Don'ts
 
 ### Do:
-- **Do** use Confident Blue (#2563eb) as the *only* accent; everything non-interactive and non-status is slate.
+- **Do** use Confident Blue (#2563eb) as the interactive accent; everything without interaction or semantic meaning is slate.
 - **Do** consolidate all neutrals to the slate ramp — replace stray `gray-*` usages with their slate equivalents.
 - **Do** keep surfaces flat at rest and let 1px borders do the separating; add shadow only for hover, focus, and overlays.
-- **Do** reserve green/red/yellow for their status meanings (approved / rejected / pending).
+- **Do** pair semantic icon and label colors consistently: green/success, amber/attention or pending, red/error or denied, blue/information.
+- **Do** keep a text, icon, or shape cue alongside every semantic color.
 - **Do** size containers to content so Thai and English labels both fit without truncation.
 - **Do** keep one primary button per view.
 
 ### Don't:
 - **Don't** add gradients. The incumbent code has ~70 gradient usages; they are the single biggest "AI-generated" tell here and should be retired, not extended.
 - **Don't** introduce new accent hues (teal, cyan, indigo, violet, emerald-as-decoration). New color = new inconsistency.
+- **Don't** color icons or labels differently just to make modules look varied; every non-slate color must answer what it means.
 - **Don't** mix `gray-*` and `slate-*` on the same surface; pick slate.
 - **Don't** put resting `shadow-md` on every card by reflex.
-- **Don't** use TH Sarabun New or Raleway for on-screen Thai UI — Anuphan is the UI voice.
+- **Don't** use TH Sarabun New or Raleway for on-screen Thai UI — Sarabun is the UI voice.
 - **Don't** hard-code widths to a label's length; it will break in the other language.

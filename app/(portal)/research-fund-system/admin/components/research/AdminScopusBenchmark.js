@@ -136,7 +136,7 @@ function StatTile({ label, value, hint, color }) {
         <span className="h-2 w-2 rounded-full" style={{ background: color }} />{label}
       </div>
       <div className="mt-1 text-2xl font-semibold text-slate-900">{fmt(value)}</div>
-      <div className="text-[11px] text-slate-400">{hint}</div>
+      <div className="text-xs text-slate-400">{hint}</div>
     </div>
   );
 }
@@ -422,7 +422,7 @@ export default function AdminScopusBenchmark() {
               <div className="py-16 text-center text-sm text-slate-400">{comparisonLoading ? "กำลังโหลด…" : "ไม่มีข้อมูลในช่วงปีนี้"}</div>
             )}
             {chartType === "share" && (
-              <p className="mt-1 text-center text-[11px] text-slate-400">สัดส่วนผลงานคณะเทียบกับ KKU และ Thailand (%)</p>
+              <p className="mt-1 text-center text-xs text-slate-400">สัดส่วนผลงานคณะเทียบกับ KKU และ Thailand (%)</p>
             )}
           </div>
 
@@ -496,7 +496,7 @@ export default function AdminScopusBenchmark() {
                   <div key={h.af_id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
                     <div className="min-w-0">
                       <div className="truncate text-slate-800">{h.name}</div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-xs text-slate-400">
                         <span className="font-mono">{h.af_id}</span> · {[h.city, h.country].filter(Boolean).join(", ")} · {fmt(h.document_count)} docs
                       </div>
                     </div>
@@ -512,7 +512,7 @@ export default function AdminScopusBenchmark() {
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <YearRange {...yearRangeProps} compact />
-        <p className="mt-1 text-[11px] text-slate-400">เลือกช่วงปีก่อนกดอัปเดตตัวเลขในขั้นที่ 2</p>
+        <p className="mt-1 text-xs text-slate-400">เลือกช่วงปีก่อนกดอัปเดตตัวเลขในขั้นที่ 2</p>
       </div>
 
       <Step n={2} title="อัปเดตตัวเลข → คณะ / KKU / Thailand" desc="นับจำนวนผลงาน Computer Science จาก Scopus ในช่วงปีที่เลือก เติมทั้งสามคอลัมน์ ใช้เวลาไม่กี่วินาที" state={step2}>

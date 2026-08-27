@@ -86,10 +86,10 @@ const getStatusIconColor = (statusCode) => {
   switch (statusCode) {
     case 'approved': return 'text-green-600';
     case 'rejected': return 'text-red-600';
-    case 'revision': return 'text-orange-600';
-    case 'draft': return 'text-gray-500';
+    case 'revision': return 'text-amber-600';
+    case 'draft': return 'text-slate-500';
     case 'pending':
-    default: return 'text-yellow-600';
+    default: return 'text-amber-600';
   }
 };
 
@@ -647,13 +647,13 @@ function MoneyInput({
     <div className="flex-grow flex flex-col items-end">
       <div
         className={[
-          'inline-flex items-center rounded-md border bg-white shadow-sm transition-all',
+          'inline-flex items-center rounded-md border bg-white transition-all',
           'focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500',
-          error ? 'border-red-400' : 'border-gray-300 hover:border-blue-300',
+          error ? 'border-red-400' : 'border-slate-300 hover:border-blue-300',
           disabled ? 'opacity-60' : ''
         ].join(' ')}
       >
-        <span className="px-3 text-gray-500 select-none">฿</span>
+        <span className="px-3 text-slate-500 select-none">฿</span>
         <input
           aria-label={aria}
           type="text"
@@ -683,11 +683,11 @@ function ReadonlyMoney({ value, aria }) {
     <div className="flex-grow flex flex-col items-end">
       <div
         className={[
-          'inline-flex items-center rounded-md border bg-gray-50 shadow-sm transition-all',
-          'border-gray-300 text-gray-600 opacity-80'
+          'inline-flex items-center rounded-md border bg-slate-50 transition-all',
+          'border-slate-300 text-slate-600 opacity-80'
         ].join(' ')}
       >
-        <span className="px-3 text-gray-500 select-none">฿</span>
+        <span className="px-3 text-slate-500 select-none">฿</span>
         <input
           aria-label={aria}
           type="text"
@@ -796,9 +796,9 @@ function DecisionDropdown({ value, onChange, disabled = false, className = '' })
         aria-haspopup="listbox"
         aria-expanded={open}
         className={[
-          'inline-flex w-full items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2',
-          'text-sm font-medium text-gray-700 shadow-sm transition',
-          'hover:border-blue-300 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500',
+          'inline-flex w-full items-center gap-3 rounded-lg border border-slate-300 bg-white px-3 py-2',
+          'text-sm font-medium text-slate-700 transition',
+          'hover:border-blue-300 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500',
           'disabled:cursor-not-allowed disabled:opacity-60',
         ].join(' ')}
       >
@@ -808,17 +808,17 @@ function DecisionDropdown({ value, onChange, disabled = false, className = '' })
           <selectedOption.icon className={`h-5 w-5 ${selectedOption.iconClass}`} />
         </span>
         <span className="flex flex-1 flex-col text-left">
-          <span className="text-sm font-semibold text-gray-900">{selectedOption.label}</span>
-          <span className="text-xs text-gray-500">{selectedOption.hint}</span>
+          <span className="text-sm font-semibold text-slate-900">{selectedOption.label}</span>
+          <span className="text-xs text-slate-500">{selectedOption.hint}</span>
         </span>
-        <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
         <div
           ref={menuRef}
           role="listbox"
-          className="absolute left-0 bottom-full z-50 mb-2 w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5"
+          className="absolute left-0 bottom-full z-50 mb-2 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ring-1 ring-black/5"
         >
           <div className="py-1">
             {DECISION_OPTIONS.map((option) => {
@@ -832,7 +832,7 @@ function DecisionDropdown({ value, onChange, disabled = false, className = '' })
                   onClick={() => handleSelect(option.value)}
                   className={[
                     'flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition',
-                    active ? 'bg-blue-50/70 text-gray-900' : 'text-gray-700 hover:bg-gray-50',
+                    active ? 'bg-blue-50/70 text-blue-950' : 'text-blue-950 hover:bg-slate-50',
                   ].join(' ')}
                 >
                   <span
@@ -842,7 +842,7 @@ function DecisionDropdown({ value, onChange, disabled = false, className = '' })
                   </span>
                   <span className="flex-1">
                     <span className="block font-semibold">{option.label}</span>
-                    <span className="block text-xs text-gray-500">{option.description}</span>
+                    <span className="block text-xs text-slate-500">{option.description}</span>
                   </span>
                   {active ? <Check className="h-4 w-4 text-blue-600" /> : null}
                 </button>
@@ -956,14 +956,14 @@ function DeptDecisionPanel({
             <div style="font-weight:500;margin-bottom:.25rem;">ลายเซ็นหัวหน้าสาขา</div>
             ${trimmedSignature
               ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;\">${escapeHtml(trimmedSignature)}</div>`
-              : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่ระบุลายเซ็น)</div>`
+              : `<div style=\"font-size:12px;color:#64748b;\">(ไม่ระบุลายเซ็น)</div>`
             }
         </div>
         <div>
           <div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
           ${trimmedComment
             ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;\">${escapeHtml(trimmedComment)}</div>`
-            : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่มีหมายเหตุ)</div>`
+            : `<div style=\"font-size:12px;color:#64748b;\">(ไม่มีหมายเหตุ)</div>`
           }
         </div>
       </div>
@@ -1040,7 +1040,7 @@ function DeptDecisionPanel({
             <div style="font-weight:500;margin-bottom:.25rem;">ลายเซ็นหัวหน้าสาขา</div>
             ${trimmedSignature
               ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;\">${escapeHtml(trimmedSignature)}</div>`
-              : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่ระบุลายเซ็น)</div>`
+              : `<div style=\"font-size:12px;color:#64748b;\">(ไม่ระบุลายเซ็น)</div>`
             }
           </div>
           ${trimmedAnnounce
@@ -1053,10 +1053,10 @@ function DeptDecisionPanel({
             <div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
             ${trimmedComment
               ? `<div style=\"border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;\">${escapeHtml(trimmedComment)}</div>`
-              : `<div style=\"font-size:12px;color:#6b7280;\">(ไม่มีหมายเหตุ)</div>`
+              : `<div style=\"font-size:12px;color:#64748b;\">(ไม่มีหมายเหตุ)</div>`
             }
           </div>
-          <p style="font-size:12px;color:#6b7280;margin-top:.75rem;">
+          <p style="font-size:12px;color:#64748b;margin-top:.75rem;">
             ระบบจะบันทึกเหตุผลและเปลี่ยนสถานะคำร้องเป็น “ไม่อนุมัติ”
           </p>
         </div>
@@ -1127,13 +1127,13 @@ function DeptDecisionPanel({
             <div style="font-weight:500;margin-bottom:.25rem;">หมายเหตุจากหัวหน้าสาขา</div>
             ${trimmedComment
               ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;white-space:pre-wrap;">${escapeHtml(trimmedComment)}</div>`
-              : `<div style="font-size:12px;color:#6b7280;">(ไม่มีหมายเหตุ)</div>`}
+              : `<div style="font-size:12px;color:#64748b;">(ไม่มีหมายเหตุ)</div>`}
           </div>
           <div>
             <div style="font-weight:500;margin-bottom:.25rem;">ลายเซ็นหัวหน้าสาขา</div>
             ${trimmedSignature
               ? `<div style="border:1px solid #e5e7eb;background:#f9fafb;padding:.5rem;border-radius:.5rem;">${escapeHtml(trimmedSignature)}</div>`
-              : `<div style="font-size:12px;color:#6b7280;">(ไม่ระบุลายเซ็น)</div>`}
+              : `<div style="font-size:12px;color:#64748b;">(ไม่ระบุลายเซ็น)</div>`}
           </div>
         </div>
       `,
@@ -1204,16 +1204,16 @@ function DeptDecisionPanel({
     <Card title="ผลการพิจารณา (หัวหน้าสาขา)" icon={DollarSign} collapsible={false}>
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-700 leading-tight">
+          <label className="text-sm font-medium text-slate-700 leading-tight">
             หมายเลขอ้างอิงประกาศผลการพิจารณา
-            <br /><span className="text-xs font-normal text-gray-600">Announcement Ref.</span>
+            <br /><span className="text-xs font-normal text-slate-600">Announcement Ref.</span>
           </label>
           <div
-            className="rounded-lg border bg-white shadow-sm transition border-gray-300 hover:border-blue-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500"
+            className="rounded-lg border bg-white transition border-slate-300 hover:border-blue-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500"
           >
             <input
               type="text"
-              className="w-full rounded-lg border-0 bg-gray-100 p-3 text-gray-500 outline-none cursor-not-allowed"
+              className="w-full rounded-lg border-0 bg-slate-100 p-3 text-slate-500 outline-none cursor-not-allowed"
               placeholder="เช่น 123/2568"
               value={announceRef}
               readOnly
@@ -1223,18 +1223,18 @@ function DeptDecisionPanel({
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-700 leading-tight">
+          <label className="text-sm font-medium text-slate-700 leading-tight">
             หมายเหตุของหัวหน้าสาขา
             {isCommentRequired && <span className="text-red-500"> *</span>}
-            <br /><span className="text-xs font-normal text-gray-600">Comment</span>
+            <br /><span className="text-xs font-normal text-slate-600">Comment</span>
           </label>
           {isCommentRequired && (
-            <p className="text-xs text-gray-500">จำเป็นสำหรับคำขอรับเงินรางวัลผลงานตีพิมพ์</p>
+            <p className="text-xs text-slate-500">จำเป็นสำหรับคำขอรับเงินรางวัลผลงานตีพิมพ์</p>
           )}
           <div
             className={[
-              'rounded-lg border bg-white shadow-sm transition',
-              'border-gray-300 hover:border-blue-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500',
+              'rounded-lg border bg-white transition',
+              'border-slate-300 hover:border-blue-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500',
               errors.comment ? 'border-red-400 focus-within:border-red-500 focus-within:ring-red-500/40' : '',
             ].join(' ')}
           >
@@ -1258,18 +1258,18 @@ function DeptDecisionPanel({
           {errors.comment ? (
             <p className="text-xs text-red-600 text-right">{errors.comment}</p>
           ) : (
-            <p className="text-xs text-gray-400 text-right"></p>
+            <p className="text-xs text-slate-400 text-right"></p>
           )}
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-700 leading-tight">
+          <label className="text-sm font-medium text-slate-700 leading-tight">
             ลายเซ็นหัวหน้าสาขา (พิมพ์ชื่อเต็ม)
-            <br /><span className="text-xs font-normal text-gray-600">Head Signature</span>
+            <br /><span className="text-xs font-normal text-slate-600">Head Signature</span>
           </label>
           <input
             type="text"
-            className="w-full rounded-lg border border-gray-300 p-3 outline-none transition focus:ring-2 focus:ring-blue-500"
+            className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             placeholder="พิมพ์ชื่อเต็มของหัวหน้าสาขา"
             value={headSignature}
             onChange={(e) => setHeadSignature(e.target.value)}
@@ -1277,10 +1277,10 @@ function DeptDecisionPanel({
           />
         </div>
 
-        <div className="border-t border-gray-200 pt-4">
+        <div className="border-t border-slate-200 pt-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3 md:max-w-[60%]">
-              <span className="text-sm font-medium text-gray-700 whitespace-nowrap shrink-0">ดำเนินการ</span>
+              <span className="text-sm font-medium text-slate-700 whitespace-nowrap shrink-0">ดำเนินการ</span>
               <DecisionDropdown
                 value={selectedAction}
                 onChange={(next) => {
@@ -1300,10 +1300,10 @@ function DeptDecisionPanel({
             </div>
             <div className="flex items-center justify-end gap-3 md:self-end">
               {(saving || decisionPending) && (
-                <span className="text-sm text-gray-500">กำลังดำเนินการ…</span>
+                <span className="text-sm text-slate-500">กำลังดำเนินการ…</span>
               )}
               <button
-                className="btn btn-primary min-w-[164px] justify-center gap-2 disabled:opacity-60"
+                className="inline-flex min-h-11 min-w-[164px] items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={handleDecisionSubmit}
                 disabled={saving || decisionPending}
                 title="บันทึกผลการพิจารณา"
@@ -1593,16 +1593,6 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
           )
           : null;
         const name = matched ? extractInstallmentPeriodName(matched) : null;
-        console.log('[PublicationSubmissionDetailsDept] installment debug', {
-          submissionId: submission?.submission_id,
-          installmentNumber,
-          resolvedNumber,
-          installmentYearId,
-          fundLevel,
-          fundKeyword,
-          periodsCount: periods.length,
-          periodName: name,
-        });
         setInstallmentPeriod({
           name,
           raw: matched?.raw ?? matched ?? null,
@@ -2464,7 +2454,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
         subtitle="กำลังโหลดข้อมูล... (Loading...)"
         icon={FileText}
         actions={
-          <button onClick={onBack} className="btn btn-secondary">
+          <button onClick={onBack} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 font-medium text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
             <ArrowLeft size={20} />
             กลับ (Back)
           </button>
@@ -2472,8 +2462,8 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
       >
         <div className="flex justify-center items-center py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">กำลังโหลดข้อมูล... (Loading...)</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-100 border-t-blue-600 mx-auto"></div>
+            <p className="mt-4 text-slate-600">กำลังโหลดข้อมูล... (Loading...)</p>
           </div>
         </div>
       </PageLayout>
@@ -2486,8 +2476,8 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
         <Card collapsible={false}>
           <div className="text-center py-12">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <p className="text-gray-600">ไม่พบข้อมูลคำร้องที่ต้องการ</p>
-            <button onClick={onBack} className="btn btn-primary mt-4">
+            <p className="text-slate-600">ไม่พบข้อมูลคำร้องที่ต้องการ</p>
+            <button onClick={onBack} className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
               กลับไปหน้ารายการ
             </button>
           </div>
@@ -2503,14 +2493,14 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
       icon={Award}
       actions={
         <div className="flex gap-2">
-          <button onClick={onBack} className="btn btn-secondary">
+          <button onClick={onBack} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 font-medium text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
             <ArrowLeft size={20} />
             กลับ (Back)
           </button>
         </div>
       }
       breadcrumbs={[
-        { label: 'หน้าแรก', href: '/research-fund-system/admin' },
+        { label: 'หน้าหลัก', href: '/research-fund-system/member' },
         { label: 'รายการคำร้อง', href: '#', onClick: onBack },
         { label: submission.submission_number },
       ]}
@@ -2532,21 +2522,21 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
         </div>
       }
     >
-      <div className="flex justify-between items-start">
-        <div>
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-col gap-3 mt-4 text-sm">
             {/* ชื่อทุน — ทำให้ตัวหนา */}
             <div className="flex flex-wrap items-start gap-2">
-              <span className="text-gray-500 shrink-0 min-w-[80px]">ชื่อทุน:</span>
-              <span className="font-bold text-gray-700 break-words flex-1">
+              <span className="text-slate-500 shrink-0 min-w-[80px]">ชื่อทุน:</span>
+              <span className="font-bold text-slate-700 break-words flex-1">
                 {displaySubName}
               </span>
             </div>
 
             {/* ผู้ขอทุน */}
             <div className="flex flex-wrap items-start gap-2">
-              <span className="text-gray-500 shrink-0 min-w-[80px]">ผู้ขอทุน:</span>
-              <span className="font-bold text-gray-700 break-words flex-1">
+              <span className="text-slate-500 shrink-0 min-w-[80px]">ผู้ขอทุน:</span>
+              <span className="font-bold text-slate-700 break-words flex-1">
                 {getUserFullName(getApplicant())}
               </span>
             </div>
@@ -2554,11 +2544,11 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
             {/* Info grid: วันที่ต่าง ๆ และเลขอ้างอิงประกาศ */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 mt-2">
               <div className="flex items-start gap-2">
-                <span className="text-gray-500 shrink-0">เลขที่คำร้อง:</span>
+                <span className="text-slate-500 shrink-0">เลขที่คำร้อง:</span>
                 <span className="font-medium break-all">{submission.submission_number || '-'}</span>
               </div>
               <div className="flex items-start gap-2">
-                <span className="text-gray-500 shrink-0">รอบการพิจารณา:</span>
+                <span className="text-slate-500 shrink-0">รอบการพิจารณา:</span>
                 <span className="font-medium">
                   {installmentLoading ? 'กำลังโหลด...' : installmentLabel}
                 </span>
@@ -2566,7 +2556,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               {/* วันที่สร้างคำร้อง (ถ้ามี) */}
               {submission.created_at && (
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">วันที่สร้างคำร้อง:</span>
+                  <span className="text-slate-500 shrink-0">วันที่สร้างคำร้อง:</span>
                   <span className="font-medium">{formatDate(submission.created_at)}</span>
                 </div>
               )}
@@ -2574,7 +2564,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               {/* วันที่ส่งคำร้อง */}
               {submittedAt && (
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">วันที่ส่งคำร้อง:</span>
+                  <span className="text-slate-500 shrink-0">วันที่ส่งคำร้อง:</span>
                   <span className="font-medium">{formatDate(submittedAt)}</span>
                 </div>
               )}
@@ -2583,20 +2573,20 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               {/* วันที่อนุมัติ */}
               {approvedAt && (
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">วันที่อนุมัติ:</span>
+                  <span className="text-slate-500 shrink-0">วันที่อนุมัติ:</span>
                   <span className="font-medium">{formatDate(approvedAt)}</span>
                 </div>
               )}
 
               <div className="flex items-start gap-2">
-                <span className="text-gray-500 shrink-0">เบอร์ติดต่อ:</span>
+                <span className="text-slate-500 shrink-0">เบอร์ติดต่อ:</span>
                 <span className="font-medium break-words">{contactPhone || '-'}</span>
               </div>
 
 
               <div className="flex items-start gap-2 md:col-span-2 lg:col-span-3">
-                <span className="text-gray-500 shrink-0">ข้อมูลธนาคาร:</span>
-                <div className="flex flex-col text-sm font-medium text-gray-700">
+                <span className="text-slate-500 shrink-0">ข้อมูลธนาคาร:</span>
+                <div className="flex flex-col text-sm font-medium text-slate-700">
                   <span>
                     เลขที่บัญชี: <span className="font-semibold">{bankAccount || '-'}</span>
                   </span>
@@ -2613,7 +2603,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               {/* หมายเลขอ้างอิงประกาศ */}
               {pubDetail?.announce_reference_number && (
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">หมายเลขอ้างอิงประกาศผลการพิจารณา:</span>
+                  <span className="text-slate-500 shrink-0">หมายเลขอ้างอิงประกาศผลการพิจารณา:</span>
                   <span className="font-medium break-all">
                     {pubDetail.announce_reference_number}
                   </span>
@@ -2623,7 +2613,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               {/* ประกาศหลักเกณฑ์ (Main Announcement) */}
               {(mainAnn || pubDetail?.main_annoucement) && (
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">ประกาศหลักเกณฑ์:</span>
+                  <span className="text-slate-500 shrink-0">ประกาศหลักเกณฑ์:</span>
                   {mainAnn?.file_path ? (
                     <a
                       href="#"
@@ -2634,7 +2624,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                       {mainAnn?.title || mainAnn?.file_name || `#${pubDetail?.main_annoucement}`}
                     </a>
                   ) : (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-slate-400">-</span>
                   )}
                 </div>
               )}
@@ -2642,7 +2632,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               {/* ประกาศเงินรางวัล (Reward Announcement) */}
               {(rewardAnn || pubDetail?.reward_announcement) && (
                 <div className="flex items-start gap-2">
-                  <span className="text-gray-500 shrink-0">ประกาศเงินรางวัล:</span>
+                  <span className="text-slate-500 shrink-0">ประกาศเงินรางวัล:</span>
                   {rewardAnn?.file_path ? (
                     <a
                       href="#"
@@ -2653,7 +2643,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                       {rewardAnn?.title || rewardAnn?.file_name || `#${pubDetail?.reward_announcement}`}
                     </a>
                   ) : (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-slate-400">-</span>
                   )}
                 </div>
               )}
@@ -2666,14 +2656,14 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
           <div className="text-2xl font-bold text-blue-600">
             {formatCurrency(requestedTotal || 0)}
           </div>
-          <div className="text-sm text-gray-500">จำนวนเงินที่ขอ</div>
+          <div className="text-sm text-slate-500">จำนวนเงินที่ขอ</div>
 
           {submission?.status_id === 2 && approvedTotalDisplay != null && (
             <div className="mt-2">
               <div className="text-lg font-bold text-green-600">
                 {formatCurrency(approvedTotalDisplay || 0)}
               </div>
-              <div className="text-sm text-gray-500">จำนวนเงินที่อนุมัติ</div>
+              <div className="text-sm text-slate-500">จำนวนเงินที่อนุมัติ</div>
             </div>
           )}
         </div>
@@ -2682,34 +2672,34 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
 
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6 mt-6">
-        <nav className="-mb-px flex space-x-8">
+      <div className="mb-6 mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1">
+        <nav className="flex min-w-max gap-1" aria-label="ส่วนข้อมูลคำร้อง">
           <button
             onClick={() => setActiveTab('details')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
               activeTab === 'details'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border border-blue-200 bg-white text-blue-700'
+                : 'border border-transparent text-slate-600 hover:bg-white hover:text-blue-700'
             }`}
           >
             รายละเอียดบทความ
           </button>
           <button
             onClick={() => setActiveTab('authors')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
               activeTab === 'authors'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border border-blue-200 bg-white text-blue-700'
+                : 'border border-transparent text-slate-600 hover:bg-white hover:text-blue-700'
             }`}
           >
             ผู้แต่งร่วม
           </button>
           <button
             onClick={() => setActiveTab('documents')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
               activeTab === 'documents'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border border-blue-200 bg-white text-blue-700'
+                : 'border border-transparent text-slate-600 hover:bg-white hover:text-blue-700'
             }`}
           >
             เอกสารแนบ
@@ -2725,7 +2715,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
           <Card title="ข้อมูลบทความ (Article Information)" icon={BookOpen} collapsible={false}>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">ชื่อบทความ</label>
+                <label className="text-sm text-slate-500">ชื่อบทความ</label>
                 <p className="font-medium">
                   {pubDetail.paper_title ||
                     pubDetail.article_title ||
@@ -2736,24 +2726,24 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                 </p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">ชื่อวารสาร</label>
+                <label className="text-sm text-slate-500">ชื่อวารสาร</label>
                 <p className="font-medium">{pubDetail.journal_name || '-'}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-gray-500">Volume/Issue</label>
+                  <label className="text-sm text-slate-500">Volume/Issue</label>
                   <p className="font-medium">
                     {pubDetail.volume_issue ||
                       ([pubDetail.volume, pubDetail.issue].filter(Boolean).join('/') || '-')}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-500">หน้า (Pages)</label>
+                  <label className="text-sm text-slate-500">หน้า (Pages)</label>
                   <p className="font-medium">{pubDetail.page_numbers || pubDetail.pages || '-'}</p>
                 </div>
               </div>
               <div>
-                <label className="text-sm text-gray-500">วันที่ตีพิมพ์</label>
+                <label className="text-sm text-slate-500">วันที่ตีพิมพ์</label>
                 <p className="font-medium">
                   {pubDetail.publication_date
                     ? formatDate(pubDetail.publication_date)
@@ -2761,7 +2751,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                 </p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">DOI</label>
+                <label className="text-sm text-slate-500">DOI</label>
                 <p className="font-medium">
                   {pubDetail.doi ? (
                     <a
@@ -2779,25 +2769,25 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                 </p>
               </div>
               <div>
-                <label className="text-sm text-gray-500">ฐานข้อมูลที่ปรากฏ</label>
+                <label className="text-sm text-slate-500">ฐานข้อมูลที่ปรากฏ</label>
                 <p className="font-medium">
                   {pubDetail.indexing || pubDetail.database_name || pubDetail.database || '-'}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-gray-500">ควอร์ไทล์ (Quartile)</label>
+                  <label className="text-sm text-slate-500">ควอร์ไทล์ (Quartile)</label>
                   <p className="font-medium">
                     {String(pubDetail.quartile || pubDetail.journal_quartile || '').toUpperCase() || '-'}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-500">Impact Factor</label>
+                  <label className="text-sm text-slate-500">Impact Factor</label>
                   <p className="font-medium text-lg">{pubDetail.impact_factor || '-'}</p>
                 </div>
               </div>
               <div>
-                <label className="text-sm text-gray-500">ประเภทการตีพิมพ์</label>
+                <label className="text-sm text-slate-500">ประเภทการตีพิมพ์</label>
                 <p className="font-medium">{pubDetail.publication_type || 'journal'}</p>
               </div>
             </div>
@@ -2807,7 +2797,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
           <Card title="ข้อมูลเพิ่มเติม (Additional Information)" icon={FileCheck} collapsible={false}>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">สถานะผู้แต่ง</label>
+                <label className="text-sm text-slate-500">สถานะผู้แต่ง</label>
                 <p className="font-medium">
                   {pubDetail.author_type === 'first_author'
                     ? 'ผู้แต่งหลัก'
@@ -2821,14 +2811,14 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
 
               {pubDetail.author_count != null && (
                 <div>
-                  <label className="text-sm text-gray-500">จำนวนผู้แต่ง</label>
+                  <label className="text-sm text-slate-500">จำนวนผู้แต่ง</label>
                   <p className="font-medium">{pubDetail.author_count} คน</p>
                 </div>
               )}
 
               {pubDetail.has_university_funding && (
                 <div>
-                  <label className="text-sm text-gray-500">ได้รับทุนจากมหาวิทยาลัย</label>
+                  <label className="text-sm text-slate-500">ได้รับทุนจากมหาวิทยาลัย</label>
                   <p className="font-medium">
                     {pubDetail.has_university_funding === 'yes' ? 'ใช่' : 'ไม่ใช่'}
                   </p>
@@ -2837,7 +2827,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
 
               {pubDetail.funding_references && (
                 <div>
-                  <label className="text-sm text-gray-500">หมายเลขอ้างอิงทุน</label>
+                  <label className="text-sm text-slate-500">หมายเลขอ้างอิงทุน</label>
                   <p className="font-medium">{pubDetail.funding_references}</p>
                 </div>
               )}
@@ -2852,26 +2842,26 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                   เคยขอเงินรางวัลแล้ว (ไม่คำนวณเงินรางวัล)
                 </div>
               )}
-              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} pb-2 border-b text-sm text-gray-600`}>
+              <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} pb-2 border-b text-sm text-slate-600`}>
                 <div></div>
                 <div className="text-right">
                   <div>จำนวนเงินที่ขอ</div>
-                  <div className="text-xs text-gray-500">Requested Amount</div>
+                  <div className="text-xs text-slate-500">Requested Amount</div>
                 </div>
                 {submission?.status_id === 2 && (
                   <div className="text-right">
                     <div>จำนวนเงินที่จะอนุมัติ</div>
-                    <div className="text-xs text-gray-500">Approve Amount</div>
+                    <div className="text-xs text-slate-500">Approve Amount</div>
                   </div>
                 )}
               </div>
 
               {/* Reward */}
               <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[56px]`}>
-                <label className="block text-sm font-medium text-gray-700 leading-tight">
+                <label className="block text-sm font-medium text-slate-700 leading-tight">
                   เงินรางวัลที่ขอ
                   <br />
-                  <span className="text-xs font-normal text-gray-600">Requested Reward Amount</span>
+                  <span className="text-xs font-normal text-slate-600">Requested Reward Amount</span>
                 </label>
                 <span className="text-right font-semibold">{formatCurrency(requestedReward)} ฿</span>
                 {submission?.status_id === 2 && (
@@ -2882,10 +2872,10 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               </div>
 
               <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[56px]`}>
-                <label className="block text-sm font-medium text-gray-700 leading-tight">
+                <label className="block text-sm font-medium text-slate-700 leading-tight">
                   ค่าปรับปรุงบทความ (A)
                   <br />
-                  <span className="text-xs font-normal text-gray-600">Requested Manuscript Editing Fee</span>
+                  <span className="text-xs font-normal text-slate-600">Requested Manuscript Editing Fee</span>
                 </label>
                 <span className="text-right">{formatCurrency(requestedRevision)} ฿</span>
                 {submission?.status_id === 2 && (
@@ -2896,10 +2886,10 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               </div>
 
               <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[56px]`}>
-                <label className="block text-sm font-medium text-gray-700 leading-tight">
+                <label className="block text-sm font-medium text-slate-700 leading-tight">
                   ค่าธรรมเนียมการตีพิมพ์ (B)
                   <br />
-                  <span className="text-xs font-normal text-gray-600">Requested Page Charge</span>
+                  <span className="text-xs font-normal text-slate-600">Requested Page Charge</span>
                 </label>
                 <span className="text-right">{formatCurrency(requestedPublication)} ฿</span>
                 {submission?.status_id === 2 && (
@@ -2910,20 +2900,20 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               </div>
 
               <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[56px]`}>
-                <label className="block text-sm font-medium text-gray-700 leading-tight">
+                <label className="block text-sm font-medium text-slate-700 leading-tight">
                   รวมเบิกจ่ายภายนอก (C)
                   <br />
-                  <span className="text-xs font-normal text-gray-600">External Funding Sources</span>
+                  <span className="text-xs font-normal text-slate-600">External Funding Sources</span>
                 </label>
                 <span className="text-right text-red-600">{formatCurrencyParen(requestedExternal)} ฿</span>
                 {submission?.status_id === 2 && <span className="text-right text-red-600">{formatCurrencyParen(approvedSummary?.external ?? 0)} ฿</span>}
               </div>
 
               <div className={`grid ${submission?.status_id === 2 ? 'grid-cols-3' : 'grid-cols-2'} items-center min-h-[56px]`}>
-                <label className="block text-sm font-bold text-gray-700 leading-tight">
+                <label className="block text-sm font-bold text-slate-700 leading-tight">
                   เงินสมทบ (A + B - C)
                   <br />
-                  <span className="text-xs font-normal text-gray-600">Top-up fund</span>
+                  <span className="text-xs font-normal text-slate-600">Top-up fund</span>
                 </label>
                 <span className="text-right font-bold">{formatCurrency(requestedRevision + requestedPublication - requestedExternal)} ฿</span>
                 {submission?.status_id === 2 && (
@@ -2983,13 +2973,13 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
           <div className="space-y-6">
             {/* Applicant */}
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">ผู้ยื่นคำร้อง (Applicant)</h4>
-              <div className="bg-blue-50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-slate-700 mb-3">ผู้ยื่นคำร้อง (Applicant)</h4>
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
                 <div className="flex items-center">
                   <User className="h-5 w-5 text-blue-600 mr-3" />
                   <div>
-                    <div className="font-medium text-gray-900">{getUserFullName(getApplicant())}</div>
-                    <div className="text-sm text-gray-500">{getUserEmail(getApplicant())}</div>
+                    <div className="font-medium text-slate-900">{getUserFullName(getApplicant())}</div>
+                    <div className="text-sm text-slate-500">{getUserEmail(getApplicant())}</div>
                   </div>
                 </div>
               </div>
@@ -2997,7 +2987,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
 
             {/* Co-authors */}
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">
+              <h4 className="text-sm font-medium text-slate-700 mb-3">
                 รายชื่อผู้แต่งร่วม (Co-Authors){getCoAuthors().length > 0 ? ` (${getCoAuthors().length} คน)` : ''}
               </h4>
 
@@ -3006,12 +2996,12 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                   {getCoAuthors().map((submissionUser, index) => {
                     const userData = submissionUser.user || submissionUser.User;
                     return (
-                      <div key={submissionUser.user_id || index} className="bg-gray-50 rounded-lg p-4">
+                      <div key={submissionUser.user_id || index} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <div className="flex items-center">
-                          <span className="text-sm font-medium text-gray-500 w-8">{index + 1}.</span>
+                          <span className="text-sm font-medium text-slate-500 w-8">{index + 1}.</span>
                           <div className="flex-1 ml-3">
-                            <div className="font-medium text-gray-900">{getUserFullName(userData)}</div>
-                            <div className="text-sm text-gray-500">{getUserEmail(userData)}</div>
+                            <div className="font-medium text-slate-900">{getUserFullName(userData)}</div>
+                            <div className="text-sm text-slate-500">{getUserEmail(userData)}</div>
                           </div>
                         </div>
                       </div>
@@ -3019,7 +3009,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                   })}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-8">ไม่มีข้อมูลผู้แต่งร่วม</p>
+                <p className="text-slate-500 text-center py-8">ไม่มีข้อมูลผู้แต่งร่วม</p>
               )}
             </div>
           </div>
@@ -3032,8 +3022,8 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
             {/* Content */}
             {attachmentsLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="flex items-center gap-3 text-gray-500">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <div className="flex items-center gap-3 text-slate-500">
+                  <div className="animate-spin rounded-full h-5 w-5 border-4 border-blue-100 border-t-blue-600"></div>
                   <span>กำลังโหลดเอกสาร...</span>
                 </div>
               </div>
@@ -3054,19 +3044,19 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                   return (
                     <div
                       key={doc.document_id || fileId || index}
-                      className="bg-gray-50/50 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200"
+                      className="rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/30"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         {/* Left: File Info */}
                         <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                            <span className="text-gray-600 font-semibold text-sm">
+                          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50">
+                            <span className="text-slate-600 font-semibold text-sm">
                               {index + 1}
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <FileText size={16} className="text-gray-600 flex-shrink-0" />
+                              <FileText size={16} className="text-slate-600 flex-shrink-0" />
 
                               {/* ชื่อไฟล์: ทำเป็นลิงก์สีน้ำเงิน กดแล้วเรียก handleView(doc) */}
                               {canOpen ? (
@@ -3080,15 +3070,15 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                               </a>
                             ) : (
                               <span
-                                  className="font-medium text-gray-400 truncate"
+                                  className="font-medium text-slate-400 truncate"
                                   title={fileName}
                                 >
                                   {fileName}
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-gray-600">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                            <p className="text-sm text-slate-600">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700">
                                 {docType}
                               </span>
                             </p>
@@ -3096,9 +3086,9 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                         </div>
 
                         {/* Right: Actions */}
-                        <div className="flex items-center gap-2 ml-4">
+                        <div className="flex flex-wrap items-center gap-2 sm:ml-4">
                           <button
-                            className="inline-flex items-center gap-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-100 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                             onClick={() => handleView(doc)}
                             disabled={!canOpen}
                             title="เปิดดูไฟล์"
@@ -3107,7 +3097,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                             <span>ดู</span>
                           </button>
                           <button
-                            className="inline-flex items-center gap-1 px-3 py-2 text-sm text-green-600 hover:bg-green-100 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                             onClick={() => handleDownload(doc, downloadName)}
                             disabled={!canOpen}
                             title="ดาวน์โหลดไฟล์"
@@ -3123,19 +3113,19 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
               </div>
             ) : (
               <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="w-8 h-8 text-gray-400" />
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
+                  <FileText className="w-8 h-8 text-slate-400" />
                 </div>
-                <p className="text-gray-500 text-lg font-medium mb-2">ไม่มีเอกสารแนบ</p>
-                <p className="text-gray-400 text-sm">ยังไม่มีการอัปโหลดเอกสารสำหรับคำร้องนี้</p>
+                <p className="text-slate-500 text-lg font-medium mb-2">ไม่มีเอกสารแนบ</p>
+                <p className="text-slate-400 text-sm">ยังไม่มีการอัปโหลดเอกสารสำหรับคำร้องนี้</p>
               </div>
             )}
 
             {/* Action Buttons - ย้ายมาด้านล่าง */}
             {visibleAttachments.length > 0 && (
-              <div className="flex justify-end gap-3 pt-4 border-t-1 border-gray-300">
+              <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 pt-4">
                 <button
-                  className="inline-flex items-center gap-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={handleViewMerged}
                   disabled={visibleAttachments.length === 0 || merging}
                   title="เปิดดูไฟล์แนบที่ถูกรวมเป็น PDF"
@@ -3143,7 +3133,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
                   <Eye size={16} /> ดูไฟล์รวม (PDF)
                 </button>
                 <button
-                  className="inline-flex items-center gap-1 px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={handleDownloadMerged}
                   disabled={visibleAttachments.length === 0 || merging}
                   title="ดาวน์โหลดไฟล์แนบที่ถูกรวมเป็น PDF เดียว"

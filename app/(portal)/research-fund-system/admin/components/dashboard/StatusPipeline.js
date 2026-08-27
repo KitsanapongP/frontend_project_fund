@@ -8,43 +8,43 @@ const STAGE_DEFINITIONS = [
     key: "draft",
     label: "ร่างคำร้อง",
     description: "ยังไม่ส่งเข้าสู่ระบบ",
-    gradient: "from-slate-400 to-slate-500",
+    barClassName: "bg-slate-500",
   },
   {
     key: "dept_review",
     label: "รอหัวหน้าสาขา",
     description: "รอการพิจารณาจากหัวหน้าสาขา",
-    gradient: "from-amber-400 to-orange-500",
+    barClassName: "bg-amber-500",
   },
   {
     key: "admin_review",
     label: "รอผู้ดูแล",
     description: "รอผู้ดูแลตรวจสอบ",
-    gradient: "from-sky-400 to-blue-600",
+    barClassName: "bg-blue-600",
   },
   {
     key: "needs_revision",
     label: "ขอข้อมูลเพิ่มเติม",
     description: "แจ้งให้ผู้ยื่นแก้ไขข้อมูล",
-    gradient: "from-fuchsia-400 to-pink-500",
+    barClassName: "bg-amber-600",
   },
   {
     key: "approved",
     label: "อนุมัติแล้ว",
     description: "ผ่านการอนุมัติเรียบร้อย",
-    gradient: "from-emerald-400 to-green-600",
+    barClassName: "bg-green-600",
   },
   {
     key: "rejected",
     label: "ไม่อนุมัติ",
     description: "ถูกปฏิเสธ",
-    gradient: "from-rose-400 to-red-600",
+    barClassName: "bg-red-600",
   },
   {
     key: "closed",
     label: "ปิดคำร้อง",
     description: "ดำเนินการเสร็จสิ้น",
-    gradient: "from-gray-500 to-gray-700",
+    barClassName: "bg-slate-700",
   },
 ];
 
@@ -58,7 +58,7 @@ const OTHER_STAGE = {
   key: "other",
   label: "สถานะอื่น ๆ",
   description: "สถานะที่ไม่ได้อยู่ในขั้นตอนหลัก",
-  gradient: "from-gray-400 to-gray-500",
+  barClassName: "bg-slate-400",
 };
 
 function normalizeBreakdown(rawBreakdown = {}) {
@@ -156,7 +156,7 @@ export default function StatusPipeline({ breakdown = {} }) {
 
   if (!availableTypes.length) {
     return (
-      <p className="text-center text-gray-500 py-6">
+      <p className="py-8 text-center text-sm text-slate-500">
         ไม่มีข้อมูลสถานะคำร้องในช่วงเวลานี้
       </p>
     );
@@ -167,11 +167,11 @@ export default function StatusPipeline({ breakdown = {} }) {
   const approvalRate = approvalStage ? Number(approvalStage.percentage ?? 0) : 0;
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm text-gray-500">ประเภทคำร้อง</p>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <p className="text-sm font-medium text-slate-700">ประเภทคำร้อง</p>
+          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="เลือกประเภทคำร้อง">
             {availableTypes.map((option) => {
               const isActive = option.key === activeType;
               return (
@@ -179,10 +179,11 @@ export default function StatusPipeline({ breakdown = {} }) {
                   key={option.key}
                   type="button"
                   onClick={() => setActiveType(option.key)}
-                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                  aria-pressed={isActive}
+                  className={`min-h-11 rounded-lg border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                     isActive
-                      ? "border-blue-600 bg-blue-50 text-blue-600"
-                      : "border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600"
+                      ? "border-blue-300 bg-blue-50 text-blue-700"
+                      : "border-slate-300 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
                   }`}
                 >
                   {option.label}
@@ -192,36 +193,36 @@ export default function StatusPipeline({ breakdown = {} }) {
           </div>
         </div>
 
-        <div className="text-right">
-          <p className="text-sm text-gray-500">คำร้องทั้งหมด</p>
-          <p className="text-2xl font-semibold text-gray-900">
+        <div className="lg:text-right">
+          <p className="text-sm text-slate-500">คำร้องทั้งหมด</p>
+          <p className="text-3xl font-bold tabular-nums text-slate-950">
             {formatNumber(activeData.total)}
           </p>
-          <p className="text-xs text-emerald-600 mt-1">
+          <p className="mt-1 text-xs font-medium text-green-700">
             อัตราการอนุมัติ {Number.isFinite(approvalRate) ? approvalRate.toFixed(1) : "0.0"}%
           </p>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {activeData.stages.map((stage) => {
           const percentage = Number.isFinite(stage.percentage) ? stage.percentage : 0;
           return (
             <div key={stage.key} className="space-y-2">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-800">{stage.label}</span>
+                  <span className="text-sm font-semibold text-slate-800">{stage.label}</span>
                   {stage.description && (
-                    <span className="text-xs text-gray-500">{stage.description}</span>
+                    <span className="text-xs text-slate-500">{stage.description}</span>
                   )}
                 </div>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm tabular-nums text-slate-600">
                   {formatNumber(stage.count)} ({percentage.toFixed(1)}%)
                 </span>
               </div>
-              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-label={stage.label} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(Math.min(Math.max(percentage, 0), 100))}>
                 <div
-                  className={`h-full bg-gradient-to-r ${stage.gradient}`}
+                  className={`h-full transition-[width] duration-300 motion-reduce:transition-none ${stage.barClassName}`}
                   style={{ width: `${Math.min(Math.max(percentage, 0), 100)}%` }}
                 />
               </div>

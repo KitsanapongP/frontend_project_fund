@@ -25,16 +25,16 @@ export const BRANDING = Object.freeze({
    */
     logo: {
     text: null,
-    imageSrc: "/image_icon/fund_cpkku_logo.png",
-    imageAlt: "Fund CPKKU logo",
+    imageSrc: "/image_icon/iconcpkku.png",
+    imageAlt: "College of Computing, Khon Kaen University",
     backgroundClass: "",
     /** Tailwind classes to control the badge size. */
-    containerClassName: "w-12 h-12",
+    containerClassName: "w-32 h-12 sm:w-40",
     /** Optional inline styles for the badge wrapper. */
     containerStyle: {},
     /** Intrinsic dimensions passed to the Next.js <Image> component. */
-    imageWidth: 96,
-    imageHeight: 96,
+    imageWidth: 208,
+    imageHeight: 60,
     /** Tailwind classes applied to the rendered <Image>. */
     imageClassName: "w-full h-full object-contain",
     /** Optional inline styles passed to the <Image> element. */

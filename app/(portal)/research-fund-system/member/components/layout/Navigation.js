@@ -25,6 +25,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { hasAdminPortalAccess } from "@/app/lib/access_routing";
 import { MEMBER_BASE_MENU_ITEMS, MEMBER_DEPT_REVIEW_ITEM } from "@/app/lib/member_menu_config";
 import { ADMIN_BASE_MENU_ITEMS } from "@/app/lib/admin_menu_config";
+import { PortalBackLink } from "@/app/components/portal/PortalChrome";
 
 export default function Navigation({
   currentPage,
@@ -188,16 +189,16 @@ export default function Navigation({
   };
 
   return (
-    <nav className="pb-40 md:ms-4">
+    <nav className="space-y-1 pb-40" aria-label="เมนูระบบกองทุน">
       {canSwitchToAdminPortal && adminShortcutItems.length > 0 ? (
-        <div className="mt-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">เมนูผู้ดูแล</p>
+        <div className="pt-1">
+          <p className="portal-nav-section-label">เมนูผู้ดูแล</p>
           {adminShortcutItems.map((item) => (
             <div key={item.id}>
               <button
                 onClick={() => handleMenuClick({ ...item, hasSubmenu: false })}
                 disabled={pendingRoute === item.route}
-                className="flex items-center gap-2 mb-2.5 w-full hover:text-blue-500 transition-colors text-gray-700 disabled:opacity-60"
+                className="portal-nav-item disabled:cursor-wait disabled:opacity-60"
               >
                 <item.icon size={20} />
                 <span className="flex-1 text-left">{pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
@@ -207,17 +208,15 @@ export default function Navigation({
         </div>
       ) : null}
 
-      <div className="mb-2 border-t border-gray-200 pt-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">เมนูบุคลากร</p>
+      <div className="mt-3 border-t border-slate-200 pt-4">
+        <p className="portal-nav-section-label">เมนูบุคลากร</p>
       </div>
 
       {visibleMemberItems.map((item) => (
         <div key={item.id}>
           <button
             onClick={() => handleMenuClick(item)}
-            className={`flex items-center gap-2 mb-2.5 w-full hover:text-blue-500 transition-colors ${
-              isActive(item.id) ? "text-blue-500 font-semibold" : "text-gray-700"
-            }`}
+            className={`portal-nav-item ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
           >
             <item.icon size={20} />
             <span className="flex-1 text-left">{item.label}</span>
@@ -232,16 +231,12 @@ export default function Navigation({
           </button>
 
           {item.hasSubmenu && submenuOpen && item.id === "submit-request" && (
-            <div className="ml-6 mt-2 space-y-1 animate-in slide-in-from-top-2">
+            <div className="ml-5 mt-1 space-y-1 border-l border-slate-200 pl-2 animate-in slide-in-from-top-2">
               {item.submenu.map((subItem) => (
                 <button
                   key={subItem.id}
                   onClick={() => handleSubmenuClick(item.id, subItem)}
-                  className={`flex items-center gap-2 mb-2.5 w-full transition-colors ${
-                    currentPage === subItem.id
-                      ? "text-blue-500 font-semibold"
-                      : "text-gray-700 hover:text-blue-500"
-                  }`}
+                  className={`portal-nav-item min-h-10 py-1.5 ${currentPage === subItem.id ? "portal-nav-item--active" : ""}`}
                 >
                   <subItem.icon size={16} />
                   <span>{subItem.label}</span>
@@ -252,10 +247,11 @@ export default function Navigation({
         </div>
       ))}
 
-      <div className="border-t border-gray-200 mt-6 pt-4">
+      <div className="mt-5 border-t border-slate-200 pt-4">
+        <PortalBackLink placement="nav" onNavigate={closeMobileMenu} />
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 text-gray-700 hover:text-red-600 transition-colors w-full"
+          className="portal-nav-item portal-nav-item--danger"
         >
           <LogOut size={20} />
           <span>ออกจากระบบ</span>

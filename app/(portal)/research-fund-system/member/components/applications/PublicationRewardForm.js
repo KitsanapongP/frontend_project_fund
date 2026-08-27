@@ -1240,7 +1240,7 @@ const FileUpload = ({
             <button
               type="button"
               onClick={() => onDownloadExisting?.(existingFile)}
-              className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
             >
               <Download className="h-3.5 w-3.5" />
               <span>ดาวน์โหลด</span>
@@ -1249,7 +1249,7 @@ const FileUpload = ({
               <button
                 type="button"
                 onClick={triggerFileDialog}
-                className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 transition hover:bg-amber-100"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 transition hover:bg-amber-100"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 <span>แทนที่</span>
@@ -1259,7 +1259,7 @@ const FileUpload = ({
               <button
                 type="button"
                 onClick={() => onRestoreExisting?.(existingFile)}
-                className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
               >
                 <Undo2 className="h-3.5 w-3.5" />
                 <span>ยกเลิก</span>
@@ -1268,7 +1268,7 @@ const FileUpload = ({
               <button
                 type="button"
                 onClick={() => onRemoveExisting?.(existingFile)}
-                className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 <span>ลบ</span>
@@ -1301,7 +1301,7 @@ const FileUpload = ({
             <button
               type="button"
               onClick={() => viewFile(file)}
-              className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
             >
               <Eye className="h-3.5 w-3.5" />
               <span>ดูไฟล์</span>
@@ -1309,7 +1309,7 @@ const FileUpload = ({
             <button
               type="button"
               onClick={() => triggerFileDialog()}
-              className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 transition hover:bg-amber-100"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 transition hover:bg-amber-100"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               <span>แทนที่</span>
@@ -1317,7 +1317,7 @@ const FileUpload = ({
             <button
               type="button"
               onClick={() => removeFile(0)}
-              className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
             >
               <Trash2 className="h-3.5 w-3.5" />
               <span>ลบไฟล์ใหม่</span>
@@ -1335,7 +1335,7 @@ const FileUpload = ({
           ? 'border-blue-400 bg-blue-50'
           : error
             ? 'border-red-300 bg-red-50'
-            : 'border-gray-300 hover:border-gray-400'
+            : 'border-slate-300 hover:border-slate-400'
       }`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -1350,13 +1350,13 @@ const FileUpload = ({
         }
       }}
     >
-      <Upload className="mx-auto h-6 w-6 text-gray-400 mb-2" />
-      <p className="text-sm text-gray-600">
+      <Upload className="mx-auto h-6 w-6 text-slate-400 mb-2" />
+      <p className="text-sm text-slate-600">
         {multiple
           ? 'คลิกหรือลากไฟล์มาวางที่นี่ (สามารถเลือกได้หลายไฟล์)'
           : 'คลิกหรือลากไฟล์มาวางที่นี่'}
       </p>
-      <p className="text-xs text-gray-500 mt-1">{accept || 'PDF, DOC, DOCX, JPG, PNG (ไม่เกิน 10MB)'}</p>
+      <p className="text-xs text-slate-500 mt-1">{accept || 'PDF, DOC, DOCX, JPG, PNG (ไม่เกิน 10MB)'}</p>
     </div>
   );
 
@@ -1373,18 +1373,18 @@ const FileUpload = ({
 
       {multiple && selectedFiles.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm font-medium text-gray-700">ไฟล์ที่เลือก:</p>
+          <p className="text-sm font-medium text-slate-700">ไฟล์ที่เลือก:</p>
           <div className="space-y-2">
             {selectedFiles.map((file, index) => (
               <div
                 key={`${file.name}-${index}`}
-                className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3"
+                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3"
               >
                 <div className="flex items-start gap-3">
-                  <FileText className="mt-0.5 h-5 w-5 text-gray-500" />
+                  <FileText className="mt-0.5 h-5 w-5 text-slate-500" />
                   <div>
-                    <p className="text-sm font-medium text-gray-700">{file.name}</p>
-                    <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="text-sm font-medium text-slate-700">{file.name}</p>
+                    <p className="text-xs text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1394,7 +1394,7 @@ const FileUpload = ({
                       e.stopPropagation();
                       viewFile(file);
                     }}
-                    className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
                   >
                     <Eye className="h-3.5 w-3.5" />
                     <span>ดูไฟล์</span>
@@ -1405,7 +1405,7 @@ const FileUpload = ({
                       e.stopPropagation();
                       removeFile(index);
                     }}
-                    className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     <span>ลบ</span>
@@ -6269,15 +6269,15 @@ const showSubmissionConfirmation = async () => {
       const { name, email } = getCoauthorDisplayInfo(author);
       const fallbackName = [author?.user_fname, author?.user_lname].filter(Boolean).join(' ').trim();
       const resolvedName = (name || fallbackName || `ผู้แต่งร่วม ${index + 1}`).trim();
-      const emailMarkup = email ? ` <span class="text-xs text-gray-600">(${email})</span>` : '';
+      const emailMarkup = email ? ` <span class="text-xs text-slate-600">(${email})</span>` : '';
       return `<li>• ${resolvedName}${emailMarkup}</li>`;
     })
     .join('');
 
   const summaryHTML = `
       <div class="text-left space-y-4">
-        <div class="bg-gray-50 p-4 rounded-lg">
-          <h4 class="font-semibold text-gray-700 mb-2">ข้อมูลบทความ</h4>
+        <div class="bg-slate-50 p-4 rounded-lg">
+          <h4 class="font-semibold text-slate-700 mb-2">ข้อมูลบทความ</h4>
           <div class="space-y-2 text-sm">
             <p><span class="font-medium">ชื่อบทความ:</span> ${formData.article_title || '-'}</p>
             <p><span class="font-medium">วารสาร:</span> ${formData.journal_name || '-'}</p>
@@ -6333,10 +6333,10 @@ const showSubmissionConfirmation = async () => {
                 <p class="text-base font-bold text-green-800">
                   ยอดสุทธิที่เบิกจากวิทยาลัย: ${formatCurrency(formData.total_amount || 0)} บาท
                 </p>
-                <div class="text-xs text-gray-600 mt-1">
+                <div class="text-xs text-slate-600 mt-1">
                   คำนวณจาก: เงินรางวัล + (ค่าปรับปรุง + ค่าตีพิมพ์ - ทุนภายนอก)
                 </div>
-                <div class="text-xs text-gray-600">
+                <div class="text-xs text-slate-600">
                   = ${formatCurrency(effectiveRewardAmount)} + (${formatCurrency(formData.revision_fee || 0)} + ${formatCurrency(formData.publication_fee || 0)} - ${formatCurrency(formData.external_funding_amount || 0)})
                 </div>
               </div>
@@ -6344,8 +6344,8 @@ const showSubmissionConfirmation = async () => {
           </div>
         </div>
 
-        <div class="bg-yellow-50 p-4 rounded-lg">
-          <h4 class="font-semibold text-yellow-700 mb-2">เอกสารแนบ</h4>
+        <div class="bg-amber-50 p-4 rounded-lg">
+          <h4 class="font-semibold text-amber-700 mb-2">เอกสารแนบ</h4>
           <div class="space-y-3 text-sm">
             <div>
               <p class="font-medium mb-2">ไฟล์ทั้งหมด (${allFilesList.length} ไฟล์):</p>
@@ -6354,7 +6354,7 @@ const showSubmissionConfirmation = async () => {
                   ${allFilesList.map(file => `
                     <li class="flex justify-between items-center text-xs">
                       <span>📄 ${file.name}</span>
-                      <span class="text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                      <span class="text-slate-500">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
                     </li>
                   `).join('')}
                 </ul>
@@ -7006,7 +7006,7 @@ const showSubmissionConfirmation = async () => {
           <div class="text-left">
             <p><strong>รหัสคำร้อง:</strong> ${submissionId}</p>
             <p><strong>ไฟล์ที่แนบ:</strong> ${fileCounts.summary}</p>
-            <div class="mt-2 text-sm text-gray-600">
+            <div class="mt-2 text-sm text-slate-600">
               <ul class="list-disc list-inside">
                 ${fileCounts.main > 0 ? `<li>เอกสารหลัก: ${fileCounts.main} ไฟล์</li>` : ''}
                 ${fileCounts.other > 0 ? `<li>เอกสารอื่นๆ: ${fileCounts.other} ไฟล์</li>` : ''}
@@ -7053,8 +7053,8 @@ const showSubmissionConfirmation = async () => {
         subtitle="กำลังโหลดข้อมูล..."
         icon={Award}
       >
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="flex items-center justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"></div>
         </div>
       </PageLayout>
     );
@@ -7154,7 +7154,7 @@ const showSubmissionConfirmation = async () => {
         <button
           type="button"
           onClick={handleGoBack}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-gray-600 transition-colors hover:bg-gray-50 whitespace-nowrap"
+          className="inline-flex min-h-11 items-center gap-2 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>ย้อนกลับ</span>
@@ -7165,10 +7165,14 @@ const showSubmissionConfirmation = async () => {
         { label: "ขอเบิกเงินรางวัลการตีพิมพ์" }
       ]}
     >
-      <form ref={formRef} className="space-y-6" noValidate>
+      <form
+        ref={formRef}
+        className="space-y-6 [&_button]:min-h-11 [&_button]:focus-visible:outline-none [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-blue-500 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:min-h-11 [&_select]:min-h-11 [&_textarea]:min-h-28"
+        noValidate
+      >
 
         {isFundDetailsView && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 shadow-sm">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" aria-hidden="true" />
               <div>
@@ -7202,17 +7206,17 @@ const showSubmissionConfirmation = async () => {
           </div>
         )}
         {shouldShowReviewerComments && (
-          <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-orange-500" aria-hidden="true" />
+              <AlertCircle className="h-5 w-5 text-amber-500" aria-hidden="true" />
               <div className="space-y-3">
-                <p className="font-semibold text-orange-800">หมายเหตุจากผู้ตรวจสอบ</p>
+                <p className="font-semibold text-amber-800">หมายเหตุจากผู้ตรวจสอบ</p>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-orange-600">เจ้าหน้าที่</p>
+                  <p className="text-xs uppercase tracking-wide text-amber-600">เจ้าหน้าที่</p>
                   <p className="whitespace-pre-wrap text-sm">{adminCommentDisplay}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-orange-600">หัวหน้าสาขา</p>
+                  <p className="text-xs uppercase tracking-wide text-amber-600">หัวหน้าสาขา</p>
                   <p className="whitespace-pre-wrap text-sm">{headCommentDisplay}</p>
                 </div>
               </div>
@@ -7220,7 +7224,7 @@ const showSubmissionConfirmation = async () => {
           </div>
         )}
         {isReadOnly && !isFundDetailsView && (
-          <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
             ขณะนี้เป็นโหมด <strong>อ่านอย่างเดียว</strong> — ไม่สามารถแก้ไขหรือส่งคำร้องได้
           </div>
         )}
@@ -7233,10 +7237,10 @@ const showSubmissionConfirmation = async () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Applicant Name - Read Only */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 ชื่อผู้ยื่นคำร้อง (Applicant Name)
               </label>
-              <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-md text-slate-800">
                 {currentUser ? `${currentUser.prefix} ${currentUser.user_fname} ${currentUser.user_lname}` : 'กำลังโหลด...'}
               </div>
             </div>
@@ -7245,7 +7249,7 @@ const showSubmissionConfirmation = async () => {
             <div id="field-year_id">
               <label
                 htmlFor={enforceBudgetYearReadOnly ? 'year_id_display' : 'year_id'}
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-slate-700 mb-2"
               >
                 ปีงบประมาณ (Budget Year) <span className="text-red-500">*</span>
               </label>
@@ -7259,7 +7263,7 @@ const showSubmissionConfirmation = async () => {
                   />
                   <div
                     id="year_id_display"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
+                    className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-700"
                   >
                     {budgetYearText || 'ยังไม่กำหนดปีงบประมาณ'}
                   </div>
@@ -7279,8 +7283,8 @@ const showSubmissionConfirmation = async () => {
                     aria-required="true"
                     aria-invalid={errors.year_id ? 'true' : 'false'}
                     aria-describedby={errors.year_id ? 'error-year_id' : undefined}
-                    className={`w-full text-gray-600 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                      errors.year_id ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full text-slate-600 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      errors.year_id ? 'border-red-500' : 'border-slate-300'
                     }`}
                   >
                     <option value="" disabled={formData.year_id !== '' && formData.year_id !== null} hidden={formData.year_id !== '' && formData.year_id !== null}>
@@ -7317,7 +7321,7 @@ const showSubmissionConfirmation = async () => {
 
             {/* Author Status */}
             <div id="field-author_status">
-              <label htmlFor="author_status" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="author_status" className="block text-sm font-medium text-slate-700 mb-2">
                 ประเภทผู้ประพันธ์ (Author Type) <span className="text-red-500">*</span>
               </label>
               <select
@@ -7331,8 +7335,8 @@ const showSubmissionConfirmation = async () => {
                 aria-invalid={errors.author_status ? 'true' : 'false'}
                 aria-describedby={errors.author_status ? 'error-author_status' : undefined}
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.author_status ? 'border-red-500' : 'border-gray-300'
-                } ${disableAuthorStatusSelect ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  errors.author_status ? 'border-red-500' : 'border-slate-300'
+                } ${disableAuthorStatusSelect ? 'bg-slate-100 cursor-not-allowed' : ''}`}
               >
                 <option value="" disabled={formData.author_status !== ''} hidden={formData.author_status !== ''}>
                   เลือกประเภทผู้ประพันธ์ (Select Author Type)
@@ -7352,7 +7356,7 @@ const showSubmissionConfirmation = async () => {
 
             {/* Phone Number */}
             <div id="field-phone_number">
-              <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="phone_number" className="block text-sm font-medium text-slate-700 mb-2">
                 เบอร์โทรศัพท์ (Phone Number) <span className="text-red-500">*</span>
               </label>
               <input
@@ -7372,10 +7376,10 @@ const showSubmissionConfirmation = async () => {
                 data-pattern-message="กรุณากรอกเบอร์โทรศัพท์ให้เป็นรูปแบบ XXX-XXX-XXXX"
                 inputMode="tel"
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.phone_number ? 'border-red-500' : 'border-gray-300'
+                  errors.phone_number ? 'border-red-500' : 'border-slate-300'
                 }`}
               />
-              <p className="text-xs text-gray-500 mt-1">รูปแบบ (Format): XXX-XXX-XXXX</p>
+              <p className="text-xs text-slate-500 mt-1">รูปแบบ (Format): XXX-XXX-XXXX</p>
               {errors.phone_number && (
                 <p id="error-phone_number" className="text-red-500 text-sm mt-1">{errors.phone_number}</p>
               )}
@@ -7391,7 +7395,7 @@ const showSubmissionConfirmation = async () => {
           <div className="space-y-4">
             {/* Article Title */}
             <div id="field-article_title">
-              <label htmlFor="article_title" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="article_title" className="block text-sm font-medium text-slate-700 mb-2">
                 ชื่อบทความ (Article Title) <span className="text-red-500">*</span>
               </label>
               <input
@@ -7406,7 +7410,7 @@ const showSubmissionConfirmation = async () => {
                 aria-invalid={errors.article_title ? 'true' : 'false'}
                 aria-describedby={errors.article_title ? 'error-article_title' : undefined}
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.article_title ? 'border-red-500' : 'border-gray-300'
+                  errors.article_title ? 'border-red-500' : 'border-slate-300'
                 }`}
               />
               {errors.article_title && (
@@ -7415,7 +7419,7 @@ const showSubmissionConfirmation = async () => {
             </div>
 
             <div id="field-author_name_list">
-              <label htmlFor="author_name_list" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="author_name_list" className="block text-sm font-medium text-slate-700 mb-2">
                 รายชื่อผู้แต่ง (Author Name List) <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -7430,7 +7434,7 @@ const showSubmissionConfirmation = async () => {
                 aria-invalid={errors.author_name_list ? 'true' : 'false'}
                 aria-describedby={errors.author_name_list ? 'error-author_name_list' : undefined}
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.author_name_list ? 'border-red-500' : 'border-gray-300'
+                  errors.author_name_list ? 'border-red-500' : 'border-slate-300'
                 }`}
               />
               {errors.author_name_list && (
@@ -7441,7 +7445,7 @@ const showSubmissionConfirmation = async () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Journal Name */}
               <div id="field-journal_name">
-                <label htmlFor="journal_name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="journal_name" className="block text-sm font-medium text-slate-700 mb-2">
                   ชื่อวารสาร (Journal Name) <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -7457,8 +7461,8 @@ const showSubmissionConfirmation = async () => {
                   aria-invalid={errors.journal_name ? 'true' : 'false'}
                   aria-describedby={errors.journal_name ? 'error-journal_name' : undefined}
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                    errors.journal_name ? 'border-red-500' : 'border-gray-300'
-                  } ${disableJournalNameInput ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    errors.journal_name ? 'border-red-500' : 'border-slate-300'
+                  } ${disableJournalNameInput ? 'bg-slate-100 cursor-not-allowed' : ''}`}
                 />
                 {errors.journal_name && (
                   <p id="error-journal_name" className="text-red-500 text-sm mt-1">{errors.journal_name}</p>
@@ -7467,7 +7471,7 @@ const showSubmissionConfirmation = async () => {
 
               {/* Quartile */}
               <div id="field-journal_quartile">
-                <label htmlFor="journal_quartile" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="journal_quartile" className="block text-sm font-medium text-slate-700 mb-2">
                   ควอร์ไทล์ (Quartile) <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -7484,8 +7488,8 @@ const showSubmissionConfirmation = async () => {
                     displayResolutionError ? 'resolution-journal_quartile' : null
                   ].filter(Boolean).join(' ') || undefined}
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                    errors.journal_quartile ? 'border-red-500' : 'border-gray-300'
-                  } ${disableQuartileSelect ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    errors.journal_quartile ? 'border-red-500' : 'border-slate-300'
+                  } ${disableQuartileSelect ? 'bg-slate-100 cursor-not-allowed' : ''}`}
                 >
                   <option value="" disabled={formData.journal_quartile !== ''} hidden={formData.journal_quartile !== ''}>
                     เลือกควอร์ไทล์ (Select Quartile)
@@ -7519,7 +7523,7 @@ const showSubmissionConfirmation = async () => {
 
               {/* Volume/Issue */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Volume/Issue
                 </label>
                 <input
@@ -7528,13 +7532,13 @@ const showSubmissionConfirmation = async () => {
                   value={formData.journal_issue}
                   onChange={handleInputChange}
                   placeholder="เช่น (e.g.) Vol.10, No.2"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               {/* Pages */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   หน้า (Pages)
                 </label>
                 <input
@@ -7543,13 +7547,13 @@ const showSubmissionConfirmation = async () => {
                   value={formData.journal_pages}
                   onChange={handleInputChange}
                   placeholder="เช่น (e.g.) 123-145"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               {/* Publication Month */}
               <div id="field-journal_month">
-                <label htmlFor="journal_month" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="journal_month" className="block text-sm font-medium text-slate-700 mb-2">
                   เดือนที่ตีพิมพ์ (Publication Month) <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -7562,7 +7566,7 @@ const showSubmissionConfirmation = async () => {
                   aria-invalid={errors.journal_month ? 'true' : 'false'}
                   aria-describedby={errors.journal_month ? 'error-journal_month' : undefined}
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                    errors.journal_month ? 'border-red-500' : 'border-gray-300'
+                    errors.journal_month ? 'border-red-500' : 'border-slate-300'
                   }`}
                 >
                   <option value="" disabled={formData.journal_month !== ''} hidden={formData.journal_month !== ''}>
@@ -7588,7 +7592,7 @@ const showSubmissionConfirmation = async () => {
 
               {/* Publication Year */}
               <div id="field-journal_year">
-                <label htmlFor="journal_year" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="journal_year" className="block text-sm font-medium text-slate-700 mb-2">
                   ปีที่ตีพิมพ์ (Publication Year) <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -7606,10 +7610,10 @@ const showSubmissionConfirmation = async () => {
                   aria-describedby={errors.journal_year ? 'error-journal_year' : undefined}
                   data-range-message={`กรุณากรอกปีระหว่าง 2000-${new Date().getFullYear() + 1}`}
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                    errors.journal_year ? 'border-red-500' : 'border-gray-300'
+                    errors.journal_year ? 'border-red-500' : 'border-slate-300'
                   }`}
                 />
-                <p className="text-xs text-gray-500 mt-1">ปี ค.ศ. (A.D.) (2000-{new Date().getFullYear() + 1})</p>
+                <p className="text-xs text-slate-500 mt-1">ปี ค.ศ. (A.D.) (2000-{new Date().getFullYear() + 1})</p>
                 {errors.journal_year && (
                   <p id="error-journal_year" className="text-red-500 text-sm mt-1">{errors.journal_year}</p>
                 )}
@@ -7618,7 +7622,7 @@ const showSubmissionConfirmation = async () => {
 
             {/* DOI */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 DOI (Digital Object Identifier)
               </label>
               <input
@@ -7627,13 +7631,13 @@ const showSubmissionConfirmation = async () => {
                 value={formData.doi}
                 onChange={handleInputChange}
                 placeholder="เช่น (e.g.) 10.1016/j.example.2023.01.001"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
 
             {/* URL */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 URL ของบทความ (Article URL)
               </label>
               <input
@@ -7642,13 +7646,13 @@ const showSubmissionConfirmation = async () => {
                 value={formData.journal_url}
                 onChange={handleInputChange}
                 placeholder="https://..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
 
             {/* Database checkboxes - Updated per requirement */}
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-slate-700">
                 ฐานข้อมูลที่ปรากฏ (Database Indexed)
               </label>
               <div className="flex flex-wrap gap-6">
@@ -7704,11 +7708,11 @@ const showSubmissionConfirmation = async () => {
           <div className="space-y-4">
             {/* Co-author selection dropdown */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 เพิ่มผู้ร่วมวิจัย (Add Co-Author)
               </label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onChange={(e) => {
                   const selectedId = e.target.value;
                   if (selectedId) {
@@ -7762,7 +7766,7 @@ const showSubmissionConfirmation = async () => {
             </div>
 
             {/* Available co-authors count */}
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500">
               สามารถเลือกได้ (Available): {users.filter((u) => {
                 const normalizedUserId = getNormalizedUserId(u);
                 if (!normalizedUserId) {
@@ -7786,7 +7790,7 @@ const showSubmissionConfirmation = async () => {
             {/* Selected co-authors list */}
             {coauthors.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   ผู้ร่วมวิจัยที่เลือก (Selected Co-researchers) ({coauthors.length} คน/persons)
                 </label>
                 <div className="space-y-2">
@@ -7797,18 +7801,18 @@ const showSubmissionConfirmation = async () => {
                     return (
                       <div
                         key={getNormalizedUserId(coauthor) || coauthor.user_id || `coauthor-${index}`}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
                       >
                         <div className="flex items-center space-x-3">
-                          <span className="text-sm font-medium text-gray-600">
+                          <span className="text-sm font-medium text-slate-600">
                             {index + 1}.
                           </span>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-slate-900">
                               {resolvedName}
                             </p>
                             {email && (
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-slate-500">
                                 {email}
                               </p>
                             )}
@@ -7830,10 +7834,10 @@ const showSubmissionConfirmation = async () => {
 
             {/* Empty state */}
             {coauthors.length === 0 && (
-              <div className="text-center py-6 text-gray-500">
-                <Users className="mx-auto h-8 w-8 mb-2 text-gray-400" />
+              <div className="text-center py-6 text-slate-500">
+                <Users className="mx-auto h-8 w-8 mb-2 text-slate-400" />
                 <p className="text-sm">ยังไม่มีผู้ร่วมวิจัย (No co-researchers yet)</p>
-                <p className="text-xs text-gray-400 mt-1">กรุณาเลือกผู้ร่วมวิจัยจากรายการด้านบน (Please select co-researchers from the list above)</p>
+                <p className="text-xs text-slate-400 mt-1">กรุณาเลือกผู้ร่วมวิจัยจากรายการด้านบน (Please select co-researchers from the list above)</p>
               </div>
             )}
           </div>
@@ -7858,24 +7862,24 @@ const showSubmissionConfirmation = async () => {
                   }
                 }}
                 disabled={isReadOnly}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
               />
               <span>
-                <span className="block text-sm font-semibold text-gray-800">เคยขอเงินรางวัลแล้ว (ไม่ต้องคำนวณเงินรางวัล)</span>
-                <span className="mt-1 block text-xs text-gray-600">เลือกกรณีขอเฉพาะค่าปรับปรุงบทความ โดยระบบจะไม่นำเงินรางวัลมารวมในยอดเบิกครั้งนี้</span>
+                <span className="block text-sm font-semibold text-slate-800">เคยขอเงินรางวัลแล้ว (ไม่ต้องคำนวณเงินรางวัล)</span>
+                <span className="mt-1 block text-xs text-slate-600">เลือกกรณีขอเฉพาะค่าปรับปรุงบทความ โดยระบบจะไม่นำเงินรางวัลมารวมในยอดเบิกครั้งนี้</span>
               </span>
             </label>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               เงินรางวัล (บาท)
               <br />
-              <span className="text-xs font-normal text-gray-500">Reward Amount (Baht)</span>
+              <span className="text-xs font-normal text-slate-500">Reward Amount (Baht)</span>
             </label>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-2xl font-semibold text-gray-800">
+            <div className="bg-slate-50 rounded-lg p-3">
+              <div className="text-2xl font-semibold text-slate-800">
                 {formatCurrency(effectiveRewardAmount)}
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               {formData.has_received_reward
                 ? 'ไม่นำเงินรางวัลมาคำนวณ เนื่องจากเคยขอเงินรางวัลแล้ว'
                 : 'คำนวณอัตโนมัติจากสถานะผู้แต่งและ Quartile'}
@@ -7891,20 +7895,20 @@ const showSubmissionConfirmation = async () => {
         // FEES AND FUNDING SECTION
         // ================================================================= */}
         <SimpleCard title="ค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์ (Manuscript Editing Fee and Page Charge)" icon={Award}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 divide-x divide-gray-200">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 divide-x divide-slate-200">
             {/* Left side - Revision fee, Publication fee, and College total */}
             <div className="space-y-6 lg:pr-6">
               {/* Show fee limit info */}
               {formData.journal_quartile && feeLimits.total > 0 && (
                 <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
-                  <p className="text-sm font-medium text-gray-700">
+                  <p className="text-sm font-medium text-slate-700">
                     วงเงินค่าปรับปรุงและค่าตีพิมพ์หลังหักทุนภายนอกไม่เกิน (Maximum total for editing and page charge after external funding): 
                     <span className="text-blue-700 font-bold ml-1">
                       {formatCurrency(feeLimits.total)} บาท (Baht)
                     </span>
                   </p>
                   {quartileConfigs[formData.journal_quartile]?.description && (
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-slate-600 mt-1">
                       {quartileConfigs[formData.journal_quartile].description}
                     </p>
                   )}
@@ -7912,7 +7916,7 @@ const showSubmissionConfirmation = async () => {
               )}
 
               {formData.journal_quartile && feeLimits.total === 0 && (
-                <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
                   <p className="text-sm font-medium text-red-600">
                     ควอร์ไทล์นี้ไม่สามารถเบิกค่าปรับปรุงและค่าตีพิมพ์ได้
                     <br />
@@ -7923,13 +7927,13 @@ const showSubmissionConfirmation = async () => {
 
               {/* Revision Fee */}
               <div id="field-fees_limit">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     ค่าปรับปรุงบทความ (บาท)
                     {formData.has_received_reward && <span className="ml-1 text-red-500">*</span>}
                     <br />
-                    <span className="text-xs font-normal text-gray-600">Manuscript Editing Fee (Baht)</span>
+                    <span className="text-xs font-normal text-slate-600">Manuscript Editing Fee (Baht)</span>
                   </label>
-                <div className={`bg-gray-50 rounded-lg p-3 ${feeError ? 'border-2 border-red-500' : ''}`}>
+                <div className={`bg-slate-50 rounded-lg p-3 ${feeError ? 'border-2 border-red-500' : ''}`}>
                   <input
                     id="revision_fee"
                     name="revision_fee"
@@ -7961,7 +7965,7 @@ const showSubmissionConfirmation = async () => {
                     min="0"
                     max={MAX_CURRENCY_AMOUNT}
                     placeholder="0"
-                    className={`text-2xl font-semibold text-gray-800 w-full bg-transparent border-none focus:outline-none ${
+                    className={`text-2xl font-semibold text-slate-800 w-full bg-transparent border-none focus:outline-none ${
                       (!formData.journal_quartile || feeLimits.total === 0) ? 'cursor-not-allowed opacity-50' : ''
                     }`}
                   />
@@ -7971,12 +7975,12 @@ const showSubmissionConfirmation = async () => {
 
               {/* Publication Fee */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   ค่าธรรมเนียมการตีพิมพ์ (บาท)
                   <br />
-                  <span className="text-xs font-normal text-gray-600">Page Charge (Baht)</span>
+                  <span className="text-xs font-normal text-slate-600">Page Charge (Baht)</span>
                 </label>
-                <div className={`bg-gray-50 rounded-lg p-3 ${feeError ? 'border-2 border-red-500' : ''}`}>
+                <div className={`bg-slate-50 rounded-lg p-3 ${feeError ? 'border-2 border-red-500' : ''}`}>
                   <input
                     type="number"
                     value={formData.publication_fee || ''}
@@ -8003,7 +8007,7 @@ const showSubmissionConfirmation = async () => {
                     min="0"
                     max={MAX_CURRENCY_AMOUNT}
                     placeholder="0"
-                    className={`text-2xl font-semibold text-gray-800 w-full bg-transparent border-none focus:outline-none ${
+                    className={`text-2xl font-semibold text-slate-800 w-full bg-transparent border-none focus:outline-none ${
                       (!formData.journal_quartile || feeLimits.total === 0) ? 'cursor-not-allowed opacity-50' : ''
                     }`}
                   />
@@ -8027,19 +8031,19 @@ const showSubmissionConfirmation = async () => {
 
               {/* College Total */}
               <div className="mt-8">
-                <h4 className="text-base font-medium text-gray-900 mb-3">
+                <h4 className="text-base font-medium text-slate-900 mb-3">
                   รวมเบิกจากวิทยาลัยการคอม
                   <br />
-                  <span className="text-sm font-normal text-gray-600">Total Reimbursement from CP-KKU</span>
+                  <span className="text-sm font-normal text-slate-600">Total Reimbursement from CP-KKU</span>
                 </h4>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-gray-700">จำนวน (Amount)</span>
-                  <span className="text-2xl font-bold text-gray-900">
+                  <span className="text-sm text-slate-700">จำนวน (Amount)</span>
+                  <span className="text-2xl font-bold text-slate-900">
                     {formatCurrency(formData.total_amount || 0)}
                   </span>
-                  <span className="text-sm text-gray-700">บาท (Baht)</span>
+                  <span className="text-sm text-slate-700">บาท (Baht)</span>
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-slate-500 mt-1">
                   = เงินรางวัล (Reward) ({formatCurrency(effectiveRewardAmount)})
                   + (ค่าปรับปรุง (Editing) ({formatCurrency(formData.revision_fee || 0)}) 
                   + ค่าตีพิมพ์ (Page Charge) ({formatCurrency(formData.publication_fee || 0)}) 
@@ -8050,28 +8054,28 @@ const showSubmissionConfirmation = async () => {
 
             {/* Right side - External funding table */}
             <div className="lg:pl-6">
-              <h4 className="font-medium text-gray-900 mb-4">
+              <h4 className="font-medium text-slate-900 mb-4">
                 รายการที่มหาวิทยาลัยหรือหน่วยงานภายนอกสนับสนุน
                 <br />
-                <span className="text-sm font-normal text-gray-600">External Funding Sources</span>
+                <span className="text-sm font-normal text-slate-600">External Funding Sources</span>
               </h4>
               
               {/* External funding table */}
-              <div className="overflow-hidden rounded-lg border border-blue-200">
-                <table className="w-full">
+              <div className="overflow-x-auto rounded-xl border border-blue-200">
+                <table className="w-full min-w-[36rem]">
                   <thead>
                     <tr className="bg-blue-50">
-                      <th className="border-b border-r border-blue-200 px-3 py-2 text-sm font-medium text-gray-700 text-center" style={{width: '60px'}}>
+                      <th className="border-b border-r border-blue-200 px-3 py-2 text-sm font-medium text-slate-700 text-center" style={{width: '60px'}}>
                         ลำดับ
                         <br />
                         <span className="text-xs font-normal">No.</span>
                       </th>
-                      <th className="border-b border-r border-blue-200 px-3 py-2 text-sm font-medium text-gray-700 text-center">
+                      <th className="border-b border-r border-blue-200 px-3 py-2 text-sm font-medium text-slate-700 text-center">
                         ชื่อทุน
                         <br />
                         <span className="text-xs font-normal">Fund Name</span>
                       </th>
-                      <th className="border-b border-blue-200 px-3 py-2 text-sm font-medium text-gray-700 text-center" style={{width: '120px'}}>
+                      <th className="border-b border-blue-200 px-3 py-2 text-sm font-medium text-slate-700 text-center" style={{width: '120px'}}>
                         จำนวน
                         <br />
                         <span className="text-xs font-normal">Amount</span>
@@ -8081,7 +8085,7 @@ const showSubmissionConfirmation = async () => {
                   <tbody className="bg-white">
                     {!allowExternalFunding ? (
                       <tr>
-                        <td colSpan="3" className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan="3" className="px-4 py-8 text-center text-slate-500">
                           <div className="text-sm">
                             ไม่สามารถเพิ่มทุนภายนอกได้
                             <br />
@@ -8093,7 +8097,7 @@ const showSubmissionConfirmation = async () => {
                       </tr>
                     ) : externalFundings.length === 0 ? (
                       <tr>
-                        <td colSpan="3" className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan="3" className="px-4 py-8 text-center text-slate-500">
                           ยังไม่มีข้อมูล (No data)
                         </td>
                       </tr>
@@ -8196,9 +8200,9 @@ const showSubmissionConfirmation = async () => {
                                         value={funding.fundName}
                                         onChange={(e) => handleExternalFundingChange(funding.clientId, 'fundName', e.target.value)}
                                         placeholder="กรอกชื่อทุน (Enter fund name)"
-                                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                                        className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                                       />
-                                      <p className="mt-1 text-xs text-gray-500">
+                                      <p className="mt-1 text-xs text-slate-500">
                                         โปรดระบุชื่อแหล่งทุนและแนบไฟล์หลักฐานเป็น PDF
                                       </p>
                                       <p className="mt-1 text-xs text-amber-700">
@@ -8208,7 +8212,7 @@ const showSubmissionConfirmation = async () => {
                                     <div className="flex flex-wrap items-center gap-2">
                                       <label
                                         htmlFor={uploadInputId}
-                                        className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
+                                        className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
                                       >
                                         <input
                                           id={uploadInputId}
@@ -8224,7 +8228,7 @@ const showSubmissionConfirmation = async () => {
                                         <button
                                           type="button"
                                           onClick={() => handleClearExternalFundingUpload(funding.clientId)}
-                                          className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-3 py-1.5 text-xs text-gray-600 transition hover:bg-gray-100"
+                                          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 transition hover:bg-slate-100"
                                         >
                                           ลบไฟล์ใหม่
                                         </button>
@@ -8232,7 +8236,7 @@ const showSubmissionConfirmation = async () => {
                                       <button
                                         type="button"
                                         onClick={() => handleRemoveExternalFunding(funding.clientId)}
-                                        className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
                                       >
                                         <X className="h-3.5 w-3.5" />
                                         <span>ลบรายการ</span>
@@ -8258,7 +8262,7 @@ const showSubmissionConfirmation = async () => {
                                         <button
                                           type="button"
                                           onClick={() => handleClearExternalFundingUpload(funding.clientId)}
-                                          className="text-gray-600 hover:text-gray-800"
+                                          className="text-slate-600 hover:text-slate-800"
                                         >
                                           ยกเลิกไฟล์ใหม่
                                         </button>
@@ -8280,19 +8284,19 @@ const showSubmissionConfirmation = async () => {
                                           <button
                                             type="button"
                                             onClick={() => handleDownloadDocument(effectiveDoc)}
-                                            className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
+                                            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
                                           >
                                             <Download className="h-3.5 w-3.5" />
                                             <span>ดาวน์โหลด</span>
                                           </button>
                                         ) : (
-                                          <span className="text-xs text-gray-500">ไม่พบไฟล์ในระบบ</span>
+                                          <span className="text-xs text-slate-500">ไม่พบไฟล์ในระบบ</span>
                                         )}
                                         {isPendingRemove ? (
                                           <button
                                             type="button"
                                             onClick={() => handleRestoreExternalFundingFile(funding.clientId)}
-                                            className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+                                            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
                                           >
                                             <Undo2 className="h-3.5 w-3.5" />
                                             <span>ยกเลิก</span>
@@ -8302,7 +8306,7 @@ const showSubmissionConfirmation = async () => {
                                             <button
                                               type="button"
                                               onClick={() => handleRemoveExternalFundingFile(funding.clientId)}
-                                              className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                                              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
                                             >
                                               <Trash2 className="h-3.5 w-3.5" />
                                               <span>ลบไฟล์เดิม</span>
@@ -8312,7 +8316,7 @@ const showSubmissionConfirmation = async () => {
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="rounded border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500">
+                                    <div className="rounded border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-500">
                                       <span>ยังไม่มีไฟล์จากระบบ</span>
                                     </div>
                                   )}
@@ -8329,7 +8333,7 @@ const showSubmissionConfirmation = async () => {
                             min="0"
                             max={MAX_CURRENCY_AMOUNT}
                             disabled={!allowExternalFunding}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-right text-sm focus:outline-none focus:border-blue-500"
+                            className="w-full px-2 py-1 border border-slate-300 rounded text-right text-sm focus:outline-none focus:border-blue-500"
                           />
                           </td>
                         </tr>
@@ -8347,7 +8351,7 @@ const showSubmissionConfirmation = async () => {
                   disabled={!allowExternalFunding}
                   className={`flex items-center gap-2 px-5 py-2 rounded-full transition-colors text-sm font-medium ${
                     !allowExternalFunding
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                       : 'bg-green-500 text-white hover:bg-green-600'
                   }`}
                   title={
@@ -8363,15 +8367,15 @@ const showSubmissionConfirmation = async () => {
 
               {/* External funding total */}
               <div className="mt-4 text-right">
-                <span className="text-sm text-gray-700">รวม (Total) </span>
-                <span className="text-xl font-bold text-gray-900">
+                <span className="text-sm text-slate-700">รวม (Total) </span>
+                <span className="text-xl font-bold text-slate-900">
                   {formatCurrency(
                     allowExternalFunding
                       ? (externalFundings || []).reduce((sum, funding) => sum + (parseFloat(funding?.amount || 0)), 0)
                       : 0
                   )}
                 </span>
-                <span className="text-sm text-gray-700"> บาท (Baht)</span>
+                <span className="text-sm text-slate-700"> บาท (Baht)</span>
               </div>
             </div>
           </div>
@@ -8388,19 +8392,19 @@ const showSubmissionConfirmation = async () => {
         <SimpleCard title={isFundDetailsView ? "เอกสารที่ใช้ประกอบการยื่นคำร้อง" : "เอกสารแนบ (File Attachments)"} icon={isFundDetailsView ? FileText : Upload} id="file-attachments-section">
           {isFundDetailsView ? (
             documentTypes.length > 0 ? (
-              <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
-                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead className="bg-gray-50">
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full min-w-[36rem] divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50">
                     <tr>
-                      <th scope="col" className="w-16 px-4 py-3 text-center font-medium text-gray-600">ลำดับ</th>
-                      <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">ชื่อเอกสาร</th>
+                      <th scope="col" className="w-16 px-4 py-3 text-center font-medium text-slate-600">ลำดับ</th>
+                      <th scope="col" className="px-4 py-3 text-left font-medium text-slate-600">ชื่อเอกสาร</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
+                  <tbody className="divide-y divide-slate-200 bg-white">
                     {documentTypes.map((docType, index) => (
                       <tr key={docType.id ?? docType.document_type_id ?? index}>
-                        <td className="px-4 py-3 text-center text-gray-600">{index + 1}</td>
-                        <td className="px-4 py-3 font-medium text-gray-800">
+                        <td className="px-4 py-3 text-center text-slate-600">{index + 1}</td>
+                        <td className="px-4 py-3 font-medium text-slate-800">
                           {docType.name || docType.document_type_name || 'ไม่ระบุชื่อเอกสาร'}
                           {docType.required && (
                             <span className="ml-1 text-red-500" aria-label="เอกสารบังคับ">*จำเป็น*</span>
@@ -8412,9 +8416,9 @@ const showSubmissionConfirmation = async () => {
                 </table>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center">
-                <FileText className="mx-auto mb-3 h-10 w-10 text-gray-400" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-600">ไม่มีเอกสารที่กำหนดสำหรับทุนนี้</p>
+              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
+                <FileText className="mx-auto mb-3 h-10 w-10 text-slate-400" aria-hidden="true" />
+                <p className="text-sm font-medium text-slate-600">ไม่มีเอกสารที่กำหนดสำหรับทุนนี้</p>
               </div>
             )
           ) : (
@@ -8437,8 +8441,8 @@ const showSubmissionConfirmation = async () => {
                     );
 
                     return (
-                      <div key={docType.id} className="border border-gray-200 rounded-lg p-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <div key={docType.id} className="border border-slate-200 rounded-lg p-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
                           เอกสารอื่นๆ (Other Documents) (ถ้ามี/if any)
                         </label>
 
@@ -8452,13 +8456,13 @@ const showSubmissionConfirmation = async () => {
                               return (
                                 <div
                                   key={doc.document_id}
-                                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3"
+                                  className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3"
                                 >
                                   <div>
-                                    <p className="text-sm font-medium text-gray-700">
+                                    <p className="text-sm font-medium text-slate-700">
                                       {doc.original_name || doc.document_type_name || 'ไฟล์จากระบบ'}
                                     </p>
-                                    <p className={`text-xs mt-1 ${doc.pendingRemoval ? 'text-red-600' : 'text-gray-500'}`}>
+                                    <p className={`text-xs mt-1 ${doc.pendingRemoval ? 'text-red-600' : 'text-slate-500'}`}>
                                       {doc.pendingRemoval ? pendingMessage : 'ไฟล์จากระบบ'}
                                     </p>
                                   </div>
@@ -8474,7 +8478,7 @@ const showSubmissionConfirmation = async () => {
                                       <button
                                         type="button"
                                         onClick={() => unmarkDocumentRemoval(doc.document_id)}
-                                        className="text-gray-600 hover:text-gray-800"
+                                        className="text-slate-600 hover:text-slate-800"
                                       >
                                         ยกเลิก
                                       </button>
@@ -8507,8 +8511,8 @@ const showSubmissionConfirmation = async () => {
                   // Special handling for "เอกสารเบิกจ่ายภายนอก"
                   if (isExternalFundingType(docType.id)) {
                     return (
-                      <div key={docType.id} className="border border-gray-200 rounded-lg p-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <div key={docType.id} className="border border-slate-200 rounded-lg p-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
                           เอกสารเบิกจ่ายภายนอก (External Funding Documents)
                         </label>
 
@@ -8544,7 +8548,7 @@ const showSubmissionConfirmation = async () => {
                                       <button
                                         type="button"
                                         onClick={() => handleRestoreExternalFundingFile(doc.funding_client_id)}
-                                        className="text-gray-600 hover:text-gray-800"
+                                        className="text-slate-600 hover:text-slate-800"
                                       >
                                         ยกเลิก
                                       </button>
@@ -8566,7 +8570,7 @@ const showSubmissionConfirmation = async () => {
 
                         {externalFundingFiles && externalFundingFiles.length > 0 ? (
                           <div className="space-y-2">
-                            <p className="text-sm font-medium text-gray-600">
+                            <p className="text-sm font-medium text-slate-600">
                               ไฟล์จากตารางทุนภายนอก ({externalFundingFiles.length} ไฟล์):
                             </p>
                             {externalFundingFiles.map((doc) => (
@@ -8574,8 +8578,8 @@ const showSubmissionConfirmation = async () => {
                                 <div className="flex items-center gap-2">
                                   <FileText className="h-4 w-4 text-blue-600" />
                                   <div className="flex-1">
-                                    <span className="text-sm text-gray-700">{doc.file.name}</span>
-                                    <span className="text-xs text-gray-500 ml-2">
+                                    <span className="text-sm text-slate-700">{doc.file.name}</span>
+                                    <span className="text-xs text-slate-500 ml-2">
                                       {(doc.file.size / 1024 / 1024).toFixed(2)} MB
                                     </span>
                                   </div>
@@ -8605,12 +8609,12 @@ const showSubmissionConfirmation = async () => {
                             ))}
                           </div>
                         ) : (
-                          <div className="text-center py-4 bg-gray-50 rounded-lg">
-                            <FileText className="mx-auto h-6 w-6 text-gray-400 mb-2" />
-                            <p className="text-sm text-gray-500">
+                          <div className="text-center py-4 bg-slate-50 rounded-lg">
+                            <FileText className="mx-auto h-6 w-6 text-slate-400 mb-2" />
+                            <p className="text-sm text-slate-500">
                               ไฟล์จะแสดงอัตโนมัติเมื่อแนบในตารางทุนภายนอก
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-slate-400 mt-1">
                               (Files will appear automatically when attached in external funding table)
                             </p>
                           </div>
@@ -8646,8 +8650,8 @@ const showSubmissionConfirmation = async () => {
 
                   // Regular document types
                   return (
-                    <div key={docType.id} id={`file-upload-${docType.id}`} className="border border-gray-200 rounded-lg p-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div key={docType.id} id={`file-upload-${docType.id}`} className="border border-slate-200 rounded-lg p-4">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
                         {getDocumentNameWithEnglish(docType.name)}
                         {docType.required && <span className="text-red-500 ml-1">*</span>}
                       </label>
@@ -8699,7 +8703,7 @@ const showSubmissionConfirmation = async () => {
                                     <button
                                       type="button"
                                       onClick={() => handleDownloadDocument(doc)}
-                                      className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
+                                      className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50"
                                     >
                                       <Download className="h-3.5 w-3.5" />
                                       <span>ดาวน์โหลด</span>
@@ -8708,7 +8712,7 @@ const showSubmissionConfirmation = async () => {
                                       <button
                                         type="button"
                                         onClick={() => unmarkDocumentRemoval(doc.document_id)}
-                                        className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
                                       >
                                         <Undo2 className="h-3.5 w-3.5" />
                                         <span>ยกเลิก</span>
@@ -8717,7 +8721,7 @@ const showSubmissionConfirmation = async () => {
                                       <button
                                         type="button"
                                         onClick={() => markDocumentForRemoval(doc.document_id, 'remove')}
-                                        className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
                                       >
                                         <Trash2 className="h-3.5 w-3.5" />
                                         <span>ลบ</span>
@@ -8735,13 +8739,13 @@ const showSubmissionConfirmation = async () => {
                 })}
               </>
             ) : (
-              <div className="text-center py-6 text-gray-500">
-                <FileText className="mx-auto h-8 w-8 mb-2 text-gray-400" />
+              <div className="text-center py-6 text-slate-500">
+                <FileText className="mx-auto h-8 w-8 mb-2 text-slate-400" />
                 <p className="text-sm">กำลังโหลดประเภทเอกสาร... (Loading document types...)</p>
               </div>
             )}
 
-            <div ref={previewSectionRef} className="border-t border-gray-200 pt-4">
+            <div ref={previewSectionRef} className="border-t border-slate-200 pt-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <button
                   type="button"
@@ -8750,21 +8754,21 @@ const showSubmissionConfirmation = async () => {
                   className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                 >
                   {previewState.loading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                   ) : (
                     <Eye className="h-4 w-4" />
                   )}
                   {previewState.loading ? 'กำลังสร้างตัวอย่าง...' : 'ดูตัวอย่างเอกสารรวม'}
                 </button>
 
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-slate-500">
                   รวมไฟล์ทั้งหมด {attachedFiles.length} ไฟล์
                 </div>
               </div>
 
               {!previewState.loading && attachedFiles.length === 0 && (
-                <p className="mt-2 text-sm text-gray-600 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-gray-400" />
+                <p className="mt-2 text-sm text-slate-600 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-slate-400" />
                   กรุณาแนบไฟล์ก่อนดูตัวอย่างเอกสาร
                 </p>
               )}
@@ -8791,7 +8795,7 @@ const showSubmissionConfirmation = async () => {
                             window.open(previewUrl, '_blank', 'noopener,noreferrer');
                           }
                         }}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                       >
                         <Eye className="h-4 w-4" />
                         เปิดอีกครั้ง
@@ -8801,9 +8805,10 @@ const showSubmissionConfirmation = async () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         download={previewState.blobUrl ? 'publication_reward_preview.pdf' : undefined}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-white text-blue-700 border border-blue-300 hover:bg-blue-100"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-blue-300 bg-white px-3 py-2 text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                       >
-                        ⬇️ ดาวน์โหลด
+                        <Download className="h-4 w-4" aria-hidden="true" />
+                        ดาวน์โหลด
                       </a>
                     </div>
                   </div>
@@ -8819,7 +8824,7 @@ const showSubmissionConfirmation = async () => {
                       className="w-full h-[85vh] border rounded"
                     />
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-slate-500">
                     หากเอกสารไม่แสดงผล กรุณาใช้ปุ่มเปิดหรือดาวน์โหลดด้านบน
                   </p>
                 </div>
@@ -8835,15 +8840,15 @@ const showSubmissionConfirmation = async () => {
         <SimpleCard title="ข้อมูลเพิ่มเติม (Additional Information)" icon={FileText}>
           <div className="space-y-4">
             {/* University funding — checkbox under question; inline field when checked */}
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               ได้รับการสนับสนุนทุนจากมหาวิทยาลัยขอนแก่นหรือไม่?
               <br />
-              <span className="text-xs font-normal text-gray-600">
+              <span className="text-xs font-normal text-slate-600">
                 (Did you receive funding support from the Khon Kaen University?)
               </span>
             </label>
 
-            <div className="flex flex-wrap items-center gap-4 rounded-lg border border-gray-200 p-4">
+            <div className="flex flex-wrap items-center gap-4 rounded-lg border border-slate-200 p-4">
               {/* Checkbox */}
               <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                 <input
@@ -8859,7 +8864,7 @@ const showSubmissionConfirmation = async () => {
                     }))
                   }
                 />
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-slate-700">
                   {formData.has_university_fund === 'yes' ? 'ได้รับ (Yes)' : 'ไม่ได้รับ (No)'}
                 </span>
               </label>
@@ -8874,9 +8879,9 @@ const showSubmissionConfirmation = async () => {
                     value={formData.university_fund_ref}
                     onChange={handleInputChange}
                     placeholder="กรอกหมายเลขอ้างอิงทุน (Enter fund reference number)"
-                    className="w-full min-w-0 px-4 py-2 rounded-lg border border-gray-300
+                    className="w-full min-w-0 px-4 py-2 rounded-lg border border-slate-300
                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                              placeholder:text-gray-400"
+                              placeholder:text-slate-400"
                   />
                 </div>
               )}
@@ -8884,7 +8889,7 @@ const showSubmissionConfirmation = async () => {
 
             {/* University ranking */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 อันดับมหาวิทยาลัย/สถาบัน (University/Institution Ranking) (ถ้ามี/if any)
               </label>
               <input
@@ -8893,7 +8898,7 @@ const showSubmissionConfirmation = async () => {
                 value={formData.university_ranking}
                 onChange={handleInputChange}
                 placeholder="เช่น (e.g.) QS World University Rankings #500"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
@@ -8902,19 +8907,19 @@ const showSubmissionConfirmation = async () => {
         <SimpleCard title="การยืนยันและลายเซ็น" icon={Signature}>
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-4">
+              <p className="text-sm font-medium text-slate-700 mb-4">
                 ข้าพเจ้าขอรับรองว่า
               </p>
               {termsLoading ? (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-slate-500">
                   <Loader2 className="h-4 w-4 animate-spin" /> กำลังโหลดเงื่อนไข/ข้อตกลง...
                 </div>
               ) : termsError ? (
                 <p className="text-sm text-red-600">{termsError}</p>
               ) : endOfContractTerms.length === 0 ? (
-                <p className="text-sm text-gray-500">ยังไม่มีเงื่อนไข/ข้อตกลงให้ยืนยัน</p>
+                <p className="text-sm text-slate-500">ยังไม่มีเงื่อนไข/ข้อตกลงให้ยืนยัน</p>
               ) : isReadOnly ? (
-                <ol className="list-decimal space-y-2 pl-5 text-sm text-gray-700">
+                <ol className="list-decimal space-y-2 pl-5 text-sm text-slate-700">
                   {endOfContractTerms.map((term) => (
                     <li
                       key={`reward-term-${term.eoc_id}`}
@@ -8936,7 +8941,7 @@ const showSubmissionConfirmation = async () => {
                         <input
                           id={`reward-term-${key}`}
                           type="checkbox"
-                          className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                          className="mt-1 h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 focus:border-blue-500"
                           checked={checked}
                           onChange={(e) =>
                             setTermAcknowledgements((prev) => ({
@@ -8949,7 +8954,7 @@ const showSubmissionConfirmation = async () => {
                         />
                         <label
                           htmlFor={`reward-term-${key}`}
-                          className="text-sm text-gray-700 leading-relaxed whitespace-pre-line"
+                          className="text-sm text-slate-700 leading-relaxed whitespace-pre-line"
                         >
                           <span className="font-semibold mr-1">{index + 1}.</span>
                           {term.content}
@@ -8962,7 +8967,7 @@ const showSubmissionConfirmation = async () => {
             </div>
 
             <div>
-              <label htmlFor="signature" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="signature" className="block text-sm font-medium text-slate-700 mb-2">
                 ลงลายมือชื่อ (กรุณาพิมพ์ชื่อเต็ม) <span className="text-red-500">*</span>
               </label>
               <input
@@ -8973,7 +8978,7 @@ const showSubmissionConfirmation = async () => {
                 onChange={handleInputChange}
                 placeholder="กรอกชื่อ-นามสกุล"
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.signature ? 'border-red-500' : 'border-gray-300'
+                  errors.signature ? 'border-red-500' : 'border-slate-300'
                 }`}
                 required
                 aria-invalid={errors.signature ? 'true' : 'false'}
@@ -9008,10 +9013,10 @@ const showSubmissionConfirmation = async () => {
               type="button"
               onClick={saveDraft}
               disabled={saving || loading}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-blue-300 bg-white px-6 py-3 font-medium text-blue-700 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
               ) : (
                 <Save className="h-4 w-4" />
               )}
@@ -9030,7 +9035,7 @@ const showSubmissionConfirmation = async () => {
             className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
             ) : (
               <Send className="h-4 w-4" />
             )}
@@ -9043,10 +9048,10 @@ const showSubmissionConfirmation = async () => {
         // WARNING NOTICE
         // ================================================================= */}
         {!isFundDetailsView && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-            <div className="text-sm text-yellow-800">
+            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+            <div className="text-sm text-amber-800">
               <p className="font-medium mb-1">ข้อควรระวัง:</p>
               <ul className="list-disc list-inside space-y-1 text-xs">
                 <li>กรุณาตรวจสอบข้อมูลให้ครบถ้วนและถูกต้องก่อนส่งคำร้อง</li>
@@ -9065,7 +9070,7 @@ const showSubmissionConfirmation = async () => {
           <button
             type="button"
             onClick={handleGoBack}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             ย้อนกลับ
@@ -9074,7 +9079,7 @@ const showSubmissionConfirmation = async () => {
             <button
               type="button"
               onClick={handleApplyFromDetails}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
             >
               <Send className="h-4 w-4" aria-hidden="true" />
               ไปที่หน้ายื่นคำร้องของทุนนี้

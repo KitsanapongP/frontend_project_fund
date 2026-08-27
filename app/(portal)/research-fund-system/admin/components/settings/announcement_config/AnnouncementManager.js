@@ -5,7 +5,6 @@ import { FileText, Eye, Download, Bell, BookOpen, Plus, Edit, Trash2, Save, X, G
 import Swal from "sweetalert2";
 import apiClient from "@/app/lib/api";
 import { adminAnnouncementAPI, adminFundFormAPI } from "@/app/lib/admin_announcement_api";
-import { motion, AnimatePresence } from "framer-motion";
 import AnnouncementModal from "@/app/(portal)/research-fund-system/admin/components/settings/announcement_config/AnnouncementModal";
 import FundFormModal from "@/app/(portal)/research-fund-system/admin/components/settings/announcement_config/FundFormModal";
 import { adminAPI } from "@/app/lib/admin_api";
@@ -179,12 +178,6 @@ function sameOrder(a, b) {
     promotion_fund: "ทุนกิจกรรม",
     both: "ทั้งสองประเภท",
   };
-
-const pageMotionProps = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.3, ease: "easeOut" },
-};
 
 export default function AnnouncementManager() {
   /** ===== State: Announcements ===== */
@@ -1060,18 +1053,18 @@ export default function AnnouncementManager() {
 
   return (
     <>
-      <motion.div className="space-y-8" {...pageMotionProps}>
+      <div className="space-y-8">
         <SettingsSectionCard
           icon={Bell}
-          iconBgClass="bg-blue-100"
-          iconColorClass="text-blue-600"
+          iconBgClass="border border-amber-200 bg-amber-50"
+          iconColorClass="text-amber-700"
           title="ประกาศ"
           description="จัดการประกาศ"
           actions={
             <>
               <button
                 onClick={loadAnnouncements}
-                className="inline-flex items-center gap-2 rounded-lg border border-green-200 px-4 py-2 text-sm font-medium text-green-600 transition hover:bg-green-50"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
                 <RefreshCw size={16} /> รีเฟรช
               </button>
@@ -1084,7 +1077,7 @@ export default function AnnouncementManager() {
               </button>
               <button
                 onClick={openACreate}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
               >
                 <PlusCircle size={16} /> เพิ่มประกาศ
               </button>
@@ -1145,9 +1138,9 @@ export default function AnnouncementManager() {
           ) : A.length === 0 ? (
             <div className="text-center text-gray-500 py-10">ยังไม่มีประกาศ</div>
           ) : (
-            <div className="overflow-x-auto border border-gray-300 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full min-w-[940px] divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50">
                   <tr>
                   <th className="w-10 px-3 py-2 text-center text-gray-600">ลำดับ</th>
                   <th className="px-3 py-2 text-center text-gray-600">หัวข้อประกาศ</th>
@@ -1176,19 +1169,25 @@ export default function AnnouncementManager() {
                         </div>
                       </td>
                       <td className="px-3 py-2">
-                        {row.file_path ? (
-                          <button
-                            onClick={() => handleViewFile(row, "announcement")}
-                            className="inline-flex max-w-[36ch] text-left font-medium text-blue-600 hover:underline"
-                            title={row.title || "เปิดประกาศ"}
-                          >
-                            <span className="truncate">{row.title || "เปิดประกาศ"}</span>
-                          </button>
-                        ) : (
-                          <span className="block max-w-[36ch] truncate font-medium text-gray-700" title={row.title || "-"}>
+                        <div className="max-w-[36ch]">
+                          <p className="truncate font-semibold text-slate-900" title={row.title || "-"}>
                             {row.title || "-"}
-                          </span>
-                        )}
+                          </p>
+                          {row.file_path ? (
+                            <button
+                              type="button"
+                              onClick={() => handleViewFile(row, "announcement")}
+                              className="mt-1 inline-flex max-w-full items-center gap-1.5 text-left text-xs font-medium text-blue-700 hover:text-blue-900 hover:underline"
+                              title={row.file_name || "ดูไฟล์ประกาศ"}
+                            >
+                              <FileText size={14} className="shrink-0" />
+                              <span className="truncate">{row.file_name || "ดูไฟล์ประกาศ"}</span>
+                              {row.file_size ? <span className="shrink-0 text-slate-400">({fmtBytes(row.file_size)})</span> : null}
+                            </button>
+                          ) : (
+                            <span className="mt-1 block text-xs text-slate-400">ไม่มีไฟล์แนบ</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-3 py-2 text-center text-sm text-gray-700">
                         {TYPE_LABEL[row.announcement_type] || row.announcement_type || "-"}
@@ -1208,7 +1207,7 @@ export default function AnnouncementManager() {
                               <button
                                   onClick={() => handleDownloadFile(row, "announcement")}
                                   disabled={downloadingIds.has(id)} // เพิ่มบรรทัดนี้
-                                  className="inline-flex items-center gap-1 rounded-lg border border-green-200 px-3 py-1 text-xs font-medium text-green-600 transition hover:bg-green-50 disabled:opacity-50 disabled:cursor-wait" // เพิ่ม class
+                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50" // เพิ่ม class
                                   title="ดาวน์โหลดไฟล์"
                               >
                                   <Download size={16} />
@@ -1229,11 +1228,6 @@ export default function AnnouncementManager() {
                             <Trash2 size={16} /> ลบ
                           </button>
                         </div>
-                        {row.file_size ? (
-                          <div className="text-xs text-gray-500 mt-1 text-right">
-                            ขนาดไฟล์: {fmtBytes(row.file_size)}
-                          </div>
-                        ) : null}
                       </td>
                     </tr>
                   );
@@ -1246,15 +1240,15 @@ export default function AnnouncementManager() {
 
       <SettingsSectionCard
         icon={BookOpen}
-        iconBgClass="bg-green-100"
-        iconColorClass="text-green-600"
+        iconBgClass="border border-blue-200 bg-blue-50"
+        iconColorClass="text-blue-700"
         title="แบบฟอร์มการขอทุน"
         description="จัดการแบบฟอร์ม"
         actions={
           <>
             <button
               onClick={loadFundForms}
-              className="inline-flex items-center gap-2 rounded-lg border border-green-200 px-4 py-2 text-sm font-medium text-green-600 transition hover:bg-green-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               <RefreshCw size={16} /> รีเฟรช
             </button>
@@ -1267,7 +1261,7 @@ export default function AnnouncementManager() {
             </button>
             <button
               onClick={openFCreate}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
             >
               <PlusCircle size={16} /> เพิ่มแบบฟอร์ม
             </button>
@@ -1386,9 +1380,9 @@ export default function AnnouncementManager() {
         ) : F.length === 0 ? (
           <div className="text-center text-gray-500 py-10">ยังไม่มีแบบฟอร์ม</div>
         ) : (
-          <div className="overflow-x-auto border border-gray-300 rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full min-w-[940px] divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50">
                 <tr>
                   <th className="w-10 px-3 py-2 text-center text-gray-600">ลำดับ</th>
                   <th className="px-3 py-2 text-center text-gray-600">ชื่อไฟล์ / หัวข้อ</th>
@@ -1396,7 +1390,7 @@ export default function AnnouncementManager() {
                   <th className="px-3 py-2 text-center text-gray-600">หมวดหมู่กองทุน</th>
                   <th className="px-3 py-2 text-center text-gray-600">ปี</th>
                   <th className="px-3 py-2 text-center text-gray-600">รายละเอียด</th>
-                  <th className="px-3 py-2 text-center text-gray-600">การจดการ</th>
+                  <th className="px-3 py-2 text-center text-gray-600">การจัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -1492,7 +1486,7 @@ export default function AnnouncementManager() {
           </div>
           )}
         </SettingsSectionCard>
-      </motion.div>
+      </div>
       {/* ประกาศ */}
       <AnnouncementModal
         open={aEditOpen}

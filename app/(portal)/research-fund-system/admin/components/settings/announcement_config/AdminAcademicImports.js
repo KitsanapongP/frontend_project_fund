@@ -84,7 +84,7 @@ export default function AdminAcademicImports({ initialTab = "scholar" }) {
                 }`}
               >
                 <div>{tab.label}</div>
-                <div className="text-[11px] font-normal text-slate-500">
+                <div className="text-xs font-normal text-slate-500">
                   {tab.description}
                 </div>
               </button>

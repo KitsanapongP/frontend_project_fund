@@ -165,7 +165,7 @@ export default function RankingSourcesPage() {
       <Header currentPageTitle="จัดการฐานข้อมูลแหล่งที่มาส่วนกลาง" />
       
       {/* ── Main Layout Wrapper ── */}
-      <main className="w-full pt-28 px-6">
+      <main className="portal-page-offset w-full px-6">
         <div className="max-w-7xl mx-auto space-y-3">
           
           {/* ── Control Bar ปุ่มด้านบนสุด (กระจายซ้าย-ขวา) ── */}

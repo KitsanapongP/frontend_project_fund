@@ -29,23 +29,19 @@ export default function PublicNavigation({
   const isActive = (page) => currentPage === page;
 
   return (
-    <nav className="pb-40 md:ms-4">
+    <nav className="space-y-1 pb-40" aria-label="เมนูสาธารณะ">
       <button
         onClick={handleHomeClick}
-        className={`flex items-center gap-2 mb-2.5 w-full transition-colors ${
-          isActive("home")
-            ? "text-blue-500 font-semibold"
-            : "text-gray-700 hover:text-blue-500"
-        }`}
+        className={`portal-nav-item ${isActive("home") ? "portal-nav-item--active" : ""}`}
       >
         <Home size={20} />
         <span className="flex-1 text-left">หน้าหลัก</span>
       </button>
 
-      <div className="border-t border-gray-200 mt-6 pt-4">
+      <div className="mt-5 border-t border-slate-200 pt-4">
         <button
           onClick={handleLoginClick}
-          className="flex items-center gap-2 text-gray-700 hover:text-blue-500 transition-colors w-full"
+          className="portal-nav-item"
         >
           <LogIn size={20} />
           <span>เข้าสู่ระบบ</span>

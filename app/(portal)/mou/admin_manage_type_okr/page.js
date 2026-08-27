@@ -232,7 +232,7 @@ export default function AdminManageTypeOkrPage() {
       <style>{`
         .swal-icon-trash { border-color: #dc2626 !important; }
         .swal-icon-save { border-color: #2563eb !important; }
-        .swal2-title { font-size: 1.05rem !important; }
+        .swal2-title { font-size: 1.25rem !important; }
         .swal2-actions { width: 100% !important; justify-content: space-between !important; padding: 0 1rem !important; }
         .swal2-actions .swal2-cancel { order: -1 !important; }
         .swal2-actions .swal2-confirm { order: 0 !important; }

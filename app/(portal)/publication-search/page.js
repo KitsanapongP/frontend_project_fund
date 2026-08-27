@@ -24,7 +24,7 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <main className="pt-40 lg:pt-32 px-4 pb-8 w-full flex justify-center">
+      <main className="portal-page-offset flex w-full justify-center px-4 pb-8">
         <div className="w-full max-w-[1400px]">
           <Suspense fallback={<div className="text-center py-12 text-gray-500">กำลังโหลด...</div>}>
             <PublicationSearchPage />

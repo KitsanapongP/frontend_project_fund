@@ -29,10 +29,10 @@ const StatusBadge = ({
       : String(status || "").toLowerCase() === "active";
 
   const baseClass =
-    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border " +
+    `inline-flex items-center rounded-md border text-xs font-medium ${interactive ? "min-h-11 px-3 py-2" : "px-2.5 py-1"} ` +
     (isActive
-      ? "bg-green-100 text-green-800 border-green-200"
-      : "bg-red-100 text-red-800 border-red-200");
+      ? "border-green-200 bg-green-50 text-green-700"
+      : "border-slate-200 bg-slate-100 text-slate-600");
 
   const handleClick = async () => {
     if (!interactive || disabled || !onChange) return;
@@ -47,6 +47,16 @@ const StatusBadge = ({
         showCancelButton: true,
         confirmButtonText: "ยืนยัน",
         cancelButtonText: "ยกเลิก",
+        reverseButtons: true,
+        buttonsStyling: false,
+        customClass: {
+          popup: "rounded-xl",
+          title: "text-xl font-semibold text-slate-900",
+          htmlContainer: "text-sm text-slate-600",
+          actions: "gap-2",
+          confirmButton: "min-h-11 rounded-lg bg-blue-600 px-5 font-medium text-white hover:bg-blue-700",
+          cancelButton: "min-h-11 rounded-lg border border-slate-300 bg-white px-5 font-medium text-slate-700 hover:bg-slate-50",
+        },
       });
       if (!res.isConfirmed) return;
     }
@@ -85,7 +95,7 @@ const StatusBadge = ({
       <button
         type="button"
         onClick={handleClick}
-        className={`${baseClass} ${className} ${disabled ? "opacity-60 cursor-not-allowed" : "hover:opacity-90"} `}
+        className={`${baseClass} ${className} ${disabled ? "cursor-not-allowed opacity-60" : "hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"} `}
         disabled={disabled}
         title={isActive ? inactiveLabel : activeLabel}
       >

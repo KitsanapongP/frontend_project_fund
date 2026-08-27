@@ -134,8 +134,9 @@ function buildChartConfig(dataset) {
       axisTicks: { show: false },
       labels: {
         style: {
-          colors: "#6b7280",
+          colors: "#64748b",
           fontSize: "12px",
+          fontFamily: "Sarabun, sans-serif",
         },
         rotateAlways: categories.some((label) => label.length > 18),
       },
@@ -144,10 +145,10 @@ function buildChartConfig(dataset) {
       {
         title: {
           text: "จำนวนคำร้อง",
-          style: { color: "#1f2937" },
+          style: { color: "#334155", fontFamily: "Sarabun, sans-serif" },
         },
         labels: {
-          style: { colors: "#6b7280" },
+          style: { colors: "#64748b", fontFamily: "Sarabun, sans-serif" },
         },
         min: 0,
         forceNiceScale: true,
@@ -156,10 +157,10 @@ function buildChartConfig(dataset) {
         opposite: true,
         title: {
           text: "จำนวนที่อนุมัติ",
-          style: { color: "#047857" },
+          style: { color: "#166534", fontFamily: "Sarabun, sans-serif" },
         },
         labels: {
-          style: { colors: "#6b7280" },
+          style: { colors: "#64748b", fontFamily: "Sarabun, sans-serif" },
         },
         min: 0,
         forceNiceScale: true,
@@ -169,11 +170,12 @@ function buildChartConfig(dataset) {
       position: "top",
       horizontalAlign: "left",
       fontSize: "12px",
+      fontFamily: "Sarabun, sans-serif",
       labels: {
-        colors: "#374151",
+        colors: "#334155",
       },
     },
-    colors: ["#2563eb", "#10b981", "#f97316"],
+    colors: ["#2563eb", "#64748b", "#16a34a"],
     tooltip: {
       shared: true,
       intersect: false,
@@ -192,7 +194,7 @@ function buildChartConfig(dataset) {
       },
     },
     grid: {
-      borderColor: "#e5e7eb",
+      borderColor: "#e2e8f0",
       strokeDashArray: 4,
     },
   };
@@ -270,8 +272,8 @@ export default function MonthlyChart({ breakdown = {}, defaultMode = "monthly" }
 
   if (!normalizedData.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-        <BarChart3 size={36} className="mb-3 text-gray-400" />
+      <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+        <BarChart3 size={36} className="mb-3 text-slate-400" aria-hidden="true" />
         <p className="font-medium">ไม่มีข้อมูลสำหรับการแสดงผล</p>
         <p className="text-sm">ลองเลือกช่วงเวลาอื่นหรือรีเฟรชข้อมูลอีกครั้ง</p>
       </div>
@@ -280,23 +282,25 @@ export default function MonthlyChart({ breakdown = {}, defaultMode = "monthly" }
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <div className="flex items-center gap-2 text-gray-600">
-          <TrendingUp size={20} />
+      <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-3 text-slate-700">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+            <TrendingUp size={20} aria-hidden="true" />
+          </span>
           <div className="flex flex-col">
-            <span className="text-sm font-medium">{chartLabel}</span>
-            <span className="text-xs text-gray-500">{chartDescription}</span>
+            <span className="text-sm font-semibold">{chartLabel}</span>
+            <span className="text-xs text-slate-500">{chartDescription}</span>
           </div>
         </div>
 
         {availableModes.length > 1 && (
           <div className="flex items-center gap-2 text-sm">
-            <label htmlFor="trend-mode" className="text-gray-600">
+            <label htmlFor="trend-mode" className="text-slate-600">
               มุมมอง:
             </label>
             <select
               id="trend-mode"
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
               value={mode}
               onChange={(event) => setMode(event.target.value)}
             >
@@ -319,26 +323,26 @@ export default function MonthlyChart({ breakdown = {}, defaultMode = "monthly" }
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">คำร้องทั้งหมด</p>
-          <p className="mt-2 text-xl font-semibold text-blue-700">{formatNumber(totals.applications)}</p>
-          <p className="text-xs text-blue-600 mt-1">ทุนวิจัย {formatNumber(totals.fundTotal)} / เงินรางวัลตีพิมพ์ {formatNumber(totals.rewardTotal)}</p>
+      <div className="grid grid-cols-1 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-sm sm:grid-cols-2 xl:grid-cols-4">
+        <div className="p-4 sm:border-r sm:border-slate-200 xl:border-r">
+          <p className="text-xs font-medium text-blue-700">คำร้องทั้งหมด</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-slate-950">{formatNumber(totals.applications)}</p>
+          <p className="mt-1 text-xs text-slate-600">ทุนวิจัย {formatNumber(totals.fundTotal)} / เงินรางวัลตีพิมพ์ {formatNumber(totals.rewardTotal)}</p>
         </div>
-        <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4">
-          <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">อนุมัติแล้ว</p>
-          <p className="mt-2 text-xl font-semibold text-emerald-700">{formatNumber(totals.approved)}</p>
-          <p className="text-xs text-emerald-600 mt-1">อัตรา {approvalRate}%</p>
+        <div className="border-t border-slate-200 p-4 sm:border-r sm:border-t-0 sm:border-slate-200 xl:border-r">
+          <p className="text-xs font-medium text-green-700">อนุมัติแล้ว</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-green-800">{formatNumber(totals.approved)}</p>
+          <p className="mt-1 text-xs text-green-700">อัตรา {approvalRate}%</p>
         </div>
-        <div className="rounded-lg border border-amber-100 bg-amber-50 p-4">
-          <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide">ยอดคำร้องทั้งหมด</p>
-          <p className="mt-2 text-xl font-semibold text-amber-700">{formatCurrency(totals.totalRequested)}</p>
-          <p className="text-xs text-amber-600 mt-1">รวมคำร้องที่ยื่น</p>
+        <div className="border-t border-slate-200 p-4 sm:border-t xl:border-r xl:border-t-0 xl:border-slate-200">
+          <p className="text-xs font-medium text-slate-600">ยอดคำร้องทั้งหมด</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-slate-950">{formatCurrency(totals.totalRequested)}</p>
+          <p className="mt-1 text-xs text-slate-500">รวมคำร้องที่ยื่น</p>
         </div>
-        <div className="rounded-lg border border-purple-100 bg-purple-50 p-4">
-          <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide">ยอดอนุมัติ</p>
-          <p className="mt-2 text-xl font-semibold text-purple-700">{formatCurrency(totals.totalApprovedAmount)}</p>
-          <p className="text-xs text-purple-600 mt-1">รวมวงเงินที่อนุมัติแล้ว</p>
+        <div className="border-t border-slate-200 p-4 xl:border-t-0">
+          <p className="text-xs font-medium text-green-700">ยอดอนุมัติ</p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-green-800">{formatCurrency(totals.totalApprovedAmount)}</p>
+          <p className="mt-1 text-xs text-green-700">รวมวงเงินที่อนุมัติแล้ว</p>
         </div>
       </div>
     </div>

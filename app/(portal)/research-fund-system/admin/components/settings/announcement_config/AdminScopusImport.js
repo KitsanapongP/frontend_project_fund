@@ -101,7 +101,7 @@ function StatusBadge({ status }) {
   const classes = getJobStatusBadge(status);
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold capitalize ${classes}`}
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold capitalize ${classes}`}
     >
       {label}
     </span>
@@ -995,11 +995,11 @@ export default function AdminScopusImport() {
                               <div className="font-medium text-slate-900">{hit.name || `(ID: ${hit.user_id})`}</div>
                               {hit.email && <div className="text-xs text-slate-500">{hit.email}</div>}
                               {hit.scopus_id ? (
-                                <div className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
+                                <div className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
                                   Scopus ID <code className="font-mono text-xs">{hit.scopus_id}</code>
                                 </div>
                               ) : (
-                                <div className="text-[11px] text-slate-400">ยังไม่บันทึก Scopus ID</div>
+                                <div className="text-xs text-slate-400">ยังไม่บันทึก Scopus ID</div>
                               )}
                             </div>
                             <button
@@ -1141,7 +1141,7 @@ export default function AdminScopusImport() {
                   <div className="text-sm font-semibold text-slate-900">สรุปการรันล่าสุด</div>
                   {lastBatchSummary ? (
                     <>
-                      <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600">
+                      <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
                         <StatusBadge status={lastBatchSummary.status} />
                         <span>
                           อัปเดตล่าสุด: {formatDateTime(lastBatchSummary.finished_at || lastBatchSummary.started_at)}
@@ -1190,12 +1190,12 @@ export default function AdminScopusImport() {
                               <td className="px-3 py-2 text-xs">
                                 <StatusBadge status={run.status} />
                                 {run.limit !== undefined && run.limit !== null && (
-                                  <div className="mt-1 text-[11px] text-slate-500">Limit: {run.limit}</div>
+                                  <div className="mt-1 text-xs text-slate-500">Limit: {run.limit}</div>
                                 )}
                               </td>
                               <td className="px-3 py-2 text-xs text-slate-700">
                                 <div className="font-semibold text-slate-900">{run.users_processed ?? 0}</div>
-                                <div className="text-[11px] text-slate-500">ผิดพลาด: {run.users_with_errors ?? 0}</div>
+                                <div className="text-xs text-slate-500">ผิดพลาด: {run.users_with_errors ?? 0}</div>
                               </td>
                               <td className="px-3 py-2 text-xs text-slate-700">
                                 <div>ดึง: {run.documents_fetched ?? 0}</div>
@@ -1272,14 +1272,14 @@ export default function AdminScopusImport() {
               >
                 {metricsRefreshRunning ? "กำลังอัปเดต..." : "Run CiteScore Refresh"}
               </button>
-              <p className="text-[11px] text-slate-500">ป้องกันการคลิกซ้ำขณะกำลังทำงาน และตรวจสอบ API Key ก่อนเริ่ม</p>
+              <p className="text-xs text-slate-500">ป้องกันการคลิกซ้ำขณะกำลังทำงาน และตรวจสอบ API Key ก่อนเริ่ม</p>
             </div>
 
               <div className="space-y-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4">
                 <div className="text-sm font-semibold text-slate-900">สถานะการอัปเดต</div>
                 {refreshLatest ? (
                   <>
-                    <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600">
+                    <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
                       <StatusBadge status={refreshLatest.status} />
                       <span>
                         อัปเดตล่าสุด: {formatDateTime(refreshLatest.finished_at || refreshLatest.started_at)}
@@ -1385,14 +1385,14 @@ export default function AdminScopusImport() {
                 >
                   {metricsBackfillRunning ? "กำลังสแกน..." : "สั่งดึง CiteScore ให้เอกสารเดิม"}
                 </button>
-                <p className="text-[11px] text-slate-500">ไม่กระทบการนำเข้าปกติ และข้ามวารสารที่มีข้อมูลอยู่แล้ว</p>
+                <p className="text-xs text-slate-500">ไม่กระทบการนำเข้าปกติ และข้ามวารสารที่มีข้อมูลอยู่แล้ว</p>
               </div>
 
               <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4">
                 <div className="text-sm font-semibold text-slate-900">สรุปการสแกนล่าสุด</div>
                 {backfillLatest ? (
                   <>
-                    <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600">
+                    <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
                       <StatusBadge status={backfillLatest.status} />
                       <span>
                         อัปเดตล่าสุด: {formatDateTime(backfillLatest.finished_at || backfillLatest.started_at)}
@@ -1517,10 +1517,10 @@ export default function AdminScopusImport() {
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-semibold text-slate-900">Job #{job.id}</span>
-                              <span className="text-[11px] text-slate-500">{formatDateTime(job.started_at)}</span>
+                              <span className="text-xs text-slate-500">{formatDateTime(job.started_at)}</span>
                             </div>
                             <div className="text-xs text-slate-600">{job.query_string || "-"}</div>
-                            <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
+                            <div className="flex flex-wrap gap-2 text-xs text-slate-600">
                               {job.scopus_author_id && (
                                 <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-700">
                                   Author: {job.scopus_author_id}
@@ -1601,33 +1601,33 @@ export default function AdminScopusImport() {
                 {selectedJob ? (
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Scopus Author</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Scopus Author</div>
                       <div className="mt-1 font-semibold text-slate-900">{selectedJob.scopus_author_id || "-"}</div>
                     </div>
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Started</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Started</div>
                       <div className="mt-1 font-semibold text-slate-900">{formatDateTime(selectedJob.started_at)}</div>
                     </div>
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Finished</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Finished</div>
                       <div className="mt-1 font-semibold text-slate-900">{formatDateTime(selectedJob.finished_at)}</div>
                     </div>
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total Results</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total Results</div>
                       <div className="mt-1 font-semibold text-slate-900">{selectedJob.total_results ?? "-"}</div>
                     </div>
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Requests</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Requests</div>
                       <div className="mt-1 font-semibold text-slate-900">{selectedJob.request_count ?? 0}</div>
                     </div>
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Items Returned</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Items Returned</div>
                       <div className="mt-1 font-semibold text-slate-900">{selectedJob.items_returned ?? 0}</div>
                     </div>
                     {selectedJob.error_message && (
                       <div className="sm:col-span-2 lg:col-span-3">
                         <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                          <div className="text-[11px] font-semibold uppercase tracking-wide">Error Message</div>
+                          <div className="text-xs font-semibold uppercase tracking-wide">Error Message</div>
                           <p className="mt-1 whitespace-pre-wrap">{selectedJob.error_message}</p>
                         </div>
                       </div>
@@ -1635,7 +1635,7 @@ export default function AdminScopusImport() {
                     {selectedJob.query_string && (
                       <div className="sm:col-span-2 lg:col-span-3">
                         <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
-                          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Query</div>
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Query</div>
                           <p className="mt-1 whitespace-pre-wrap font-mono text-xs">{selectedJob.query_string}</p>
                         </div>
                       </div>
@@ -1677,7 +1677,7 @@ export default function AdminScopusImport() {
                                 <td className="px-3 py-2 text-xs text-slate-600">{formatDateTime(req.created_at)}</td>
                                 <td className="px-3 py-2">
                                   <div className="font-mono text-xs text-slate-900">{req.endpoint}</div>
-                                  <div className="text-[11px] text-slate-500">{req.http_method}</div>
+                                  <div className="text-xs text-slate-500">{req.http_method}</div>
                                 </td>
                                 <td className="px-3 py-2 text-xs text-slate-700">{req.response_status ?? "-"}</td>
                                 <td className="px-3 py-2 text-xs text-slate-700">{req.response_time_ms ?? "-"}</td>
@@ -1758,7 +1758,7 @@ export default function AdminScopusImport() {
                   {conferenceRefreshRunning ? "กำลังดึง..." : "ดึงใหม่ทั้งหมด (Refresh)"}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-xs text-slate-500">
                 ป้องกันการคลิกซ้ำขณะกำลังทำงาน · Refresh จะเรียก API ทุกเอกสารงานประชุม (ใช้ quota มากกว่า)
               </p>
             </div>
@@ -1767,7 +1767,7 @@ export default function AdminScopusImport() {
               <div className="text-sm font-semibold text-slate-900">สถานะการดึงล่าสุด</div>
               {conferenceLatest ? (
                 <>
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600">
+                  <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
                     <StatusBadge status={conferenceLatest.status} />
                     <span>
                       {conferenceLatest.run_type ? `ประเภท: ${conferenceLatest.run_type} · ` : ""}
@@ -1877,7 +1877,7 @@ export default function AdminScopusImport() {
                   {disableAuthorMetricsButton ? "กำลังดึง..." : "ดึง h-index ทุกคน"}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-xs text-slate-500">
                 โควตา Author API 5,000 คำขอ/สัปดาห์ · การเรียกทุกครั้งถูกบันทึกไว้ตรวจสอบย้อนหลังได้
               </p>
             </div>
@@ -1886,7 +1886,7 @@ export default function AdminScopusImport() {
               <div className="text-sm font-semibold text-slate-900">สถานะการดึงล่าสุด</div>
               {authorMetricsLatest ? (
                 <>
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600">
+                  <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
                     <StatusBadge status={authorMetricsLatest.status} />
                     <span>
                       {authorMetricsLatest.trigger_source ? `ที่มา: ${authorMetricsLatest.trigger_source} · ` : ""}

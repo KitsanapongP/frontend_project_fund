@@ -18,6 +18,8 @@ import {
   ChevronDown,
   ChevronRight,
   Download,
+  AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
 
 import PageLayout from "../common/PageLayout";
@@ -129,14 +131,16 @@ function FilterControls({ filters, options, onScopeChange, onYearChange, onInsta
   const showInstallmentSelect = filters.scope === "installment";
 
   return (
-    <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-      <div className="flex items-center gap-2">
-        <SlidersHorizontal className="w-4 h-4 text-gray-500" />
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white pl-3 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+        <SlidersHorizontal className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
+        <label htmlFor="dashboard-scope" className="sr-only">เลือกช่วงข้อมูล</label>
         <select
+          id="dashboard-scope"
           value={filters.scope}
           onChange={onScopeChange}
           disabled={disabled}
-          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="min-h-11 min-w-36 rounded-r-lg border-0 bg-transparent py-2 pl-0 pr-8 text-sm text-slate-800 focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:text-slate-400"
         >
           {scopes.map((scope) => (
             <option key={scope} value={scope}>
@@ -147,39 +151,47 @@ function FilterControls({ filters, options, onScopeChange, onYearChange, onInsta
       </div>
 
       {showYearSelect && (
-        <select
-          value={filters.year || ""}
-          onChange={onYearChange}
-          disabled={disabled || !years.length}
-          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {years.map((year) => (
-            <option key={year.year_id ?? year.year} value={year.year}>
-              ปี {year.year}
-            </option>
-          ))}
-        </select>
+        <div>
+          <label htmlFor="dashboard-year" className="sr-only">เลือกปีงบประมาณ</label>
+          <select
+            id="dashboard-year"
+            value={filters.year || ""}
+            onChange={onYearChange}
+            disabled={disabled || !years.length}
+            className="min-h-11 min-w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          >
+            {years.map((year) => (
+              <option key={year.year_id ?? year.year} value={year.year}>
+                ปี {year.year}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
       {showInstallmentSelect && (
-        <select
-          value={filters.installment || ""}
-          onChange={onInstallmentChange}
-          disabled={disabled || !installments.length}
-          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {installments.map((item) => (
-            <option key={`${item.installment}-${item.name}`} value={item.installment}>
-              {item.name || `รอบที่ ${item.installment}`}
-            </option>
-          ))}
-        </select>
+        <div>
+          <label htmlFor="dashboard-installment" className="sr-only">เลือกรอบการพิจารณา</label>
+          <select
+            id="dashboard-installment"
+            value={filters.installment || ""}
+            onChange={onInstallmentChange}
+            disabled={disabled || !installments.length}
+            className="min-h-11 min-w-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          >
+            {installments.map((item) => (
+              <option key={`${item.installment}-${item.name}`} value={item.installment}>
+                {item.name || `รอบที่ ${item.installment}`}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
     </div>
   );
 }
 
-function OverviewCards({ overview, currentDate, scopeDescription, onNavigate }) {
+function OverviewCards({ overview, currentDate, scopeDescription }) {
   const cards = useMemo(() => {
     const totalApplications = Number(overview?.total_applications ?? 0);
     const pending = Number(overview?.pending_count ?? 0);
@@ -193,85 +205,76 @@ function OverviewCards({ overview, currentDate, scopeDescription, onNavigate }) 
         label: "คำร้องทั้งหมด",
         value: formatNumber(totalApplications),
         icon: FileText,
-        gradient: "from-sky-500 to-blue-600",
+        iconClassName: "border-blue-200 bg-blue-50 text-blue-700",
+        valueClassName: "text-slate-950",
       },
       {
         label: "รอดำเนินการ",
         value: formatNumber(pending),
         icon: Clock,
-        gradient: "from-amber-400 to-orange-500",
+        iconClassName: "border-amber-200 bg-amber-50 text-amber-700",
+        valueClassName: "text-amber-800",
       },
       {
         label: "ผู้ใช้งานทั้งหมด",
         value: formatNumber(totalUsers),
         icon: Users,
-        gradient: "from-fuchsia-500 to-pink-500",
+        iconClassName: "border-slate-200 bg-slate-100 text-slate-700",
+        valueClassName: "text-slate-950",
       },
       {
         label: "งบที่ใช้ไป",
         value: formatCurrency(usedBudget),
         icon: CircleDollarSign,
-        gradient: "from-emerald-500 to-green-600",
+        iconClassName: "border-blue-200 bg-blue-50 text-blue-700",
+        valueClassName: "text-slate-950",
       },
       {
         label: "งบประมาณประจำปี",
         value: formatCurrency(totalBudget),
         icon: PieChart,
-        gradient: "from-slate-500 to-gray-700",
+        iconClassName: "border-slate-200 bg-slate-100 text-slate-700",
+        valueClassName: "text-slate-950",
       },
       {
         label: "อัตราการอนุมัติ",
         value: Number.isFinite(approvalRate) ? `${approvalRate.toFixed(1)}%` : "-",
         icon: BadgeCheck,
-        gradient: "from-indigo-500 to-purple-600",
+        iconClassName: "border-green-200 bg-green-50 text-green-700",
+        valueClassName: "text-green-800",
       },
     ];
   }, [overview]);
 
   return (
-    <div className="space-y-4">
+    <section className="space-y-4" aria-label="ภาพรวมข้อมูลสำคัญ">
       {(currentDate || scopeDescription) && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-gray-600">
+        <div className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           {currentDate && (
             <span>
-              อัปเดตล่าสุด: <span className="font-medium text-gray-800">{currentDate}</span>
+              อัปเดตล่าสุด <span className="font-semibold text-slate-800">{currentDate}</span>
             </span>
           )}
           {scopeDescription && (
-            <span className="text-xs sm:text-sm text-gray-500">{scopeDescription}</span>
+            <span className="text-slate-500">{scopeDescription}</span>
           )}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
-        {cards.map((card) => {
-          const CardWrapper = card.onClick ? "button" : "div";
-          const clickableClass = card.onClick
-            ? "transition transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-white/60 cursor-pointer"
-            : "";
-          return (
-            <CardWrapper
-              key={card.label}
-              onClick={card.onClick}
-              className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${card.gradient} text-white p-5 shadow-lg ${clickableClass}`}
-              type={card.onClick ? "button" : undefined}
-            >
-              <div className="relative z-10">
-                <div className="flex items-center justify-between">
-                  <div className="text-3xl font-bold">{card.value}</div>
-                  <card.icon className="w-10 h-10 opacity-80" />
-                </div>
-                <p className="mt-3 text-sm text-white/90">{card.label}</p>
-              </div>
-
-              <div className="absolute inset-0 opacity-20">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.6),_transparent)]" />
-              </div>
-            </CardWrapper>
-          );
-        })}
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-6">
+        {cards.map((card) => (
+          <div key={card.label} className="flex min-h-32 min-w-0 flex-col justify-between rounded-xl border border-slate-200 bg-white p-4">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-lg border ${card.iconClassName}`}>
+              <card.icon className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <div className="mt-5 min-w-0">
+              <p className={`break-words text-xl font-bold tabular-nums sm:text-2xl ${card.valueClassName}`}>{card.value}</p>
+              <p className="mt-1 text-sm text-slate-600">{card.label}</p>
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -279,7 +282,7 @@ function CategoryBudgetTable({ categories = [] }) {
   const [expanded, setExpanded] = useState({});
 
   if (!categories.length) {
-    return <p className="text-center text-gray-500 py-4">ไม่มีข้อมูลการใช้งบประมาณตามหมวดหมู่</p>;
+    return <p className="py-8 text-center text-sm text-slate-500">ไม่มีข้อมูลการใช้งบประมาณตามหมวดหมู่</p>;
   }
 
   const toggle = (key) => {
@@ -287,7 +290,7 @@ function CategoryBudgetTable({ categories = [] }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="divide-y divide-slate-200">
       {categories.map((category) => {
         const key = `${category.category_id}-${category.year}`;
         const usedAmount = Number(category?.used_amount ?? category?.approved_amount ?? 0);
@@ -302,61 +305,67 @@ function CategoryBudgetTable({ categories = [] }) {
         return (
           <div
             key={key}
-            className="border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden"
+            className="overflow-hidden py-1 first:pt-0 last:pb-0"
           >
             <button
               type="button"
               onClick={() => toggle(key)}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50 transition"
+              className="flex min-h-16 w-full flex-col gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:flex-row sm:items-center sm:justify-between"
+              aria-expanded={isExpanded}
+              aria-controls={`${key}-budget-details`}
             >
-              <div>
-                <p className="text-base font-semibold text-gray-900">{category.category_name}</p>
-                <p className="text-xs text-gray-500">ปีงบประมาณ {category.year}</p>
+              <div className="min-w-0">
+                <p className="text-base font-semibold text-slate-900">{category.category_name}</p>
+                <p className="mt-0.5 text-xs text-slate-500">ปีงบประมาณ {category.year}</p>
               </div>
-              <div className="flex items-center gap-6 text-sm text-gray-600">
+              <div className="grid w-full grid-cols-2 gap-x-4 gap-y-2 text-sm text-slate-600 sm:w-auto sm:grid-cols-4 sm:gap-6">
                 <div className="text-right">
-                  <p className="font-semibold text-gray-900">{formatNumber(totalApplications)}</p>
-                  <p className="text-xs text-gray-500">คำร้องทั้งหมด</p>
+                  <p className="font-semibold tabular-nums text-slate-900">{formatNumber(totalApplications)}</p>
+                  <p className="text-xs text-slate-500">คำร้องทั้งหมด</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-emerald-600">{formatCurrency(usedAmount)}</p>
-                  <p className="text-xs text-gray-500">ใช้ไป</p>
+                  <p className="font-semibold tabular-nums text-blue-700">{formatCurrency(usedAmount)}</p>
+                  <p className="text-xs text-slate-500">ใช้ไป</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-gray-700">{formatCurrency(allocated)}</p>
-                  <p className="text-xs text-gray-500">งบที่จัดสรร</p>
+                  <p className="font-semibold tabular-nums text-slate-800">{formatCurrency(allocated)}</p>
+                  <p className="text-xs text-slate-500">งบที่จัดสรร</p>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-700">{utilization.toFixed(1)}%</p>
-                  <p className="text-xs text-gray-500">การใช้จ่าย</p>
+                <div className="flex items-center justify-end gap-3 text-right">
+                  <div>
+                    <p className="font-semibold tabular-nums text-slate-800">{utilization.toFixed(1)}%</p>
+                    <p className="text-xs text-slate-500">การใช้จ่าย</p>
+                  </div>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500">
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                    )}
+                  </span>
                 </div>
-                {isExpanded ? (
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-gray-500" />
-                )}
               </div>
             </button>
 
-            <div className="px-4 pb-4">
-              <div className="flex items-center gap-3 text-xs text-gray-500">
+            <div className="px-3 pb-4">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
                 <span>อนุมัติแล้ว {formatNumber(approvedApplications)} รายการ</span>
                 <span>คงเหลืองบ {formatCurrency(remaining)}</span>
               </div>
 
-              <div className="mt-3 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-label={`การใช้งบของ ${category.category_name}`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.min(Math.round(utilization), 100)}>
                 <div
-                  className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600"
+                  className="h-full bg-blue-600 transition-[width] duration-300 motion-reduce:transition-none"
                   style={{ width: `${Math.min(utilization, 100)}%` }}
                 />
               </div>
             </div>
 
             {isExpanded && subcategories.length > 0 && (
-              <div className="border-t border-gray-100 bg-gray-50">
-                <table className="w-full text-sm">
+              <div id={`${key}-budget-details`} className="overflow-x-auto border-t border-slate-200 bg-slate-50">
+                <table className="min-w-[720px] w-full text-sm">
                   <thead>
-                    <tr className="text-left text-gray-500">
+                    <tr className="text-left text-xs font-medium text-slate-600">
                       <th className="py-2 pl-4 pr-3 font-medium">ทุนย่อย</th>
                       <th className="py-2 px-3 font-medium text-center">คำร้องทั้งหมด</th>
                       <th className="py-2 px-3 font-medium text-right">อนุมัติแล้ว</th>
@@ -364,22 +373,22 @@ function CategoryBudgetTable({ categories = [] }) {
                       <th className="py-2 px-4 font-medium text-right">ใช้ไป</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-slate-200 bg-white">
                     {subcategories.map((item) => {
                       const subAllocated = Number(item?.allocated_amount ?? 0);
                       const subUsed = Number(item?.used_amount ?? item?.approved_amount ?? 0);
                       return (
-                        <tr key={item.subcategory_id} className="text-gray-700">
+                        <tr key={item.subcategory_id} className="text-slate-700 hover:bg-slate-50">
                           <td className="py-2 pl-4 pr-3">
-                            <p className="font-medium text-gray-900">{item.subcategory_name || "-"}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="font-medium text-slate-900">{item.subcategory_name || "-"}</p>
+                            <p className="text-xs text-slate-500">
                               เหลือสิทธิ์ {formatNumber(item.remaining_grant ?? 0)} / {formatNumber(item.max_grants ?? 0)}
                             </p>
                           </td>
                           <td className="py-2 px-3 text-center">{formatNumber(item.total_applications ?? 0)}</td>
-                          <td className="py-2 px-3 text-right text-emerald-600">{formatNumber(item.approved_applications ?? 0)}</td>
+                          <td className="py-2 px-3 text-right font-medium text-green-700">{formatNumber(item.approved_applications ?? 0)}</td>
                           <td className="py-2 px-3 text-right">{formatCurrency(subAllocated)}</td>
-                          <td className="py-2 px-4 text-right text-blue-600">{formatCurrency(subUsed)}</td>
+                          <td className="py-2 px-4 text-right font-medium text-blue-700">{formatCurrency(subUsed)}</td>
                         </tr>
                       );
                     })}
@@ -396,11 +405,11 @@ function CategoryBudgetTable({ categories = [] }) {
 
 function PendingApplicationsList({ applications = [] }) {
   if (!applications.length) {
-    return <p className="text-center text-gray-500 py-6">ไม่มีคำร้องที่รอดำเนินการ</p>;
+    return <p className="py-8 text-center text-sm text-slate-500">ไม่มีคำร้องที่รอดำเนินการ</p>;
   }
 
   return (
-    <div className="space-y-4">
+    <div className="divide-y divide-slate-200">
       {applications.slice(0, MAX_PENDING_DISPLAY).map((app) => {
         const amount = formatCurrency(app?.requested_amount ?? app?.amount ?? 0);
         const submittedAt = formatThaiDateTime(app?.submitted_at);
@@ -409,31 +418,31 @@ function PendingApplicationsList({ applications = [] }) {
         return (
           <div
             key={key}
-            className="border border-gray-200 rounded-lg p-4 hover:border-blue-400 transition-colors"
+            className="px-1 py-4 first:pt-0 last:pb-0"
           >
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
-                <p className="font-semibold text-gray-900">
+                <p className="font-semibold text-slate-900">
                   {app?.project_title || app?.title || "-"}
                 </p>
-                <p className="text-xs text-gray-500">เลขที่คำร้อง: {app?.application_number || "-"}</p>
+                <p className="mt-0.5 text-xs text-slate-500">เลขที่คำร้อง: {app?.application_number || "-"}</p>
                 {app?.category_name && (
-                  <p className="text-xs text-gray-500 mt-1">หมวด: {app.category_name}</p>
+                  <p className="mt-1 text-xs text-slate-500">หมวด: {app.category_name}</p>
                 )}
               </div>
-              <div className="text-xs text-gray-500 whitespace-nowrap">{submittedAt}</div>
+              <div className="whitespace-nowrap text-xs text-slate-500">{submittedAt}</div>
             </div>
 
-            <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-600">
+            <div className="mt-3 flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-medium text-gray-700">{app?.applicant_name || "ไม่ระบุผู้ยื่น"}</p>
+                <p className="font-medium text-slate-700">{app?.applicant_name || "ไม่ระบุผู้ยื่น"}</p>
                 {app?.subcategory_name && (
-                  <p className="text-xs text-gray-500">{app.subcategory_name}</p>
+                  <p className="text-xs text-slate-500">{app.subcategory_name}</p>
                 )}
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold text-blue-600">{amount}</p>
-                <p className="text-xs text-gray-500">วงเงินที่ขอ</p>
+                <p className="text-sm font-semibold tabular-nums text-blue-700">{amount}</p>
+                <p className="text-xs text-slate-500">วงเงินที่ขอ</p>
               </div>
             </div>
           </div>
@@ -445,17 +454,22 @@ function PendingApplicationsList({ applications = [] }) {
 
 function ErrorState({ message, onRetry }) {
   return (
-    <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-lg">
-      <p className="font-semibold mb-2">เกิดข้อผิดพลาดในการโหลดข้อมูลแดชบอร์ด</p>
-      <p className="text-sm mb-4">{message}</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="inline-flex items-center gap-2 rounded-lg bg-red-600 text-white px-4 py-2 text-sm hover:bg-red-700 transition"
-      >
-        <RefreshCcw className="w-4 h-4" />
-        ลองอีกครั้ง
-      </button>
+    <div className="flex items-start gap-4 rounded-xl border border-red-200 bg-red-50 p-5 text-red-900" role="alert">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-200 bg-white text-red-700">
+        <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <p className="font-semibold">โหลดข้อมูลแดชบอร์ดไม่สำเร็จ</p>
+        <p className="mt-1 text-sm text-red-800">{message}</p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+        >
+          <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+          ลองโหลดอีกครั้ง
+        </button>
+      </div>
     </div>
   );
 }
@@ -627,7 +641,7 @@ export default function DashboardContent({ onNavigate, basePath = "/admin" }) {
         { label: "แดชบอร์ดผู้ดูแลระบบ" },
       ]}
       actions={(
-        <div className="flex flex-col w-full gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <FilterControls
             filters={filters}
             options={filterOptions}
@@ -637,23 +651,24 @@ export default function DashboardContent({ onNavigate, basePath = "/admin" }) {
             disabled={loading && !isRefreshing}
           />
 
-          <div className="flex flex-wrap gap-2 justify-end">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
             {!isExecutive && (
               <button
                 type="button"
                 onClick={() => onNavigate?.("applications-list")}
-                className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 จัดการคำร้อง
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
             )}
             {!isExecutive && (
               <button
                 type="button"
                 onClick={handleExportAllData}
-                className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
-                <Download className="w-4 h-4" />
+                <Download className="h-4 w-4" aria-hidden="true" />
                 ส่งออกข้อมูลทั้งหมด
               </button>
             )}
@@ -661,9 +676,9 @@ export default function DashboardContent({ onNavigate, basePath = "/admin" }) {
               type="button"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
             >
-              <RefreshCcw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              <RefreshCcw className={`h-4 w-4 ${isRefreshing ? "animate-spin motion-reduce:animate-none" : ""}`} aria-hidden="true" />
               {isRefreshing ? "กำลังรีเฟรช..." : "รีเฟรช"}
             </button>
           </div>
@@ -678,14 +693,13 @@ export default function DashboardContent({ onNavigate, basePath = "/admin" }) {
             overview={overview}
             currentDate={currentDate}
             scopeDescription={scopeDescription}
-            onNavigate={onNavigate}
           />
 
-          <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
             <SimpleCard
               title="สถานะคำร้องทั้งระบบ"
               icon={ListChecks}
-              className="2xl:col-span-2"
+              className="xl:col-span-2"
             >
               <StatusPipeline breakdown={statusBreakdown} />
             </SimpleCard>
@@ -698,11 +712,11 @@ export default function DashboardContent({ onNavigate, basePath = "/admin" }) {
             </SimpleCard>
           </div>
 
-          <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
             <SimpleCard
               title="แนวโน้มการยื่นคำร้อง"
               icon={TrendingUp}
-              className="2xl:col-span-2"
+              className="xl:col-span-2"
             >
               <MonthlyChart breakdown={trendBreakdown} defaultMode="monthly" />
             </SimpleCard>
@@ -724,9 +738,10 @@ export default function DashboardContent({ onNavigate, basePath = "/admin" }) {
                 <button
                   type="button"
                   onClick={() => onNavigate?.("fund-settings")}
-                  className="text-sm text-blue-600 hover:text-blue-700"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
-                  จัดการงบประมาณ →
+                  จัดการงบประมาณ
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
               )}
             >
@@ -751,9 +766,10 @@ export default function DashboardContent({ onNavigate, basePath = "/admin" }) {
                 <button
                   type="button"
                   onClick={() => onNavigate?.("applications-list")}
-                  className="text-sm text-blue-600 hover:text-blue-700"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
-                  ดูทั้งหมด {formatNumber(pendingApplications.length)} รายการ →
+                  ดูทั้งหมด {formatNumber(pendingApplications.length)} รายการ
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
               )
             }

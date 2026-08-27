@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ChevronLeft,
+  ChevronRight,
   FileSpreadsheet,
   Loader2,
   Plus,
@@ -13,6 +15,7 @@ import {
 } from "lucide-react";
 import PageLayout from "../../common/PageLayout";
 import LoadingSpinner from "../../common/LoadingSpinner";
+import StatusBadge from "../../common/StatusBadge";
 import { useStatusMap } from "@/app/hooks/useStatusMap";
 import { toast } from "react-hot-toast";
 import legacySubmissionAPI from "@/app/(portal)/research-fund-system/admin/lib/legacy_submission_api";
@@ -1128,46 +1131,86 @@ export default function LegacySubmissionManager() {
     [documentTypes]
   );
 
+  const legacyRows = items.map((record, index) => {
+    const submission = record.submission || {};
+    const id = submission.submission_id;
+    const applicantName =
+      typeof submission.applicant_name === "string"
+        ? submission.applicant_name.trim()
+        : "";
+    const applicant =
+      applicantName || displayUserName(submission.user, userCache[submission.user_id]);
+    const categoryName = submission.category?.category_name || submission.category_name || "-";
+    const subcategoryName = submission.subcategory?.subcategory_name || submission.subcategory_name || "-";
+    const journalName =
+      submission.publication_reward_journal_name ??
+      (submission.submission_type === "publication_reward"
+        ? submission.publication_reward_detail?.paper_title
+        : submission.submission_type === "fund_application"
+        ? submission.fund_application_detail?.project_title
+        : null) ??
+      "-";
+
+    return {
+      key: id ? `${id}-${index}` : `row-${index}`,
+      id,
+      submission,
+      applicant,
+      categoryName,
+      subcategoryName,
+      journalName,
+      createdAt: formatDateDisplay(submission.created_at),
+      statusLabel: getLabelById(submission.status_id) || "-",
+      typeName: typeLabel(submission.submission_type),
+      isActive: !isCreating && selectedId === id,
+    };
+  });
+
   return (
     <PageLayout
       title="ระบบจัดการคำร้อง (ข้อมูลเก่า)"
       subtitle="บันทึกคำร้องย้อนหลังพร้อมตรวจสอบข้อมูลจากตารางที่เกี่ยวข้อง"
       icon={FileSpreadsheet}
       loading={metaLoading || statusLoading}
+      breadcrumbs={[
+        { label: "หน้าหลัก", href: "/research-fund-system/admin" },
+        { label: "จัดการคำร้องข้อมูลเก่า" },
+      ]}
     >
       <div className="space-y-6">
-        <section className="bg-white border rounded-lg shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b">
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <header className="flex flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div>
-              <h2 className="text-sm font-semibold text-gray-700">รายการคำร้อง</h2>
-              <p className="text-xs text-gray-500">กรองคำร้องและเลือกเพื่อดูรายละเอียด</p>
+              <h2 className="font-semibold text-slate-900">รายการคำร้องข้อมูลเก่า</h2>
+              <p className="mt-1 text-sm text-slate-500">กรองคำร้องและเลือกรายการเพื่อดูหรือแก้ไขรายละเอียด</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-col gap-2 min-[420px]:flex-row sm:w-auto">
               <button
                 type="button"
                 onClick={() => fetchList(pagination.current_page || 1, true)}
-                className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
-                <RefreshCcw className="h-4 w-4" /> รีเฟรช
+                <RefreshCcw className="h-4 w-4" aria-hidden="true" /> รีเฟรช
               </button>
               <button
                 type="button"
                 onClick={startCreateNew}
-                className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
-                <Plus className="h-4 w-4" /> สร้างใหม่
+                <Plus className="h-4 w-4" aria-hidden="true" /> สร้างคำร้องย้อนหลัง
               </button>
             </div>
-          </div>
+          </header>
 
-          <div className="px-4 py-4 border-b border-gray-100">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="border-b border-slate-200 bg-slate-50 px-4 py-5 sm:px-5">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div>
-                <label className="text-xs font-medium text-gray-600">ปีงบประมาณ</label>
+                <label htmlFor="legacy-filter-year" className="mb-2 block text-sm font-medium text-slate-700">ปีงบประมาณ</label>
                 <select
+                  id="legacy-filter-year"
                   value={filters.year_id}
                   onChange={(e) => handleFilterChange("year_id", e.target.value)}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">ทั้งหมด</option>
                   {years.map((year, index) => (
@@ -1179,11 +1222,12 @@ export default function LegacySubmissionManager() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">ประเภทคำร้อง</label>
+                <label htmlFor="legacy-filter-type" className="mb-2 block text-sm font-medium text-slate-700">ประเภทคำร้อง</label>
                 <select
+                  id="legacy-filter-type"
                   value={filters.submission_type}
                   onChange={(e) => handleFilterChange("submission_type", e.target.value)}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">ทั้งหมด</option>
                   {SUBMISSION_TYPE_OPTIONS.map((option, index) => (
@@ -1195,11 +1239,12 @@ export default function LegacySubmissionManager() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">สถานะคำร้อง</label>
+                <label htmlFor="legacy-filter-status" className="mb-2 block text-sm font-medium text-slate-700">สถานะคำร้อง</label>
                 <select
+                  id="legacy-filter-status"
                   value={filters.status_id}
                   onChange={(e) => handleFilterChange("status_id", e.target.value)}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">ทั้งหมด</option>
                   {statusOptions.map((status, index) => (
@@ -1211,11 +1256,12 @@ export default function LegacySubmissionManager() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">หมวดทุน</label>
+                <label htmlFor="legacy-filter-category" className="mb-2 block text-sm font-medium text-slate-700">หมวดทุน</label>
                 <select
+                  id="legacy-filter-category"
                   value={filters.category_id}
                   onChange={(e) => handleFilterChange("category_id", e.target.value)}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">ทั้งหมด</option>
                   {categories.map((category, index) => (
@@ -1226,14 +1272,15 @@ export default function LegacySubmissionManager() {
                 </select>
               </div>
 
-              <div className="md:col-span-2 xl:col-span-3">
-                <label className="text-xs font-medium text-gray-600">ค้นหาเลขคำร้อง</label>
+              <div className="md:col-span-2 xl:col-span-4">
+                <label htmlFor="legacy-filter-search" className="mb-2 block text-sm font-medium text-slate-700">ค้นหาเลขคำร้อง</label>
                 <input
+                  id="legacy-filter-search"
                   type="text"
                   value={filters.search}
                   onChange={(e) => handleFilterChange("search", e.target.value)}
                   placeholder="กรอกเลขที่คำร้อง"
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
             </div>
@@ -1241,142 +1288,164 @@ export default function LegacySubmissionManager() {
             <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                onClick={handleApplyFilters}
-                className="inline-flex items-center justify-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                onClick={handleResetFilters}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
-                <Search className="h-4 w-4" /> ค้นหา
+                ล้างตัวกรอง
               </button>
               <button
                 type="button"
-                onClick={handleResetFilters}
-                className="inline-flex items-center justify-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                onClick={handleApplyFilters}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
-                ล้างตัวกรอง
+                <Search className="h-4 w-4" aria-hidden="true" /> ค้นหา
               </button>
             </div>
           </div>
 
-          <div className="border-t border-gray-100">
+          <div>
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+              <p className="text-sm font-medium text-slate-700">ผลการค้นหา</p>
+              <p className="text-sm text-slate-500" aria-live="polite">พบ {pagination.total_count.toLocaleString("th-TH")} รายการ</p>
+            </div>
             <div className="max-h-[60vh] overflow-y-auto">
               {listLoading ? (
-                <div className="flex items-center justify-center py-12">
+                <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-slate-600" aria-live="polite">
                   <LoadingSpinner size="large" />
-              </div>
-            ) : items.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-gray-500">
-                ไม่พบคำร้องตามเงื่อนไขที่เลือก
-              </div>
-            ) : (
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                  <tr className="text-left text-xs font-medium uppercase tracking-wide text-gray-600">
-                    <th className="px-4 py-2">ID</th>
-                    <th className="px-4 py-2">เลขคำร้อง</th>
-                    <th className="px-4 py-2">ประเภท</th>
-                    <th className="px-4 py-2">วารสาร/แหล่งตีพิมพ์ (Journal)</th>
-                    <th className="px-4 py-2">ผู้ยื่น</th>
-                    <th className="px-4 py-2">สถานะ</th>
-                    <th className="px-4 py-2">หมวด / ประเภทย่อย</th>
-                    <th className="px-4 py-2">สร้างเมื่อ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {items.map((record, index) => {
-                    const submission = record.submission || {};
-                    const id = submission.submission_id;
-                    const applicantName =
-                      typeof submission.applicant_name === "string"
-                        ? submission.applicant_name.trim()
-                        : "";
-                    const applicant =
-                      applicantName || displayUserName(submission.user, userCache[submission.user_id]);
-                    const statusLabelValue = getLabelById(submission.status_id) || "-";
-                    const categoryName = submission.category?.category_name || submission.category_name || "-";
-                    const subcategoryName = submission.subcategory?.subcategory_name || submission.subcategory_name || "-";
-                    const createdAt = formatDateDisplay(submission.created_at);
-                    const journalName =
-                      submission.publication_reward_journal_name ??
-                      (submission.submission_type === "publication_reward"
-                        ? submission.publication_reward_detail?.paper_title
-                        : submission.submission_type === "fund_application"
-                        ? submission.fund_application_detail?.project_title
-                        : null) ??
-                      "-";
-                    const isActive = !isCreating && selectedId === id;
+                  <p className="font-medium">กำลังโหลดรายการคำร้อง...</p>
+                </div>
+              ) : legacyRows.length === 0 ? (
+                <div className="px-5 py-12 text-center">
+                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">
+                    <FileSpreadsheet className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  <h3 className="mt-4 text-lg font-semibold text-slate-900">ไม่พบคำร้องข้อมูลเก่า</h3>
+                  <p className="mt-1 text-sm text-slate-500">ลองเปลี่ยนตัวกรองหรือเลขที่คำร้องแล้วค้นหาอีกครั้ง</p>
+                </div>
+              ) : (
+                <>
+                  <div className="hidden overflow-x-auto lg:block">
+                    <table className="min-w-[1080px] w-full text-sm">
+                      <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-left text-xs font-medium text-slate-600">
+                        <tr>
+                          <th className="px-5 py-3">เลขคำร้อง / ID</th>
+                          <th className="px-5 py-3">ประเภท</th>
+                          <th className="w-1/4 px-5 py-3">ชื่อเรื่อง / วารสาร</th>
+                          <th className="px-5 py-3">ผู้ยื่น</th>
+                          <th className="px-5 py-3 text-center">สถานะ</th>
+                          <th className="px-5 py-3">ทุน</th>
+                          <th className="px-5 py-3">สร้างเมื่อ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {legacyRows.map((row) => (
+                          <tr
+                            key={row.key}
+                            onClick={() => handleSelectItem(row.id)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") handleSelectItem(row.id);
+                            }}
+                            tabIndex={0}
+                            aria-selected={row.isActive}
+                            className={`cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${row.isActive ? "bg-blue-50" : "hover:bg-slate-50"}`}
+                          >
+                            <td className="px-5 py-4">
+                              <p className="font-semibold text-slate-900 tabular-nums">{row.submission.submission_number || "-"}</p>
+                              <p className="mt-1 text-xs text-slate-500 tabular-nums">ID {row.id || "-"}</p>
+                            </td>
+                            <td className="px-5 py-4 text-slate-700">{row.typeName}</td>
+                            <td className="px-5 py-4 text-slate-700"><p className="line-clamp-2 break-words leading-6">{row.journalName}</p></td>
+                            <td className="px-5 py-4 text-slate-700">{row.applicant}</td>
+                            <td className="px-5 py-4 text-center"><StatusBadge statusId={row.submission.status_id} fallbackLabel={row.statusLabel} /></td>
+                            <td className="px-5 py-4">
+                              <p className="font-medium text-slate-800">{row.subcategoryName}</p>
+                              <p className="mt-1 text-xs text-slate-500">{row.categoryName}</p>
+                            </td>
+                            <td className="whitespace-nowrap px-5 py-4 text-slate-600 tabular-nums">{row.createdAt}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-                    return (
-                      <tr
-                        key={id ? `${id}-${index}` : `row-${index}`}
-                        onClick={() => handleSelectItem(id)}
-                        className={`cursor-pointer ${isActive ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                  <div className="divide-y divide-slate-200 lg:hidden">
+                    {legacyRows.map((row) => (
+                      <button
+                        type="button"
+                        key={row.key}
+                        onClick={() => handleSelectItem(row.id)}
+                        className={`block w-full p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 sm:p-5 ${row.isActive ? "bg-blue-50" : "bg-white"}`}
                       >
-                        <td className="px-4 py-2 text-gray-600">{id}</td>
-                        <td className="px-4 py-2 font-medium text-gray-800">{submission.submission_number || "-"}</td>
-                        <td className="px-4 py-2 text-gray-600">{typeLabel(submission.submission_type)}</td>
-                        <td className="px-4 py-2 text-gray-600">{journalName || "-"}</td>
-                        <td className="px-4 py-2 text-gray-600">{applicant}</td>
-                        <td className="px-4 py-2 text-gray-600">{statusLabelValue}</td>
-                        <td className="px-4 py-2 text-gray-600">
-                          <div>{categoryName}</div>
-                          <div className="text-xs text-gray-500">{subcategoryName}</div>
-                        </td>
-                        <td className="px-4 py-2 text-gray-600">{createdAt}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
+                        <span className="flex items-start justify-between gap-3">
+                          <span className="min-w-0">
+                            <span className="block font-semibold text-blue-700 tabular-nums">{row.submission.submission_number || "-"}</span>
+                            <span className="mt-1 block break-words font-semibold leading-6 text-slate-900">{row.journalName}</span>
+                          </span>
+                          <StatusBadge statusId={row.submission.status_id} fallbackLabel={row.statusLabel} className="shrink-0" />
+                        </span>
+                        <span className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                          <span><span className="block text-slate-500">ผู้ยื่น</span><span className="mt-0.5 block text-slate-800">{row.applicant}</span></span>
+                          <span><span className="block text-slate-500">ประเภท</span><span className="mt-0.5 block text-slate-800">{row.typeName}</span></span>
+                          <span><span className="block text-slate-500">ทุน</span><span className="mt-0.5 block text-slate-800">{row.subcategoryName}</span></span>
+                          <span><span className="block text-slate-500">สร้างเมื่อ</span><span className="mt-0.5 block text-slate-800 tabular-nums">{row.createdAt}</span></span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
             {!listLoading && pagination.total_count > 0 && (
-              <div className="flex flex-col gap-2 border-t border-gray-100 px-4 py-3 text-xs text-gray-600 sm:flex-row sm:items-center sm:justify-between">
-                <div>
+              <nav className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-5" aria-label="การแบ่งหน้าคำร้องข้อมูลเก่า">
+                <p>
                   แสดง {pageStart}-{pageEndDisplay} จาก {pagination.total_count} รายการ
-                </div>
-                <div className="flex items-center gap-2">
+                </p>
+                <div className="flex items-center justify-between gap-2 sm:justify-end">
                   <button
                     type="button"
                     onClick={() => handlePageChange(pagination.current_page - 1)}
                     disabled={!pagination.has_prev}
-                    className="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                   >
+                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                     ก่อนหน้า
                   </button>
-                  <span>
+                  <span className="whitespace-nowrap tabular-nums">
                     หน้า {pagination.current_page} / {pagination.total_pages || 1}
                   </span>
                   <button
                     type="button"
                     onClick={() => handlePageChange(pagination.current_page + 1)}
                     disabled={!pagination.has_next}
-                    className="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     ถัดไป
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
-              </div>
+              </nav>
             )}
           </div>
         </section>
 
-        <section className="bg-white border rounded-lg shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b">
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <header className="flex flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div>
-              <h2 className="text-sm font-semibold text-gray-700">
+              <h2 className="font-semibold text-slate-900">
                 {isCreating ? "สร้างคำร้องใหม่" : selectedId ? `รายละเอียดคำร้อง #${selectedId}` : "เลือกรายการเพื่อดูรายละเอียด"}
               </h2>
               {!isCreating && selectedId && (
-                <p className="text-xs text-gray-500">อัปเดตล่าสุด: {form.updated_at ? formatDateDisplay(form.updated_at) : "-"}</p>
+                <p className="mt-1 text-sm text-slate-500">อัปเดตล่าสุด: {form.updated_at ? formatDateDisplay(form.updated_at) : "-"}</p>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full flex-col gap-2 min-[480px]:flex-row min-[480px]:flex-wrap sm:w-auto sm:justify-end">
               {!isCreating && selectedId && (
                 <button
                   type="button"
                   onClick={() => fetchDetail(selectedId)}
-                  className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
-                  <RefreshCcw className="h-4 w-4" /> โหลดซ้ำ
+                  <RefreshCcw className="h-4 w-4" aria-hidden="true" /> โหลดซ้ำ
                 </button>
               )}
               {!isCreating && selectedId && (
@@ -1384,29 +1453,30 @@ export default function LegacySubmissionManager() {
                   type="button"
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="inline-flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <Trash2 className="h-4 w-4" /> ลบคำร้อง
+                  <Trash2 className="h-4 w-4" aria-hidden="true" /> {deleting ? "กำลังลบ..." : "ลบคำร้อง"}
                 </button>
               )}
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Save className="h-4 w-4" /> {isCreating ? "บันทึกคำร้อง" : "บันทึกการแก้ไข"}
+                {saving ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
+                {saving ? "กำลังบันทึก..." : isCreating ? "บันทึกคำร้อง" : "บันทึกการแก้ไข"}
               </button>
             </div>
-          </div>
+          </header>
 
-          <div className="p-4 lg:p-6">
+          <div className="p-4 sm:p-5 lg:p-6 [&_button]:min-h-11 [&_button]:rounded-lg [&_button]:focus-visible:outline-none [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-blue-500 [&_input:not([type='checkbox'])]:min-h-11 [&_input:not([type='checkbox'])]:rounded-lg [&_input:not([type='checkbox'])]:border-slate-300 [&_input:not([type='checkbox'])]:bg-white [&_input:not([type='checkbox'])]:px-3 [&_input:not([type='checkbox'])]:py-2 [&_input:not([type='checkbox'])]:text-sm [&_input:not([type='checkbox'])]:text-slate-900 [&_input:not([type='checkbox'])]:focus:border-blue-500 [&_input:not([type='checkbox'])]:focus:outline-none [&_input:not([type='checkbox'])]:focus:ring-2 [&_input:not([type='checkbox'])]:focus:ring-blue-100 [&_input:disabled]:cursor-not-allowed [&_input:disabled]:bg-slate-100 [&_label]:text-sm [&_label]:font-medium [&_label]:text-slate-700 [&_select]:min-h-11 [&_select]:rounded-lg [&_select]:border-slate-300 [&_select]:bg-white [&_select]:px-3 [&_select]:py-2 [&_select]:text-sm [&_select]:text-slate-900 [&_select]:focus:border-blue-500 [&_select]:focus:outline-none [&_select]:focus:ring-2 [&_select]:focus:ring-blue-100 [&_textarea]:rounded-lg [&_textarea]:border-slate-300 [&_textarea]:bg-white [&_textarea]:px-3 [&_textarea]:py-2 [&_textarea]:text-sm [&_textarea]:text-slate-900 [&_textarea]:focus:border-blue-500 [&_textarea]:focus:outline-none [&_textarea]:focus:ring-2 [&_textarea]:focus:ring-blue-100 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-slate-900">
             {detailLoading ? (
               <div className="flex items-center justify-center py-16">
                 <LoadingSpinner size="large" />
               </div>
             ) : isCreating || selectedId ? (
-              <div className="space-y-8">
+              <div className="divide-y divide-slate-200 [&>section]:py-6 [&>section:first-child]:pt-0 [&>section:last-child]:pb-0">
                 <section>
                   <h3 className="text-sm font-semibold text-gray-700">ข้อมูลคำร้อง</h3>
                   <div className="mt-3 grid gap-4 md:grid-cols-2">
@@ -1718,7 +1788,7 @@ export default function LegacySubmissionManager() {
                       <p className="text-sm text-gray-500">ยังไม่มีเอกสารแนบ</p>
                     ) : (
                       documents.map((doc, index) => (
-                        <div key={index} className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                        <div key={index} className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
                           <div className="flex items-start justify-between">
                             <div className="text-sm font-semibold text-gray-700">เอกสารลำดับที่ {index + 1}</div>
                             <button
@@ -1984,7 +2054,7 @@ export default function LegacySubmissionManager() {
                       participants.map((participant, index) => {
                         const cache = userCache[Number(participant.user_id)];
                         return (
-                          <div key={index} className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                          <div key={index} className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
                             <div className="flex items-start justify-between">
                               <div className="text-sm font-semibold text-gray-700">ผู้มีส่วนร่วมลำดับที่ {index + 1}</div>
                               <button
@@ -2092,7 +2162,7 @@ export default function LegacySubmissionManager() {
                       {searchResults.map((user, index) => (
                         <div
                           key={`${user.UserID ?? user.user_id ?? "user"}-${index}`}
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-gray-200 bg-white px-3 py-2"
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
                         >
                           <div>
                             <div className="text-sm font-medium text-gray-700">{user.Name || user.name || `ผู้ใช้ ${user.UserID ?? user.user_id}`}</div>
@@ -2121,8 +2191,12 @@ export default function LegacySubmissionManager() {
                 </section>
               </div>
             ) : (
-              <div className="py-16 text-center text-sm text-gray-500">
-                เลือกคำร้องจากรายการด้านบนเพื่อดูรายละเอียด หรือกด "สร้างใหม่" เพื่อเพิ่มข้อมูลย้อนหลัง
+              <div className="px-5 py-16 text-center">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">
+                  <FileSpreadsheet className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <h3 className="mt-4 text-lg font-semibold text-slate-900">ยังไม่ได้เลือกคำร้อง</h3>
+                <p className="mx-auto mt-1 max-w-lg text-sm text-slate-500">เลือกคำร้องจากรายการด้านบนเพื่อดูรายละเอียด หรือกด “สร้างคำร้องย้อนหลัง” เพื่อเพิ่มข้อมูล</p>
               </div>
             )}
           </div>

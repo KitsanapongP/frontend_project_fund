@@ -55,7 +55,6 @@ export default function AuthGuard({
 
     // ถ้าต้องการ authentication แต่ยังไม่ได้ login
     if (requireAuth && !isAuthenticated) {
-      console.log('User not authenticated, redirecting to login');
       const currentPath =
         typeof window !== 'undefined'
           ? `${window.location.pathname}${window.location.search}`
@@ -100,19 +99,21 @@ export default function AuthGuard({
   // แสดง loading ขณะตรวจสอบ auth
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-4 text-center">
+      <main className="grid min-h-screen place-items-center bg-slate-50 px-4 py-10">
+        <div className="flex w-full max-w-sm flex-col items-center rounded-xl border border-slate-200 bg-white px-6 py-8 text-center" role="status" aria-live="polite">
           <Image
             src="/image_icon/fund_cpkku_logo.png"
             alt="โลโก้กองทุนวิจัย"
-            width={120}
-            height={120}
+            width={96}
+            height={96}
+            className="h-20 w-auto object-contain"
             priority
           />
-          <p className="text-gray-600">กำลังโหลดหน้า...</p>
-          <p className="text-sm text-gray-500">กำลังตรวจสอบสิทธิ์...</p>
+          <span className="mt-5 h-7 w-7 animate-spin rounded-full border-[3px] border-blue-100 border-t-blue-600" aria-hidden="true" />
+          <p className="mt-4 font-semibold text-slate-900">กำลังเตรียมหน้าให้คุณ</p>
+          <p className="mt-1 text-sm text-slate-600">ระบบกำลังตรวจสอบบัญชีและสิทธิ์การใช้งาน</p>
         </div>
-      </div>
+      </main>
     );
   }
 

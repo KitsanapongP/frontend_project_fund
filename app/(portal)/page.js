@@ -13,6 +13,7 @@ import {
   FileSearch,
   GraduationCap,
   Handshake,
+  Search,
   Users,
 } from "lucide-react";
 import Swal from "sweetalert2";
@@ -23,6 +24,7 @@ import { getSupportFundMappings } from "../lib/support_fundmapping_api";
 import { canAccessPortalRule, getPortalItemAccess } from "../lib/portal_access";
 import { hasAdminPortalAccess, hasMemberPortalAccess, isPrimaryAdmin, normalizeRoleName } from "../lib/access_routing";
 import { BRANDING } from "../config/branding";
+import { PortalBackLink } from "../components/portal/PortalChrome";
 
 const PORTAL_ITEMS = [
   {
@@ -160,7 +162,7 @@ function PortalGridContent({ onCardClick }) {
   };
 
   return (
-    <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
       <div id="portal-menu-grid" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {PORTAL_ITEMS.map((item, index) => {
           const Icon = item.icon;
@@ -169,26 +171,26 @@ function PortalGridContent({ onCardClick }) {
               key={item.id}
               type="button"
               onClick={() => onCardClick(item)}
-              className={`${isExpanded ? "" : getCollapsedItemClass(index)} group w-full rounded-2xl border border-gray-200 bg-gray-50 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-white hover:shadow`}
+              className={`${isExpanded ? "" : getCollapsedItemClass(index)} group w-full rounded-xl border border-slate-200 bg-white p-5 text-left transition hover:border-blue-300 hover:bg-blue-50/40 hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2`}
             >
-              <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white">
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700 transition group-hover:border-blue-600 group-hover:bg-blue-600 group-hover:text-white">
                 <Icon size={22} />
               </div>
-              <h3 className="mt-4 text-lg font-semibold text-gray-900">{item.label}</h3>
-              <p className="mt-1 text-sm text-gray-600">{item.description}</p>
+              <h3 className="mt-4 text-lg font-semibold text-slate-900">{item.label}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-slate-600">{item.description}</p>
             </button>
           );
         })}
       </div>
 
       {PORTAL_ITEMS.length > 2 && (
-        <div className="mt-5 flex justify-center border-t border-gray-100 pt-4">
+        <div className="mt-5 flex justify-center border-t border-slate-100 pt-4">
           <button
             type="button"
             aria-controls="portal-menu-grid"
             aria-expanded={isExpanded}
             onClick={() => setIsExpanded((expanded) => !expanded)}
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             {isExpanded ? (
               <>
@@ -216,7 +218,7 @@ function PortalGridContent({ onCardClick }) {
 
 function ComingSoonContent({ pageTitle }) {
   return (
-    <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="px-8 py-14 sm:px-12 text-center">
         <p className="text-lg font-semibold text-gray-700">{pageTitle}</p>
         <p className="mt-2 text-2xl font-bold text-gray-900">กำลังพัฒนา... (Coming Soon)</p>
@@ -540,7 +542,7 @@ function ResearcherMatchingContent() {
 
   if (isLoading) {
     return (
-      <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="px-6 py-12 text-center sm:px-10">
           <p className="text-base font-medium text-gray-700">กำลังโหลดข้อมูลจับคู่นักวิจัย...</p>
         </div>
@@ -550,7 +552,7 @@ function ResearcherMatchingContent() {
 
   if (errorMessage) {
     return (
-      <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="px-6 py-10 text-center sm:px-10">
           <p className="text-base font-semibold text-red-600">ไม่สามารถโหลดข้อมูลได้</p>
           <p className="mt-2 text-sm text-gray-600">{errorMessage}</p>
@@ -626,14 +628,14 @@ function ResearcherMatchingContent() {
     const keywordList = parseKeywordList(getItemValueByKeys(selectedItem, ["keywords", "keyword"]));
 
     return (
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-cyan-50 px-5 py-6 sm:px-8">
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 bg-slate-50 px-5 py-6 sm:px-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button
               onClick={() => setSelectedItem(null)}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
             >
-              <span aria-hidden>←</span>
+              <ArrowLeft size={16} aria-hidden="true" />
               <span>กลับไปยังรายการทั้งหมด</span>
             </button>
 
@@ -680,7 +682,7 @@ function ResearcherMatchingContent() {
                   {keywordList.map((keyword) => (
                     <span
                       key={keyword}
-                      className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-sm font-medium text-cyan-800"
+                      className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-800"
                     >
                       {keyword}
                     </span>
@@ -697,11 +699,8 @@ function ResearcherMatchingContent() {
   }
 
   return (
-    <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-100 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.42)]">
-      <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-cyan-200/40 blur-3xl" />
-      <div className="pointer-events-none absolute -left-12 bottom-0 h-56 w-56 rounded-full bg-blue-200/30 blur-3xl" />
-
-      <div className="relative border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-cyan-50 px-4 py-5 sm:px-8">
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="border-b border-slate-200 bg-slate-50 px-4 py-5 sm:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">รายการความต้องการ</p>
           <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
@@ -709,12 +708,12 @@ function ResearcherMatchingContent() {
           </span>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-cyan-100 bg-white/90 p-4 shadow-[0_12px_30px_-25px_rgba(6,95,70,0.45)]">
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
           <div className="grid gap-3 lg:grid-cols-[1fr_auto_auto] lg:items-end">
             <label className="block">
               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">ค้นหาแบบปกติ</span>
               <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">⌕</span>
+                <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                 <input
                   type="text"
                   value={basicQueryInput}
@@ -725,7 +724,7 @@ function ResearcherMatchingContent() {
                       applyBasicSearch();
                     }
                   }}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="พิมพ์คำค้นหา เช่น คณะ, คีย์เวิร์ด, เจ้าของเรื่อง"
                 />
               </div>
@@ -734,7 +733,7 @@ function ResearcherMatchingContent() {
             <button
               type="button"
               onClick={applyBasicSearch}
-              className="inline-flex items-center justify-center rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-700"
+              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               ค้นหา
             </button>
@@ -742,7 +741,7 @@ function ResearcherMatchingContent() {
             <button
               type="button"
               onClick={clearAllSearch}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               ล้างทั้งหมด
             </button>
@@ -752,7 +751,7 @@ function ResearcherMatchingContent() {
             <button
               type="button"
               onClick={() => setIsAdvancedOpen((previous) => !previous)}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
             >
               <span>{isAdvancedOpen ? "ซ่อน" : "แสดง"} Advanced Search</span>
             </button>
@@ -775,7 +774,7 @@ function ResearcherMatchingContent() {
                     onChange={(event) =>
                       setAdvancedDraft((previous) => ({ ...previous, req_code: event.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="เช่น REQ-001"
                   />
                 </label>
@@ -788,7 +787,7 @@ function ResearcherMatchingContent() {
                     onChange={(event) =>
                       setAdvancedDraft((previous) => ({ ...previous, name: event.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </label>
 
@@ -800,7 +799,7 @@ function ResearcherMatchingContent() {
                     onChange={(event) =>
                       setAdvancedDraft((previous) => ({ ...previous, owner: event.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </label>
 
@@ -812,7 +811,7 @@ function ResearcherMatchingContent() {
                     onChange={(event) =>
                       setAdvancedDraft((previous) => ({ ...previous, faculty: event.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </label>
 
@@ -823,7 +822,7 @@ function ResearcherMatchingContent() {
                     onChange={(event) =>
                       setAdvancedDraft((previous) => ({ ...previous, matching_status: event.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="">ทั้งหมด</option>
                     <option value="N">ยังไม่ได้จับคู่</option>
@@ -841,7 +840,7 @@ function ResearcherMatchingContent() {
                     onChange={(event) =>
                       setAdvancedDraft((previous) => ({ ...previous, matched_researcher: event.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </label>
 
@@ -853,7 +852,7 @@ function ResearcherMatchingContent() {
                     onChange={(event) =>
                       setAdvancedDraft((previous) => ({ ...previous, keywords: event.target.value }))
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="เช่น AI machine-learning IoT (คั่นด้วยช่องว่าง , หรือ ;)"
                   />
                   <span className="mt-1 block text-xs text-slate-500">
@@ -866,7 +865,7 @@ function ResearcherMatchingContent() {
                 <button
                   type="button"
                   onClick={applyAdvancedSearch}
-                  className="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-900"
+                  className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
                 >
                   ใช้ตัวกรอง
                 </button>
@@ -898,7 +897,7 @@ function ResearcherMatchingContent() {
 
       <div className="relative p-4 sm:p-6">
         {filteredMappings.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
             {mappings.length === 0 ? "ยังไม่มีข้อมูลใน support_fundmapping" : "ไม่พบข้อมูลตามเงื่อนไขค้นหา"}
           </div>
         ) : (
@@ -917,7 +916,7 @@ function ResearcherMatchingContent() {
                 <button
                   key={itemKey}
                   onClick={() => setSelectedItem(item)}
-                  className="group w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 text-left transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_18px_34px_-28px_rgba(14,116,144,0.45)]"
+                  className="group w-full overflow-hidden rounded-xl border border-slate-200 bg-white p-0 text-left transition hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <div className="flex gap-3 px-4 py-4 sm:px-5">
                     <span className="mt-0.5 inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full bg-slate-100 px-2 text-sm font-semibold text-slate-700">
@@ -948,7 +947,7 @@ function ResearcherMatchingContent() {
                     </div>
 
                     <div className="hidden items-center sm:flex">
-                      <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-700 transition group-hover:border-cyan-300 group-hover:bg-cyan-100">
+                      <span className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 transition group-hover:border-blue-300 group-hover:bg-blue-100">
                         ดูรายละเอียด
                       </span>
                     </div>
@@ -1109,13 +1108,7 @@ export default function HomePage() {
 
     const renderContentWithBack = (content) => (
       <div className="space-y-3">
-        <button
-          onClick={handleBackToPortal}
-          className="inline-flex items-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-blue-300 hover:text-blue-700"
-        >
-          <ArrowLeft size={16} className="me-2" />
-          กลับหน้าหลัก
-        </button>
+        <PortalBackLink onNavigate={handleBackToPortal} alwaysShow />
         {content}
       </div>
     );
@@ -1131,10 +1124,11 @@ export default function HomePage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-white text-center">
         <Image
-          src="/image_icon/fund_cpkku_logo.png"
-          alt="โลโก้กองทุนวิจัย"
-          width={160}
-          height={160}
+          src="/image_icon/iconcpkku.png"
+          alt="College of Computing, Khon Kaen University"
+          width={260}
+          height={75}
+          className="h-auto w-64 object-contain"
           priority
         />
         <h1 className="text-2xl font-bold text-gray-900">{APP_DISPLAY_NAME}</h1>
@@ -1147,7 +1141,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-slate-100">
       {isAuthenticated ? (
         <MemberHeader
           isOpen={isMenuOpen}
@@ -1164,9 +1158,9 @@ export default function HomePage() {
         />
       )}
 
-      <main className="pt-40 lg:pt-32 px-4 sm:px-6 lg:px-8 pb-8">
+      <main className="portal-page-offset px-4 pb-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="bg-gray-100 p-1 sm:p-2">{renderPageContent()}</div>
+          <div className="bg-slate-100 p-1 sm:p-2">{renderPageContent()}</div>
         </div>
       </main>
     </div>

@@ -410,7 +410,7 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
         <div className="flex sm:grid sm:grid-cols-7 gap-1 p-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setCurrentPage(tab.id)}
-              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 whitespace-nowrap sm:w-full text-[13px] ${currentPage === tab.id ? "bg-cyan-600 text-white shadow-sm" : "text-slate-600 hover:text-cyan-600 hover:bg-slate-50"}`}>
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 whitespace-nowrap sm:w-full text-sm ${currentPage === tab.id ? "bg-cyan-600 text-white shadow-sm" : "text-slate-600 hover:text-cyan-600 hover:bg-slate-50"}`}>
               {tab.icon && <span className="shrink-0 flex items-center justify-center">{tab.icon}</span>}
               <span>{tab.label}</span>
             </button>

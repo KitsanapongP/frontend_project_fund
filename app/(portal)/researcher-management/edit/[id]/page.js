@@ -58,7 +58,7 @@ export default function EditInstructorPage() {
         currentPageTitle="แก้ไขข้อมูลอาจารย์"
       />
 
-      <div className="flex pt-16">
+      <div className="portal-shell-offset flex">
         
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-10">

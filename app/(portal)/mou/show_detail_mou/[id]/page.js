@@ -104,48 +104,48 @@ function FileIcon({ fileName }) {
   if (ext === 'pdf') {
     return (
       <div className="w-9 h-10 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center shrink-0 shadow-sm">
-        <span className="text-red-600 font-extrabold text-[10px] tracking-wider">PDF</span>
+        <span className="text-red-600 font-extrabold text-xs tracking-wider">PDF</span>
       </div>
     );
   }
   if (['doc', 'docx'].includes(ext)) {
     return (
       <div className="w-9 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0 shadow-sm">
-        <span className="text-blue-600 font-extrabold text-[10px] tracking-wider">DOC</span>
+        <span className="text-blue-600 font-extrabold text-xs tracking-wider">DOC</span>
       </div>
     );
   }
   if (ext === 'txt') {
     return (
       <div className="w-9 h-10 rounded-lg bg-gray-50 border border-gray-300 flex items-center justify-center shrink-0 shadow-sm">
-        <span className="text-gray-500 font-extrabold text-[10px] tracking-wider">TXT</span>
+        <span className="text-gray-500 font-extrabold text-xs tracking-wider">TXT</span>
       </div>
     );
   }
   if (['xls', 'xlsx'].includes(ext)) {
     return (
       <div className="w-9 h-10 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center shrink-0 shadow-sm">
-        <span className="text-green-600 font-extrabold text-[10px] tracking-wider">XLS</span>
+        <span className="text-green-600 font-extrabold text-xs tracking-wider">XLS</span>
       </div>
     );
   }
   if (['ppt', 'pptx'].includes(ext)) {
     return (
       <div className="w-9 h-10 rounded-lg bg-orange-50 border border-orange-200 flex items-center justify-center shrink-0 shadow-sm">
-        <span className="text-orange-600 font-extrabold text-[10px] tracking-wider">PPT</span>
+        <span className="text-orange-600 font-extrabold text-xs tracking-wider">PPT</span>
       </div>
     );
   }
   if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext)) {
     return (
       <div className="w-9 h-10 rounded-lg bg-pink-50 border border-pink-200 flex items-center justify-center shrink-0 shadow-sm">
-        <span className="text-pink-600 font-extrabold text-[10px] tracking-wider">IMG</span>
+        <span className="text-pink-600 font-extrabold text-xs tracking-wider">IMG</span>
       </div>
     );
   }
   return (
     <div className="w-9 h-10 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 shadow-sm">
-      <span className="text-gray-500 font-extrabold text-[10px] tracking-wider">{ext.slice(0, 3).toUpperCase() || 'FIL'}</span>
+      <span className="text-gray-500 font-extrabold text-xs tracking-wider">{ext.slice(0, 3).toUpperCase() || 'FIL'}</span>
     </div>
   );
 }
@@ -167,7 +167,7 @@ function FacultyItem({ fac }) {
           </div>
         )}
         {email && (
-          <div className="text-[11px] text-gray-400 truncate mt-0.5">
+          <div className="text-xs text-gray-400 truncate mt-0.5">
             อีเมล: {email}
           </div>
         )}
@@ -395,8 +395,8 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
                             <Building2 size={13} className="text-blue-500 shrink-0" />
                             <span className="text-xs font-medium text-blue-900 truncate">{fac.external_org}</span>
                           </div>
-                          <div className="text-[11px] text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {fac.external_name || "ไม่ระบุ"}</div>
-                          {fac.email && <div className="text-[11px] text-gray-400 truncate pl-5">อีเมล: {fac.email}</div>}
+                          <div className="text-xs text-gray-500 truncate pl-5">ผู้รับผิดชอบ: {fac.external_name || "ไม่ระบุ"}</div>
+                          {fac.email && <div className="text-xs text-gray-400 truncate pl-5">อีเมล: {fac.email}</div>}
                         </div>
                       ))}
                     </div>
@@ -540,7 +540,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
                             <div className="min-w-0">
                               <div className="text-sm font-medium text-gray-800">{ev.title}</div>
                               {ev.subtitle && (
-                                <div className="text-[12px] text-gray-500 mt-0.5">{ev.subtitle}</div>
+                                <div className="text-xs text-gray-500 mt-0.5">{ev.subtitle}</div>
                               )}
                             </div>
                           </div>

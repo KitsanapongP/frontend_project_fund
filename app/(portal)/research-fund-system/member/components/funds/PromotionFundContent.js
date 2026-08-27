@@ -683,16 +683,16 @@ export default function PromotionFundContent({ onNavigate }) {
 
     if (daysUntilDeadline !== null && daysUntilDeadline <= 7) {
       return (
-        <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
           <div className="flex items-center gap-3">
-            <Clock className="text-yellow-600 flex-shrink-0" size={20} />
+            <Clock className="text-amber-600 flex-shrink-0" size={20} />
             <div>
-              <h3 className="text-yellow-800 font-medium">
+              <h3 className="text-amber-800 font-medium">
                 {daysUntilDeadline > 0 
                   ? `เหลือเวลาอีก ${daysUntilDeadline} วัน` 
                   : 'วันสุดท้ายของการยื่นขอทุน'}
               </h3>
-              <p className="text-yellow-700 text-sm mt-1">
+              <p className="text-amber-700 text-sm mt-1">
                 การยื่นขอทุนจะสิ้นสุดในวันที่ {endDateFormatted}
               </p>
             </div>
@@ -742,7 +742,7 @@ export default function PromotionFundContent({ onNavigate }) {
       <div className="flex justify-center items-center h-64">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">กำลังโหลดข้อมูล...</p>
+          <p className="text-slate-600">กำลังโหลดข้อมูล...</p>
         </div>
       </div>
     );
@@ -755,7 +755,7 @@ export default function PromotionFundContent({ onNavigate }) {
           <p>เกิดข้อผิดพลาด: {error}</p>
           <button 
             onClick={refetch}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="mt-4 min-h-11 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             ลองใหม่
           </button>
@@ -786,10 +786,10 @@ export default function PromotionFundContent({ onNavigate }) {
     return (
       <tr
         key={fund.subcategory_id || fund.subcategorie_id}
-        className={!canApply ? "bg-gray-50" : ""}
+        className={!canApply ? "bg-slate-50" : ""}
       >
         <td className="px-6 py-4 align-top">
-          <div className="text-sm font-medium text-gray-900 max-w-lg break-words leading-relaxed">
+          <div className="text-sm font-medium text-slate-900 max-w-lg break-words leading-relaxed">
             {fundName}
           </div>
           {fundHint && (
@@ -798,24 +798,24 @@ export default function PromotionFundContent({ onNavigate }) {
             </div>
           )}
           {fund.has_multiple_levels && (
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-slate-500 mt-1">
               (มี {fund.budget_count} ระดับ)
             </div>
           )}
         </td>
         <td className="px-6 py-4">
           <div className="flex flex-col gap-2">
-            <div className="text-sm text-gray-900">
+            <div className="text-sm text-slate-900">
               {fundCondition ? (
                 <button
                   onClick={() => showCondition(fundName, fundCondition)}
-                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-blue-700 transition-colors hover:bg-blue-50 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <Info className="w-4 h-4" />
                   ดูเงื่อนไข
                 </button>
               ) : (
-                <span className="text-gray-500">ไม่มีเงื่อนไข</span>
+                <span className="text-slate-500">ไม่มีเงื่อนไข</span>
               )}
             </div>
           </div>
@@ -826,7 +826,7 @@ export default function PromotionFundContent({ onNavigate }) {
               <div className="inline-flex items-center justify-center gap-3">
                 <button
                   onClick={() => handleViewDetails(fund, { canApply })}
-                  className="inline-flex items-center gap-2 px-1 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   title="เปิดดูรายละเอียด (อ่านอย่างเดียว)"
                 >
                   <Search size={16} />
@@ -835,10 +835,10 @@ export default function PromotionFundContent({ onNavigate }) {
 
                 {isFundOpen && <button
                   onClick={() => handleApplyForm(fund, { isCurrentBudgetYear })}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                     canApply
                       ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-slate-300 text-slate-500 cursor-not-allowed'
                   }`}
                   title={buttonTitle}
                   disabled={!canApply}
@@ -860,7 +860,7 @@ export default function PromotionFundContent({ onNavigate }) {
                 const docUrl = fund.form_url || "/documents/default-fund-form.docx";
                 window.open(docUrl, "_blank");
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               title="ดาวน์โหลดแบบฟอร์ม"
             >
               <Download size={16} />
@@ -869,7 +869,7 @@ export default function PromotionFundContent({ onNavigate }) {
           ) : (
             <button
               onClick={() => handleViewDetails(fund, { canApply })}
-              className="inline-flex items-center gap-2 px-1 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <Search size={16} />
               ดูรายละเอียด
@@ -894,51 +894,54 @@ export default function PromotionFundContent({ onNavigate }) {
       {renderApplicationPeriodInfo()}
 
       {/* Control Bar */}
-      <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           {/* Year Display */}
           <div className="flex flex-col items-start gap-1">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">ปีงบประมาณ:</span>
+            <div className="flex min-h-11 flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-slate-700">ปีงบประมาณ:</span>
               <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-semibold ${
+                className={`flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold ${
                   yearDisplayIsAvailable
                     ? 'bg-blue-50 border-blue-200 text-blue-700'
-                    : 'bg-gray-100 border-gray-200 text-gray-500'
+                    : 'bg-slate-100 border-slate-200 text-slate-500'
                 }`}
               >
                 <Calendar
                   size={16}
-                  className={yearDisplayIsAvailable ? 'text-blue-500' : 'text-gray-400'}
+                  className={yearDisplayIsAvailable ? 'text-blue-500' : 'text-slate-400'}
                   aria-hidden="true"
                 />
                 <span>{yearDisplayLabel}</span>
               </div>
             </div>
             {yearDisplayHelperText && (
-              <span className="text-xs text-gray-500">{yearDisplayHelperText}</span>
+              <span className="text-xs text-slate-500">{yearDisplayHelperText}</span>
             )}
           </div>
 
           {/* Search and Filter */}
-          <div className="relative w-full md:w-auto">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+          <label className="relative w-full md:max-w-md md:flex-1">
+            <span className="sr-only">ค้นหาทุนอุดหนุนกิจกรรม</span>
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
             <input
               type="text"
               placeholder="ค้นหาทุน..."
-              className="text-gray-600 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              className="min-h-11 w-full rounded-lg border border-slate-300 py-2 pl-10 pr-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
+          </label>
         </div>
       </div>
 
       {/* Funds Table */}
       {filteredFunds.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <div className="text-gray-500">
-            <TrendingUp size={48} className="mx-auto mb-4 text-gray-300" />
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+          <div className="text-slate-500">
+            <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <TrendingUp size={24} />
+            </span>
             <p className="text-lg font-medium mb-2">ไม่พบทุนอุดหนุนกิจกรรม</p>
             <p className="text-sm">
               {fundCategories.length === 0 
@@ -948,30 +951,30 @@ export default function PromotionFundContent({ onNavigate }) {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="w-full min-w-[48rem] divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-2/5">
                     ชื่อทุน
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     รายละเอียด
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
                     แบบฟอร์มขอทุน
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-slate-200">
                 {filteredFunds.map((category) => {
                   if (category.subcategories && category.subcategories.length > 0) {
                     return category.subcategories.map((fund) => renderFundRow(fund, category));
                   } else {
                     return (
                       <tr key={category.category_id}>
-                        <td colSpan="3" className="px-6 py-4 text-center text-gray-500">
+                        <td colSpan="3" className="px-6 py-4 text-center text-slate-500">
                           ไม่มีทุนย่อยในหมวด {category.category_name}
                         </td>
                       </tr>
@@ -995,8 +998,8 @@ export default function PromotionFundContent({ onNavigate }) {
           }}
         >
           <div
-            className={`fixed inset-0 bg-gray-500 transition-opacity duration-300 ease-in-out ${
-              isConditionModalVisible ? 'opacity-75' : 'opacity-0'
+            className={`fixed inset-0 bg-slate-950 transition-opacity duration-300 ease-in-out ${
+              isConditionModalVisible ? 'opacity-50' : 'opacity-0'
             }`}
             onClick={closeConditionModal}
             aria-hidden="true"
@@ -1004,7 +1007,7 @@ export default function PromotionFundContent({ onNavigate }) {
 
           <div
             ref={modalRef}
-            className={`relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all duration-300 ease-in-out max-w-2xl w-full max-h-[90vh] flex flex-col ${
+            className={`relative flex max-h-[90vh] w-full max-w-2xl transform flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-xl transition-all duration-300 ease-in-out ${
               isConditionModalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
             }`}
             role="dialog"
@@ -1012,15 +1015,16 @@ export default function PromotionFundContent({ onNavigate }) {
             aria-describedby="modal-description"
             tabIndex={-1}
           >
-            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 border-b border-slate-200 flex-shrink-0">
               <div className="flex justify-between items-start">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 pr-4" id="modal-title">
+                <h3 className="text-lg leading-6 font-medium text-slate-900 pr-4" id="modal-title">
                   เงื่อนไขทุน: {selectedCondition.title}
                 </h3>
                 <button
                   type="button"
-                  className="text-gray-400 hover:text-gray-500 flex-shrink-0"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   onClick={closeConditionModal}
+                  aria-label="ปิดหน้าต่างเงื่อนไขทุน"
                 >
                   <X size={20} />
                 </button>
@@ -1028,15 +1032,15 @@ export default function PromotionFundContent({ onNavigate }) {
             </div>
             
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
-              <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed" id="modal-description">
+              <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed" id="modal-description">
                 {selectedCondition.content}
               </div>
             </div>
             
-            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200 flex-shrink-0">
+            <div className="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-200 flex-shrink-0">
               <button
                 type="button"
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-base font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
                 onClick={closeConditionModal}
               >
                 ปิด
