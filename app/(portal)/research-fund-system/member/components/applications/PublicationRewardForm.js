@@ -20,6 +20,8 @@ import {
   ArrowLeft,
   Info,
   Download,
+  Landmark,
+  CircleDollarSign,
   RefreshCw,
   Trash2,
   Undo2,
@@ -70,7 +72,7 @@ const Toast = Swal.mixin({
 });
 
 const MAX_CURRENCY_AMOUNT = 1_000_000;
-const FEE_NET_NON_NEGATIVE_MESSAGE = 'ค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์หลังหักทุนภายนอก ต้องไม่น้อยกว่า 0 บาท';
+const FEE_NET_NON_NEGATIVE_MESSAGE = 'ค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์หลังหักเงินสนับสนุนจากภายนอก ต้องไม่น้อยกว่า 0 บาท';
 
 const clampCurrencyValue = (rawValue) => {
   if (rawValue === null || rawValue === undefined) {
@@ -543,6 +545,14 @@ const formatCurrency = (value) => {
   return num.toLocaleString('th-TH');
 };
 
+const formatMoneyAmount = (value) => {
+  const num = formatNumber(value);
+  return num.toLocaleString('th-TH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
 const parseNumberOrNull = (value) => {
   if (value === null || value === undefined || value === '') {
     return null;
@@ -887,7 +897,7 @@ const validateFees = async (journalQuartile, revisionFee, publicationFee, extern
         (parseFloat(externalFunding) || 0);
       
       if (totalFees > maxLimit) {
-        errors.push(`ค่าปรับปรุงและค่าตีพิมพ์หลังหักทุนภายนอกเกินวงเงินสูงสุด ${maxLimit.toLocaleString()} บาท`);
+        errors.push(`ค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์หลังหักเงินสนับสนุนจากภายนอกเกินวงเงินสูงสุด ${maxLimit.toLocaleString()} บาท`);
       }
     } catch (error) {
       console.error('Error validating fees:', error);
@@ -911,7 +921,7 @@ const validateFeesRealtime = async (revisionFee, publicationFee, externalFunding
     (parseFloat(externalFunding) || 0);
   
   if (totalFees > feeLimitsTotal) {
-    setFeeErrorFn(`ค่าปรับปรุงและค่าตีพิมพ์หลังหักทุนภายนอกเกินวงเงินสูงสุด ${feeLimitsTotal.toLocaleString()} บาท`);
+    setFeeErrorFn(`ค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์หลังหักเงินสนับสนุนจากภายนอกเกินวงเงินสูงสุด ${feeLimitsTotal.toLocaleString()} บาท`);
     return false;
   }
   
@@ -987,7 +997,7 @@ const describeApiError = (error, fallback = 'เกิดข้อผิดพ�
     return 'ระบบไม่พบ "ประเภทของเอกสาร" ที่แนบ กรุณาลบไฟล์นั้นแล้วแนบใหม่อีกครั้ง';
   }
   if (/external[_ ]?funding[_ ]?id/i.test(raw) && /required|validation/i.test(raw)) {
-    return 'กรุณาบันทึกข้อมูลทุนภายนอกก่อน แล้วจึงแนบไฟล์หลักฐาน';
+    return 'กรุณาบันทึกข้อมูลเงินสนับสนุนจากภายนอกก่อน แล้วจึงแนบไฟล์หลักฐาน';
   }
   // สตริงตรวจสอบข้อมูลแบบ Go / axios ที่เป็นภาษาโค้ด → ไม่โชว์ดิบ ๆ
   const looksTechnical =
@@ -3439,7 +3449,7 @@ export default function PublicationRewardForm({
         );
 
         if (!check.isValid && check.maxLimit > 0) {
-          setFeeError(`รวมค่าปรับปรุงและค่าตีพิมพ์หลังหักทุนภายนอกเกินวงเงินที่กำหนด (ไม่เกิน ${formatCurrency(check.maxLimit)} บาท)`);
+          setFeeError(`รวมค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์หลังหักเงินสนับสนุนจากภายนอกเกินวงเงินที่กำหนด (ไม่เกิน ${formatCurrency(check.maxLimit)} บาท)`);
         } else {
           setFeeError('');
         }
@@ -3509,7 +3519,7 @@ export default function PublicationRewardForm({
             Toast.fire({
               icon: 'info',
               title: 'Quartile นี้ไม่สามารถเบิกค่าใช้จ่ายได้',
-              text: 'ระบบได้ล้างข้อมูลค่าปรับปรุง ค่าตีพิมพ์ และทุนภายนอกแล้ว'
+              text: 'ระบบได้ล้างข้อมูลค่าปรับปรุงบทความ ค่าธรรมเนียมการตีพิมพ์ และเงินสนับสนุนจากภายนอกแล้ว'
             });
           }
         }
@@ -5836,7 +5846,7 @@ export default function PublicationRewardForm({
     if (priorRewardMessage) {
       errorList.push({
         fieldKey: 'revision_fee',
-        label: 'ค่าปรับปรุงบทความ',
+        label: 'ค่าปรับปรุงบทความตามที่จ่ายจริง',
         refOrId: 'revision_fee',
         message: priorRewardMessage,
       });
@@ -5880,7 +5890,7 @@ export default function PublicationRewardForm({
       feesMessage = feeMessages.join(', ');
       errorList.push({
         fieldKey: 'fees',
-        label: 'ค่าปรับปรุงและค่าธรรมเนียมการตีพิมพ์',
+        label: 'ค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์',
         refOrId: 'field-fees_limit',
         message: feesMessage
       });
@@ -6103,7 +6113,7 @@ export default function PublicationRewardForm({
       );
 
       if (unresolvedExternalFile) {
-        throw new Error('กรุณาบันทึกข้อมูลทุนภายนอกก่อนแนบไฟล์หลักฐาน');
+        throw new Error('กรุณาบันทึกข้อมูลเงินสนับสนุนจากภายนอกก่อนแนบไฟล์หลักฐาน');
       }
 
       await syncSubmissionDocuments({
@@ -6311,12 +6321,12 @@ const showSubmissionConfirmation = async () => {
           <div class="space-y-2 text-sm">
             <p><span class="font-medium">เคยขอเงินรางวัลแล้ว:</span> ${formData.has_received_reward ? 'ใช่ (ไม่คำนวณเงินรางวัล)' : 'ไม่ใช่'}</p>
             <p><span class="font-medium">เงินรางวัลการตีพิมพ์:</span> ${formatCurrency(effectiveRewardAmount)} บาท</p>
-            <p><span class="font-medium">ค่าปรับปรุงบทความ:</span> ${formatCurrency(formData.revision_fee || 0)} บาท</p>
-            <p><span class="font-medium">ค่าการตีพิมพ์:</span> ${formatCurrency(formData.publication_fee || 0)} บาท</p>
+            <p><span class="font-medium">ค่าปรับปรุงบทความตามที่จ่ายจริง (A):</span> ${formatCurrency(formData.revision_fee || 0)} บาท</p>
+            <p><span class="font-medium">ค่าธรรมเนียมการตีพิมพ์ตามที่จ่ายจริง (B):</span> ${formatCurrency(formData.publication_fee || 0)} บาท</p>
             
             ${(externalFundings && externalFundings.length > 0) ? `
               <div class="mt-3 pt-2 border-t border-green-200">
-                <span class="font-medium text-green-800">รายการทุนภายนอก:</span>
+                <span class="font-medium text-green-800">รายการสนับสนุนจากภายนอก:</span>
                 <ul class="ml-4 mt-1 space-y-1">
                   ${externalFundings.map(funding => {
                     const fundName = funding?.fundName || funding?.file?.name || 'ไม่ระบุชื่อทุน';
@@ -6324,7 +6334,7 @@ const showSubmissionConfirmation = async () => {
                     return `<li class="text-xs">• ${fundName}: ${formatCurrency(amount)} บาท</li>`;
                   }).join('')}
                 </ul>
-                <p class="mt-2 text-sm"><span class="font-medium">รวมทุนภายนอก:</span> ${formatCurrency(formData.external_funding_amount || 0)} บาท</p>
+                <p class="mt-2 text-sm"><span class="font-medium">รวมรายการสนับสนุน (C):</span> ${formatCurrency(formData.external_funding_amount || 0)} บาท</p>
               </div>
             ` : ''}
             
@@ -6334,7 +6344,7 @@ const showSubmissionConfirmation = async () => {
                   ยอดสุทธิที่เบิกจากวิทยาลัย: ${formatCurrency(formData.total_amount || 0)} บาท
                 </p>
                 <div class="text-xs text-slate-600 mt-1">
-                  คำนวณจาก: เงินรางวัล + (ค่าปรับปรุง + ค่าตีพิมพ์ - ทุนภายนอก)
+                  คำนวณจาก: เงินรางวัล + เงินสมทบส่วนต่าง (A + B - C)
                 </div>
                 <div class="text-xs text-slate-600">
                   = ${formatCurrency(effectiveRewardAmount)} + (${formatCurrency(formData.revision_fee || 0)} + ${formatCurrency(formData.publication_fee || 0)} - ${formatCurrency(formData.external_funding_amount || 0)})
@@ -6870,7 +6880,7 @@ const showSubmissionConfirmation = async () => {
         );
 
         if (unresolvedExternalFile) {
-          throw new Error('กรุณาบันทึกข้อมูลทุนภายนอกก่อนแนบไฟล์หลักฐาน');
+          throw new Error('กรุณาบันทึกข้อมูลเงินสนับสนุนจากภายนอกก่อนแนบไฟล์หลักฐาน');
         }
       } catch (error) {
         console.error('Failed to save publication details:', error);
@@ -7141,6 +7151,17 @@ const showSubmissionConfirmation = async () => {
   const allowExternalFunding = Boolean(
     formData.journal_quartile && feeLimits.total > 0
   );
+  const revisionFeeAmount = parseFloat(formData.revision_fee) || 0;
+  const publicationFeeAmount = parseFloat(formData.publication_fee) || 0;
+  const externalFundingAmount = allowExternalFunding
+    ? (externalFundings || []).reduce(
+        (sum, funding) => sum + (parseFloat(funding?.amount) || 0),
+        0,
+      )
+    : 0;
+  const combinedFeeAmount = revisionFeeAmount + publicationFeeAmount;
+  const contributionAmount = combinedFeeAmount - externalFundingAmount;
+  const totalReimbursementAmount = effectiveRewardAmount + contributionAmount;
   const shouldShowReviewerComments = currentSubmissionStatus === 'needs_more_info';
   const adminCommentDisplay = formatReviewerComment(reviewComments.admin);
   const headCommentDisplay = formatReviewerComment(reviewComments.head);
@@ -7846,6 +7867,7 @@ const showSubmissionConfirmation = async () => {
         {/* =================================================================
         // REWARD CALCULATION SECTION
         // ================================================================= */}
+        <div className="grid gap-6 xl:grid-cols-2 xl:items-stretch">
         <SimpleCard title="การคำนวณเงินรางวัล (Reward Calculation)" icon={Calculator}>
           <div className="space-y-4">
             <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
@@ -7869,25 +7891,21 @@ const showSubmissionConfirmation = async () => {
                 <span className="mt-1 block text-xs text-slate-600">เลือกกรณีขอเฉพาะค่าปรับปรุงบทความ โดยระบบจะไม่นำเงินรางวัลมารวมในยอดเบิกครั้งนี้</span>
               </span>
             </label>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              เงินรางวัล (บาท)
-              <br />
-              <span className="text-xs font-normal text-slate-500">Reward Amount (Baht)</span>
-            </label>
-            <div className="bg-slate-50 rounded-lg p-3">
-              <div className="text-2xl font-semibold text-slate-800">
-                {formatCurrency(effectiveRewardAmount)}
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm font-medium text-blue-800">เงินรางวัลการตีพิมพ์</p>
+              <p className="text-xs text-blue-700">Publication Reward</p>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-3xl font-bold tabular-nums text-blue-800">
+                  {formatCurrency(effectiveRewardAmount)}
+                </span>
+                <span className="text-sm font-medium text-blue-700">บาท</span>
               </div>
+              <p className="mt-2 text-xs text-blue-700">
+                {formData.has_received_reward
+                  ? 'ไม่นำมารวม เนื่องจากเคยขอเงินรางวัลแล้ว'
+                  : 'คำนวณจากสถานะผู้แต่งและ Quartile'}
+              </p>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              {formData.has_received_reward
-                ? 'ไม่นำเงินรางวัลมาคำนวณ เนื่องจากเคยขอเงินรางวัลแล้ว'
-                : 'คำนวณอัตโนมัติจากสถานะผู้แต่งและ Quartile'}
-              <br />
-              {formData.has_received_reward
-                ? '(Reward excluded because it was previously requested)'
-                : '(Automatically calculated based on author status and quartile)'}
-            </p>
           </div>
         </SimpleCard>
 
@@ -7895,14 +7913,13 @@ const showSubmissionConfirmation = async () => {
         // FEES AND FUNDING SECTION
         // ================================================================= */}
         <SimpleCard title="ค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์ (Manuscript Editing Fee and Page Charge)" icon={Award}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 divide-x divide-slate-200">
-            {/* Left side - Revision fee, Publication fee, and College total */}
-            <div className="space-y-6 lg:pr-6">
+          <div className="space-y-8">
+            <div className="space-y-6">
               {/* Show fee limit info */}
               {formData.journal_quartile && feeLimits.total > 0 && (
                 <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
                   <p className="text-sm font-medium text-slate-700">
-                    วงเงินค่าปรับปรุงและค่าตีพิมพ์หลังหักทุนภายนอกไม่เกิน (Maximum total for editing and page charge after external funding): 
+                    วงเงินค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์หลังหักเงินสนับสนุนจากภายนอกไม่เกิน (Maximum Manuscript Editing Fee and Page Charge after External Funding):
                     <span className="text-blue-700 font-bold ml-1">
                       {formatCurrency(feeLimits.total)} บาท (Baht)
                     </span>
@@ -7918,99 +7935,109 @@ const showSubmissionConfirmation = async () => {
               {formData.journal_quartile && feeLimits.total === 0 && (
                 <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
                   <p className="text-sm font-medium text-red-600">
-                    ควอร์ไทล์นี้ไม่สามารถเบิกค่าปรับปรุงและค่าตีพิมพ์ได้
+                    ควอร์ไทล์นี้ไม่สามารถเบิกค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์ได้
                     <br />
                     (This quartile is not eligible for editing fee and page charge reimbursement)
                   </p>
                 </div>
               )}
 
-              {/* Revision Fee */}
-              <div id="field-fees_limit">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    ค่าปรับปรุงบทความ (บาท)
-                    {formData.has_received_reward && <span className="ml-1 text-red-500">*</span>}
-                    <br />
-                    <span className="text-xs font-normal text-slate-600">Manuscript Editing Fee (Baht)</span>
+              <div className="space-y-4">
+                {/* Revision Fee */}
+                <div id="field-fees_limit" className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,16rem)] sm:items-center sm:gap-5">
+                  <label className="flex items-start gap-3 text-sm font-semibold text-slate-800" htmlFor="revision_fee">
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-xs font-bold text-blue-700">A</span>
+                    <span>
+                      <span className="block">
+                        ค่าปรับปรุงบทความตามที่จ่ายจริง (บาท)
+                        {formData.has_received_reward && <span className="ml-1 text-red-500">*</span>}
+                      </span>
+                      <span className="mt-0.5 block text-xs font-normal text-slate-600">Manuscript Editing Fee</span>
+                    </span>
                   </label>
-                <div className={`bg-slate-50 rounded-lg p-3 ${feeError ? 'border-2 border-red-500' : ''}`}>
-                  <input
-                    id="revision_fee"
-                    name="revision_fee"
-                    type="number"
-                    value={formData.revision_fee || ''}
-                    onChange={async (e) => {
-                      if (feeLimits.total === 0) {
-                        e.preventDefault();
-                        return;
-                      }
-                      const rawValue = e.target.value;
-                      const newValue = clampCurrencyValue(rawValue);
-                      setFormData(prev => ({ ...prev, revision_fee: newValue }));
+                  <div className={`flex min-h-14 items-center rounded-lg border bg-white px-4 ${feeError ? 'border-red-500' : 'border-slate-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100'}`}>
+                    <input
+                      id="revision_fee"
+                      name="revision_fee"
+                      type="number"
+                      value={formData.revision_fee || ''}
+                      onChange={async (e) => {
+                        if (feeLimits.total === 0) {
+                          e.preventDefault();
+                          return;
+                        }
+                        const rawValue = e.target.value;
+                        const newValue = clampCurrencyValue(rawValue);
+                        setFormData(prev => ({ ...prev, revision_fee: newValue }));
 
-                      // Validate fees in real-time
-                      await validateFeesRealtime(
-                        newValue,
-                        formData.publication_fee,
-                        formData.external_funding_amount,
-                        formData.journal_quartile,
-                        feeLimits.total,
-                        setFeeError
-                      );
-                    }}
-                    disabled={!formData.journal_quartile || feeLimits.total === 0}
-                    required={formData.has_received_reward && feeLimits.total > 0}
-                    aria-required={formData.has_received_reward ? 'true' : 'false'}
-                    aria-invalid={errors.revision_fee ? 'true' : 'false'}
-                    min="0"
-                    max={MAX_CURRENCY_AMOUNT}
-                    placeholder="0"
-                    className={`text-2xl font-semibold text-slate-800 w-full bg-transparent border-none focus:outline-none ${
-                      (!formData.journal_quartile || feeLimits.total === 0) ? 'cursor-not-allowed opacity-50' : ''
-                    }`}
-                  />
+                        await validateFeesRealtime(
+                          newValue,
+                          formData.publication_fee,
+                          formData.external_funding_amount,
+                          formData.journal_quartile,
+                          feeLimits.total,
+                          setFeeError
+                        );
+                      }}
+                      disabled={!formData.journal_quartile || feeLimits.total === 0}
+                      required={formData.has_received_reward && feeLimits.total > 0}
+                      aria-required={formData.has_received_reward ? 'true' : 'false'}
+                      aria-invalid={errors.revision_fee ? 'true' : 'false'}
+                      min="0"
+                      max={MAX_CURRENCY_AMOUNT}
+                      placeholder="0.00"
+                      className={`min-w-0 flex-1 border-none bg-transparent text-right text-xl font-semibold tabular-nums text-slate-900 focus:outline-none ${
+                        (!formData.journal_quartile || feeLimits.total === 0) ? 'cursor-not-allowed opacity-50' : ''
+                      }`}
+                    />
+                    <span className="ml-2 text-sm text-slate-600">บาท</span>
+                  </div>
+                  {errors.revision_fee && <p className="text-sm text-red-600 sm:col-span-2">{errors.revision_fee}</p>}
                 </div>
-                {errors.revision_fee && <p className="mt-1 text-sm text-red-500">{errors.revision_fee}</p>}
-              </div>
 
-              {/* Publication Fee */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  ค่าธรรมเนียมการตีพิมพ์ (บาท)
-                  <br />
-                  <span className="text-xs font-normal text-slate-600">Page Charge (Baht)</span>
-                </label>
-                <div className={`bg-slate-50 rounded-lg p-3 ${feeError ? 'border-2 border-red-500' : ''}`}>
-                  <input
-                    type="number"
-                    value={formData.publication_fee || ''}
-                    onChange={async (e) => {
-                      if (feeLimits.total === 0) {
-                        e.preventDefault();
-                        return;
-                      }
-                      const rawValue = e.target.value;
-                      const newValue = clampCurrencyValue(rawValue);
-                      setFormData(prev => ({ ...prev, publication_fee: newValue }));
+                {/* Publication Fee */}
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,16rem)] sm:items-center sm:gap-5">
+                  <label className="flex items-start gap-3 text-sm font-semibold text-slate-800" htmlFor="publication_fee">
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-xs font-bold text-blue-700">B</span>
+                    <span>
+                      <span className="block">ค่าธรรมเนียมการตีพิมพ์ตามที่จ่ายจริง (บาท)</span>
+                      <span className="mt-0.5 block text-xs font-normal text-slate-600">Page Charge</span>
+                    </span>
+                  </label>
+                  <div className={`flex min-h-14 items-center rounded-lg border bg-white px-4 ${feeError ? 'border-red-500' : 'border-slate-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100'}`}>
+                    <input
+                      id="publication_fee"
+                      name="publication_fee"
+                      type="number"
+                      value={formData.publication_fee || ''}
+                      onChange={async (e) => {
+                        if (feeLimits.total === 0) {
+                          e.preventDefault();
+                          return;
+                        }
+                        const rawValue = e.target.value;
+                        const newValue = clampCurrencyValue(rawValue);
+                        setFormData(prev => ({ ...prev, publication_fee: newValue }));
 
-                      // Validate fees in real-time
-                      await validateFeesRealtime(
-                        formData.revision_fee,
-                        newValue,
-                        formData.external_funding_amount,
-                        formData.journal_quartile,
-                        feeLimits.total,
-                        setFeeError
-                      );
-                    }}
-                    disabled={!formData.journal_quartile || feeLimits.total === 0}
-                    min="0"
-                    max={MAX_CURRENCY_AMOUNT}
-                    placeholder="0"
-                    className={`text-2xl font-semibold text-slate-800 w-full bg-transparent border-none focus:outline-none ${
-                      (!formData.journal_quartile || feeLimits.total === 0) ? 'cursor-not-allowed opacity-50' : ''
-                    }`}
-                  />
+                        await validateFeesRealtime(
+                          formData.revision_fee,
+                          newValue,
+                          formData.external_funding_amount,
+                          formData.journal_quartile,
+                          feeLimits.total,
+                          setFeeError
+                        );
+                      }}
+                      disabled={!formData.journal_quartile || feeLimits.total === 0}
+                      min="0"
+                      max={MAX_CURRENCY_AMOUNT}
+                      placeholder="0.00"
+                      className={`min-w-0 flex-1 border-none bg-transparent text-right text-xl font-semibold tabular-nums text-slate-900 focus:outline-none ${
+                        (!formData.journal_quartile || feeLimits.total === 0) ? 'cursor-not-allowed opacity-50' : ''
+                      }`}
+                    />
+                    <span className="ml-2 text-sm text-slate-600">บาท</span>
+                  </div>
                 </div>
               </div>
 
@@ -8023,46 +8050,32 @@ const showSubmissionConfirmation = async () => {
                   </p>
                   {formData.journal_quartile && feeLimits.total > 0 && (
                     <p className="text-xs text-red-500 mt-1">
-                      ใช้ไปแล้วหลังหักทุนภายนอก (Used after external funding): {formatCurrency((parseFloat(formData.revision_fee) || 0) + (parseFloat(formData.publication_fee) || 0) - (parseFloat(formData.external_funding_amount) || 0))} บาท (Baht)
+                      ใช้ไปแล้วหลังหักเงินสนับสนุนจากภายนอก (Used after External Funding): {formatCurrency((parseFloat(formData.revision_fee) || 0) + (parseFloat(formData.publication_fee) || 0) - (parseFloat(formData.external_funding_amount) || 0))} บาท (Baht)
                     </p>
                   )}
                 </div>
               )}
 
-              {/* College Total */}
-              <div className="mt-8">
-                <h4 className="text-base font-medium text-slate-900 mb-3">
-                  รวมเบิกจากวิทยาลัยการคอม
-                  <br />
-                  <span className="text-sm font-normal text-slate-600">Total Reimbursement from CP-KKU</span>
-                </h4>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-slate-700">จำนวน (Amount)</span>
-                  <span className="text-2xl font-bold text-slate-900">
-                    {formatCurrency(formData.total_amount || 0)}
-                  </span>
-                  <span className="text-sm text-slate-700">บาท (Baht)</span>
-                </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  = เงินรางวัล (Reward) ({formatCurrency(effectiveRewardAmount)})
-                  + (ค่าปรับปรุง (Editing) ({formatCurrency(formData.revision_fee || 0)}) 
-                  + ค่าตีพิมพ์ (Page Charge) ({formatCurrency(formData.publication_fee || 0)}) 
-                  - ทุนภายนอก (External Funding) ({formatCurrency(formData.external_funding_amount || 0)}))
-                </div>
-              </div>
             </div>
+          </div>
+        </SimpleCard>
 
-            {/* Right side - External funding table */}
-            <div className="lg:pl-6">
-              <h4 className="font-medium text-slate-900 mb-4">
-                รายการที่มหาวิทยาลัยหรือหน่วยงานภายนอกสนับสนุน
-                <br />
-                <span className="text-sm font-normal text-slate-600">External Funding Sources</span>
-              </h4>
+        <SimpleCard
+          title="สนับสนุนจากภายนอก (External Funding)"
+          icon={Landmark}
+        >
+          <div className="space-y-6">
+            <div>
+              <div className="mb-4 flex items-start gap-2">
+                <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-md border border-amber-200 bg-amber-50 text-xs font-bold text-amber-800">C</span>
+                <p className="text-sm text-slate-600">
+                  ยอดสนับสนุนส่วนนี้จะนำไปหักจากค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์
+                </p>
+              </div>
               
               {/* External funding table */}
               <div className="overflow-x-auto rounded-xl border border-blue-200">
-                <table className="w-full min-w-[36rem]">
+                <table className="w-full min-w-[32rem]">
                   <thead>
                     <tr className="bg-blue-50">
                       <th className="border-b border-r border-blue-200 px-3 py-2 text-sm font-medium text-slate-700 text-center" style={{width: '60px'}}>
@@ -8087,7 +8100,7 @@ const showSubmissionConfirmation = async () => {
                       <tr>
                         <td colSpan="3" className="px-4 py-8 text-center text-slate-500">
                           <div className="text-sm">
-                            ไม่สามารถเพิ่มทุนภายนอกได้
+                            ไม่สามารถเพิ่มเงินสนับสนุนจากภายนอกได้
                             <br />
                             <span className="text-xs">
                               (External funding not available for this quartile)
@@ -8333,7 +8346,7 @@ const showSubmissionConfirmation = async () => {
                             min="0"
                             max={MAX_CURRENCY_AMOUNT}
                             disabled={!allowExternalFunding}
-                            className="w-full px-2 py-1 border border-slate-300 rounded text-right text-sm focus:outline-none focus:border-blue-500"
+                            className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-right text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                           />
                           </td>
                         </tr>
@@ -8349,15 +8362,15 @@ const showSubmissionConfirmation = async () => {
                   type="button"
                   onClick={handleAddExternalFunding}
                   disabled={!allowExternalFunding}
-                  className={`flex items-center gap-2 px-5 py-2 rounded-full transition-colors text-sm font-medium ${
+                  className={`inline-flex min-h-11 items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                     !allowExternalFunding
-                      ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                      : 'bg-green-500 text-white hover:bg-green-600'
+                      ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                      : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-50'
                   }`}
                   title={
                     !allowExternalFunding
                       ? 'กรุณาเลือก Quartile ที่สามารถเบิกค่าใช้จ่ายได้ก่อน'
-                      : 'เพิ่มรายการทุนภายนอก'
+                      : 'เพิ่มรายการสนับสนุนจากภายนอก'
                   }
                 >
                   <Plus className="h-4 w-4" />
@@ -8366,20 +8379,83 @@ const showSubmissionConfirmation = async () => {
               </div>
 
               {/* External funding total */}
-              <div className="mt-4 text-right">
-                <span className="text-sm text-slate-700">รวม (Total) </span>
-                <span className="text-xl font-bold text-slate-900">
-                  {formatCurrency(
-                    allowExternalFunding
-                      ? (externalFundings || []).reduce((sum, funding) => sum + (parseFloat(funding?.amount || 0)), 0)
-                      : 0
-                  )}
+              <div className="mt-4 flex flex-wrap items-baseline justify-end gap-2 border-t border-slate-200 pt-4 text-right">
+                <span className="text-sm font-medium text-slate-700">รวมสนับสนุนจากภายนอก (C)</span>
+                <span className="text-xl font-bold tabular-nums text-amber-800">
+                  {formatCurrency(externalFundingAmount)}
                 </span>
-                <span className="text-sm text-slate-700"> บาท (Baht)</span>
+                <span className="text-sm text-slate-600">บาท</span>
               </div>
+            </div>
+
+          </div>
+        </SimpleCard>
+
+        <SimpleCard
+          title="รวมเบิกจากวิทยาลัยการคอมพิวเตอร์ (Total Reimbursement from CP-KKU)"
+          icon={CircleDollarSign}
+        >
+          <div className="overflow-hidden rounded-lg border border-slate-200">
+            <div className="grid grid-cols-[minmax(0,1fr)_9rem] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600">
+              <span>รายการ</span>
+              <span className="text-right">จำนวนที่ขอ</span>
+            </div>
+
+            {[
+              {
+                label: 'เงินรางวัลการตีพิมพ์',
+                english: 'Publication Reward',
+                amount: effectiveRewardAmount,
+              },
+              {
+                label: 'ค่าปรับปรุงบทความตามที่จ่ายจริง (A)',
+                english: 'Manuscript Editing Fee',
+                amount: revisionFeeAmount,
+              },
+              {
+                label: 'ค่าธรรมเนียมการตีพิมพ์ตามที่จ่ายจริง (B)',
+                english: 'Page Charge',
+                amount: publicationFeeAmount,
+              },
+              {
+                label: 'สนับสนุนจากภายนอก (C)',
+                english: 'External Funding',
+                amount: externalFundingAmount,
+                deduction: true,
+              },
+              {
+                label: 'เงินสมทบส่วนต่าง (A + B − C)',
+                english: 'Contribution Amount',
+                amount: contributionAmount,
+                emphasized: true,
+              },
+            ].map((row) => (
+              <div
+                key={row.label}
+                className="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-4 border-b border-slate-100 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-800">{row.label}</p>
+                  <p className="text-xs text-slate-500">{row.english}</p>
+                </div>
+                <p className={`text-right font-semibold tabular-nums ${row.deduction ? 'text-red-700' : row.emphasized ? (row.amount < 0 ? 'text-red-700' : 'text-blue-700') : 'text-slate-900'}`}>
+                  {row.deduction ? `(${formatMoneyAmount(row.amount)})` : formatMoneyAmount(row.amount)}฿
+                </p>
+              </div>
+            ))}
+
+            <div className="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-4 bg-blue-50 px-4 py-4">
+              <div>
+                <p className="font-semibold text-slate-900">รวมจำนวนเงิน</p>
+                <p className="text-xs text-slate-600">Total Amount</p>
+              </div>
+              <p className={`text-right text-lg font-bold tabular-nums ${totalReimbursementAmount < 0 ? 'text-red-700' : 'text-blue-700'}`}>
+                {formatMoneyAmount(totalReimbursementAmount)}฿
+              </p>
             </div>
           </div>
         </SimpleCard>
+        </div>
 
         {/* =================================================================
         // FILE ATTACHMENTS SECTION
@@ -8513,7 +8589,7 @@ const showSubmissionConfirmation = async () => {
                     return (
                       <div key={docType.id} className="border border-slate-200 rounded-lg p-4">
                         <label className="block text-sm font-medium text-slate-700 mb-2">
-                          เอกสารเบิกจ่ายภายนอก (External Funding Documents)
+                          เอกสารสนับสนุนจากภายนอก (External Funding Documents)
                         </label>
 
                         {serverExternalFundingFiles.length > 0 && (
@@ -8571,7 +8647,7 @@ const showSubmissionConfirmation = async () => {
                         {externalFundingFiles && externalFundingFiles.length > 0 ? (
                           <div className="space-y-2">
                             <p className="text-sm font-medium text-slate-600">
-                              ไฟล์จากตารางทุนภายนอก ({externalFundingFiles.length} ไฟล์):
+                              ไฟล์จากรายการสนับสนุนจากภายนอก ({externalFundingFiles.length} ไฟล์):
                             </p>
                             {externalFundingFiles.map((doc) => (
                               <div key={`ext-${doc.funding_client_id}`} className="flex items-center justify-between bg-blue-50 rounded-lg p-2">
@@ -8612,7 +8688,7 @@ const showSubmissionConfirmation = async () => {
                           <div className="text-center py-4 bg-slate-50 rounded-lg">
                             <FileText className="mx-auto h-6 w-6 text-slate-400 mb-2" />
                             <p className="text-sm text-slate-500">
-                              ไฟล์จะแสดงอัตโนมัติเมื่อแนบในตารางทุนภายนอก
+                              ไฟล์จะแสดงอัตโนมัติเมื่อแนบในรายการสนับสนุนจากภายนอก
                             </p>
                             <p className="text-xs text-slate-400 mt-1">
                               (Files will appear automatically when attached in external funding table)
@@ -8819,7 +8895,7 @@ const showSubmissionConfirmation = async () => {
                 <div className="mt-4">
                   <div className="mb-6">
                     <iframe
-                      title="Publication Reward Preview"
+                      title="ตัวอย่างเงินรางวัลการตีพิมพ์ (Publication Reward Preview)"
                       src={previewUrl}
                       className="w-full h-[85vh] border rounded"
                     />
