@@ -1221,10 +1221,6 @@ export const scopusConfigAPI = {
   async listAuthorMetricsRuns(params = {}) {
     return apiClient.get('/admin/scopus/author-metrics/runs', params);
   },
-  // Hirsch h-graph รายอาจารย์ จาก scopus_documents (params: scopus_id | user_id, year_from, year_to)
-  async getAuthorHIndexGraph(params = {}) {
-    return apiClient.get('/admin/scopus/author-metrics/hgraph', params);
-  },
   // Hirsch h-graph ระดับคณะ (นับเฉพาะผลงานสังกัด KKU, dedupe ต่อ document) — params: year_from, year_to
   async getFacultyHIndexGraph(params = {}) {
     return apiClient.get('/admin/scopus/author-metrics/faculty-hgraph', params);
@@ -1237,10 +1233,6 @@ export const scopusConfigAPI = {
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
     const filename = `scopus-hindex-faculty-${new Date().toISOString().slice(0, 10)}.xlsx`;
     return apiClient.downloadFile(`/admin/scopus/author-metrics/faculty-export${suffix}`, filename);
-  },
-  // สรุป h-index อาจารย์ทุกคน (สำหรับ export CSV)
-  async getAuthorHIndexSummary() {
-    return apiClient.get('/admin/scopus/author-metrics/summary');
   },
 };
 

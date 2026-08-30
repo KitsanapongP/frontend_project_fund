@@ -144,6 +144,12 @@ export const teacherAPI = {
     }
   },
 
+  // Get the current user's own Scopus h-index graph (self-only; server resolves scopus_id from token)
+  // params: { year_from, year_to }
+  async getMyHIndexGraph(params = {}) {
+    return apiClient.get('/teacher/scopus/author-metrics/hgraph', params);
+  },
+
   // Get ThaiJO publication list for current user
   async getUserThaiJOPublications(params = {}) {
     try {

@@ -20,6 +20,7 @@ import memberAPI from "@/app/lib/member_api";
 import BudgetSummary from "@/app/(portal)/research-fund-system/member/components/dashboard/BudgetSummary";
 import { useStatusMap } from "@/app/hooks/useStatusMap";
 import PageLayout from "../common/PageLayout";
+import MemberScopusAuthorHIndex from "./MemberScopusAuthorHIndex";
 import { toast } from "react-hot-toast";
 import { downloadXlsx } from "@/app/(portal)/research-fund-system/admin/utils/xlsxExporter";
 
@@ -291,7 +292,7 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
           )
         ) : null}
         <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          เนื่องจากมีข้อจำกัดเรื่องการใช้บริการฐานข้อมูล ข้อมูลผลงานจะถูกปรับปรุงทุกวันที่ 1 ของเดือน
+          ข้อมูลผลงานจะถูกอัปเดตเวลาประมาณตี 1 ของทุกวัน
         </div>
       </div>
     );
@@ -308,7 +309,7 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
           : "ยังไม่มีข้อมูลแนวโน้มจาก Scopus สำหรับสร้างกราฟ"}
       </div>
       <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-800">
-        เนื่องจากมีข้อจำกัดเรื่องการใช้บริการฐานข้อมูล ข้อมูลผลงานจะถูกปรับปรุงทุกวันที่ 1 ของเดือน
+        เนื่องจากมีข้อจำกัดเรื่องการใช้บริการฐานข้อมูล ข้อมูลผลงานจะถูกปรับปรุงทุกคืน เวลาประมาณตี 1
       </div>
     </div>
   );
@@ -526,16 +527,8 @@ export default function ProfileContent() {
     setCurrentPage(1);
   }, [activeSource]);
 
-  useEffect(() => {
-    if (
-      activeSource === "scopus" &&
-      scopusUnavailable &&
-      !hasUserSelectedSource &&
-      !scopusLoading
-    ) {
-      setActiveSource("scholar");
-    }
-  }, [activeSource, scopusUnavailable, hasUserSelectedSource, scopusLoading]);
+  // NOTE: Google Scholar ถูกซ่อนไว้ (ยังไม่พร้อมใช้) จึงไม่มี auto-fallback ไป scholar อีก
+  // — คงไว้ที่ Scopus เสมอ (activeSource ค่าเริ่มต้น = "scopus")
 
   // helpers
   const parseDate = (value) => {
@@ -1627,28 +1620,7 @@ export default function ProfileContent() {
                             <span>{exporting ? "กำลังส่งออก..." : "ส่งออก Scopus"}</span>
                           </button>
                         ) : null}
-                        <span>แหล่งข้อมูล:</span>
-                        <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
-                          {[{ value: "scopus", label: "Scopus" }, { value: "scholar", label: "Google Scholar" }].map(
-                            (option) => {
-                              const isActiveSource = activeSource === option.value;
-                              return (
-                                <button
-                                  key={option.value}
-                                  type="button"
-                                  onClick={() => handleSourceChange(option.value)}
-                                  className={`min-h-11 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                                    isActiveSource
-                                      ? "bg-blue-600 text-white"
-                                      : "text-slate-600 hover:bg-white"
-                                  }`}
-                                >
-                                  {option.label}
-                                </button>
-                              );
-                            },
-                          )}
-                        </div>
+                        {/* Google Scholar ถูกซ่อนไว้ชั่วคราว (ยังไม่พร้อมใช้) — ใช้ Scopus เป็นแหล่งข้อมูลหลัก */}
                         {isScopusActive && scopusUnavailable ? (
                           <span className="text-xs text-amber-600">
                             ยังไม่มีข้อมูลจาก Scopus สำหรับผู้ใช้นี้
@@ -1760,13 +1732,6 @@ export default function ProfileContent() {
                           scopusUnavailable ? (
                             <div className="space-y-3">
                               <p>ยังไม่มีข้อมูลจาก Scopus สำหรับผู้ใช้นี้</p>
-                              <button
-                                type="button"
-                                onClick={() => handleSourceChange("scholar")}
-                                className="inline-flex items-center justify-center rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
-                              >
-                                ดูข้อมูลจาก Google Scholar
-                              </button>
                             </div>
                           ) : (
                             <p>
@@ -1971,11 +1936,14 @@ export default function ProfileContent() {
                     )}
                   </div>
                   {isScopusActive ? (
-                    <ScopusTrendCard
-                      scopusStats={scopusStatsForDisplay}
-                      scopusLoading={scopusStatsLoading}
-                      formatNumber={formatNumber}
-                    />
+                    <>
+                      <ScopusTrendCard
+                        scopusStats={scopusStatsForDisplay}
+                        scopusLoading={scopusStatsLoading}
+                        formatNumber={formatNumber}
+                      />
+                      <MemberScopusAuthorHIndex />
+                    </>
                   ) : (
                     <ScholarCitationsCard
                       metrics={citationMetrics}
