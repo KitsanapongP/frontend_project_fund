@@ -48,7 +48,6 @@ export default function SearchInstructor() {
           ตั้งค่าฐานข้อมูลแหล่งอ้างอิง
         </button>
 
-        {/* ── ปุ่มใหม่: จัดการหลักสูตร ── */}
         <button
           onClick={() => router.push("/researcher-management/courses")}
           className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-600 shadow-sm"
@@ -219,11 +218,6 @@ export default function SearchInstructor() {
                     </div>
                   )}
                 </div>
-              </div>
-
-              <div className="relative mx-4 mb-5 sm:mx-6 rounded-xl border border-cyan-100 bg-cyan-50/60 px-4 py-3 text-sm text-cyan-800 flex items-center gap-2">
-                <Clock size={15} />
-                ข้อมูลบุคลากรถูกดึงมาจากระบบฐานข้อมูลส่วนกลางล่าสุด
               </div>
             </div>
           </>
