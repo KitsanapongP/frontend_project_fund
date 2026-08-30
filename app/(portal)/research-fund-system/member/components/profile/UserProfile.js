@@ -102,6 +102,7 @@ const EXPORT_COLUMNS = [
 const CITATION_RECENT_START_YEAR = 2020;
 
 const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
+  const [trendChartView, setTrendChartView] = useState("combo"); // combo = แท่ง+เส้น, lines = เส้นหลายชุด
   const renderValue = (value) => {
     if (value === null || value === undefined) {
       return "-";
@@ -140,11 +141,22 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
 
   if ((hasScopusTrend || hasScopusTotals) && !scopusUnavailable) {
     const sortedTrend = [...scopusTrend].sort((a, b) => (a.year || 0) - (b.year || 0));
-    const yearLabels = sortedTrend.map((point) =>
-      point.year === null || point.year === undefined ? "ไม่ระบุ" : `${point.year}`,
+    // ช่วงปีต่อเนื่อง: เติมปีที่ไม่มีผลงานด้วย 0 เพื่อไม่ให้แกนข้ามปี
+    const numericYears = sortedTrend
+      .map((p) => Number(p.year))
+      .filter((y) => Number.isFinite(y) && y > 0);
+    const byYear = new Map(
+      sortedTrend.filter((p) => p.year != null).map((p) => [Number(p.year), p]),
     );
-    const documentSeries = sortedTrend.map((point) => point.documents || 0);
-    const citationSeries = sortedTrend.map((point) => point.citations || 0);
+    const continuousYears = [];
+    if (numericYears.length > 0) {
+      const minYear = Math.min(...numericYears);
+      const maxYear = Math.max(...numericYears);
+      for (let y = minYear; y <= maxYear; y++) continuousYears.push(y);
+    }
+    const yearLabels = continuousYears.map((y) => `${y + 543}`);
+    const documentSeries = continuousYears.map((y) => byYear.get(y)?.documents || 0);
+    const citationSeries = continuousYears.map((y) => byYear.get(y)?.citations || 0);
     const chartHasSeries =
       documentSeries.some((value) => value > 0) ||
       citationSeries.some((value) => value > 0);
@@ -168,11 +180,11 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
         value: renderValue(scopusTotals.citations ?? 0),
       },
       {
-        label: `ผลงานตั้งแต่ปี ${CITATION_RECENT_START_YEAR}`,
+        label: `ผลงานตั้งแต่ปี ${CITATION_RECENT_START_YEAR + 543}`,
         value: renderValue(scopusRecent.documents ?? 0),
       },
       {
-        label: `การอ้างอิงตั้งแต่ปี ${CITATION_RECENT_START_YEAR}`,
+        label: `การอ้างอิงตั้งแต่ปี ${CITATION_RECENT_START_YEAR + 543}`,
         value: renderValue(scopusRecent.citations ?? 0),
       },
     ];
@@ -184,43 +196,40 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
       return formatNumber ? formatNumber(value) : value;
     };
 
-    const chartOptions = {
+    // Documents (แท่ง) = น้ำเงิน, Citations (เส้น) = เขียว — dual Y-axis แยกสเกล (เอกสารน้อย/การอ้างอิงมาก)
+    const DOC_COLOR = "#3b82f6";
+    const CITE_COLOR = "#16a34a";
+    const commonChartOptions = {
       chart: {
-        type: "line",
-        stacked: false,
         toolbar: { show: false },
         background: "transparent",
         zoom: { enabled: false },
         animations: { enabled: false },
       },
-      stroke: { width: [0, 3], curve: "smooth" },
-      plotOptions: {
-        bar: {
-          borderRadius: 6,
-          columnWidth: "45%",
-        },
-      },
+      colors: [DOC_COLOR, CITE_COLOR],
       dataLabels: { enabled: false },
       xaxis: {
         categories: yearLabels,
+        tickPlacement: "on",
         axisBorder: { color: "#e5e7eb" },
         axisTicks: { color: "#e5e7eb" },
         labels: {
-          style: {
-            colors: yearLabels.map(() => "#6b7280"),
-            fontSize: "12px",
-          },
+          rotate: -45,
+          rotateAlways: yearLabels.length > 8,
+          style: { colors: yearLabels.map(() => "#64748b"), fontSize: "12px" },
         },
       },
       yaxis: [
         {
-          title: { text: "Documents" },
-          labels: { formatter: axisLabelFormatter },
+          seriesName: "Documents",
+          title: { text: "Documents", style: { color: DOC_COLOR } },
+          labels: { formatter: axisLabelFormatter, style: { colors: DOC_COLOR } },
         },
         {
+          seriesName: "Citations",
           opposite: true,
-          title: { text: "Citations" },
-          labels: { formatter: axisLabelFormatter },
+          title: { text: "Citations", style: { color: CITE_COLOR } },
+          labels: { formatter: axisLabelFormatter, style: { colors: CITE_COLOR } },
         },
       ],
       grid: { borderColor: "#f1f5f9", strokeDashArray: 4 },
@@ -230,25 +239,70 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
         fontSize: "14px",
         labels: { colors: "#0f172a" },
       },
-      colors: ["#2563eb", "#16a34a"],
       tooltip: { shared: true, intersect: false },
-      fill: { opacity: [0.85, 1] },
     };
 
-    const chartSeries = [
-      { name: "Documents", type: "column", data: documentSeries },
-      { name: "Citations", type: "line", data: citationSeries },
-    ];
+    const isLinesView = trendChartView === "lines";
+    const chartOptions = isLinesView
+      ? {
+          ...commonChartOptions,
+          chart: { ...commonChartOptions.chart, type: "line" },
+          stroke: { width: 3, curve: "straight" },
+          markers: { size: 4, strokeWidth: 0, hover: { size: 6 } },
+          fill: { type: "solid", opacity: 1 },
+        }
+      : {
+          ...commonChartOptions,
+          chart: { ...commonChartOptions.chart, type: "line", stacked: false },
+          stroke: { width: [0, 3], curve: "straight" },
+          plotOptions: { bar: { borderRadius: 6, columnWidth: "55%" } },
+          markers: { size: [0, 4], hover: { size: 6 } },
+          fill: { opacity: [0.9, 1] },
+        };
+
+    const chartSeries = isLinesView
+      ? [
+          { name: "Documents", type: "line", data: documentSeries },
+          { name: "Citations", type: "line", data: citationSeries },
+        ]
+      : [
+          { name: "Documents", type: "column", data: documentSeries },
+          { name: "Citations", type: "line", data: citationSeries },
+        ];
 
     return (
       <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex flex-col gap-1">
-          <h3 className="text-lg font-semibold text-slate-900">
-            Documents & Citations by Year (Scopus)
-          </h3>
-          <p className="text-sm text-slate-500">
-            ข้อมูลจาก Scopus แสดงจำนวนผลงาน (แท่ง) และการอ้างอิง (เส้น)
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-lg font-semibold text-slate-900">
+              Documents & Citations by Year (Scopus)
+            </h3>
+            <p className="text-sm text-slate-500">
+              ข้อมูลจาก Scopus แสดงจำนวนผลงานและการอ้างอิงในแต่ละปี
+            </p>
+          </div>
+          {hasScopusTrend && chartHasSeries && (
+            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setTrendChartView("combo")}
+                className={`rounded-md px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  !isLinesView ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+                }`}
+              >
+                แท่ง + เส้น
+              </button>
+              <button
+                type="button"
+                onClick={() => setTrendChartView("lines")}
+                className={`rounded-md px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  isLinesView ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+                }`}
+              >
+                เส้นหลายชุด
+              </button>
+            </div>
+          )}
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {summaryItems.map(({ label, value }) => (
@@ -262,28 +316,15 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
         </div>
         {hasScopusTrend ? (
           chartHasSeries ? (
-            <div className="mt-6">
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                <div className="flex items-center gap-2">
-                  <span className="h-3 w-6 rounded-full bg-sky-500" />
-                  <span>Documents</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-0.5 w-8 bg-indigo-600" />
-                  <span>Citations</span>
-                </div>
-              </div>
-              <div className="mt-4 w-full overflow-hidden">
-                <div className="w-full">
-                  <ReactApexChart
-                    options={chartOptions}
-                    series={chartSeries}
-                    type="line"
-                    height={360}
-                    width="100%"
-                  />
-                </div>
-              </div>
+            <div className="mt-6 w-full overflow-hidden">
+              <ReactApexChart
+                key={trendChartView}
+                options={chartOptions}
+                series={chartSeries}
+                type="line"
+                height={360}
+                width="100%"
+              />
             </div>
           ) : (
             <div className="mt-6 rounded-lg border border-dashed border-slate-200 bg-white/70 p-6 text-center text-sm text-slate-500">
@@ -411,11 +452,6 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
         <div className="mt-6">
           <div className="flex items-center justify-between text-xs text-slate-500">
             <span>{chartUnitLabel}</span>
-            {chart.isCitations ? null : (
-              <span className="italic text-xs text-slate-400">
-                TODO: เปลี่ยนเป็นจำนวนการอ้างอิงเมื่อมีข้อมูล
-              </span>
-            )}
           </div>
           {chartData.length > 0 ? (
             <div className="mt-4 overflow-x-auto">
@@ -1584,6 +1620,7 @@ export default function ProfileContent() {
                         key={tab.key}
                         type="button"
                         onClick={() => setActiveTab(tab.key)}
+                        aria-current={isActive ? "page" : undefined}
                         className={`min-h-11 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                           isActive
                             ? "bg-white text-blue-700 ring-1 ring-blue-200"
@@ -1757,40 +1794,46 @@ export default function ProfileContent() {
                                 ลำดับ
                               </th>
                               <th
-                                className="cursor-pointer px-4 py-2 text-left font-medium text-slate-700"
-                                onClick={() => handleSort("title")}
+                                aria-sort={sortField === "title" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                                className="px-4 py-2 text-left font-medium text-slate-700"
                               >
-                                ชื่อเรื่อง
-                                {sortField === "title" ? (
-                                  sortDirection === "asc" ? (
-                                    <ArrowUp className="ml-1 inline" size={14} />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSort("title")}
+                                  className="inline-flex min-h-11 items-center gap-1 rounded hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                >
+                                  ชื่อเรื่อง
+                                  {sortField === "title" ? (
+                                    sortDirection === "asc" ? (
+                                      <ArrowUp className="inline" size={14} />
+                                    ) : (
+                                      <ArrowDown className="inline" size={14} />
+                                    )
                                   ) : (
-                                    <ArrowDown className="ml-1 inline" size={14} />
-                                  )
-                                ) : (
-                                  <ArrowUpDown
-                                    className="ml-1 inline text-slate-400"
-                                    size={14}
-                                  />
-                                )}
+                                    <ArrowUpDown className="inline text-slate-500" size={14} />
+                                  )}
+                                </button>
                               </th>
                               <th
-                                className="w-24 cursor-pointer px-4 py-2 text-right font-medium text-slate-700"
-                                onClick={() => handleSort("cited_by")}
+                                aria-sort={sortField === "cited_by" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                                className="w-24 px-4 py-2 text-right font-medium text-slate-700"
                               >
-                                อ้างโดย
-                                {sortField === "cited_by" ? (
-                                  sortDirection === "asc" ? (
-                                    <ArrowUp className="ml-1 inline" size={14} />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSort("cited_by")}
+                                  className="inline-flex min-h-11 w-full items-center justify-end gap-1 rounded hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                >
+                                  อ้างโดย
+                                  {sortField === "cited_by" ? (
+                                    sortDirection === "asc" ? (
+                                      <ArrowUp className="inline" size={14} />
+                                    ) : (
+                                      <ArrowDown className="inline" size={14} />
+                                    )
                                   ) : (
-                                    <ArrowDown className="ml-1 inline" size={14} />
-                                  )
-                                ) : (
-                                  <ArrowUpDown
-                                    className="ml-1 inline text-slate-400"
-                                    size={14}
-                                  />
-                                )}
+                                    <ArrowUpDown className="inline text-slate-500" size={14} />
+                                  )}
+                                </button>
                               </th>
                               {isScopusActive ? (
                                 <th className="w-32 px-4 py-2 text-center font-medium text-slate-700">
@@ -1798,22 +1841,25 @@ export default function ProfileContent() {
                                 </th>
                               ) : null}
                               <th
-                                className="w-20 cursor-pointer px-4 py-2 text-center font-medium text-slate-700"
-                                onClick={() => handleSort("year")}
+                                aria-sort={sortField === "year" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                                className="w-20 px-4 py-2 text-center font-medium text-slate-700"
                               >
-                                ปี
-                                {sortField === "year" ? (
-                                  sortDirection === "asc" ? (
-                                    <ArrowUp className="ml-1 inline" size={14} />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSort("year")}
+                                  className="inline-flex min-h-11 w-full items-center justify-center gap-1 rounded hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                >
+                                  ปี
+                                  {sortField === "year" ? (
+                                    sortDirection === "asc" ? (
+                                      <ArrowUp className="inline" size={14} />
+                                    ) : (
+                                      <ArrowDown className="inline" size={14} />
+                                    )
                                   ) : (
-                                    <ArrowDown className="ml-1 inline" size={14} />
-                                  )
-                                ) : (
-                                  <ArrowUpDown
-                                    className="ml-1 inline text-slate-400"
-                                    size={14}
-                                  />
-                                )}
+                                    <ArrowUpDown className="inline text-slate-500" size={14} />
+                                  )}
+                                </button>
                               </th>
                             </tr>
                           </thead>
@@ -1936,14 +1982,15 @@ export default function ProfileContent() {
                     )}
                   </div>
                   {isScopusActive ? (
-                    <>
+                    // วางการ์ด Scopus บนพื้นสีเทาอ่อนให้แยกจากตาราง (สีขาว) ด้านบน และแยกการ์ดสองใบออกจากกัน
+                    <div className="space-y-6 rounded-2xl bg-slate-50 p-4">
                       <ScopusTrendCard
                         scopusStats={scopusStatsForDisplay}
                         scopusLoading={scopusStatsLoading}
                         formatNumber={formatNumber}
                       />
                       <MemberScopusAuthorHIndex />
-                    </>
+                    </div>
                   ) : (
                     <ScholarCitationsCard
                       metrics={citationMetrics}

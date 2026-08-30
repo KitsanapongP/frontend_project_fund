@@ -124,6 +124,26 @@ export default function MemberScopusAuthorHIndex() {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     if (markerTimerRef.current) clearTimeout(markerTimerRef.current);
   }, []);
+  // ปิด popover (คำอธิบาย/คำอธิบายกราฟ) เมื่อกด Escape หรือคลิกนอกพื้นที่
+  useEffect(() => {
+    if (!showDesc && !showHint) return;
+    const closeAll = () => {
+      setShowDesc(false);
+      setShowHint(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") closeAll();
+    };
+    const onDown = (e) => {
+      if (!e.target.closest?.("[data-hindex-popover]")) closeAll();
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onDown);
+    };
+  }, [showDesc, showHint]);
   function applyZoomRange(min, max) {
     min = Math.max(0, min);
     max = Math.min(axisMax, max);
@@ -338,6 +358,24 @@ export default function MemberScopusAuthorHIndex() {
     }
   }
 
+  // เปลี่ยนปีแล้วโหลดทันที (instant filter ให้เหมือนตัวกรองอื่นในหน้า) + clamp กัน from > to แล้วได้กราฟว่างเงียบ ๆ
+  function handleYearFrom(v) {
+    let from = v;
+    let to = yearTo;
+    if (from && to && Number(from) > Number(to)) to = from;
+    setYearFrom(from);
+    setYearTo(to);
+    fetchGraph(from, to);
+  }
+  function handleYearTo(v) {
+    let from = yearFrom;
+    let to = v;
+    if (from && to && Number(to) < Number(from)) from = to;
+    setYearFrom(from);
+    setYearTo(to);
+    fetchGraph(from, to);
+  }
+
   // โหลดกราฟช่วงเต็มครั้งแรก (server resolve scopus_id จาก token)
   useEffect(() => {
     fetchGraph("", "");
@@ -380,11 +418,12 @@ export default function MemberScopusAuthorHIndex() {
         fontFamily: "inherit",
         animations: { enabled: false },
       },
-      colors: ["#38bdf8", "#7c3aed"],
-      stroke: { curve: "straight", width: [2, 2] },
-      fill: { type: ["gradient", "solid"], opacity: [0.25, 1] },
-      // จุดบนเส้น citations (hover ดูรายละเอียดบทความได้) ส่วนเส้นทแยงไม่มีจุด
-      markers: { size: [3, 0], strokeWidth: 0, hover: { size: 6 } },
+      // โทนน้ำเงินอ่อน (primary-ring) = เส้น citations, border สีเทาอ่อน = เส้นอ้างอิง y=x (ไกด์ ไม่ใช่ข้อมูล)
+      colors: ["#3b82f6", "#cbd5e1"],
+      stroke: { curve: "straight", width: [2, 1.5] },
+      fill: { type: ["gradient", "solid"], opacity: [0.18, 1] },
+      // จุดบนเส้น = น้ำเงินเข้ม (primary-deep) มีขอบขาว ให้ต่างจากเส้นและเด่นขึ้น
+      markers: { size: [3, 0], colors: ["#1d4ed8"], strokeColors: "#ffffff", strokeWidth: 1.5, hover: { size: 6 } },
       xaxis: {
         type: "numeric",
         min: 0,
@@ -423,7 +462,7 @@ export default function MemberScopusAuthorHIndex() {
         // เส้นตั้งที่ h = ขอบเขตบทความที่นับเข้า h-index (h บทความแรกถูกอ้างอิง ≥ h ครั้ง)
         xaxis:
           h > 0
-            ? [{ x: h, borderColor: "#a16207", strokeDashArray: 4, label: { text: `h แรก`, style: { background: "#fef9c3", color: "#713f12" } } }]
+            ? [{ x: h, borderColor: "#d97706", strokeDashArray: 4, label: { text: `h แรก`, style: { background: "#fef9c3", color: "#854d0e" } } }]
             : [],
         points:
           h > 0
@@ -431,11 +470,11 @@ export default function MemberScopusAuthorHIndex() {
                 {
                   x: h,
                   y: h,
-                  marker: { size: 7, fillColor: "#facc15", strokeColor: "#a16207", strokeWidth: 2 },
+                  marker: { size: 7, fillColor: "#d97706", strokeColor: "#854d0e", strokeWidth: 2 },
                   label: {
                     text: `h-index = ${h}`,
-                    borderColor: "#a16207",
-                    style: { background: "#fef9c3", color: "#713f12", fontWeight: 600 },
+                    borderColor: "#d97706",
+                    style: { background: "#fef9c3", color: "#854d0e", fontWeight: 600 },
                   },
                 },
               ]
@@ -455,97 +494,98 @@ export default function MemberScopusAuthorHIndex() {
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Scopus h-index</div>
           <div className="flex items-center gap-1.5">
-            <div className="text-xl font-semibold text-slate-900">h-index (Scopus)</div>
-            <div className="relative">
+            <h3 className="text-xl font-semibold text-slate-900">h-index (Scopus)</h3>
+            <div className="relative" data-hindex-popover>
               <button
                 type="button"
                 onClick={() => setShowDesc((v) => !v)}
-                aria-label="รายละเอียด"
+                aria-label="รายละเอียด h-index"
+                aria-expanded={showDesc}
+                aria-describedby={showDesc ? "member-hindex-desc" : undefined}
                 title="รายละเอียด"
-                className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
-                  showDesc ? "border-slate-400 bg-slate-100 text-slate-700" : "border-slate-300 text-slate-400 hover:bg-slate-50"
+                className={`flex h-5 w-5 items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  showDesc ? "border-slate-400 bg-slate-100 text-slate-700" : "border-slate-300 text-slate-500 hover:bg-slate-50"
                 }`}
               >
                 <Info size={12} />
               </button>
               {showDesc && (
-                <div className="absolute left-0 top-7 z-20 w-80 rounded-lg border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-600 shadow-lg">
+                <div id="member-hindex-desc" role="note" className="absolute left-0 top-7 z-20 w-80 rounded-lg border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-600 shadow-lg">
                   h-index ของคุณคำนวณจากผลงานใน Scopus ที่นำเข้าระบบ เลือกช่วงปีได้ตามต้องการ
                   ตัวเลขอาจน้อยกว่าใน scopus.com หากยังไม่ได้อัปเดตจำนวนการอ้างอิงล่าสุด
                 </div>
               )}
             </div>
           </div>
+          <p className="text-xs text-slate-500">
+            ข้อมูลจาก Scopus ปรับปรุงทุกคืน เวลาประมาณตี 1 — ตัวเลขอาจต่างจาก scopus.com เล็กน้อย
+          </p>
         </div>
       </div>
 
-      <div className="mt-5 flex flex-wrap items-end gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs font-medium text-slate-600">ตั้งแต่ปี (พ.ศ.)</span>
-          <select
-            value={yearFrom}
-            onChange={(e) => setYearFrom(e.target.value)}
-            disabled={noScopus}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm disabled:bg-slate-100"
+      <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+        {/* กลุ่มช่วงปี — เปลี่ยนแล้วอัปเดตกราฟทันที */}
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-xs font-medium text-slate-600">ตั้งแต่ปี (พ.ศ.)</span>
+            <select
+              value={yearFrom}
+              onChange={(e) => handleYearFrom(e.target.value)}
+              disabled={noScopus}
+              className="min-w-[6rem] rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:bg-slate-100"
+            >
+              <option value="">ทั้งหมด</option>
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>
+                  {y + 543}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-xs font-medium text-slate-600">ถึงปี (พ.ศ.)</span>
+            <select
+              value={yearTo}
+              onChange={(e) => handleYearTo(e.target.value)}
+              disabled={noScopus}
+              className="min-w-[6rem] rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:bg-slate-100"
+            >
+              <option value="">ทั้งหมด</option>
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>
+                  {y + 543}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {/* กลุ่มส่งออก */}
+        <div className="flex flex-wrap items-end gap-2">
+          <button
+            type="button"
+            onClick={exportPersonCSV}
+            disabled={!graph || !(graph.points?.length > 0)}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+            title="ส่งออกรายการบทความเป็น CSV ตามช่วงปีที่แสดง"
           >
-            <option value="">ทั้งหมด</option>
-            {yearOptions.map((y) => (
-              <option key={y} value={y}>
-                {y + 543}
-              </option>
-            ))}
-          </select>
-        </label>
+            <Download size={14} />
+            ส่งออกบทความ (CSV)
+          </button>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs font-medium text-slate-600">ถึงปี (พ.ศ.)</span>
-          <select
-            value={yearTo}
-            onChange={(e) => setYearTo(e.target.value)}
-            disabled={noScopus}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm disabled:bg-slate-100"
+          <button
+            type="button"
+            onClick={exportPersonReport}
+            disabled={!graph || !(graph.points?.length > 0)}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+            title="ส่งออกรายงาน (กราฟ + ตารางบทความ) ตามช่วงปีที่แสดง"
           >
-            <option value="">ทั้งหมด</option>
-            {yearOptions.map((y) => (
-              <option key={y} value={y}>
-                {y + 543}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <button
-          type="button"
-          onClick={() => fetchGraph(yearFrom, yearTo)}
-          disabled={loading || noScopus}
-          className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {loading ? "กำลังโหลด..." : "อัปเดตกราฟ"}
-        </button>
-
-        <button
-          type="button"
-          onClick={exportPersonCSV}
-          disabled={!graph || !(graph.points?.length > 0)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          title="ส่งออกรายการบทความเป็น CSV ตามช่วงปีที่แสดง"
-        >
-          <Download size={14} />
-          ส่งออกบทความ (CSV)
-        </button>
-
-        <button
-          type="button"
-          onClick={exportPersonReport}
-          disabled={!graph || !(graph.points?.length > 0)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          title="ส่งออกรายงาน (กราฟ + ตารางบทความ) ตามช่วงปีที่แสดง"
-        >
-          <Download size={14} />
-          ส่งออกรายงาน (พร้อมกราฟ)
-        </button>
+            <Download size={14} />
+            ส่งออกรายงาน (พร้อมกราฟ)
+          </button>
+        </div>
       </div>
 
       {error && <p className="mt-4 text-sm text-rose-600">{error}</p>}
@@ -555,15 +595,15 @@ export default function MemberScopusAuthorHIndex() {
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="text-xs font-medium uppercase tracking-wide text-slate-500">h-index</div>
             <div className="mt-1 text-4xl font-bold text-slate-900">{graph ? formatNumber(graph.h_index) : "-"}</div>
-            <div className="mt-1 text-xs text-slate-500">ผลงานใน Scopus</div>
+            <div className="mt-1 text-xs text-slate-500">ตามช่วงปีที่เลือก</div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm">
-              <div className="text-xs text-slate-500">เอกสาร</div>
+              <div className="text-xs text-slate-500">เอกสาร (ช่วงที่เลือก)</div>
               <div className="text-lg font-semibold text-slate-900">{graph ? formatNumber(graph.document_count) : "-"}</div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm">
-              <div className="text-xs text-slate-500">การอ้างอิงรวม</div>
+              <div className="text-xs text-slate-500">การอ้างอิง (ช่วงที่เลือก)</div>
               <div className="text-lg font-semibold text-slate-900">{graph ? formatNumber(graph.citation_total) : "-"}</div>
             </div>
           </div>
@@ -579,37 +619,39 @@ export default function MemberScopusAuthorHIndex() {
             <div className="flex items-start justify-between gap-2">
               {/* ซ้ายบน: ปุ่มซูม + รีเซ็ต (เด่น มีข้อความ) */}
               <div className="flex items-center gap-1.5">
-                <button type="button" onClick={zoomOutStep} title="ซูมออก" className="rounded-md border border-slate-300 p-1.5 text-slate-600 shadow-sm transition hover:bg-slate-50">
+                <button type="button" onClick={zoomOutStep} aria-label="ซูมออก" title="ซูมออก" className="rounded-md border border-slate-300 p-1.5 text-slate-600 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                   <ZoomOut size={15} />
                 </button>
-                <button type="button" onClick={zoomInStep} title="ซูมเข้า" className="rounded-md border border-slate-300 p-1.5 text-slate-600 shadow-sm transition hover:bg-slate-50">
+                <button type="button" onClick={zoomInStep} aria-label="ซูมเข้า" title="ซูมเข้า" className="rounded-md border border-slate-300 p-1.5 text-slate-600 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                   <ZoomIn size={15} />
                 </button>
                 <button
                   type="button"
                   onClick={zoomReset}
                   title="กลับมาที่มุมมองเต็ม"
-                  className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100"
+                  className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <Maximize2 size={14} />
                   รีเซ็ตมุมมอง
                 </button>
               </div>
               {/* ขวาบน: ไอคอนอธิบายกราฟ */}
-              <div className="relative">
+              <div className="relative" data-hindex-popover>
                 <button
                   type="button"
                   onClick={() => setShowHint((v) => !v)}
                   aria-label="คำอธิบายกราฟ"
+                  aria-expanded={showHint}
+                  aria-describedby={showHint ? "member-hindex-hint" : undefined}
                   title="คำอธิบายกราฟ"
-                  className={`flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition ${
+                  className={`flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                     showHint ? "border-slate-400 bg-slate-100 text-slate-700" : "border-slate-300 text-slate-500 hover:bg-slate-50"
                   }`}
                 >
                   <Info size={15} />
                 </button>
                 {showHint && (
-                  <div className="absolute right-0 top-9 z-20 w-72 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 shadow-lg">
+                  <div id="member-hindex-hint" role="note" className="absolute right-0 top-9 z-20 w-72 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 shadow-lg">
                     แต่ละจุดคือ 1 บทความ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่ม/เลื่อนเมาส์ (โฟกัสที่ h-index) · เมื่อซูมแล้วกดค้างลากเพื่อเลื่อนดูช่วงอื่นได้
                     {graph?.h_index > 0 && (
                       <span className="mt-1.5 block text-slate-700">
@@ -627,13 +669,47 @@ export default function MemberScopusAuthorHIndex() {
             ) : chart ? (
               <ApexChart options={chart.options} series={chart.series} type="line" height={360} />
             ) : (
-              <div className="flex h-[360px] items-center justify-center px-4 text-center text-sm text-slate-500">
-                {noScopus
-                  ? "ยังไม่มีข้อมูล Scopus (บัญชีของคุณยังไม่ได้เชื่อม Scopus ID)"
-                  : "ไม่มีเอกสารสำหรับช่วงที่เลือก"}
+              <div className="flex h-[360px] flex-col items-center justify-center gap-2 px-6 text-center text-sm text-slate-500">
+                {noScopus ? (
+                  <>
+                    <p className="font-medium text-slate-700">บัญชีของคุณยังไม่ได้เชื่อมกับ Scopus ID</p>
+                    <p className="max-w-md">
+                      ระบบจึงยังแสดง h-index ให้ไม่ได้ — โปรดติดต่อผู้ดูแลระบบหรือเจ้าหน้าที่กองทุนวิจัย
+                      เพื่อเชื่อม Scopus Author ID เข้ากับบัญชีของคุณ
+                    </p>
+                  </>
+                ) : (
+                  "ไม่มีเอกสารสำหรับช่วงที่เลือก"
+                )}
               </div>
             )}
           </div>
+          {/* ตารางข้อมูลสำหรับ screen reader — กราฟ SVG อ่านไม่ได้ */}
+          {chart && graph && Array.isArray(graph.points) && (
+            <table className="sr-only">
+              <caption>ตาราง h-index (Scopus) — บทความเรียงตามจำนวนการอ้างอิงจากมากไปน้อย</caption>
+              <thead>
+                <tr>
+                  <th>อันดับ</th>
+                  <th>ชื่อบทความ</th>
+                  <th>ปี (พ.ศ.)</th>
+                  <th>จำนวนการอ้างอิง</th>
+                  <th>อยู่ใน h-core</th>
+                </tr>
+              </thead>
+              <tbody>
+                {graph.points.map((p) => (
+                  <tr key={p.eid || p.rank}>
+                    <td>{p.rank}</td>
+                    <td>{p.title || "-"}</td>
+                    <td>{p.year != null ? p.year + 543 : "-"}</td>
+                    <td>{p.citations}</td>
+                    <td>{p.rank <= graph.h_index ? "ใช่" : "ไม่"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
