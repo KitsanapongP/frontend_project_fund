@@ -21,6 +21,7 @@ import BudgetSummary from "@/app/(portal)/research-fund-system/member/components
 import { useStatusMap } from "@/app/hooks/useStatusMap";
 import PageLayout from "../common/PageLayout";
 import MemberScopusAuthorHIndex from "./MemberScopusAuthorHIndex";
+import MemberScopusOverview from "./MemberScopusOverview";
 import { toast } from "react-hot-toast";
 import { downloadXlsx } from "@/app/(portal)/research-fund-system/admin/utils/xlsxExporter";
 
@@ -101,6 +102,19 @@ const EXPORT_COLUMNS = [
 
 const CITATION_RECENT_START_YEAR = 2020;
 
+// รายการข้อมูลติดต่อ/รายละเอียดแบบกระชับ (ไอคอนเล็ก + label + value) ใช้เติมพื้นที่ในหัวโปรไฟล์
+const DetailItem = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-2.5">
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+      {Icon ? <Icon className="h-4 w-4" /> : null}
+    </span>
+    <div className="min-w-0">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="break-all text-sm text-slate-700">{value}</p>
+    </div>
+  </div>
+);
+
 const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
   const [trendChartView, setTrendChartView] = useState("combo"); // combo = แท่ง+เส้น, lines = เส้นหลายชุด
   const renderValue = (value) => {
@@ -115,7 +129,7 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
   };
 
   const renderSkeleton = () => (
-    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
       <h3 className="text-lg font-semibold text-slate-900">
         Documents & Citations by Year (Scopus)
       </h3>
@@ -271,7 +285,7 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
         ];
 
     return (
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
             <h3 className="text-lg font-semibold text-slate-900">
@@ -340,7 +354,7 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
   }
 
   return (
-    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-500">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-500">
       <h3 className="text-lg font-semibold text-slate-900">
         Documents & Citations by Year (Scopus)
       </h3>
@@ -374,7 +388,7 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
   };
 
   const renderSkeleton = (title = "อ้างโดย") => (
-    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
       <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
       <div className="mt-4 space-y-3">
         <div className="h-16 animate-pulse rounded-md bg-slate-100" />
@@ -403,16 +417,16 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
     i10Index.recent !== null;
 
   return (
-    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
       <h3 className="text-lg font-semibold text-slate-900">อ้างโดย</h3>
       <>
         <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
           <table className="w-full text-sm text-slate-700">
             <thead className="bg-slate-50 text-slate-500">
               <tr>
-                <th className="px-4 py-2 text-left font-medium">&nbsp;</th>
-                <th className="px-4 py-2 text-right font-medium">ทั้งหมด</th>
-                <th className="px-4 py-2 text-right font-medium">
+                <th className="px-3 py-1.5 text-left font-medium">&nbsp;</th>
+                <th className="px-3 py-1.5 text-right font-medium">ทั้งหมด</th>
+                <th className="px-3 py-1.5 text-right font-medium">
                   ตั้งแต่ปี {CITATION_RECENT_START_YEAR}
                 </th>
               </tr>
@@ -420,28 +434,28 @@ const ScholarCitationsCard = ({ metrics, scholarLoading, formatNumber }) => {
             <tbody>
               <tr className="odd:bg-white even:bg-slate-50">
                 <td className="px-4 py-2 font-medium text-slate-600">การอ้างอิง</td>
-                <td className="px-4 py-2 text-right font-semibold text-slate-900">
+                <td className="px-3 py-1.5 text-right font-semibold text-slate-900">
                   {renderValue(totals.all)}
                 </td>
-                <td className="px-4 py-2 text-right font-semibold text-slate-900">
+                <td className="px-3 py-1.5 text-right font-semibold text-slate-900">
                   {renderValue(totals.recent)}
                 </td>
               </tr>
               <tr className="odd:bg-white even:bg-slate-50">
                 <td className="px-4 py-2 font-medium text-slate-600">ดัชนี h</td>
-                <td className="px-4 py-2 text-right font-semibold text-slate-900">
+                <td className="px-3 py-1.5 text-right font-semibold text-slate-900">
                   {renderValue(hIndex.all)}
                 </td>
-                <td className="px-4 py-2 text-right font-semibold text-slate-900">
+                <td className="px-3 py-1.5 text-right font-semibold text-slate-900">
                   {renderValue(hIndex.recent)}
                 </td>
               </tr>
               <tr className="odd:bg-white even:bg-slate-50">
                 <td className="px-4 py-2 font-medium text-slate-600">ดัชนี i10</td>
-                <td className="px-4 py-2 text-right font-semibold text-slate-900">
+                <td className="px-3 py-1.5 text-right font-semibold text-slate-900">
                   {renderValue(i10Index.all)}
                 </td>
-                <td className="px-4 py-2 text-right font-semibold text-slate-900">
+                <td className="px-3 py-1.5 text-right font-semibold text-slate-900">
                   {renderValue(i10Index.recent)}
                 </td>
               </tr>
@@ -655,6 +669,8 @@ export default function ProfileContent() {
   const quartileBadgeClass = (quartile) => {
     const normalized = quartile?.toUpperCase();
     switch (normalized) {
+      case "T1":
+        return "bg-emerald-600 text-white";
       case "Q1":
         return "bg-emerald-100 text-emerald-700";
       case "Q2":
@@ -666,6 +682,28 @@ export default function ProfileContent() {
       default:
         return "bg-slate-100 text-slate-600";
     }
+  };
+
+  // เทียร์คุณภาพวารสารจาก percentile (อ้างอิงเกณฑ์เดียวกับหน้า research-search ของ admin)
+  const resolveJournalTierBucket = (percentile) => {
+    if (percentile === null || percentile === undefined || percentile === "") return "";
+    const value = Number(percentile);
+    if (!Number.isFinite(value) || value <= 0) return "";
+    if (value >= 90) return "T1";
+    if (value >= 75) return "Q1";
+    if (value >= 50) return "Q2";
+    if (value >= 25) return "Q3";
+    return "Q4";
+  };
+
+  // ป้ายประเภทแหล่งตีพิมพ์แบบย่อ
+  const aggregationLabel = (type) => {
+    const t = String(type || "").trim().toLowerCase();
+    if (!t) return "";
+    if (t === "journal") return "Journal";
+    if (t === "conference proceeding") return "Conference";
+    if (t === "book" || t === "book series") return "Book/Book Series";
+    return type;
   };
 
   const normalizeCiteScoreStatus = (status) => {
@@ -1529,85 +1567,48 @@ export default function ProfileContent() {
     >
       <div className="space-y-6">
         <div className="space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-            <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
-              <div className="relative">
-                <div className="h-28 w-28 overflow-hidden rounded-full border-4 border-blue-100 bg-blue-600 sm:h-32 sm:w-32">
+          <div className="grid gap-4 lg:grid-cols-3">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 lg:col-span-2">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
+              {/* identity: รูป + ชื่อ + สังกัด/ตำแหน่ง */}
+              <div className="flex items-center gap-4 sm:shrink-0">
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border-4 border-blue-100 bg-blue-600 sm:h-24 sm:w-24">
                   {teacherData.profileImage ? (
-                    <img
-                      src={teacherData.profileImage}
-                      alt="Profile"
-                      className="h-full w-full object-cover"
-                    />
+                    <img src={teacherData.profileImage} alt="Profile" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-white">
+                    <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-white">
                       {(displayName || teacherData.user_fname || teacherData.user_lname || "")
                         .charAt(0)
                         .toUpperCase()}
                     </div>
                   )}
                 </div>
+                <div className="min-w-0">
+                  <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">
+                    {displayName || "ไม่ระบุชื่อ"}
+                  </h1>
+                  {secondaryNameLine && <p className="mt-0.5 text-sm text-slate-500">{secondaryNameLine}</p>}
+                  {affiliationLine && <p className="mt-1 text-sm text-slate-700">{affiliationLine}</p>}
+                  {positionLine && <p className="text-xs text-slate-500">{positionLine}</p>}
+                </div>
               </div>
-              <div className="flex-1 text-center sm:text-left">
-                <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-                  {displayName || "ไม่ระบุชื่อ"}
-                </h1>
-                {secondaryNameLine && (
-                  <p className="mt-1 text-sm text-slate-500">{secondaryNameLine}</p>
-                )}
-                {affiliationLine && (
-                  <p className="mt-2 text-base text-slate-700">{affiliationLine}</p>
-                )}
-                {positionLine && (
-                  <p className="mt-1 text-sm text-slate-500">{positionLine}</p>
-                )}
-                {teacherData.email && (
-                  <div className="mt-3 flex items-center justify-center gap-3 text-sm text-slate-500 sm:justify-start">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                      <Mail size={16} />
-                    </span>
-                    <div className="text-left">
-                      <p>อีเมล (Email): {teacherData.email}</p>
-                    </div>
-                  </div>
-                )}
-                {teacherData.phone && (
-                  <div
-                    className={`${
-                      teacherData.email ? "mt-2" : "mt-3"
-                    } flex items-center justify-center gap-3 text-sm text-slate-500 sm:justify-start`}
-                  >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                      <Phone size={16} />
-                    </span>
-                    <div className="text-left">
-                      <p>โทรศัพท์ (Tel): {teacherData.phone}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* รายละเอียด: เติมพื้นที่ทางขวาเป็นกริดกระชับ ไม่ให้การ์ดโล่ง */}
+              {(teacherData.email || teacherData.phone || contactDetails.length > 0) && (
+                <div className="grid flex-1 gap-x-6 gap-y-3 sm:grid-cols-2 sm:border-l sm:border-slate-100 sm:pl-6">
+                  {teacherData.email && <DetailItem icon={Mail} label="อีเมล (Email)" value={teacherData.email} />}
+                  {teacherData.phone && <DetailItem icon={Phone} label="โทรศัพท์ (Tel)" value={teacherData.phone} />}
+                  {contactDetails.map(({ key, icon, label, value }) => (
+                    <DetailItem key={key} icon={icon} label={label} value={value} />
+                  ))}
+                </div>
+              )}
             </div>
-            {contactDetails.length > 0 && (
-              <div className="mt-6 grid gap-4 border-t border-slate-100 pt-6 sm:grid-cols-2 lg:grid-cols-4">
-                {contactDetails.map(({ key, icon: Icon, label, value }) => (
-                  <div key={key} className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
-                      <Icon className="h-5 w-5 text-blue-700" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {label}
-                      </p>
-                      <p className="break-all text-sm text-slate-700">{value}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </section>
+          <MemberScopusOverview />
+          </div>
 
-          <div className="space-y-8">
-            <section className="rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="space-y-6">
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
               <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-1">
                 <nav className="flex flex-wrap gap-1 overflow-x-auto" aria-label="ประเภทข้อมูลผลงาน">
                   {[
@@ -1654,7 +1655,7 @@ export default function ProfileContent() {
                             disabled={!canExportScopus || exporting}
                           >
                             <Download className="h-3.5 w-3.5" />
-                            <span>{exporting ? "กำลังส่งออก..." : "ส่งออก Scopus"}</span>
+                            <span>{exporting ? "กำลังส่งออก..." : "ส่งออกรายการ (Excel)"}</span>
                           </button>
                         ) : null}
                         {/* Google Scholar ถูกซ่อนไว้ชั่วคราว (ยังไม่พร้อมใช้) — ใช้ Scopus เป็นแหล่งข้อมูลหลัก */}
@@ -1790,12 +1791,12 @@ export default function ProfileContent() {
                         <table className="min-w-full divide-y divide-slate-200 text-sm">
                           <thead className="bg-slate-50">
                             <tr>
-                              <th className="w-14 px-4 py-2 text-center font-medium text-slate-700">
+                              <th className="w-14 px-3 py-1.5 text-center font-medium text-slate-700">
                                 ลำดับ
                               </th>
                               <th
                                 aria-sort={sortField === "title" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                                className="px-4 py-2 text-left font-medium text-slate-700"
+                                className="px-3 py-1.5 text-left font-medium text-slate-700"
                               >
                                 <button
                                   type="button"
@@ -1814,9 +1815,14 @@ export default function ProfileContent() {
                                   )}
                                 </button>
                               </th>
+                              {isScopusActive ? (
+                                <th className="w-28 px-3 py-1.5 text-center font-medium text-slate-700">
+                                  ประเภท
+                                </th>
+                              ) : null}
                               <th
                                 aria-sort={sortField === "cited_by" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                                className="w-24 px-4 py-2 text-right font-medium text-slate-700"
+                                className="w-24 px-3 py-1.5 text-right font-medium text-slate-700"
                               >
                                 <button
                                   type="button"
@@ -1836,13 +1842,18 @@ export default function ProfileContent() {
                                 </button>
                               </th>
                               {isScopusActive ? (
-                                <th className="w-32 px-4 py-2 text-center font-medium text-slate-700">
-                                  คุณภาพวารสาร
-                                </th>
+                                <>
+                                  <th className="w-24 px-3 py-1.5 text-center font-medium text-slate-700">
+                                    Quartile
+                                  </th>
+                                  <th className="w-24 px-3 py-1.5 text-center font-medium text-slate-700">
+                                    Percentile
+                                  </th>
+                                </>
                               ) : null}
                               <th
                                 aria-sort={sortField === "year" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                                className="w-20 px-4 py-2 text-center font-medium text-slate-700"
+                                className="w-20 px-3 py-1.5 text-center font-medium text-slate-700"
                               >
                                 <button
                                   type="button"
@@ -1878,12 +1889,18 @@ export default function ProfileContent() {
                                 pub.subtypeDescription;
                               const shouldShowCiteScore = subtypeDescription === "Article";
                               const citeScoreMetrics = resolveCompleteCiteScore(pub);
+                              const aggType = aggregationLabel(pub.aggregation_type);
+                              const percentileVal = citeScoreMetrics?.percentile;
+                              const storedQuartile = citeScoreMetrics?.quartile
+                                ? String(citeScoreMetrics.quartile).toUpperCase()
+                                : "";
+                              const journalTier = resolveJournalTierBucket(percentileVal) || storedQuartile;
                               return (
                                 <tr key={key} className="hover:bg-slate-50">
-                                  <td className="px-4 py-2 text-center text-slate-700">
+                                  <td className="px-3 py-1.5 text-center text-slate-700">
                                     {rowNumber}
                                   </td>
-                                  <td className="max-w-xs px-4 py-2 lg:max-w-md">
+                                  <td className="max-w-xs px-3 py-1.5 lg:max-w-md">
                                     {pub.url ? (
                                       <a
                                         href={pub.url}
@@ -1905,7 +1922,18 @@ export default function ProfileContent() {
                                       </span>
                                     ) : null}
                                   </td>
-                                  <td className="px-4 py-2 text-right">
+                                  {isScopusActive ? (
+                                    <td className="px-3 py-1.5 text-center">
+                                      {aggType ? (
+                                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                                          {aggType}
+                                        </span>
+                                      ) : (
+                                        <span className="text-slate-400">-</span>
+                                      )}
+                                    </td>
+                                  ) : null}
+                                  <td className="px-3 py-1.5 text-right">
                                     {citedByValue !== null ? (
                                       pub.cited_by_url ? (
                                         <a
@@ -1924,32 +1952,32 @@ export default function ProfileContent() {
                                     )}
                                   </td>
                                   {isScopusActive ? (
-                                    <td className="px-4 py-2 text-center">
-                                      {shouldShowCiteScore &&
-                                      (citeScoreMetrics?.quartile || citeScoreMetrics?.percentile) ? (
-                                        <div className="flex flex-col items-center gap-1">
-                                          {citeScoreMetrics?.quartile ? (
-                                            <span
-                                              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${quartileBadgeClass(
-                                                citeScoreMetrics.quartile,
-                                              )}`}
-                                            >
-                                              Quartile {citeScoreMetrics.quartile.toUpperCase()}
-                                            </span>
-                                          ) : null}
-                                          {formatPercentile(citeScoreMetrics?.percentile) ? (
-                                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                              Percentile{" "}
-                                              {formatPercentile(citeScoreMetrics?.percentile)}
-                                            </span>
-                                          ) : null}
-                                        </div>
-                                      ) : (
-                                        <span className="text-slate-400">-</span>
-                                      )}
-                                    </td>
+                                    <>
+                                      <td className="px-3 py-1.5 text-center">
+                                        {shouldShowCiteScore && journalTier ? (
+                                          <span
+                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${quartileBadgeClass(
+                                              journalTier,
+                                            )}`}
+                                          >
+                                            {journalTier}
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-400">-</span>
+                                        )}
+                                      </td>
+                                      <td className="px-3 py-1.5 text-center">
+                                        {shouldShowCiteScore && formatPercentile(percentileVal) ? (
+                                          <span className="text-slate-700">
+                                            {formatPercentile(percentileVal)}
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-400">-</span>
+                                        )}
+                                      </td>
+                                    </>
                                   ) : null}
-                                  <td className="px-4 py-2 text-center">{yearValue || "-"}</td>
+                                  <td className="px-3 py-1.5 text-center">{yearValue || "-"}</td>
                             </tr>
                           );
                         })}
@@ -1982,8 +2010,8 @@ export default function ProfileContent() {
                     )}
                   </div>
                   {isScopusActive ? (
-                    // วางการ์ด Scopus บนพื้นสีเทาอ่อนให้แยกจากตาราง (สีขาว) ด้านบน และแยกการ์ดสองใบออกจากกัน
-                    <div className="space-y-6 rounded-2xl bg-slate-50 p-4">
+                    // การ์ด Scopus 2 ใบเรียงข้างกัน (2-ต่อ-แถว) บนจอกว้าง, ซ้อนกันบนจอเล็ก — บนพื้นเทาอ่อนให้แยกจากตาราง
+                    <div className="grid items-start gap-4 rounded-2xl bg-slate-50 p-4 xl:grid-cols-2">
                       <ScopusTrendCard
                         scopusStats={scopusStatsForDisplay}
                         scopusLoading={scopusStatsLoading}
@@ -2047,11 +2075,11 @@ export default function ProfileContent() {
                         <table className="min-w-full divide-y divide-slate-200 text-sm">
                           <thead className="bg-slate-50">
                             <tr>
-                              <th className="w-14 px-4 py-2 text-center font-medium text-slate-700">
+                              <th className="w-14 px-3 py-1.5 text-center font-medium text-slate-700">
                                 ลำดับ
                               </th>
                               <th
-                                className="w-40 cursor-pointer px-4 py-2 text-left font-medium text-slate-700"
+                                className="w-40 cursor-pointer px-3 py-1.5 text-left font-medium text-slate-700"
                                 onClick={() => handleInnovSort("submission_number")}
                               >
                                 หมายเลขคำขอ
@@ -2069,7 +2097,7 @@ export default function ProfileContent() {
                                 )}
                               </th>
                               <th
-                                className="cursor-pointer px-4 py-2 text-left font-medium text-slate-700"
+                                className="cursor-pointer px-3 py-1.5 text-left font-medium text-slate-700"
                                 onClick={() => handleInnovSort("title")}
                               >
                                 ชื่อนวัตกรรม
@@ -2087,7 +2115,7 @@ export default function ProfileContent() {
                                 )}
                               </th>
                               <th
-                                className="w-40 cursor-pointer px-4 py-2 text-left font-medium text-slate-700"
+                                className="w-40 cursor-pointer px-3 py-1.5 text-left font-medium text-slate-700"
                                 onClick={() => handleInnovSort("innovation_type")}
                               >
                                 ประเภท
@@ -2105,7 +2133,7 @@ export default function ProfileContent() {
                                 )}
                               </th>
                               <th
-                                className="w-36 cursor-pointer px-4 py-2 text-left font-medium text-slate-700"
+                                className="w-36 cursor-pointer px-3 py-1.5 text-left font-medium text-slate-700"
                                 onClick={() => handleInnovSort("status_name")}
                               >
                                 สถานะคำขอ
@@ -2123,7 +2151,7 @@ export default function ProfileContent() {
                                 )}
                               </th>
                               <th
-                                className="w-32 cursor-pointer px-4 py-2 text-center font-medium text-slate-700"
+                                className="w-32 cursor-pointer px-3 py-1.5 text-center font-medium text-slate-700"
                                 onClick={() => handleInnovSort("registered_date")}
                               >
                                 วันที่จดทะเบียน
@@ -2148,7 +2176,7 @@ export default function ProfileContent() {
                                 key={inv.submission_id || inv.id || index}
                                 className="hover:bg-slate-50"
                               >
-                                <td className="px-4 py-2 text-center text-slate-700">
+                                <td className="px-3 py-1.5 text-center text-slate-700">
                                   {(innovPage - 1) * innovRowsPerPage + index + 1}
                                 </td>
                                 <td className="px-4 py-2">
@@ -2156,7 +2184,7 @@ export default function ProfileContent() {
                                     {inv.submission_number || "-"}
                                   </span>
                                 </td>
-                                <td className="max-w-xs px-4 py-2 lg:max-w-md">
+                                <td className="max-w-xs px-3 py-1.5 lg:max-w-md">
                                   <span className="block truncate" title={inv.title}>
                                     {inv.title}
                                   </span>
@@ -2171,7 +2199,7 @@ export default function ProfileContent() {
                                     {inv.status_name || "-"}
                                   </span>
                                 </td>
-                                <td className="px-4 py-2 text-center">
+                                <td className="px-3 py-1.5 text-center">
                                   {formatThaiDate(inv.registered_date)}
                                 </td>
                               </tr>
