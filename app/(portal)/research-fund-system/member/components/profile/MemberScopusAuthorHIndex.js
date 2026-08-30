@@ -518,9 +518,6 @@ export default function MemberScopusAuthorHIndex() {
               )}
             </div>
           </div>
-          <p className="text-xs text-slate-500">
-            ข้อมูลจาก Scopus ปรับปรุงทุกคืน เวลาประมาณตี 1 — ตัวเลขอาจต่างจาก scopus.com เล็กน้อย
-          </p>
         </div>
       </div>
 
@@ -599,11 +596,11 @@ export default function MemberScopusAuthorHIndex() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm">
-              <div className="text-xs text-slate-500">เอกสาร (ช่วงที่เลือก)</div>
+              <div className="text-xs text-slate-500">เอกสาร<br />(ช่วงที่เลือก)</div>
               <div className="text-lg font-semibold text-slate-900">{graph ? formatNumber(graph.document_count) : "-"}</div>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm">
-              <div className="text-xs text-slate-500">การอ้างอิง (ช่วงที่เลือก)</div>
+              <div className="text-xs text-slate-500">การอ้างอิง<br />(ช่วงที่เลือก)</div>
               <div className="text-lg font-semibold text-slate-900">{graph ? formatNumber(graph.citation_total) : "-"}</div>
             </div>
           </div>
@@ -684,9 +681,10 @@ export default function MemberScopusAuthorHIndex() {
               </div>
             )}
           </div>
-          {/* ตารางข้อมูลสำหรับ screen reader — กราฟ SVG อ่านไม่ได้ */}
+          {/* ตารางข้อมูลสำหรับ screen reader — กราฟ SVG อ่านไม่ได้ (ครอบ div sr-only เพราะ table ไม่เคารพ height:1px) */}
           {chart && graph && Array.isArray(graph.points) && (
-            <table className="sr-only">
+            <div className="sr-only">
+            <table>
               <caption>ตาราง h-index (Scopus) — บทความเรียงตามจำนวนการอ้างอิงจากมากไปน้อย</caption>
               <thead>
                 <tr>
@@ -709,6 +707,7 @@ export default function MemberScopusAuthorHIndex() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

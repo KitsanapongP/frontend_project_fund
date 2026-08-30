@@ -22,6 +22,7 @@ import { useStatusMap } from "@/app/hooks/useStatusMap";
 import PageLayout from "../common/PageLayout";
 import MemberScopusAuthorHIndex from "./MemberScopusAuthorHIndex";
 import MemberScopusOverview from "./MemberScopusOverview";
+import MemberSubmissionOverview from "./MemberSubmissionOverview";
 import { toast } from "react-hot-toast";
 import { downloadXlsx } from "@/app/(portal)/research-fund-system/admin/utils/xlsxExporter";
 
@@ -304,7 +305,7 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
                   !isLinesView ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
                 }`}
               >
-                แท่ง + เส้น
+                กราฟผสม
               </button>
               <button
                 type="button"
@@ -313,7 +314,7 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
                   isLinesView ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
                 }`}
               >
-                เส้นหลายชุด
+                กราฟเส้น
               </button>
             </div>
           )}
@@ -346,9 +347,6 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
             </div>
           )
         ) : null}
-        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          ข้อมูลผลงานจะถูกอัปเดตเวลาประมาณตี 1 ของทุกวัน
-        </div>
       </div>
     );
   }
@@ -362,9 +360,6 @@ const ScopusTrendCard = ({ scopusStats, scopusLoading, formatNumber }) => {
         {scopusUnavailable
           ? "ยังไม่มีข้อมูลจาก Scopus สำหรับผู้ใช้นี้"
           : "ยังไม่มีข้อมูลแนวโน้มจาก Scopus สำหรับสร้างกราฟ"}
-      </div>
-      <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-800">
-        เนื่องจากมีข้อจำกัดเรื่องการใช้บริการฐานข้อมูล ข้อมูลผลงานจะถูกปรับปรุงทุกคืน เวลาประมาณตี 1
       </div>
     </div>
   );
@@ -893,9 +888,9 @@ export default function ProfileContent() {
           profile.users?.TEL ||
           profile.users?.tel ||
           "",
-        office: profile.office || "",
+        office: profile.office || profile.room || "",
         employeeId: profile.employee_id || "",
-        joinDate: profile.join_date || "",
+        joinDate: profile.join_date || profile.date_of_employment || "",
         profileImage: profile.profile_image || null,
         stats: {
           totalApplications: myApps.total || myApps.Total || 0,
@@ -1534,7 +1529,7 @@ export default function ProfileContent() {
       ? {
           key: "joinDate",
           icon: Clock,
-          label: "เข้าร่วมเมื่อ",
+          label: "วันที่เริ่มทำงาน",
           value: formatThaiDate(teacherData.joinDate),
         }
       : null,
@@ -1567,12 +1562,12 @@ export default function ProfileContent() {
     >
       <div className="space-y-6">
         <div className="space-y-6">
+          {/* แถวบน: ข้อมูลส่วนตัว (การ์ดยาว 2/3) | คอลัมน์ขวา = คำร้อง (บน) + ภาพรวม Scopus (ล่าง) — สูงเท่ากัน */}
           <div className="grid gap-4 lg:grid-cols-3">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 lg:col-span-2">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
-              {/* identity: รูป + ชื่อ + สังกัด/ตำแหน่ง */}
-              <div className="flex items-center gap-4 sm:shrink-0">
-                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border-4 border-blue-100 bg-blue-600 sm:h-24 sm:w-24">
+            {/* ข้อมูลส่วนตัว */}
+            <section className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 lg:col-span-2">
+              <div className="flex items-center gap-4">
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border-4 border-blue-100 bg-blue-600">
                   {teacherData.profileImage ? (
                     <img src={teacherData.profileImage} alt="Profile" className="h-full w-full object-cover" />
                   ) : (
@@ -1584,17 +1579,16 @@ export default function ProfileContent() {
                   )}
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">
+                  <h1 className="truncate text-xl font-semibold text-slate-900">
                     {displayName || "ไม่ระบุชื่อ"}
                   </h1>
-                  {secondaryNameLine && <p className="mt-0.5 text-sm text-slate-500">{secondaryNameLine}</p>}
-                  {affiliationLine && <p className="mt-1 text-sm text-slate-700">{affiliationLine}</p>}
-                  {positionLine && <p className="text-xs text-slate-500">{positionLine}</p>}
+                  {secondaryNameLine && <p className="truncate text-sm text-slate-500">{secondaryNameLine}</p>}
+                  {affiliationLine && <p className="mt-0.5 truncate text-sm text-slate-700">{affiliationLine}</p>}
+                  {positionLine && <p className="truncate text-xs text-slate-500">{positionLine}</p>}
                 </div>
               </div>
-              {/* รายละเอียด: เติมพื้นที่ทางขวาเป็นกริดกระชับ ไม่ให้การ์ดโล่ง */}
               {(teacherData.email || teacherData.phone || contactDetails.length > 0) && (
-                <div className="grid flex-1 gap-x-6 gap-y-3 sm:grid-cols-2 sm:border-l sm:border-slate-100 sm:pl-6">
+                <div className="mt-5 grid flex-1 content-center gap-x-6 gap-y-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
                   {teacherData.email && <DetailItem icon={Mail} label="อีเมล (Email)" value={teacherData.email} />}
                   {teacherData.phone && <DetailItem icon={Phone} label="โทรศัพท์ (Tel)" value={teacherData.phone} />}
                   {contactDetails.map(({ key, icon, label, value }) => (
@@ -1602,9 +1596,18 @@ export default function ProfileContent() {
                   ))}
                 </div>
               )}
+            </section>
+            {/* คอลัมน์ขวา */}
+            <div className="flex flex-col gap-4">
+              <MemberSubmissionOverview
+                total={teacherData.totalApplications}
+                approved={teacherData.approvedApplications}
+                pending={teacherData.pendingApplications}
+                successRate={teacherData.successRate}
+                approvedBudget={teacherData.totalApproved}
+              />
+              <MemberScopusOverview />
             </div>
-          </section>
-          <MemberScopusOverview />
           </div>
 
           <div className="space-y-6">
@@ -1641,8 +1644,9 @@ export default function ProfileContent() {
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex flex-col gap-2">
                       <h3 className="text-base font-semibold text-slate-900 lg:text-lg">รายการผลงานตีพิมพ์</h3>
-                      <p className="text-sm text-slate-600">
-                        ค้นหาและกรองรายการผลงานตามปีที่เผยแพร่
+                      <p className="flex items-center gap-1 text-xs text-slate-500">
+                        <Clock className="h-3.5 w-3.5 shrink-0" />
+                        ข้อมูลผลงานจาก Scopus อัปเดตอัตโนมัติเวลาประมาณตี 1 ของทุกวัน
                       </p>
                     </div>
                     <div className="flex flex-col items-start gap-2 text-sm lg:items-end">
@@ -2011,7 +2015,7 @@ export default function ProfileContent() {
                   </div>
                   {isScopusActive ? (
                     // การ์ด Scopus 2 ใบเรียงข้างกัน (2-ต่อ-แถว) บนจอกว้าง, ซ้อนกันบนจอเล็ก — บนพื้นเทาอ่อนให้แยกจากตาราง
-                    <div className="grid items-start gap-4 rounded-2xl bg-slate-50 p-4 xl:grid-cols-2">
+                    <div className="grid gap-4 rounded-2xl bg-slate-50 p-4 xl:grid-cols-2">
                       <ScopusTrendCard
                         scopusStats={scopusStatsForDisplay}
                         scopusLoading={scopusStatsLoading}
