@@ -94,6 +94,7 @@ export default function Header({
   currentPageTitle = "แดชบอร์ดบุคลากร",
   brandTitle,
   onNavigate,
+  notificationPath = "/research-fund-system/member/notifications",
 }) {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -138,7 +139,7 @@ export default function Header({
     if (onNavigate) {
       onNavigate("notifications");
     } else {
-      router.push("/research-fund-system/member/notifications");
+      router.push(notificationPath);
     }
     setShowUserMenu(false);
   };

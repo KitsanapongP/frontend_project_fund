@@ -159,6 +159,24 @@ function getResearchFundPathByUser(user) {
   return "";
 }
 
+function getNotificationPathByUser(user) {
+  const roleName = normalizeRoleName(user?.role ?? user?.role_id);
+
+  if (isPrimaryAdmin(user)) {
+    return "/research-fund-system/admin/notifications";
+  }
+
+  if (hasMemberPortalAccess(user) || ["teacher", "staff", "dept_head"].includes(roleName)) {
+    return "/research-fund-system/member/notifications";
+  }
+
+  if (hasAdminPortalAccess(user)) {
+    return "/research-fund-system/admin/notifications";
+  }
+
+  return "/research-fund-system/member/notifications";
+}
+
 function getPortalItemDestination(item, user) {
   if (item?.id === "researchFund") {
     return getResearchFundPathByUser(user);
@@ -1186,6 +1204,7 @@ export default function HomePage() {
           setIsOpen={setIsMenuOpen}
           currentPageTitle={currentPageTitle}
           brandTitle={portalBrandTitle}
+          notificationPath={getNotificationPathByUser(user)}
         />
       ) : (
         <PublicHeader
