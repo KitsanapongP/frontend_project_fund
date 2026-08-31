@@ -1,7 +1,9 @@
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, Loader2, Eye, RefreshCcw } from "lucide-react";
+import { Loader2, Eye, RefreshCcw } from "lucide-react";
 import PageLayout from "../common/PageLayout";
 import Card from "../common/Card";
 import DataTable from "../common/DataTable";
@@ -351,7 +353,7 @@ export default function DeptHeadReview() {
     <PageLayout
       title="พิจารณาคำร้องของหัวหน้าสาขา"
       subtitle="ตรวจสอบรายละเอียดคำร้องและบันทึกผลการพิจารณา"
-      icon={ClipboardList}
+      icon={RESEARCH_FUND_PAGE_ICONS.departmentReview}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/research-fund-system/member" },
         { label: "พิจารณาคำร้องของหัวหน้าสาขา" },

@@ -1,9 +1,10 @@
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { openSignedFileInNewTab } from "@/app/lib/file_access";
 import {
-  ArrowDownUp,
   Download,
   UploadCloud,
   FileSpreadsheet,
@@ -508,7 +509,7 @@ export default function AdminImportExportPage() {
     <PageLayout
       title="นำเข้า / ส่งออก"
       subtitle="หน้าสำหรับดาวน์โหลดเทมเพลตและนำเข้าข้อมูลผู้ใช้ / ประวัติการรับทุนย้อนหลัง"
-      icon={ArrowDownUp}
+      icon={RESEARCH_FUND_PAGE_ICONS.importExport}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/research-fund-system/admin" },
         { label: "นำเข้า / ส่งออก" },

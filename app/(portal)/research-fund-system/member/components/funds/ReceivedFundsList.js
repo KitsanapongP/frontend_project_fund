@@ -1,5 +1,7 @@
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, Eye, Gift, RefreshCcw } from "lucide-react";
 import { submissionAPI, teacherAPI } from "@/app/lib/member_api";
@@ -360,7 +362,7 @@ export default function ReceivedFundsList({ onNavigate }) {
     <PageLayout
       title="ทุนที่เคยได้รับ"
       subtitle="รายการทุนที่คุณเคยได้รับ"
-      icon={Gift}
+      icon={RESEARCH_FUND_PAGE_ICONS.receivedFunds}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/research-fund-system/member" },
         { label: "ทุนที่เคยได้รับ" },

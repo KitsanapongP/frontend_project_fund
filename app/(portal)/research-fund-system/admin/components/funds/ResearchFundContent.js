@@ -1,7 +1,8 @@
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useState, useEffect, useRef } from "react";
-import { DollarSign } from "lucide-react";
 import { teacherAPI } from "../../../../../lib/teacher_api";
 import {
   targetRolesUtils,
@@ -561,7 +562,7 @@ export default function ResearchFundContent({ onNavigate }) {
     <FundCatalogView
       title="ทุนส่งเสริมงานวิจัยและนวัตกรรม"
       subtitle="รายการทุนส่งเสริมงานวิจัยที่เปิดรับสมัคร"
-      icon={DollarSign}
+      icon={RESEARCH_FUND_PAGE_ICONS.researchFund}
       breadcrumbLabel="ทุนส่งเสริมงานวิจัย"
       applicationPeriodInfo={renderApplicationPeriodInfo()}
       years={years}

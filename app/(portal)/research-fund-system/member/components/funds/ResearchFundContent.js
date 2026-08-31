@@ -3,6 +3,8 @@
 
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useState, useEffect, useRef } from "react";
 import { DollarSign, FileText, Search, Download, X, Info, Clock, AlertTriangle, Calendar } from "lucide-react";
 import PageLayout from "../common/PageLayout";
@@ -890,7 +892,7 @@ export default function ResearchFundContent({ onNavigate }) {
     <PageLayout
       title="ทุนส่งเสริมการวิจัยและนวัตกรรม"
       subtitle="รายการทุนส่งเสริมการวิจัยที่เปิดรับสมัคร"
-      icon={DollarSign}
+      icon={RESEARCH_FUND_PAGE_ICONS.researchFund}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/research-fund-system/member" },
         { label: "ทุนส่งเสริมการวิจัย" },

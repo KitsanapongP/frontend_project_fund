@@ -1,4 +1,5 @@
 // FundSettingsContent.js
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
 import React, { useState, useEffect } from "react";
 import { Settings, CalendarRange, DollarSign, PencilLine, FileText, FileStack, ListChecks, BellRing, AlertTriangle, Globe2 } from "lucide-react";
 import Swal from 'sweetalert2';
@@ -1455,7 +1456,7 @@ export default function FundSettingsContent({ onNavigate }) {
       <PageLayout
         title="ตั้งค่าทุน"
         subtitle="กำหนดข้อมูลทุน นโยบาย เอกสาร และการสื่อสารของระบบ"
-        icon={Settings}
+        icon={RESEARCH_FUND_PAGE_ICONS.fundSettings}
         breadcrumbs={[
           { label: "หน้าหลัก", href: "/research-fund-system/admin" },
           { label: "ตั้งค่าทุน" }
@@ -1559,7 +1560,7 @@ export default function FundSettingsContent({ onNavigate }) {
     <PageLayout
       title="ตั้งค่าทุน"
       subtitle="กำหนดข้อมูลทุน นโยบาย เอกสาร และการสื่อสารของระบบ"
-      icon={Settings}
+      icon={RESEARCH_FUND_PAGE_ICONS.fundSettings}
       breadcrumbs={[
         { label: "หน้าหลัก", href: "/research-fund-system/admin" },
         { label: "ตั้งค่าทุน" }

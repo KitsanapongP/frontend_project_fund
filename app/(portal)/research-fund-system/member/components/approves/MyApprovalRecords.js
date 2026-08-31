@@ -1,8 +1,10 @@
 'use client';
 
+import { RESEARCH_FUND_PAGE_ICONS } from '@/app/lib/research_fund_menu_presentation';
+
 import React, { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { FileCheck, FileText, Filter } from 'lucide-react';
+import { FileText, Filter } from 'lucide-react';
 
 import PageLayout from '../common/PageLayout';
 import Card from '../common/Card';
@@ -283,7 +285,7 @@ export default function MyApprovalRecords() {
     <PageLayout
       title="บันทึกข้อมูลการอนุมัติทุน"
       subtitle="รวมรายการคำร้องที่ได้รับการอนุมัติแล้ว (เฉพาะของตนเอง)"
-      icon={FileCheck}
+      icon={RESEARCH_FUND_PAGE_ICONS.approvalRecords}
       breadcrumbs={[
         { label: 'หน้าแรก', href: '/research-fund-system/member' },
         { label: 'บันทึกข้อมูลการอนุมัติทุน' },

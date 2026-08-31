@@ -1,6 +1,8 @@
 // app/teacher/components/announcements/AnnouncementPage.js
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useEffect, useMemo, useState } from "react";
 import { FileText, Eye, Download, Bell, BookOpen, CalendarClock } from "lucide-react";
 import apiClient, { announcementAPI, fundFormAPI, systemAPI } from "../../../../../lib/api";
@@ -1092,7 +1094,7 @@ export default function AnnouncementPage() {
     <PageLayout
       title="ประกาศกองทุนวิจัยและนวัตกรรม"
       subtitle="ดูประกาศ รอบการพิจารณา และแบบฟอร์มที่เกี่ยวข้องกับการขอทุน"
-      icon={Bell}
+      icon={RESEARCH_FUND_PAGE_ICONS.announcements}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/research-fund-system/member" },
         { label: "ประกาศ" },

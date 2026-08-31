@@ -1,5 +1,7 @@
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -13,7 +15,6 @@ import {
   RotateCcw,
   Save,
   Search,
-  ShieldCheck,
   SlidersHorizontal,
   UserCog,
   Users,
@@ -545,7 +546,7 @@ export default function AdminAccessControlPage() {
     <PageLayout
       title="จัดการสิทธิ์การเข้าถึง"
       subtitle="กำหนดว่าแต่ละบทบาทและผู้ใช้งานสามารถเข้าถึงหน้าใดหรือดำเนินการอะไรได้บ้าง"
-      icon={ShieldCheck}
+      icon={RESEARCH_FUND_PAGE_ICONS.accessControl}
       actions={(
         <button type="button" onClick={handleRefresh} disabled={refreshing} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60">
           {refreshing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-4 w-4" aria-hidden="true" />}

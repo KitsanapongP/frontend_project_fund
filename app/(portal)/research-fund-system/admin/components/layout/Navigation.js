@@ -2,30 +2,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  LayoutDashboard,
-  DollarSign,
-  FileText,
-  Settings,
-  LogOut,
-  HandHelping,
-  FileCheck,
-  BookOpen,
-  Briefcase,
-  Bell,
-  Search,
-  ArrowDownUp,
-  ShieldCheck,
-  User,
-  Gift,
-  ArrowLeftRight,
-  BarChart3,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { normalizeRoleName } from "@/app/lib/access_routing";
 import { MEMBER_BASE_MENU_ITEMS, MEMBER_DEPT_REVIEW_ITEM } from "@/app/lib/member_menu_config";
 import { ADMIN_BASE_MENU_ITEMS } from "@/app/lib/admin_menu_config";
+import {
+  ADMIN_MENU_PRESENTATION,
+  MEMBER_MENU_PRESENTATION,
+  RESEARCH_FUND_PAGE_ICONS,
+} from "@/app/lib/research_fund_menu_presentation";
 import { PortalBackLink, PortalNavIcon } from "@/app/components/portal/PortalChrome";
 
 export default function Navigation({ 
@@ -45,42 +32,10 @@ export default function Navigation({
 
   const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
 
-  const adminIconById = {
-    dashboard: LayoutDashboard,
-    "research-dashboard": BarChart3,
-    "research-fund": HandHelping,
-    "promotion-fund": DollarSign,
-    "applications-list": FileText,
-    "scopus-research-search": Search,
-    "scopus-benchmark": BarChart3,
-    "fund-settings": Settings,
-    projects: Briefcase,
-    "approval-records": FileCheck,
-    "import-export": ArrowDownUp,
-    "academic-imports": BookOpen,
-    "access-control": ShieldCheck,
-  };
-
-  const adminToneById = {
-    dashboard: "blue",
-    "research-dashboard": "violet",
-    "research-fund": "emerald",
-    "promotion-fund": "amber",
-    "applications-list": "sky",
-    "scopus-research-search": "violet",
-    "scopus-benchmark": "indigo",
-    "fund-settings": "slate",
-    projects: "teal",
-    "approval-records": "emerald",
-    "import-export": "sky",
-    "academic-imports": "violet",
-    "access-control": "rose",
-  };
-
   const menuItemsWithPermissions = ADMIN_BASE_MENU_ITEMS.map((item) => ({
     ...item,
-    icon: adminIconById[item.id] || LayoutDashboard,
-    tone: adminToneById[item.id] || "blue",
+    icon: ADMIN_MENU_PRESENTATION[item.id]?.icon || RESEARCH_FUND_PAGE_ICONS.dashboard,
+    tone: ADMIN_MENU_PRESENTATION[item.id]?.tone || "blue",
     hasSubmenu: false,
   }));
 
@@ -101,38 +56,14 @@ export default function Navigation({
   const normalizedRole = normalizeRoleName(user?.role ?? user?.role_id);
   const canAccessMemberPortal = ["teacher", "staff", "dept_head"].includes(normalizedRole);
 
-  const memberShortcutIconById = {
-    profile: User,
-    "research-fund": HandHelping,
-    "promotion-fund": DollarSign,
-    applications: FileText,
-    "received-funds": Gift,
-    "approval-records": FileCheck,
-    announcements: Bell,
-    projects: Briefcase,
-    "dept-review": ArrowLeftRight,
-  };
-
-  const memberShortcutToneById = {
-    profile: "indigo",
-    "research-fund": "emerald",
-    "promotion-fund": "amber",
-    applications: "sky",
-    "received-funds": "teal",
-    "approval-records": "emerald",
-    announcements: "amber",
-    projects: "violet",
-    "dept-review": "rose",
-  };
-
   const memberShortcutBase = [...MEMBER_BASE_MENU_ITEMS, ...(normalizedRole === "dept_head" ? [MEMBER_DEPT_REVIEW_ITEM] : [])];
 
   const memberShortcutItems = canAccessMemberPortal
     ? memberShortcutBase.map((item) => ({
         id: `member-${item.id}`,
         label: item.label,
-        icon: memberShortcutIconById[item.id] || User,
-        tone: memberShortcutToneById[item.id] || "blue",
+        icon: MEMBER_MENU_PRESENTATION[item.id]?.icon || RESEARCH_FUND_PAGE_ICONS.profile,
+        tone: MEMBER_MENU_PRESENTATION[item.id]?.tone || "blue",
         route: `${MEMBER_BASE_PATH}/${item.id}`,
       }))
     : [];
