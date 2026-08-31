@@ -49,6 +49,7 @@ import { systemConfigAPI } from '../../../../../lib/system_config_api';
 import {
   calculatePublicationRequestAmounts,
   getAuthorSubmissionFields,
+  validateAuthorNameList,
   validatePriorRewardRevisionFee,
 } from './PublicationRewardForm.helpers.mjs';
 import sdgAPI from '../../../../../lib/sdg_api';
@@ -4034,6 +4035,20 @@ export default function PublicationRewardForm({
     }
   };
 
+  const handleAuthorNameListBlur = () => {
+    const message = validateAuthorNameList(formData.author_name_list);
+    setErrors((prev) => {
+      if (!message && !prev.author_name_list) return prev;
+      const next = { ...prev };
+      if (message) {
+        next.author_name_list = message;
+      } else {
+        delete next.author_name_list;
+      }
+      return next;
+    });
+  };
+
   // Handle phone number key press
   const handlePhoneKeyDown = (e) => {
     const { value, selectionStart } = e.target;
@@ -5822,6 +5837,16 @@ export default function PublicationRewardForm({
     const feeMessages = [];
     const lockedDraft = Boolean(prefilledSubmissionId && currentSubmissionStatus === 'draft' && !isReadOnly);
 
+    const authorNameListMessage = validateAuthorNameList(formData.author_name_list);
+    if (authorNameListMessage) {
+      errorList.push({
+        fieldKey: 'author_name_list',
+        label: 'รายชื่อผู้แต่ง',
+        refOrId: 'author_name_list',
+        message: authorNameListMessage,
+      });
+    }
+
     if (!lockedDraft && !selectionLocked && formData.author_status && formData.journal_quartile) {
       if (!formData.subcategory_id || !formData.subcategory_budget_id) {
         resolutionMessage = resolutionError || 'ไม่พบทุนสำหรับปี/สถานะ/ควอร์ไทล์ที่เลือก';
@@ -7448,18 +7473,25 @@ const showSubmissionConfirmation = async () => {
                 name="author_name_list"
                 value={formData.author_name_list}
                 onChange={handleInputChange}
+                onBlur={handleAuthorNameListBlur}
                 rows={3}
-                placeholder="กรอกรายชื่อผู้แต่งตามลำดับ (Enter author names in order)"
+                placeholder="สมชาย ใจดี, สมหมาย จันทร์"
                 required
                 aria-required="true"
                 aria-invalid={errors.author_name_list ? 'true' : 'false'}
-                aria-describedby={errors.author_name_list ? 'error-author_name_list' : undefined}
+                aria-describedby={errors.author_name_list ? 'author-name-list-hint error-author_name_list' : 'author-name-list-hint'}
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
                   errors.author_name_list ? 'border-red-500' : 'border-slate-300'
                 }`}
               />
+              <p id="author-name-list-hint" className="mt-2 text-xs leading-5 text-slate-600">
+                กรอกชื่อและนามสกุลตามลำดับผู้แต่ง หากมีหลายคนให้คั่นแต่ละชื่อด้วย comma (,)
+                <span className="block text-slate-500">
+                  ตัวอย่าง: สมชาย ใจดี, สมหมาย จันทร์
+                </span>
+              </p>
               {errors.author_name_list && (
-                <p id="error-author_name_list" className="text-red-500 text-sm mt-1">{errors.author_name_list}</p>
+                <p id="error-author_name_list" className="mt-1 text-sm text-red-600">{errors.author_name_list}</p>
               )}
             </div>
 
