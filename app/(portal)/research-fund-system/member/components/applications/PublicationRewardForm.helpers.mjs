@@ -32,6 +32,30 @@ export const getAuthorSubmissionFields = (formData = {}) => {
   };
 };
 
+const AUTHOR_NAME_PART_PATTERN = /^(?=.*\p{L})[\p{L}\p{M}.'’-]+$/u;
+
+export const validateAuthorNameList = (value = '') => {
+  const normalizedValue = String(value || '').trim();
+  if (!normalizedValue) return '';
+
+  const authors = normalizedValue.split(',');
+  if (authors.some((author) => !author.trim())) {
+    return 'กรุณากรอกรายชื่อผู้แต่งให้ครบ และคั่นแต่ละชื่อด้วย comma (,)';
+  }
+
+  const hasInvalidAuthor = authors.some((author) => {
+    const nameParts = author.trim().split(/\s+/).filter(Boolean);
+    return (
+      nameParts.length < 2 ||
+      nameParts.some((part) => !AUTHOR_NAME_PART_PATTERN.test(part))
+    );
+  });
+
+  return hasInvalidAuthor
+    ? 'กรุณากรอกเฉพาะชื่อและนามสกุลจริง โดยคั่นแต่ละคนด้วย comma (,)'
+    : '';
+};
+
 export const calculatePublicationRequestAmounts = ({
   hasReceivedReward = false,
   configuredReward = 0,

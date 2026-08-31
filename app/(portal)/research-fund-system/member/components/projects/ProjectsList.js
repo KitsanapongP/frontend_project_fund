@@ -1,5 +1,7 @@
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Briefcase,
@@ -486,7 +488,7 @@ export default function ProjectsList() {
     <PageLayout
       title="โครงการ"
       subtitle="ติดตามข้อมูลโครงการที่จัดโดยกองทุนวิจัยและนวัตกรรม"
-      icon={Briefcase}
+      icon={RESEARCH_FUND_PAGE_ICONS.projects}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/research-fund-system/member" },
         { label: "โครงการ" },

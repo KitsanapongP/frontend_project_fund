@@ -6,11 +6,13 @@ colors:
   primary-deep: "#1d4ed8"
   primary-ring: "#3b82f6"
   primary-tint: "#eff6ff"
+  selection: "#bfdbfe"
   ink-strong: "#0f172a"
   ink: "#334155"
   ink-muted: "#64748b"
   border: "#cbd5e1"
   border-subtle: "#e2e8f0"
+  scrollbar-thumb: "#94a3b8"
   surface: "#ffffff"
   surface-subtle: "#f1f5f9"
   canvas: "#f5f7fb"
@@ -112,7 +114,7 @@ components:
 
 This is a working system for a university's research office — the place where faculty submit fund applications and reward claims, staff process them, department reviewers endorse, and executives watch the numbers. The design should read like a well-run institution: clean, modern, confident, and above all *trustworthy*. A researcher filling in a claim and an executive scanning a dashboard should both feel the interface is on their side — orderly, legible, and never showing off.
 
-It is Operate-mode software. Expression lives in precision, not decoration: consistent spacing, one calm accent, generous whitespace around dense data, and typography that stays readable across long Thai and English strings alike. The workhorse is Sarabun, a humanist sans that carries Thai and Latin with the same even texture — the single most important reason the UI feels coherent across both languages.
+It is Operate-mode software. Expression lives in precision, not decoration: consistent spacing, one calm interaction accent inside each operational module, a controlled wayfinding palette on the Portal, generous whitespace around dense data, and typography that stays readable across long Thai and English strings alike. The workhorse is Sarabun, a humanist sans that carries Thai and Latin with the same even texture — the single most important reason the UI feels coherent across both languages.
 
 The system is being consolidated. Today the code mixes two neutral families (gray and slate) and reaches for gradients and a scattered set of accent colors; this document sets the target it should converge on. Depth is flat by default — surfaces are separated by hairline borders, and shadow is a response to interaction, not a permanent costume.
 
@@ -151,7 +153,7 @@ A restrained palette: one blue accent over a slate neutral ramp, with semantic c
 - **Information Blue** (#2563eb / tint #eff6ff / ink #1d4ed8): Neutral information and references. It must not visually compete with the primary action on the same surface.
 
 ### Named Rules
-**The One Accent Rule.** Blue is the only decorative color. If something is neither interactive nor a status signal, it is slate — not teal, indigo, cyan, or violet. Competing accents are the fastest way this UI slips back into looking machine-generated.
+**The Interaction Accent Rule.** Blue remains the shared interactive accent inside operational modules. The main Portal may use a controlled wayfinding palette to distinguish service domains: emerald for research funding, amber for external opportunities, violet for publications and discovery, teal for collaboration, sky for outbound resources, rose for researcher matching, and indigo for people management. These hues identify destinations only; they do not replace semantic status colors inside each module.
 
 **The Meaning-Only Color Rule.** Green, red, amber, and information blue carry meaning — approved, rejected/error, pending/attention, and information/reference. Never assign them randomly by module or for decoration.
 
@@ -238,11 +240,19 @@ Gently rounded, consistent geometry: 8px (`md`) on the vast majority of controls
 - **Style:** Vertical list on Surface; items in slate, Body weight.
 - **Active:** Blue Tint background + Confident Blue text/indicator.
 - **Hover:** Subtle Surface background.
+- **Icon wayfinding:** Every item uses a 32px rounded-square icon tile with a stable destination tone visible at rest. Hover deepens that tone and turns the icon white; active state still includes text and background cues so color is never the only signal.
+- **Consistency:** The same destination keeps the same icon tone across Admin, Member, and Researcher navigation shortcuts. Logout remains red and notification remains amber.
+
+### Portal Service Cards
+- Each destination uses its assigned wayfinding hue consistently across the icon tile, border hover, and quiet hover tint.
+- Portal destination icons use a distinct service-level symbol set at 30px inside a 64px tile; do not reuse the smaller operational menu icon merely because it points to the same module.
+- Card titles and descriptions remain slate for readability; color supports recognition and never carries the destination name by itself.
+- The Portal canvas uses a warm stone neutral so the destination hues feel intentional without washing the whole page in blue.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** use Confident Blue (#2563eb) as the interactive accent; everything without interaction or semantic meaning is slate.
+- **Do** use Confident Blue (#2563eb) as the shared interaction accent inside operational modules, while preserving the Portal's named wayfinding palette.
 - **Do** consolidate all neutrals to the slate ramp — replace stray `gray-*` usages with their slate equivalents.
 - **Do** keep surfaces flat at rest and let 1px borders do the separating; add shadow only for hover, focus, and overlays.
 - **Do** pair semantic icon and label colors consistently: green/success, amber/attention or pending, red/error or denied, blue/information.
@@ -252,7 +262,7 @@ Gently rounded, consistent geometry: 8px (`md`) on the vast majority of controls
 
 ### Don't:
 - **Don't** add gradients. The incumbent code has ~70 gradient usages; they are the single biggest "AI-generated" tell here and should be retired, not extended.
-- **Don't** introduce new accent hues (teal, cyan, indigo, violet, emerald-as-decoration). New color = new inconsistency.
+- **Don't** reuse Portal wayfinding hues as arbitrary decoration or operational status colors outside their named destination role.
 - **Don't** color icons or labels differently just to make modules look varied; every non-slate color must answer what it means.
 - **Don't** mix `gray-*` and `slate-*` on the same surface; pick slate.
 - **Don't** put resting `shadow-md` on every card by reflex.

@@ -1234,7 +1234,7 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
 
             ${capHint}
             <p style="font-size:12px;color:#6b7280;">
-              จำนวนเงินที่จะอนุมัติจะถูกบันทึกและสถานะคำร้องจะเปลี่ยนเป็น “อนุมัติ”
+              จำนวนเงินที่อนุมัติจะถูกบันทึกและสถานะคำร้องจะเปลี่ยนเป็น “อนุมัติ”
             </p>
           </div>
         `;
@@ -1473,7 +1473,7 @@ function ApprovalPanel({ submission, pubDetail, rewardAnn, requestedSummary, app
         <div className="grid grid-cols-2 pb-2 border-b text-sm text-gray-600">
           <div></div>
           <div className="text-right">
-            <div>จำนวนเงินที่จะอนุมัติ</div>
+            <div>จำนวนเงินที่อนุมัติ</div>
             <div className="text-xs text-gray-500">Approve Amount</div>
           </div>
         </div>
@@ -2852,7 +2852,7 @@ export default function PublicationSubmissionDetails({ submissionId, onBack }) {
                 </div>
                 {submission?.status_id === 2 && (
                   <div className="text-right">
-                    <div>จำนวนเงินที่จะอนุมัติ</div>
+                    <div>จำนวนเงินที่อนุมัติ</div>
                     <div className="text-xs text-gray-500">Approve Amount</div>
                   </div>
                 )}

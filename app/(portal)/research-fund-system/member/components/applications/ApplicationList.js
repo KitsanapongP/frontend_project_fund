@@ -1,7 +1,9 @@
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Search, Eye, FileText, ClipboardList, Plus, RefreshCcw } from "lucide-react";
+import { Search, Eye, FileText, Plus, RefreshCcw } from "lucide-react";
 import { submissionAPI, teacherAPI } from "@/app/lib/member_api";
 import { systemAPI } from "@/app/lib/api";
 import { systemConfigAPI } from "@/app/lib/system_config_api";
@@ -592,7 +594,7 @@ export default function ApplicationList({ onNavigate }) {
     <PageLayout
       title="คำร้องของฉัน"
       subtitle="รายการคำร้องทั้งหมดที่คุณได้ยื่นไว้"
-      icon={ClipboardList}
+      icon={RESEARCH_FUND_PAGE_ICONS.applications}
       actions={
         <div className="flex gap-2">
           <button 

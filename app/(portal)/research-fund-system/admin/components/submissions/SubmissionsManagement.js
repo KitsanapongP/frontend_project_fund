@@ -1,6 +1,8 @@
 // app/admin/components/submissions/SubmissionsManagement.js
 'use client';
 
+import { RESEARCH_FUND_PAGE_ICONS } from '@/app/lib/research_fund_menu_presentation';
+
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   ChevronLeft,
@@ -1596,7 +1598,7 @@ export default function SubmissionsManagement() {
     <PageLayout
       title="รายการการขอทุน"
       subtitle="บันทึกข้อมูลคำร้องขอทุนและจัดการคำร้องทั้งหมด"
-      icon={FileText}
+      icon={RESEARCH_FUND_PAGE_ICONS.adminApplications}
       breadcrumbs={[
         { label: "หน้าหลัก", href: "/research-fund-system/admin" },
         { label: "จัดการคำร้อง" }

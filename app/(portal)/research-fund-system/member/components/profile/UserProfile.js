@@ -1,5 +1,7 @@
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -11,7 +13,6 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
-  UserCircle,
   Download,
 } from "lucide-react";
 
@@ -1540,7 +1541,7 @@ export default function ProfileContent() {
       <PageLayout
         title="ข้อมูลส่วนตัว"
         subtitle="ดูข้อมูลส่วนบุคคลและสถิติการยื่นคำร้องของคุณ"
-        icon={UserCircle}
+        icon={RESEARCH_FUND_PAGE_ICONS.profile}
         breadcrumbs={[
           { label: "หน้าแรก", href: "/research-fund-system/member" },
           { label: "ข้อมูลส่วนตัว" },
@@ -1554,7 +1555,7 @@ export default function ProfileContent() {
     <PageLayout
       title="ข้อมูลส่วนตัว"
       subtitle="ดูข้อมูลส่วนบุคคลและสถิติการยื่นคำร้องของคุณ"
-      icon={UserCircle}
+      icon={RESEARCH_FUND_PAGE_ICONS.profile}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/research-fund-system/member" },
         { label: "ข้อมูลส่วนตัว" },

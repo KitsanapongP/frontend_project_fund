@@ -10,6 +10,7 @@ import NotificationBell from "@/app/components/notifications/NotificationBell";
 import {
   PortalBrandLogo,
   PortalFontSizeControl,
+  PortalNavIcon,
 } from "./PortalChrome";
 
 function getDisplayName(user) {
@@ -119,10 +120,10 @@ export default function AuthenticatedPortalHeader({
                   <button
                     type="button"
                     onClick={() => { setShowUserMenu(false); void handleLogout(); }}
-                    className="portal-nav-item portal-nav-item--danger rounded-none px-4"
+                    className="portal-nav-item portal-nav-item--danger group rounded-none px-4"
                     role="menuitem"
                   >
-                    <LogOut size={16} aria-hidden="true" />
+                    <PortalNavIcon icon={LogOut} tone="red" size={16} className="h-7 w-7" />
                     <span>ออกจากระบบ</span>
                   </button>
                 </div>
@@ -155,8 +156,8 @@ export default function AuthenticatedPortalHeader({
                 </div>
               </div>
               <div className="mb-3 flex items-center gap-3 text-sm text-slate-700"><NotificationBell onViewAll={onNotificationViewAll} /><span>การแจ้งเตือน</span></div>
-              <button type="button" onClick={() => void handleLogout()} className="portal-nav-item portal-nav-item--danger px-0">
-                <LogOut size={16} aria-hidden="true" /><span>ออกจากระบบ</span>
+              <button type="button" onClick={() => void handleLogout()} className="portal-nav-item portal-nav-item--danger group px-0">
+                <PortalNavIcon icon={LogOut} tone="red" size={16} className="h-7 w-7" /><span>ออกจากระบบ</span>
               </button>
             </div>
 

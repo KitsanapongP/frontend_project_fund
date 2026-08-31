@@ -1,5 +1,7 @@
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, Download, ExternalLink, Loader2, Search } from "lucide-react";
 import PageLayout from "../common/PageLayout";
@@ -776,7 +778,7 @@ export default function AdminScopusResearchSearch() {
     <PageLayout
       title="ค้นหางานวิจัย"
       subtitle="ค้นหาและสำรวจเอกสารจากฐานข้อมูล Scopus"
-      icon={Search}
+      icon={RESEARCH_FUND_PAGE_ICONS.researchSearch}
     >
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">

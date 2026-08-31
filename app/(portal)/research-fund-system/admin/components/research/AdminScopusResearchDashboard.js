@@ -1,9 +1,10 @@
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
-  BarChart3,
   SlidersHorizontal,
   Filter,
   CircleHelp,
@@ -1653,7 +1654,7 @@ export default function AdminScopusResearchDashboard() {
     <PageLayout
       title="แดชบอร์ดงานวิจัย"
       subtitle="ระดับคณะ / รายบุคคล"
-      icon={BarChart3}
+      icon={RESEARCH_FUND_PAGE_ICONS.researchDashboard}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/research-fund-system/admin" },
         { label: "แดชบอร์ดงานวิจัย" },

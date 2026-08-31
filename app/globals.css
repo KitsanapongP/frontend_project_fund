@@ -98,6 +98,40 @@ html[data-portal-font-scale="large"] {
   color: #0f172a;
 }
 
+/* Browser chrome follows the same calm slate language as the application. */
+* {
+  scrollbar-color: #94a3b8 #f1f5f9;
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+*::-webkit-scrollbar-thumb {
+  min-height: 2.5rem;
+  border: 2px solid #f1f5f9;
+  border-radius: 8px;
+  background: #94a3b8;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: #475569;
+}
+
+*::-webkit-scrollbar-corner {
+  background: #f1f5f9;
+}
+
 .portal-header {
   position: fixed;
   inset: 0 0 auto;
@@ -265,7 +299,7 @@ html[data-portal-font-scale="large"] {
 
 .portal-nav-item--portal {
   margin-bottom: 1rem;
-  border-color: #dbeafe;
+  border-color: #eff6ff;
   background: #f8fbff;
   color: #1d4ed8;
   font-weight: 600;
@@ -276,7 +310,7 @@ html[data-portal-font-scale="large"] {
 }
 
 .portal-nav-item--danger:hover {
-  background: #fef2f2;
+  background: #fee2e2;
   color: #991b1b;
 }
 
@@ -407,7 +441,7 @@ html[data-portal-font-scale="large"] {
 }
 
 option:disabled {
-  color: #9CA3AF;
+  color: #94a3b8;
   background-color: #F3F4F6;
 }
 

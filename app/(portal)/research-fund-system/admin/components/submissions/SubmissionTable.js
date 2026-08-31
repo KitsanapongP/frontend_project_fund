@@ -88,45 +88,6 @@ export default function SubmissionTable({
     );
   };
 
-  const getArticleTitle = (s) => {
-    const dpo = getDPO(s);
-
-    // 1) For fund applications, prefer project title first
-    const faTitle =
-      s?.FundApplicationDetail?.project_title ||
-      s?.fund_application_detail?.project_title ||
-      dpo?.FundApplicationDetail?.project_title ||
-      dpo?.project_title;
-    if (faTitle) return faTitle;
-
-    // 2) For publication rewards, support both nested and flat payload shapes
-    const pr =
-      s?.PublicationRewardDetail ||
-      s?.publication_reward_detail ||
-      dpo?.PublicationRewardDetail ||
-      dpo?.publication_reward_detail ||
-      dpo?.submission?.PublicationRewardDetail ||
-      dpo?.Submission?.PublicationRewardDetail ||
-      null;
-
-    const fromPr =
-      pr?.paper_title ||
-      pr?.paperTitle ||
-      pr?.article_title ||
-      pr?.title_th ||
-      pr?.title;
-
-    const fromDpo =
-      dpo?.paper_title ||
-      dpo?.paperTitle ||
-      dpo?.article_title ||
-      dpo?.title_th ||
-      dpo?.title;
-
-    return fromPr || fromDpo || s?.paper_title || s?.project_title || s?.title || '-';
-  };
-
-
   // Support snake_case, camelCase, and PascalCase user fields
   const pickNameFromUserObj = (u) => {
     if (!u || typeof u !== 'object') return '';
@@ -228,7 +189,6 @@ export default function SubmissionTable({
     amount: getAmount(submission),
     categoryName: getCategoryName(submission),
     subcategoryName: getSubcategoryName(submission),
-    articleTitle: getArticleTitle(submission),
     authorName: getAuthorName(submission),
     id: submission.submission_id || submission.id,
   });
@@ -275,8 +235,8 @@ export default function SubmissionTable({
                 {getSortIcon('submission_number')}
               </button>
             </th>
-            <th scope="col" className="w-1/5 px-5 py-3">ทุน</th>
-            <th scope="col" className="w-1/4 px-5 py-3">ชื่อเรื่อง</th>
+            <th scope="col" className="w-1/5 px-5 py-3">ประเภททุน</th>
+            <th scope="col" className="w-1/4 px-5 py-3">ชื่อทุน</th>
             <th scope="col" className="px-5 py-3">ผู้ยื่น</th>
             <th scope="col" className="px-5 py-3 text-center">จำนวนเงิน</th>
             <th scope="col" className="px-5 py-3 text-center">
@@ -314,14 +274,11 @@ export default function SubmissionTable({
                   {s.submission_number || s.id || '-'}
                 </td>
                 <td className="px-5 py-4 text-slate-700">
-                  <span className="block max-w-72 break-words font-medium text-slate-800" title={row.subcategoryName}>
-                    {row.subcategoryName}
-                  </span>
-                  <span className="mt-1 block text-xs text-slate-500">{row.categoryName}</span>
+                  <span className="block max-w-72 break-words text-slate-700">{row.categoryName}</span>
                 </td>
                 <td className="px-5 py-4 text-slate-700">
-                  <span title={row.articleTitle} className="line-clamp-2 break-words leading-6">
-                    {row.articleTitle}
+                  <span title={row.subcategoryName} className="line-clamp-2 break-words font-medium leading-6 text-slate-900">
+                    {row.subcategoryName}
                   </span>
                 </td>
                 <td className="px-5 py-4 text-slate-700">{row.authorName}</td>
@@ -360,7 +317,7 @@ export default function SubmissionTable({
                   <p className="text-sm font-semibold text-blue-700 tabular-nums">
                     {submission.submission_number || submission.id || '-'}
                   </p>
-                  <h3 className="mt-1 break-words font-semibold leading-6 text-slate-900">{row.articleTitle}</h3>
+                  <h3 className="mt-1 break-words font-semibold leading-6 text-slate-900">{row.subcategoryName}</h3>
                 </div>
                 <StatusBadge
                   statusId={submission.status_id}
@@ -379,12 +336,8 @@ export default function SubmissionTable({
                   <dd className="mt-0.5 font-medium text-slate-900 tabular-nums">{formatCurrency(row.amount)}</dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">หมวดทุน</dt>
-                  <dd className="mt-0.5 text-slate-800">{row.categoryName}</dd>
-                </div>
-                <div>
                   <dt className="text-slate-500">ประเภททุน</dt>
-                  <dd className="mt-0.5 text-slate-800">{row.subcategoryName}</dd>
+                  <dd className="mt-0.5 text-slate-800">{row.categoryName}</dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">วันที่ส่งคำร้อง</dt>

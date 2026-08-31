@@ -5,16 +5,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
-  BookOpenText,
-  BriefcaseBusiness,
+  ContactRound,
   ChevronDown,
   ChevronUp,
-  ExternalLink,
-  FileSearch,
-  GraduationCap,
-  Handshake,
+  Earth,
+  Landmark,
+  LibraryBig,
+  PanelsTopLeft,
+  ScanSearch,
   Search,
-  Users,
+  Waypoints,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { useAuth } from "../contexts/AuthContext";
@@ -31,50 +31,78 @@ const PORTAL_ITEMS = [
     id: "researchFund",
     label: "กองทุนวิจัยฯ",
     href: "/?page=researchFund",
-    icon: BookOpenText,
+    icon: Landmark,
     description: "ข้อมูลกองทุนและการใช้งานระบบ",
+    tone: {
+      card: "hover:border-emerald-300 hover:bg-emerald-50/50",
+      icon: "border-emerald-200 bg-emerald-50 text-emerald-700 group-hover:border-emerald-600 group-hover:bg-emerald-600",
+    },
   },
   {
     id: "externalFund",
     label: "ทุนภายนอก",
     href: "/external-fund",
-    icon: BriefcaseBusiness,
-    description: "รายการและประกาศทุนจากแหล่งภายนอก",
+    icon: Earth,
+    description: "รายการประกาศทุนจากแหล่งภายนอก",
+    tone: {
+      card: "hover:border-amber-300 hover:bg-amber-50/50",
+      icon: "border-amber-200 bg-amber-50 text-amber-700 group-hover:border-amber-600 group-hover:bg-amber-600",
+    },
   },
   {
     id: "publicationSearch",
     label: "สืบค้นผลงาน",
     href: "/publication-search",
-    icon: FileSearch,
+    icon: LibraryBig,
     description: "สืบค้นข้อมูลผลงานและผลงานนักศึกษา",
+    tone: {
+      card: "hover:border-violet-300 hover:bg-violet-50/50",
+      icon: "border-violet-200 bg-violet-50 text-violet-700 group-hover:border-violet-600 group-hover:bg-violet-600",
+    },
   },
   {
     id: "mou",
     label: "MOU",
     href: "/mou",
-    icon: Handshake,
+    icon: Waypoints,
     description: "ข้อมูลความร่วมมือและบันทึกข้อตกลง",
+    tone: {
+      card: "hover:border-teal-300 hover:bg-teal-50/50",
+      icon: "border-teal-200 bg-teal-50 text-teal-700 group-hover:border-teal-600 group-hover:bg-teal-600",
+    },
   },
   {
     id: "links",
     label: "Links",
     href: "/links",
-    icon: ExternalLink,
+    icon: PanelsTopLeft,
     description: "ลิงก์ระบบที่เกี่ยวข้อง",
+    tone: {
+      card: "hover:border-sky-300 hover:bg-sky-50/50",
+      icon: "border-sky-200 bg-sky-50 text-sky-700 group-hover:border-sky-600 group-hover:bg-sky-600",
+    },
   },
   {
     id: "researcherMatching",
     label: "จับคู่นักวิจัย",
     href: "/?page=researcherMatching",
-    icon: Users,
+    icon: ScanSearch,
     description: "ค้นหาและจับคู่หัวข้อกับนักวิจัย",
+    tone: {
+      card: "hover:border-rose-300 hover:bg-rose-50/50",
+      icon: "border-rose-200 bg-rose-50 text-rose-700 group-hover:border-rose-600 group-hover:bg-rose-600",
+    },
   },
   {
     id: "researcherManagement",
     label: "จัดการบุคลากร",
     href: "/researcher-management",
-    icon: GraduationCap,
+    icon: ContactRound,
     description: "บริหารจัดการข้อมูลบุคลากรวิจัย",
+    tone: {
+      card: "hover:border-indigo-300 hover:bg-indigo-50/50",
+      icon: "border-indigo-200 bg-indigo-50 text-indigo-700 group-hover:border-indigo-600 group-hover:bg-indigo-600",
+    },
   },
 ];
 
@@ -155,14 +183,20 @@ function PortalGridContent({ onCardClick }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getCollapsedItemClass = (index) => {
-    if (index < 2) return "";
-    if (index < 4) return "hidden sm:block";
-    if (index < 6) return "hidden xl:block";
+    if (index < 3) return "";
+    if (index < 6) return "hidden sm:block";
+    if (index < 9) return "hidden xl:block";
     return "hidden";
   };
 
+  const toggleVisibilityClass = [
+    PORTAL_ITEMS.length <= 3 ? "hidden" : "flex",
+    PORTAL_ITEMS.length <= 6 ? "sm:hidden" : "sm:flex",
+    PORTAL_ITEMS.length <= 9 ? "xl:hidden" : "xl:flex",
+  ].join(" ");
+
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+    <section className="rounded-xl border border-slate-200 bg-white/95 p-5 sm:p-6">
       <div id="portal-menu-grid" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {PORTAL_ITEMS.map((item, index) => {
           const Icon = item.icon;
@@ -171,20 +205,24 @@ function PortalGridContent({ onCardClick }) {
               key={item.id}
               type="button"
               onClick={() => onCardClick(item)}
-              className={`${isExpanded ? "" : getCollapsedItemClass(index)} group w-full rounded-xl border border-slate-200 bg-white p-5 text-left transition hover:border-blue-300 hover:bg-blue-50/40 hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2`}
+              className={`${isExpanded ? "" : getCollapsedItemClass(index)} ${item.tone.card} group w-full rounded-xl border border-slate-200 bg-white p-5 text-left transition hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2`}
             >
-              <div className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700 transition group-hover:border-blue-600 group-hover:bg-blue-600 group-hover:text-white">
-                <Icon size={22} />
+              <div className="flex items-start gap-4">
+                <div className={`inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border transition group-hover:text-white ${item.tone.icon}`}>
+                  <Icon size={30} strokeWidth={1.8} />
+                </div>
+                <div className="min-w-0 pt-1">
+                  <h3 className="text-lg font-semibold text-slate-900">{item.label}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{item.description}</p>
+                </div>
               </div>
-              <h3 className="mt-4 text-lg font-semibold text-slate-900">{item.label}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">{item.description}</p>
             </button>
           );
         })}
       </div>
 
-      {PORTAL_ITEMS.length > 2 && (
-        <div className="mt-5 flex justify-center border-t border-slate-100 pt-4">
+      {PORTAL_ITEMS.length > 3 && (
+        <div className={`mt-5 justify-center border-t border-slate-100 pt-4 ${toggleVisibilityClass}`}>
           <button
             type="button"
             aria-controls="portal-menu-grid"
@@ -201,9 +239,9 @@ function PortalGridContent({ onCardClick }) {
               <>
                 <span>
                   ดูเพิ่มเติม (
-                  <span className="sm:hidden">{PORTAL_ITEMS.length - 2}</span>
-                  <span className="hidden sm:inline xl:hidden">{PORTAL_ITEMS.length - 4}</span>
-                  <span className="hidden xl:inline">{PORTAL_ITEMS.length - 6}</span>
+                  <span className="sm:hidden">{Math.max(PORTAL_ITEMS.length - 3, 0)}</span>
+                  <span className="hidden sm:inline xl:hidden">{Math.max(PORTAL_ITEMS.length - 6, 0)}</span>
+                  <span className="hidden xl:inline">{Math.max(PORTAL_ITEMS.length - 9, 0)}</span>
                   {" รายการ)"}
                 </span>
                 <ChevronDown size={18} aria-hidden="true" />
@@ -633,7 +671,7 @@ function ResearcherMatchingContent() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button
               onClick={() => setSelectedItem(null)}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+              className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <ArrowLeft size={16} aria-hidden="true" />
               <span>กลับไปยังรายการทั้งหมด</span>
@@ -751,7 +789,7 @@ function ResearcherMatchingContent() {
             <button
               type="button"
               onClick={() => setIsAdvancedOpen((previous) => !previous)}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+              className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <span>{isAdvancedOpen ? "ซ่อน" : "แสดง"} Advanced Search</span>
             </button>
@@ -1122,7 +1160,7 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-white text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-stone-50 text-center">
         <Image
           src="/image_icon/iconcpkku.png"
           alt="College of Computing, Khon Kaen University"
@@ -1131,17 +1169,17 @@ export default function HomePage() {
           className="h-auto w-64 object-contain"
           priority
         />
-        <h1 className="text-2xl font-bold text-gray-900">{APP_DISPLAY_NAME}</h1>
-        <div className="space-y-1 text-gray-600">
-          <p className="text-lg font-medium text-gray-700">กำลังโหลดหน้า...</p>
-          <p className="text-sm text-gray-500">กำลังตรวจสอบสิทธิ์...</p>
+        <h1 className="text-2xl font-bold text-slate-900">{APP_DISPLAY_NAME}</h1>
+        <div className="space-y-1 text-slate-600">
+          <p className="text-lg font-medium text-slate-700">กำลังโหลดหน้า...</p>
+          <p className="text-sm text-slate-500">กำลังตรวจสอบสิทธิ์...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-stone-100">
       {isAuthenticated ? (
         <MemberHeader
           isOpen={isMenuOpen}
@@ -1160,7 +1198,7 @@ export default function HomePage() {
 
       <main className="portal-page-offset px-4 pb-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="bg-slate-100 p-1 sm:p-2">{renderPageContent()}</div>
+          <div className="bg-stone-100 p-1 sm:p-2">{renderPageContent()}</div>
         </div>
       </main>
     </div>

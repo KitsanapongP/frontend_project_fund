@@ -1,5 +1,7 @@
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { scopusBenchmarkAPI } from "@/app/lib/api";
@@ -597,6 +599,7 @@ export default function AdminScopusBenchmark() {
     <PageLayout
       title="เทียบผลงาน Scopus (Computer Science)"
       subtitle="เปรียบเทียบจำนวนผลงาน CS ระดับคณะ vs มหาวิทยาลัย (KKU) vs ประเทศ (Thailand)"
+      icon={RESEARCH_FUND_PAGE_ICONS.scopusBenchmark}
       breadcrumbs={[{ label: "หน้าแรก", href: "/research-fund-system/admin" }, { label: "เทียบผลงาน Scopus (CS)" }]}
     >
       <div className="space-y-5">

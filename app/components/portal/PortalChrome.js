@@ -6,6 +6,30 @@ import { usePathname } from "next/navigation";
 import { ArrowLeft, Home } from "lucide-react";
 import { usePortalAccessibility } from "./PortalAccessibilityProvider";
 
+const NAV_ICON_TONES = {
+  blue: "border-blue-200 bg-blue-50 text-blue-700 group-hover:border-blue-600 group-hover:bg-blue-600",
+  emerald: "border-emerald-200 bg-emerald-50 text-emerald-700 group-hover:border-emerald-600 group-hover:bg-emerald-600",
+  amber: "border-amber-200 bg-amber-50 text-amber-700 group-hover:border-amber-600 group-hover:bg-amber-600",
+  violet: "border-violet-200 bg-violet-50 text-violet-700 group-hover:border-violet-600 group-hover:bg-violet-600",
+  teal: "border-teal-200 bg-teal-50 text-teal-700 group-hover:border-teal-600 group-hover:bg-teal-600",
+  sky: "border-sky-200 bg-sky-50 text-sky-700 group-hover:border-sky-600 group-hover:bg-sky-600",
+  rose: "border-rose-200 bg-rose-50 text-rose-700 group-hover:border-rose-600 group-hover:bg-rose-600",
+  indigo: "border-indigo-200 bg-indigo-50 text-indigo-700 group-hover:border-indigo-600 group-hover:bg-indigo-600",
+  slate: "border-slate-200 bg-slate-50 text-slate-700 group-hover:border-slate-600 group-hover:bg-slate-600",
+  red: "border-red-200 bg-red-50 text-red-700 group-hover:border-red-600 group-hover:bg-red-600",
+};
+
+export function PortalNavIcon({ icon: Icon, tone = "blue", size = 18, className = "" }) {
+  return (
+    <span
+      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-colors group-hover:text-white ${NAV_ICON_TONES[tone] || NAV_ICON_TONES.blue} ${className}`.trim()}
+      aria-hidden="true"
+    >
+      <Icon size={size} strokeWidth={2} />
+    </span>
+  );
+}
+
 export function PortalBrandLogo({ onNavigate, className = "" }) {
   return (
     <Link
@@ -74,9 +98,9 @@ export function PortalBackLink({
       <Link
         href="/"
         onClick={onNavigate}
-        className={`portal-nav-item portal-nav-item--portal ${className}`.trim()}
+        className={`portal-nav-item portal-nav-item--portal group ${className}`.trim()}
       >
-        <Home size={19} aria-hidden="true" />
+        <PortalNavIcon icon={Home} tone="blue" />
         <span>กลับหน้าหลัก</span>
       </Link>
     );

@@ -1,31 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  LayoutDashboard,
-  ChevronDown,
-  FileText,
-  DollarSign,
-  LogOut,
-  HandHelping,
-  ClipboardList,
-  User,
-  Gift,
-  TrendingUp,
-  Briefcase,
-  Search,
-  Settings,
-  FileCheck,
-  ArrowDownUp,
-  BookOpen,
-  ShieldCheck,
-} from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { hasAdminPortalAccess } from "@/app/lib/access_routing";
 import { MEMBER_BASE_MENU_ITEMS, MEMBER_DEPT_REVIEW_ITEM } from "@/app/lib/member_menu_config";
 import { ADMIN_BASE_MENU_ITEMS } from "@/app/lib/admin_menu_config";
-import { PortalBackLink } from "@/app/components/portal/PortalChrome";
+import {
+  ADMIN_MENU_PRESENTATION,
+  MEMBER_MENU_PRESENTATION,
+  RESEARCH_FUND_PAGE_ICONS,
+} from "@/app/lib/research_fund_menu_presentation";
+import { PortalBackLink, PortalNavIcon } from "@/app/components/portal/PortalChrome";
 
 export default function Navigation({
   currentPage,
@@ -47,21 +34,6 @@ export default function Navigation({
 
   const canSwitchToAdminPortal = hasAdminPortalAccess(user);
 
-  const adminIconById = {
-    dashboard: LayoutDashboard,
-    "research-dashboard": Search,
-    "research-fund": HandHelping,
-    "promotion-fund": DollarSign,
-    "applications-list": FileText,
-    "scopus-research-search": Search,
-    "fund-settings": Settings,
-    projects: Briefcase,
-    "approval-records": FileCheck,
-    "import-export": ArrowDownUp,
-    "academic-imports": BookOpen,
-    "access-control": ShieldCheck,
-  };
-
   const adminShortcutItems = ADMIN_BASE_MENU_ITEMS.filter((item) => {
     if (!hasPermissionSnapshot) {
       return true;
@@ -70,28 +42,18 @@ export default function Navigation({
   }).map((item) => ({
     id: `admin-${item.id}`,
     label: item.label,
-    icon: adminIconById[item.id] || LayoutDashboard,
+    icon: ADMIN_MENU_PRESENTATION[item.id]?.icon || RESEARCH_FUND_PAGE_ICONS.dashboard,
+    tone: ADMIN_MENU_PRESENTATION[item.id]?.tone || "blue",
     route: item.route,
   }));
-
-  const iconByMemberMenuId = {
-    profile: User,
-    "research-fund": TrendingUp,
-    "promotion-fund": DollarSign,
-    applications: ClipboardList,
-    "received-funds": Gift,
-    "approval-records": FileCheck,
-    announcements: FileText,
-    projects: Briefcase,
-    "dept-review": HandHelping,
-  };
 
   const menuItems = [
     ...MEMBER_BASE_MENU_ITEMS,
     ...(isDeptHead ? [MEMBER_DEPT_REVIEW_ITEM] : []),
   ].map((item) => ({
     ...item,
-    icon: iconByMemberMenuId[item.id] || FileText,
+    icon: MEMBER_MENU_PRESENTATION[item.id]?.icon || RESEARCH_FUND_PAGE_ICONS.applications,
+    tone: MEMBER_MENU_PRESENTATION[item.id]?.tone || "blue",
     hasSubmenu: false,
   }));
 
@@ -198,9 +160,9 @@ export default function Navigation({
               <button
                 onClick={() => handleMenuClick({ ...item, hasSubmenu: false })}
                 disabled={pendingRoute === item.route}
-                className="portal-nav-item disabled:cursor-wait disabled:opacity-60"
+                className="portal-nav-item group disabled:cursor-wait disabled:opacity-60"
               >
-                <item.icon size={20} />
+                <PortalNavIcon icon={item.icon} tone={item.tone} />
                 <span className="flex-1 text-left">{pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
               </button>
             </div>
@@ -216,9 +178,9 @@ export default function Navigation({
         <div key={item.id}>
           <button
             onClick={() => handleMenuClick(item)}
-            className={`portal-nav-item ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
+            className={`portal-nav-item group ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
           >
-            <item.icon size={20} />
+            <PortalNavIcon icon={item.icon} tone={item.tone} />
             <span className="flex-1 text-left">{item.label}</span>
             {item.hasSubmenu && (
               <ChevronDown
@@ -236,9 +198,9 @@ export default function Navigation({
                 <button
                   key={subItem.id}
                   onClick={() => handleSubmenuClick(item.id, subItem)}
-                  className={`portal-nav-item min-h-10 py-1.5 ${currentPage === subItem.id ? "portal-nav-item--active" : ""}`}
+                  className={`portal-nav-item group min-h-10 py-1.5 ${currentPage === subItem.id ? "portal-nav-item--active" : ""}`}
                 >
-                  <subItem.icon size={16} />
+                  <PortalNavIcon icon={subItem.icon} tone="sky" size={16} className="h-7 w-7" />
                   <span>{subItem.label}</span>
                 </button>
               ))}
@@ -251,9 +213,9 @@ export default function Navigation({
         <PortalBackLink placement="nav" onNavigate={closeMobileMenu} />
         <button
           onClick={handleLogout}
-          className="portal-nav-item portal-nav-item--danger"
+          className="portal-nav-item portal-nav-item--danger group"
         >
-          <LogOut size={20} />
+          <PortalNavIcon icon={LogOut} tone="red" />
           <span>ออกจากระบบ</span>
         </button>
       </div>

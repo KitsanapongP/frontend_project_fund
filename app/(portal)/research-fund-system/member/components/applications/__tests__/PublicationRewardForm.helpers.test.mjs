@@ -4,6 +4,7 @@ import {
   shouldDisableSubmitButton,
   getAuthorSubmissionFields,
   calculatePublicationRequestAmounts,
+  validateAuthorNameList,
   validatePriorRewardRevisionFee,
 } from '../PublicationRewardForm.helpers.mjs';
 
@@ -75,6 +76,22 @@ test('getAuthorSubmissionFields maps trimmed author fields for submission payloa
   const empty = getAuthorSubmissionFields();
   assert.equal(empty.author_name_list, '');
   assert.equal(empty.signature, '');
+});
+
+test('validateAuthorNameList accepts comma-separated Thai and English full names', () => {
+  assert.equal(
+    validateAuthorNameList('สมชาย ใจดี, สมหญิง รักเรียน, มานะ ขยันดี'),
+    '',
+  );
+  assert.equal(validateAuthorNameList('กิตติพงษ์ พรพรรณ, สุภวิชญ์ จำรัส'), '');
+});
+
+test('validateAuthorNameList rejects non-name values and invalid separators', () => {
+  assert.match(validateAuthorNameList('Kitsanapong'), /ชื่อและนามสกุล/);
+  assert.match(validateAuthorNameList('Anan Srisuk; Nattaya Wongchai'), /comma/);
+  assert.match(validateAuthorNameList('Anan Srisuk123'), /ชื่อและนามสกุล/);
+  assert.match(validateAuthorNameList('name@example.com'), /ชื่อและนามสกุล/);
+  assert.match(validateAuthorNameList('Anan Srisuk,'), /คั่นแต่ละชื่อ/);
 });
 
 test('calculatePublicationRequestAmounts excludes a previously requested reward', () => {

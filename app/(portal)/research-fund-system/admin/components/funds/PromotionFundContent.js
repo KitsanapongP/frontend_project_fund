@@ -1,8 +1,9 @@
 // app/admin/components/funds/PromotionFundContent.js - ทุนอุดหนุนกิจกรรม (Admin View)
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useState, useEffect, useRef } from "react";
-import { TrendingUp } from "lucide-react";
 import { teacherAPI } from "../../../../../lib/member_api";
 import { targetRolesUtils, filterFundsByRole } from "../../../../../lib/target_roles_utils";
 import systemConfigAPI from "../../../../../lib/system_config_api";
@@ -611,7 +612,7 @@ export default function PromotionFundContent({ onNavigate }) {
     <FundCatalogView
       title="ทุนอุดหนุนกิจกรรม"
       subtitle="รายการทุนอุดหนุนกิจกรรมที่เปิดรับสมัคร"
-      icon={TrendingUp}
+      icon={RESEARCH_FUND_PAGE_ICONS.promotionFund}
       breadcrumbLabel="ทุนอุดหนุนกิจกรรม"
       applicationPeriodInfo={renderApplicationPeriodInfo()}
       years={years}

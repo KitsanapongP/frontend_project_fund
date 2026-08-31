@@ -1,6 +1,8 @@
 // app/teacher/components/funds/PromotionFundContent.js - ทุนอุดหนุนกิจกรรม (Using New API)
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useState, useEffect, useRef } from "react";
 import { TrendingUp, FileText, Search, Download, X, Info, Clock, AlertTriangle, Calendar } from "lucide-react";
 import PageLayout from "../common/PageLayout";
@@ -884,7 +886,7 @@ export default function PromotionFundContent({ onNavigate }) {
     <PageLayout
       title="ทุนอุดหนุนกิจกรรม"
       subtitle="รายการทุนอุดหนุนกิจกรรมที่เปิดรับสมัคร"
-      icon={TrendingUp}
+      icon={RESEARCH_FUND_PAGE_ICONS.promotionFund}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/research-fund-system/member" },
         { label: "ทุนอุดหนุนกิจกรรม" }

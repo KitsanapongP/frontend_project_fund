@@ -19,7 +19,7 @@ import {
 import { useAuth } from "../../../../contexts/AuthContext"; 
 import { usePathname, useRouter } from "next/navigation";
 import { normalizeRoleName } from "@/app/lib/access_routing";
-import { PortalBackLink } from "@/app/components/portal/PortalChrome";
+import { PortalBackLink, PortalNavIcon } from "@/app/components/portal/PortalChrome";
 
 export default function Navigation({ 
   currentPage, 
@@ -45,6 +45,7 @@ export default function Navigation({
     id: 'edit-instructor-info',
     label: 'แก้ไขข้อมูลอาจารย์',
     icon: User,
+    tone: 'indigo',
     route: '/researcher-management', // เส้นทางหลัก
     hasSubmenu: false
   },
@@ -52,6 +53,7 @@ export default function Navigation({
     id: 'related-websites',
     label: 'เว็บไซต์ที่เกี่ยวข้อง',
     icon: Search,
+    tone: 'sky',
     route: '/researcher-management/related-websites', // ตัวอย่าง URL ใหม่
     hasSubmenu: false
   },
@@ -59,6 +61,7 @@ export default function Navigation({
     id: 'expertise',
     label: 'ความเชี่ยวชาญ',
     icon: ShieldCheck,
+    tone: 'violet',
     //route: '/researcher-management/expertise',
     hasSubmenu: false
   },
@@ -66,6 +69,7 @@ export default function Navigation({
     id: 'research-projects',
     label: 'โครงการวิจัย',
     icon: Briefcase,
+    tone: 'teal',
    // route: '/researcher-management/projects',
     hasSubmenu: false
   },
@@ -73,6 +77,7 @@ export default function Navigation({
     id: 'academic-performance',
     label: 'ผลงานทางวิชาการ',
     icon: BookOpen,
+    tone: 'amber',
     //route: '/researcher-management/academic',
     hasSubmenu: false
   },
@@ -80,6 +85,7 @@ export default function Navigation({
     id: 'verify-instructor-info',
     label: 'ตรวจสอบข้อมูลอาจารย์',
     icon: ClipboardCheck,
+    tone: 'emerald',
     //route: '/researcher-management/verify',
     hasSubmenu: false
   }
@@ -143,18 +149,19 @@ const visibleMenuItems = isExecutive
   const canAccessMemberPortal = ["academic_designer"].includes(normalizedRole);
   const memberShortcutItems = canAccessMemberPortal
     ? [
-          { id: 'edit-instructor-info', label: 'แก้ไขข้อมูลอาจารย์', icon: User, route: '/researcher-management' },
-      { id: 'related-websites', label: 'เว็บไซต์ที่เกี่ยวข้อง', icon: Search,  route: '/researcher-management/related-websites' },
-      { id: 'expertise', label: 'ความเชี่ยวชาญ', icon: ShieldCheck, /*route: '/researcher-management/expertise' */ },
-      { id: 'research-projects', label: 'โครงการวิจัย', icon: Briefcase,/* route: '/researcher-management/projects' */ },
-      { id: 'academic-performance', label: 'ผลงานทางวิชาการ', icon: BookOpen, /* route: '/researcher-management/academic' */ },
-      { id: 'verify-instructor-info', label: 'ตรวจสอบข้อมูลอาจารย์', icon: ClipboardCheck, /* route: '/researcher-management/verify' */ },
+          { id: 'edit-instructor-info', label: 'แก้ไขข้อมูลอาจารย์', icon: User, tone: 'indigo', route: '/researcher-management' },
+      { id: 'related-websites', label: 'เว็บไซต์ที่เกี่ยวข้อง', icon: Search, tone: 'sky', route: '/researcher-management/related-websites' },
+      { id: 'expertise', label: 'ความเชี่ยวชาญ', icon: ShieldCheck, tone: 'violet', /*route: '/researcher-management/expertise' */ },
+      { id: 'research-projects', label: 'โครงการวิจัย', icon: Briefcase, tone: 'teal', /* route: '/researcher-management/projects' */ },
+      { id: 'academic-performance', label: 'ผลงานทางวิชาการ', icon: BookOpen, tone: 'amber', /* route: '/researcher-management/academic' */ },
+      { id: 'verify-instructor-info', label: 'ตรวจสอบข้อมูลอาจารย์', icon: ClipboardCheck, tone: 'emerald', /* route: '/researcher-management/verify' */ },
         ...(normalizedRole === "dept_head"
           ? [
               {
                 id: "member-dept-review",
                 label: "พิจารณาคำร้องของหัวหน้าสาขา",
                 icon: ArrowLeftRight,
+                tone: "rose",
                 route: `${MEMBER_BASE_PATH}/dept-review`,
               },
             ]
@@ -239,9 +246,9 @@ const visibleMenuItems = isExecutive
           <button
             onClick={() => handleMenuClick(item)}
             disabled={pendingRoute === `${ADMIN_BASE_PATH}/${item.id}`}
-            className={`portal-nav-item disabled:cursor-wait disabled:opacity-60 ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
+            className={`portal-nav-item group disabled:cursor-wait disabled:opacity-60 ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
           >
-            <item.icon size={20} />
+            <PortalNavIcon icon={item.icon} tone={item.tone} />
             <div className="flex-1 text-left">
               <span>{pendingRoute === `${ADMIN_BASE_PATH}/${item.id}` ? "กำลังเปิด..." : item.label}</span>
               {item.description && (
@@ -262,9 +269,9 @@ const visibleMenuItems = isExecutive
               <button
                 onClick={() => handleMenuClick(item)}
                 disabled={pendingRoute === item.route}
-                className="portal-nav-item disabled:cursor-wait disabled:opacity-60"
+                className="portal-nav-item group disabled:cursor-wait disabled:opacity-60"
               >
-                <item.icon size={20} />
+                <PortalNavIcon icon={item.icon} tone={item.tone} />
                 <div className="flex-1 text-left">
                   <span>{pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
                 </div>
@@ -279,9 +286,9 @@ const visibleMenuItems = isExecutive
         <PortalBackLink placement="nav" />
         <button
           onClick={handleLogout}
-          className="portal-nav-item portal-nav-item--danger"
+          className="portal-nav-item portal-nav-item--danger group"
         >
-          <LogOut size={20} />
+          <PortalNavIcon icon={LogOut} tone="red" />
           <span>ออกจากระบบ</span>
         </button>
       </div>

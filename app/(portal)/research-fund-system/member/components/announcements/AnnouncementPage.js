@@ -1,6 +1,8 @@
 // app/teacher/components/announcements/AnnouncementPage.js
 "use client";
 
+import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+
 import { useEffect, useMemo, useState } from "react";
 import { FileText, Eye, Download, Bell, BookOpen, CalendarClock } from "lucide-react";
 import apiClient, { announcementAPI, fundFormAPI, systemAPI } from "../../../../../lib/api";
@@ -915,23 +917,9 @@ export default function AnnouncementPage() {
       accessor: "title",
       className: "min-w-[24rem] align-top font-medium",
       headerClassName: "min-w-[24rem] text-left",
-      render: (value, row) => {
-        const fileName = row?.file_name || (row?.file_path ? getDownloadFileName(row.file_path) : null);
-        return (
-          <div className="flex max-w-md flex-col gap-1">
-            <span className="font-semibold text-slate-950">{value || "-"}</span>
-            {fileName ? (
-              <button
-                type="button"
-                onClick={() => handleViewFile(row, 'announcement')}
-                className="w-fit break-all text-left text-sm font-medium text-blue-700 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                {fileName}
-              </button>
-            ) : null}
-          </div>
-        );
-      }
+      render: (value) => (
+        <span className="block max-w-md font-semibold text-slate-950">{value || "-"}</span>
+      )
     },
     {
       header: "ปี",
@@ -1106,7 +1094,7 @@ export default function AnnouncementPage() {
     <PageLayout
       title="ประกาศกองทุนวิจัยและนวัตกรรม"
       subtitle="ดูประกาศ รอบการพิจารณา และแบบฟอร์มที่เกี่ยวข้องกับการขอทุน"
-      icon={Bell}
+      icon={RESEARCH_FUND_PAGE_ICONS.announcements}
       breadcrumbs={[
         { label: "หน้าแรก", href: "/research-fund-system/member" },
         { label: "ประกาศ" },

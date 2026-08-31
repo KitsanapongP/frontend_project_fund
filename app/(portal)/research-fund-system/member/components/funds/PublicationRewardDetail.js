@@ -92,6 +92,99 @@ const formatDate = (value) => {
   });
 };
 
+const parseAmount = (value) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") {
+    const cleaned = value.replace(/,/g, "").trim();
+    if (!cleaned) return null;
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const formatAmount = (value) =>
+  Number(value || 0).toLocaleString("th-TH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+const formatAmountParen = (value) => `(${formatAmount(Math.abs(Number(value || 0)))})`;
+
+const deriveRequestedSummary = (pubDetail = {}, submission = {}) => {
+  const rewardRaw = parseAmount(pubDetail?.reward_amount ?? submission?.reward_amount);
+  const revisionRaw = parseAmount(
+    pubDetail?.revision_fee ?? pubDetail?.editing_fee ?? submission?.revision_fee,
+  );
+  const publicationRaw = parseAmount(
+    pubDetail?.publication_fee ?? pubDetail?.page_charge ?? submission?.publication_fee,
+  );
+  const external = parseAmount(
+    pubDetail?.external_funding_amount ?? submission?.external_funding_amount,
+  ) ?? 0;
+  const hasBreakdown = rewardRaw != null || revisionRaw != null || publicationRaw != null;
+  const fallbackTotal = [
+    parseAmount(pubDetail?.total_amount),
+    parseAmount(submission?.total_amount),
+    parseAmount(submission?.requested_amount),
+  ].find((value) => value != null);
+  const baseTotal = Math.max(
+    0,
+    hasBreakdown
+      ? (rewardRaw ?? 0) + (revisionRaw ?? 0) + (publicationRaw ?? 0)
+      : (fallbackTotal ?? 0),
+  );
+
+  return {
+    reward: rewardRaw ?? (hasBreakdown ? 0 : baseTotal),
+    revision: revisionRaw ?? 0,
+    publication: publicationRaw ?? 0,
+    external,
+    baseTotal,
+    netTotal: Math.max(0, baseTotal - external),
+  };
+};
+
+const deriveApprovedSummary = (pubDetail = {}, submission = {}, requestedSummary) => {
+  const rewardRaw = parseAmount(
+    pubDetail?.reward_approve_amount ??
+      pubDetail?.reward_approved_amount ??
+      submission?.reward_approve_amount,
+  );
+  const revisionRaw = parseAmount(
+    pubDetail?.revision_fee_approve_amount ??
+      pubDetail?.revision_fee_approved_amount ??
+      submission?.revision_fee_approve_amount,
+  );
+  const publicationRaw = parseAmount(
+    pubDetail?.publication_fee_approve_amount ??
+      pubDetail?.publication_fee_approved_amount ??
+      submission?.publication_fee_approve_amount,
+  );
+  const hasBreakdown = rewardRaw != null || revisionRaw != null || publicationRaw != null;
+  const fallbackTotal = [
+    parseAmount(pubDetail?.total_approve_amount),
+    parseAmount(pubDetail?.approved_amount),
+    parseAmount(submission?.approved_amount),
+  ].find((value) => value != null);
+  const baseTotal = Math.max(
+    0,
+    hasBreakdown
+      ? (rewardRaw ?? 0) + (revisionRaw ?? 0) + (publicationRaw ?? 0)
+      : (fallbackTotal ?? requestedSummary.baseTotal),
+  );
+
+  return {
+    reward: rewardRaw ?? requestedSummary.reward,
+    revision: revisionRaw ?? requestedSummary.revision,
+    publication: publicationRaw ?? requestedSummary.publication,
+    external: requestedSummary.external,
+    baseTotal,
+    netTotal: Math.max(0, baseTotal - requestedSummary.external),
+  };
+};
+
 const firstNonEmpty = (...vals) => {
   for (const v of vals) {
     if (v === null || v === undefined) continue;
@@ -1015,36 +1108,13 @@ export default function PublicationRewardDetail({
     );
   }
 
-  // Approved amounts may come from different fields depending on API version
-  const toNumber = (val) =>
-    val !== undefined && val !== null ? Number(val) : null;
-
-  const approvedReward = toNumber(
-    pubDetail?.reward_approve_amount ?? pubDetail?.reward_approved_amount,
+  const requestedSummary = deriveRequestedSummary(pubDetail, submission);
+  const approvedSummary = deriveApprovedSummary(
+    pubDetail,
+    submission,
+    requestedSummary,
   );
-  const approvedRevision = toNumber(
-    pubDetail?.revision_fee_approve_amount ??
-      pubDetail?.revision_fee_approved_amount,
-  );
-  const approvedPublication = toNumber(
-    pubDetail?.publication_fee_approve_amount ??
-      pubDetail?.publication_fee_approved_amount,
-  );
-
-  const approvedTotalRaw =
-    pubDetail?.total_approve_amount ??
-    pubDetail?.approved_amount ??
-    submission.approved_amount ??
-    (approvedReward ?? 0) +
-      (approvedRevision ?? 0) +
-      (approvedPublication ?? 0);
-
-  const approvedTotal = toNumber(approvedTotalRaw);
-
-  const showApprovedColumn =
-    submission.status_id === 2 &&
-    approvedTotal !== null &&
-    !Number.isNaN(approvedTotal);
+  const showApprovedColumn = Number(submission.status_id) === 2;
 
   const applicant = getApplicant();
 
@@ -1306,13 +1376,13 @@ export default function PublicationRewardDetail({
           </div>
           <div className="text-right lg:text-right min-w-[200px]">
             <div className="text-2xl font-bold text-blue-600">
-              {formatCurrency(pubDetail.reward_amount || 0)}
+              {formatCurrency(requestedSummary.netTotal)}
             </div>
             <div className="text-sm text-slate-500">จำนวนเงินที่ขอ</div>
             {showApprovedColumn && (
               <div className="mt-2">
                 <div className="text-lg font-bold text-green-600">
-                  {formatCurrency(approvedTotal)}
+                  {formatCurrency(approvedSummary.netTotal)}
                 </div>
                 <div className="text-sm text-slate-500">จำนวนเงินที่อนุมัติ</div>
               </div>
@@ -1453,18 +1523,17 @@ export default function PublicationRewardDetail({
           </Card>
 
           {/* Financial Information */}
-          <Card title="ข้อมูลการเงิน (Financial Information)" icon={DollarSign} collapsible={false}>
-            <div className="space-y-4">
+          <Card title="ข้อมูลการเงิน (Request Information)" icon={DollarSign} collapsible={false}>
+            <div>
               {pubDetail.has_received_reward && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                   เคยขอเงินรางวัลแล้ว (ไม่คำนวณเงินรางวัล)
                 </div>
               )}
-              {/* Column headers */}
               <div
-                className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} pb-2 border-b text-sm text-slate-600`}
+                className={`hidden border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600 sm:grid ${showApprovedColumn ? "sm:grid-cols-[minmax(0,1fr)_10rem_10rem]" : "sm:grid-cols-[minmax(0,1fr)_10rem]"}`}
               >
-                <div></div>
+                <div>รายการ</div>
                 <div className="text-right">
                   <div>จำนวนที่ขอ</div>
                   <div className="text-xs text-slate-500">Requested Amount</div>
@@ -1476,89 +1545,84 @@ export default function PublicationRewardDetail({
                   </div>
                 )}
               </div>
-
-              {/* Requested reward */}
-              <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
-                <label className="block text-sm font-medium text-slate-700">
-                  เงินรางวัลที่ขอ
-                  <br />
-                  <span className="text-xs font-normal text-slate-600">Requested Reward Amount</span>
-                </label>
-                <span className="text-right font-semibold">
-                  {formatCurrency(pubDetail.reward_amount || 0)}
-                </span>
-                {showApprovedColumn && (
-                  <span className="text-right font-semibold">
-                    {approvedReward !== null ? formatCurrency(approvedReward) : "-"}
-                  </span>
-                )}
-              </div>
-
-              {/* Revision fee */}
-              {pubDetail.revision_fee > 0 && (
-                <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
-                  <label className="block text-sm font-medium text-slate-700">
-                    ค่าปรับปรุงบทความ
-                    <br />
-                    <span className="text-xs font-normal text-slate-600">Manuscript Editing Fee (Baht)</span>
-                  </label>
-                  <span className="text-right">{formatCurrency(pubDetail.revision_fee)}</span>
+              {[
+                {
+                  label: "เงินรางวัลที่ขอ",
+                  english: "Requested Reward Amount",
+                  requested: requestedSummary.reward,
+                  approved: approvedSummary.reward,
+                  emphasized: true,
+                },
+                {
+                  label: "ค่าปรับปรุงบทความ (A)",
+                  english: "Manuscript Editing Fee",
+                  requested: requestedSummary.revision,
+                  approved: approvedSummary.revision,
+                },
+                {
+                  label: "ค่าธรรมเนียมการตีพิมพ์ (B)",
+                  english: "Publication Fee",
+                  requested: requestedSummary.publication,
+                  approved: approvedSummary.publication,
+                },
+                {
+                  label: "รวมเบิกจ่ายภายนอก (C)",
+                  english: "External Funding",
+                  requested: requestedSummary.external,
+                  approved: approvedSummary.external,
+                  deduction: true,
+                },
+                {
+                  label: "เงินสมทบ (A + B - C)",
+                  english: "Contribution Amount",
+                  requested:
+                    requestedSummary.revision +
+                    requestedSummary.publication -
+                    requestedSummary.external,
+                  approved:
+                    approvedSummary.revision +
+                    approvedSummary.publication -
+                    approvedSummary.external,
+                  contribution: true,
+                },
+              ].map((row) => (
+                <div
+                  key={row.label}
+                  className={`grid gap-2 border-b border-slate-100 px-4 py-3 sm:items-center ${showApprovedColumn ? "sm:grid-cols-[minmax(0,1fr)_10rem_10rem]" : "sm:grid-cols-[minmax(0,1fr)_10rem]"}`}
+                >
+                  <div>
+                    <div className="text-sm font-medium text-slate-800">{row.label}</div>
+                    <div className="text-xs text-slate-500">{row.english}</div>
+                  </div>
+                  <div className={`flex items-baseline justify-between gap-3 text-right sm:block ${row.deduction ? "text-red-600" : row.contribution ? "text-blue-700" : "text-slate-800"} ${row.emphasized || row.contribution ? "font-semibold" : ""}`}>
+                    <span className="text-xs font-normal text-slate-500 sm:hidden">จำนวนที่ขอ</span>
+                    <span>{row.deduction ? formatAmountParen(row.requested) : formatAmount(row.requested)}฿</span>
+                  </div>
                   {showApprovedColumn && (
-                    <span className="text-right">
-                      {approvedRevision !== null ? formatCurrency(approvedRevision) : "-"}
-                    </span>
+                    <div className={`flex items-baseline justify-between gap-3 text-right sm:block ${row.deduction ? "text-red-600" : "text-green-700"} ${row.emphasized || row.contribution ? "font-semibold" : ""}`}>
+                      <span className="text-xs font-normal text-slate-500 sm:hidden">จำนวนที่อนุมัติ</span>
+                      <span>{row.deduction ? formatAmountParen(row.approved) : formatAmount(row.approved)}฿</span>
+                    </div>
                   )}
                 </div>
-              )}
+              ))}
 
-              {/* Publication fee */}
-              {pubDetail.publication_fee > 0 && (
-                <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
-                  <label className="block text-sm font-medium text-slate-700">
-                    ค่าธรรมเนียมการตีพิมพ์
-                    <br />
-                    <span className="text-xs font-normal text-slate-600">Page Charge</span>
-                  </label>
-                  <span className="text-right">{formatCurrency(pubDetail.publication_fee)}</span>
-                  {showApprovedColumn && (
-                    <span className="text-right">
-                      {approvedPublication !== null ? formatCurrency(approvedPublication) : "-"}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* External funding */}
-              {pubDetail.external_funding_amount > 0 && (
-                <div className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center`}>
-                  <label className="block text-sm font-medium text-slate-700">
-                    เงินสนับสนุนจากภายนอก
-                    <br />
-                    <span className="text-xs font-normal text-slate-600">External Funding Sources</span>
-                  </label>
-                  <span className="text-right text-red-600">
-                    {formatCurrency(-pubDetail.external_funding_amount)}
-                  </span>
-                  {showApprovedColumn && <span></span>}
-                </div>
-              )}
-
-              {/* Total */}
               <div
-                className={`grid ${showApprovedColumn ? "grid-cols-3" : "grid-cols-2"} items-center pt-2 border-t`}
+                className={`grid gap-2 rounded-b-lg bg-blue-50 px-4 py-4 sm:items-center ${showApprovedColumn ? "sm:grid-cols-[minmax(0,1fr)_10rem_10rem]" : "sm:grid-cols-[minmax(0,1fr)_10rem]"}`}
               >
-                <label className="block font-medium text-slate-700">
-                  รวมเบิกจากวิทยาลัยการคอม
-                  <br />
-                  <span className="text-xs font-normal text-slate-600">Total Reimbursement from CP-KKU</span>
-                </label>
-                <span className="text-right font-bold text-blue-600">
-                  {formatCurrency(pubDetail.total_amount || pubDetail.reward_amount || 0)}
-                </span>
+                <div>
+                  <div className="font-semibold text-slate-900">รวมจำนวนเงิน</div>
+                  <div className="text-xs text-slate-600">Total Amount</div>
+                </div>
+                <div className="flex items-baseline justify-between gap-3 text-right font-bold text-blue-700 sm:block">
+                  <span className="text-xs font-normal text-slate-500 sm:hidden">จำนวนที่ขอ</span>
+                  <span>{formatAmount(requestedSummary.netTotal)}฿</span>
+                </div>
                 {showApprovedColumn && (
-                  <span className="text-right font-bold text-green-600">
-                    {formatCurrency(approvedTotal)}
-                  </span>
+                  <div className="flex items-baseline justify-between gap-3 text-right font-bold text-green-700 sm:block">
+                    <span className="text-xs font-normal text-slate-500 sm:hidden">จำนวนที่อนุมัติ</span>
+                    <span>{formatAmount(approvedSummary.netTotal)}฿</span>
+                  </div>
                 )}
               </div>
             </div>
