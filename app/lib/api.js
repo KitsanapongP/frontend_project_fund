@@ -1267,6 +1267,12 @@ export const scopusBenchmarkAPI = {
   async comparison(params = {}) {
     return apiClient.get('/admin/scopus/benchmark/comparison', cleanParams(params));
   },
+  async insights(params = {}) {
+    return apiClient.get('/admin/scopus/benchmark/insights', cleanParams(params));
+  },
+  async topJournals(params = {}) {
+    return apiClient.get('/admin/scopus/benchmark/top-journals', cleanParams(params));
+  },
 };
 
 function cleanParams(params = {}) {
