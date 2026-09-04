@@ -21,6 +21,8 @@ const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 const CURRENT_YEAR = new Date().getFullYear();
 const COLORS = { faculty: "#2563eb", kku: "#0ea5e9", thailand: "#94a3b8" };
+const QUARTILE_COLORS = { q1: "#1d4ed8", q2: "#60a5fa", q3: "#93c5cf", q4: "#cbd5e1" };
+const TYPE_COLORS = { article: "#2563eb", conference: "#60a5fa", other: "#cbd5e1" };
 const LEVELS = [
   { key: "faculty", label: "คณะ", color: COLORS.faculty },
   { key: "kku", label: "KKU", color: COLORS.kku },
@@ -36,7 +38,8 @@ const pct = (value, digits = 1) => (value === null || value === undefined ? "–
 const q12Percent = (level) => {
   const q = level?.quartile;
   if (!level?.available || !q) return null;
-  return percent(Number(q.q1 || 0) + Number(q.q2 || 0), Number(q.q1 || 0) + Number(q.q2 || 0) + Number(q.q3 || 0) + Number(q.q4 || 0));
+  const classified = Number(q.q1 || 0) + Number(q.q2 || 0) + Number(q.q3 || 0) + Number(q.q4 || 0);
+  return percent(Number(q.q1 || 0) + Number(q.q2 || 0), classified);
 };
 
 function InfoTip({ text }) {
@@ -51,6 +54,19 @@ function InfoTip({ text }) {
         {text}
       </span>
     </span>
+  );
+}
+
+function SegTabs({ options, value, onChange, ariaLabel }) {
+  return (
+    <div role="group" aria-label={ariaLabel} className="inline-flex flex-wrap rounded-lg bg-slate-100 p-1 text-xs font-medium">
+      {options.map((option) => (
+        <button key={option.key} type="button" onClick={() => onChange(option.key)} aria-pressed={value === option.key}
+          className={`rounded-md px-3 py-1.5 ${value === option.key ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+          {option.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -95,8 +111,8 @@ function MiniBar({ label, value, color, highlight }) {
   );
 }
 
-function KpiCard({ icon: Icon, label, value, unit, delta, hint, color }) {
-  const deltaValue = delta === null ? null : Number(delta);
+function KpiCard({ icon: Icon, label, value, unit, delta, ytd, hint, color }) {
+  const deltaValue = delta === null || delta === undefined ? null : Number(delta);
   return (
     <article className="rounded-lg border border-slate-200 bg-white p-5">
       <div className="flex items-start justify-between gap-3">
@@ -105,17 +121,22 @@ function KpiCard({ icon: Icon, label, value, unit, delta, hint, color }) {
         </span>
         <InfoTip text={hint} />
       </div>
-      <div className="mt-4 text-xs font-medium text-slate-500">{label}</div>
+      <div className="mt-4 flex items-center gap-2 text-xs font-medium text-slate-500">
+        <span>{label}</span>
+        {ytd && <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">YTD</span>}
+      </div>
       <div className="mt-1 flex items-end gap-1.5">
         <span className="text-4xl font-bold leading-none tabular-nums text-slate-900">{value}</span>
         {unit && <span className="pb-0.5 text-sm text-slate-500">{unit}</span>}
       </div>
       <div className="mt-3 text-xs text-slate-500">
-        {deltaValue === null ? "ไม่มีข้อมูลปีก่อนหน้า" : (
-          <span className={deltaValue > 0 ? "text-green-700" : deltaValue < 0 ? "text-red-700" : "text-slate-500"}>
-            {deltaValue > 0 ? "+" : ""}{fmt(deltaValue, 1)}% จากปีก่อน
-          </span>
-        )}
+        {ytd ? "ข้อมูลบางส่วน (ยังไม่ครบปี)"
+          : deltaValue === null ? "ไม่มีข้อมูลปีก่อนหน้า"
+          : (
+            <span className={deltaValue > 0 ? "text-green-700" : deltaValue < 0 ? "text-red-700" : "text-slate-500"}>
+              {deltaValue > 0 ? "+" : ""}{fmt(deltaValue, 1)}% จากปีก่อน
+            </span>
+          )}
       </div>
     </article>
   );
@@ -139,6 +160,9 @@ export default function ScopusBenchmarkDashboard({
   comparison = [], loading, yearFrom, yearTo, onRangeChange, onRefresh, onGoSetup,
 }) {
   const [chartMode, setChartMode] = useState("count");
+  const [qualityMode, setQualityMode] = useState("q12");
+  const [impactMode, setImpactMode] = useState("oa");
+  const [typeMode, setTypeMode] = useState("count");
   const [deepYear, setDeepYear] = useState(yearTo);
   const [insights, setInsights] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(true);
@@ -186,36 +210,61 @@ export default function ScopusBenchmarkDashboard({
 
   const selectedRows = useMemo(() => rows.filter((row) => Number(row.year) >= yearFrom && Number(row.year) <= yearTo), [rows, yearFrom, yearTo]);
   const latest = [...selectedRows].reverse().find((row) => Number(row.faculty) > 0 || Number(row.university) > 0 || Number(row.country) > 0) || null;
+  const isYtd = latest ? Number(latest.year) === CURRENT_YEAR : false;
   const previous = latest ? selectedRows.find((row) => Number(row.year) === Number(latest.year) - 1) : null;
   const yoy = useCallback((key) => {
-    if (!latest || !previous || Number(previous[key]) <= 0) return null;
+    // Do not compare an incomplete current year to a full prior year.
+    if (isYtd || !latest || !previous || Number(previous[key]) <= 0) return null;
     return ((Number(latest[key] || 0) - Number(previous[key])) / Number(previous[key])) * 100;
-  }, [latest, previous]);
+  }, [isYtd, latest, previous]);
   const shareNow = latest ? percent(latest.faculty, latest.university) : null;
   const sharePrev = previous ? percent(previous.faculty, previous.university) : null;
-  const shareDelta = shareNow === null || sharePrev === null || sharePrev === 0 ? null : ((shareNow - sharePrev) / sharePrev) * 100;
+  const shareDelta = isYtd || shareNow === null || sharePrev === null || sharePrev === 0 ? null : ((shareNow - sharePrev) / sharePrev) * 100;
+  const rangeHasCurrentYear = selectedRows.some((row) => Number(row.year) === CURRENT_YEAR);
 
-  const chartOptions = useMemo(() => ({
+  const baseChart = useMemo(() => ({
     chart: { toolbar: { show: false }, fontFamily: "Sarabun, sans-serif", animations: { enabled: false } },
-    colors: [COLORS.faculty, COLORS.kku, COLORS.thailand],
     dataLabels: { enabled: false },
-    stroke: { curve: "smooth", width: 2.5 },
-    markers: { size: 3, strokeWidth: 0 },
     grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
-    legend: { position: "top", horizontalAlign: "left", fontSize: "12px" },
     xaxis: { categories: selectedRows.map((row) => String(row.year)), axisBorder: { color: "#cbd5e1" }, axisTicks: { show: false } },
-    yaxis: { min: 0, labels: { formatter: (value) => chartMode === "share" ? `${fmt(value, 0)}%` : fmt(value) } },
-    tooltip: { shared: true, intersect: false, y: { formatter: (value) => chartMode === "share" ? pct(value) : `${fmt(value)} ผลงาน` } },
-  }), [chartMode, selectedRows]);
-  const chartSeries = useMemo(() => chartMode === "count" ? [
-    { name: "คณะ", data: selectedRows.map((row) => Number(row.faculty || 0)) },
-    { name: "KKU", data: selectedRows.map((row) => Number(row.university || 0)) },
-    { name: "Thailand", data: selectedRows.map((row) => Number(row.country || 0)) },
-  ] : [
-    { name: "คณะ / KKU", data: selectedRows.map((row) => Number((percent(row.faculty, row.university) || 0).toFixed(2))) },
-    { name: "KKU / Thailand", data: selectedRows.map((row) => Number((percent(row.university, row.country) || 0).toFixed(2))) },
-    { name: "คณะ / Thailand", data: selectedRows.map((row) => Number((percent(row.faculty, row.country) || 0).toFixed(2))) },
-  ], [chartMode, selectedRows]);
+  }), [selectedRows]);
+
+  const facultyArr = selectedRows.map((row) => Number(row.faculty || 0));
+  const kkuArr = selectedRows.map((row) => Number(row.university || 0));
+  const thailandArr = selectedRows.map((row) => Number(row.country || 0));
+
+  const trendSeries = useMemo(() => {
+    const mk = (name, data) => ({ name, data });
+    if (chartMode === "index") {
+      const rebase = (arr) => {
+        const base = arr.find((value) => value > 0) || 0;
+        return base ? arr.map((value) => Number(((value / base) * 100).toFixed(1))) : arr.map(() => null);
+      };
+      return [mk("คณะ", rebase(facultyArr)), mk("KKU", rebase(kkuArr)), mk("Thailand", rebase(thailandArr))];
+    }
+    if (chartMode === "yoy") {
+      const growth = (arr) => arr.map((value, index) => (index === 0 || !arr[index - 1] ? null : Number((((value - arr[index - 1]) / arr[index - 1]) * 100).toFixed(1))));
+      return [mk("คณะ", growth(facultyArr)), mk("KKU", growth(kkuArr)), mk("Thailand", growth(thailandArr))];
+    }
+    return [mk("คณะ", facultyArr), mk("KKU", kkuArr), mk("Thailand", thailandArr)];
+  }, [chartMode, facultyArr, kkuArr, thailandArr]);
+
+  const trendOptions = useMemo(() => {
+    const suffix = chartMode === "count" ? " ผลงาน" : chartMode === "yoy" ? "%" : "";
+    const yFormat = chartMode === "count" ? (value) => fmt(value)
+      : chartMode === "yoy" ? (value) => `${fmt(value, 0)}%`
+      : (value) => fmt(value, 0);
+    return {
+      ...baseChart,
+      colors: [COLORS.faculty, COLORS.kku, COLORS.thailand],
+      stroke: { curve: "smooth", width: 2.5 },
+      markers: { size: 3, strokeWidth: 0 },
+      legend: { position: "top", horizontalAlign: "left", fontSize: "12px" },
+      yaxis: { labels: { formatter: yFormat } },
+      annotations: chartMode === "index" ? { yaxis: [{ y: 100, borderColor: "#94a3b8", strokeDashArray: 3, label: { text: "ฐาน 100", style: { fontSize: "10px", color: "#64748b", background: "transparent" } } }] } : {},
+      tooltip: { shared: true, intersect: false, y: { formatter: (value) => (value === null ? "–" : `${fmt(value, chartMode === "count" ? 0 : 1)}${suffix}`) } },
+    };
+  }, [baseChart, chartMode]);
 
   const availableLevels = LEVELS.filter(({ key }) => insights?.levels?.[key]?.available);
   const thailandMissing = insights && !insights.levels?.thailand?.available;
@@ -223,19 +272,54 @@ export default function ScopusBenchmarkDashboard({
   const coveragePct = percent(coverage?.classified, coverage?.total);
   const maxJournalDocs = Math.max(...journals.map((journal) => Number(journal.docs || 0)), 1);
 
-  const deepBarOptions = (max = 100, suffix = "%") => ({
+  // Horizontal comparison bar (one value per level)
+  const levelBarOptions = (suffix = "%", max) => ({
     chart: { toolbar: { show: false }, fontFamily: "Sarabun, sans-serif", animations: { enabled: false } },
-    colors: availableLevels.map((level) => level.color), dataLabels: { enabled: true, formatter: (value) => `${fmt(value, 0)}${suffix}` },
-    legend: { show: false }, grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
-    plotOptions: { bar: { horizontal: true, borderRadius: 3, barHeight: "55%" } },
-    xaxis: { categories: availableLevels.map((level) => level.label), max, labels: { formatter: (value) => `${fmt(value, 0)}${suffix}` } },
+    colors: availableLevels.map((level) => level.color),
+    dataLabels: { enabled: true, formatter: (value) => `${fmt(value, suffix === "%" ? 0 : 1)}${suffix}`, style: { colors: ["#0f172a"], fontSize: "11px" }, offsetX: 12 },
+    legend: { show: false },
+    grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
+    plotOptions: { bar: { horizontal: true, borderRadius: 3, barHeight: "55%", distributed: true } },
+    xaxis: { categories: availableLevels.map((level) => level.label), max, labels: { formatter: (value) => `${fmt(value, suffix === "%" ? 0 : 1)}${suffix}` } },
     tooltip: { y: { formatter: (value) => `${fmt(value, 1)}${suffix}` } },
   });
+
+  // 100% stacked horizontal (quartile distribution / doctype share)
+  const stacked100Options = (categories, colors) => ({
+    chart: { toolbar: { show: false }, stacked: true, stackType: "100%", fontFamily: "Sarabun, sans-serif", animations: { enabled: false } },
+    colors,
+    dataLabels: { enabled: true, formatter: (value) => (value >= 8 ? `${Math.round(value)}%` : ""), style: { fontSize: "10px", colors: ["#0f172a"] } },
+    legend: { position: "bottom", fontSize: "12px" },
+    grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
+    plotOptions: { bar: { horizontal: true, borderRadius: 2, barHeight: "58%" } },
+    xaxis: { categories, labels: { formatter: (value) => `${fmt(value, 0)}%` }, max: 100 },
+    tooltip: { y: { formatter: (value) => fmt(value) } },
+  });
+  // absolute stacked (doctype count)
+  const stackedCountOptions = (categories, colors) => ({
+    chart: { toolbar: { show: false }, stacked: true, fontFamily: "Sarabun, sans-serif", animations: { enabled: false } },
+    colors,
+    dataLabels: { enabled: false },
+    legend: { position: "bottom", fontSize: "12px" },
+    grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
+    plotOptions: { bar: { horizontal: true, borderRadius: 2, barHeight: "58%" } },
+    xaxis: { categories, labels: { formatter: (value) => fmt(value) } },
+    tooltip: { y: { formatter: (value) => `${fmt(value)} ผลงาน` } },
+  });
+
+  const impactValues = (key) => availableLevels.map((level) => Number(insights?.levels?.[level.key]?.[key] || 0));
+  const quartileSeries = ["q1", "q2", "q3", "q4"].map((q) => ({ name: q.toUpperCase(), data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.quartile?.[q] || 0)) }));
+  const typeSeries = [
+    { name: "Article", data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.doctypes?.article || 0)) },
+    { name: "Conference", data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.doctypes?.conference || 0)) },
+    { name: "Other", data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.doctypes?.other || 0)) },
+  ];
+  const levelCategories = availableLevels.map((level) => level.label);
 
   const exportCsv = () => {
     const header = ["year", "faculty", "kku", "thailand", "faculty_kku_pct", "faculty_thailand_pct"];
     const lines = selectedRows.map((row) => [row.year, row.faculty ?? "", row.university ?? "", row.country ?? "", percent(row.faculty, row.university)?.toFixed(2) ?? "", percent(row.faculty, row.country)?.toFixed(2) ?? ""]);
-    const blob = new Blob(["\uFEFF" + [header, ...lines].map((line) => line.join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob(["﻿" + [header, ...lines].map((line) => line.join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -266,7 +350,7 @@ export default function ScopusBenchmarkDashboard({
       <section className="rounded-lg border border-blue-200 bg-blue-50 p-5 lg:p-6">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-stretch">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-blue-700"><Sparkles size={16} aria-hidden="true" /> BENCHMARK INSIGHT <InfoTip text="สรุปจุดเด่นของคณะจากข้อมูล document-level ในปีที่เลือก" /></div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-blue-700"><Sparkles size={16} aria-hidden="true" /> ภาพรวมจุดเด่นของคณะ <InfoTip text="สรุปจุดเด่นของคณะจากข้อมูล document-level ในปีที่เลือก" /></div>
             <h2 className="mt-3 text-2xl font-semibold leading-snug text-slate-950">
               ภาพรวมคุณภาพและเครือข่ายงานวิจัย Computer Science
             </h2>
@@ -301,16 +385,14 @@ export default function ScopusBenchmarkDashboard({
       {thailandMissing && <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">Thailand ยังไม่มีข้อมูล document-level ในปี {deepYear} — ส่วนเชิงลึกจะแสดงเฉพาะคณะเทียบกับ KKU</div>}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard icon={FileText} label={`ผลงานคณะ · ${latest?.year || "–"}`} value={fmt(latest?.faculty)} unit="ผลงาน" delta={yoy("faculty")} color={COLORS.faculty} hint="จำนวนผลงาน Computer Science ที่ยืนยันผู้แต่งคณะในปีล่าสุดของช่วงที่เลือก เทียบ YoY กับปีก่อนหน้า" />
-        <KpiCard icon={BarChart3} label={`ผลงาน KKU · ${latest?.year || "–"}`} value={fmt(latest?.university)} unit="ผลงาน" delta={yoy("university")} color={COLORS.kku} hint="จำนวนผลงาน Computer Science ทั้งมหาวิทยาลัยขอนแก่นในปีล่าสุดของช่วงที่เลือก" />
-        <KpiCard icon={Globe2} label={`ผลงาน Thailand · ${latest?.year || "–"}`} value={fmt(latest?.country)} unit="ผลงาน" delta={yoy("country")} color={COLORS.thailand} hint="จำนวนผลงาน Computer Science ที่มีหน่วยงานในประเทศไทยในปีล่าสุดของช่วงที่เลือก" />
-        <KpiCard icon={TrendingUp} label={`สัดส่วนคณะ / KKU · ${latest?.year || "–"}`} value={pct(shareNow, 1)} delta={shareDelta} color="#16a34a" hint="จำนวนผลงานคณะหารด้วยจำนวนผลงาน KKU ในปีเดียวกัน พร้อมการเปลี่ยนแปลงเทียบปีก่อน" />
+        <KpiCard icon={FileText} label={`ผลงานคณะ · ${latest?.year || "–"}`} value={fmt(latest?.faculty)} unit="ผลงาน" delta={yoy("faculty")} ytd={isYtd} color={COLORS.faculty} hint="จำนวนผลงาน Computer Science ที่ยืนยันผู้แต่งคณะในปีล่าสุดของช่วงที่เลือก เทียบ YoY กับปีก่อนหน้า (ปีที่ยังไม่ครบจะแสดงเป็น YTD)" />
+        <KpiCard icon={BarChart3} label={`ผลงาน KKU · ${latest?.year || "–"}`} value={fmt(latest?.university)} unit="ผลงาน" delta={yoy("university")} ytd={isYtd} color={COLORS.kku} hint="จำนวนผลงาน Computer Science ทั้งมหาวิทยาลัยขอนแก่นในปีล่าสุดของช่วงที่เลือก" />
+        <KpiCard icon={Globe2} label={`ผลงาน Thailand · ${latest?.year || "–"}`} value={fmt(latest?.country)} unit="ผลงาน" delta={yoy("country")} ytd={isYtd} color={COLORS.thailand} hint="จำนวนผลงาน Computer Science ที่มีหน่วยงานในประเทศไทยในปีล่าสุดของช่วงที่เลือก" />
+        <KpiCard icon={TrendingUp} label={`สัดส่วนคณะ / KKU · ${latest?.year || "–"}`} value={pct(shareNow, 1)} delta={shareDelta} ytd={isYtd} color="#16a34a" hint="จำนวนผลงานคณะหารด้วยจำนวนผลงาน KKU ในปีเดียวกัน พร้อมการเปลี่ยนแปลงเทียบปีก่อน (ยกเว้นปีที่ยังไม่ครบ)" />
       </div>
 
-      {Number(latest?.year) === CURRENT_YEAR && <div className="inline-flex rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">{CURRENT_YEAR} · ข้อมูลบางส่วน</div>}
-
       <div className="grid gap-5 xl:grid-cols-3">
-        <Panel title="แนวโน้มรายปี" info="กราฟ 3 ระดับตามช่วงปีที่เลือก สลับระหว่างจำนวนผลงานและสัดส่วนเปรียบเทียบได้" className="xl:col-span-2"
+        <Panel title="แนวโน้มรายปี" info="เทียบ 3 ระดับตามช่วงปี · จำนวน = ค่าจริง, ดัชนี = ปีฐาน 100 (เทียบทิศทางแม้จำนวนต่างกันมาก), YoY = อัตราเติบโตเทียบปีก่อน" className="xl:col-span-2"
           action={<div className="flex flex-wrap items-center gap-2">
             <select aria-label="ปีเริ่มต้น" value={yearFrom} onChange={(event) => updateBoundary("from", event.target.value)} className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">{yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}</select>
             <span className="text-xs text-slate-400">ถึง</span>
@@ -319,46 +401,57 @@ export default function ScopusBenchmarkDashboard({
             <button type="button" onClick={() => applyPreset(10)} className="rounded-md bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200">10 ปี</button>
             <button type="button" aria-label="รีเฟรชข้อมูล" onClick={onRefresh} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-blue-600"><RefreshCw size={15} aria-hidden="true" /></button>
           </div>}>
-          <div className="mb-2 inline-flex rounded-lg bg-slate-100 p-1 text-xs font-medium">
-            {[{ key: "count", label: "จำนวน" }, { key: "share", label: "สัดส่วน %" }].map((mode) => <button key={mode.key} type="button" onClick={() => setChartMode(mode.key)} className={`rounded-md px-3 py-1.5 ${chartMode === mode.key ? "bg-white text-blue-700 shadow-sm" : "text-slate-500"}`}>{mode.label}</button>)}
+          <div className="mb-2">
+            <SegTabs ariaLabel="มุมมองกราฟแนวโน้ม" value={chartMode} onChange={setChartMode}
+              options={[{ key: "count", label: "จำนวน" }, { key: "index", label: "ดัชนี (100)" }, { key: "yoy", label: "YoY %" }]} />
           </div>
-          <ApexChart key={`${chartMode}-${yearFrom}-${yearTo}`} type="line" height={330} options={chartOptions} series={chartSeries} />
+          <ApexChart key={`${chartMode}-${yearFrom}-${yearTo}`} type="line" height={330} options={trendOptions} series={trendSeries} />
+          {chartMode === "yoy" && rangeHasCurrentYear && <p className="mt-1 text-xs text-slate-400">* ปี {CURRENT_YEAR} เป็น YTD — อัตราเติบโตอาจต่ำเพราะข้อมูลยังไม่ครบปี</p>}
+          {chartMode === "index" && <p className="mt-1 text-xs text-slate-400">แต่ละระดับตั้งปีแรกของช่วง = 100 เพื่อเทียบทิศทางการเติบโต</p>}
         </Panel>
 
-        <Panel title="คุณภาพวารสาร" info="สัดส่วน Q1+Q2 จากเอกสารที่มี CiteScore quartile ในแต่ละระดับสำหรับปี deep-dive ที่เลือก"
+        <Panel title="คุณภาพวารสาร" info="CiteScore quartile ต่อระดับสำหรับปี deep-dive ที่เลือก · Q1+Q2 = สัดส่วนคุณภาพสูง, การกระจาย = โครงสร้าง Q1–Q4"
           action={<select aria-label="ปีข้อมูลเชิงลึก" value={deepYear} onChange={(event) => setDeepYear(Number(event.target.value))} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">{deepYears.filter((year) => year >= yearFrom && year <= yearTo).map((year) => <option key={year} value={year}>{year}</option>)}</select>}>
+          <div className="mb-2"><SegTabs ariaLabel="มุมมองคุณภาพวารสาร" value={qualityMode} onChange={setQualityMode} options={[{ key: "q12", label: "Q1+Q2" }, { key: "dist", label: "การกระจาย Q1–Q4" }]} /></div>
           {insightsLoading ? <div className="h-64 animate-pulse rounded-md bg-slate-100" /> : availableLevels.length ? <>
-            <ApexChart type="bar" height={245} options={deepBarOptions()} series={[{ name: "Q1+Q2", data: availableLevels.map((level) => Number((q12Percent(insights?.levels?.[level.key]) || 0).toFixed(2))) }]} />
+            {qualityMode === "q12"
+              ? <ApexChart type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "Q1+Q2", data: availableLevels.map((level) => Number((q12Percent(insights?.levels?.[level.key]) || 0).toFixed(2))) }]} />
+              : <ApexChart type="bar" height={230} options={stacked100Options(levelCategories, [QUARTILE_COLORS.q1, QUARTILE_COLORS.q2, QUARTILE_COLORS.q3, QUARTILE_COLORS.q4])} series={quartileSeries} />}
             <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">อิงวารสารที่มีค่า CiteScore {pct(coveragePct, 1)} ({fmt(coverage?.classified)}/{fmt(coverage?.total)} ผลงาน)</div>
           </> : <div className="py-16 text-center text-sm text-slate-400">ไม่มีข้อมูลเชิงลึกในปีนี้</div>}
         </Panel>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Panel title="Open Access" info="ร้อยละของเอกสารที่ Scopus ระบุ openaccess_flag = 1 ในปีที่เลือก">
-          {insightsLoading ? <div className="h-52 animate-pulse bg-slate-100" /> : <ApexChart type="bar" height={220} options={deepBarOptions()} series={[{ name: "Open Access", data: availableLevels.map((level) => insights?.levels?.[level.key]?.oa_pct || 0) }]} />}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Panel title="ตัวชี้วัดผลกระทบ" info="เทียบ 3 ระดับสำหรับปี deep-dive · Open Access = อ่านฟรี, นานาชาติ = มีผู้ร่วมแต่งต่างประเทศ, อ้างอิง/ชิ้น = citations เฉลี่ยต่อเอกสาร"
+          action={<SegTabs ariaLabel="ตัวชี้วัดผลกระทบ" value={impactMode} onChange={setImpactMode} options={[{ key: "oa", label: "Open Access" }, { key: "intl", label: "นานาชาติ" }, { key: "cpd", label: "อ้างอิง/ชิ้น" }]} />}>
+          {insightsLoading ? <div className="h-52 animate-pulse rounded-md bg-slate-100" /> : availableLevels.length ? <>
+            {impactMode === "oa" && <ApexChart type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "Open Access", data: impactValues("oa_pct") }]} />}
+            {impactMode === "intl" && <ApexChart type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "นานาชาติ", data: impactValues("intl_pct") }]} />}
+            {impactMode === "cpd" && <><ApexChart type="bar" height={230} options={levelBarOptions("", undefined)} series={[{ name: "อ้างอิง/ชิ้น", data: impactValues("avg_cite") }]} />
+              <p className="mt-1 text-xs text-slate-400">การอ้างอิงสะสมตามเวลา — ปีล่าสุดจะต่ำเพราะเพิ่งตีพิมพ์</p></>}
+          </> : <div className="py-16 text-center text-sm text-slate-400">ไม่มีข้อมูลเชิงลึกในปีนี้</div>}
         </Panel>
-        <Panel title="ความร่วมมือต่างชาติ" info="ร้อยละของเอกสารที่มีหน่วยงานผู้แต่งอย่างน้อยหนึ่งแห่งอยู่นอกประเทศไทย">
-          {insightsLoading ? <div className="h-52 animate-pulse bg-slate-100" /> : <ApexChart type="bar" height={220} options={deepBarOptions()} series={[{ name: "International", data: availableLevels.map((level) => insights?.levels?.[level.key]?.intl_pct || 0) }]} />}
-        </Panel>
-        <Panel title="ประเภทผลงาน" info="จำแนก Scopus subtype เป็น Article, Conference Paper และ Other สำหรับปีที่เลือก">
-          {insightsLoading ? <div className="h-52 animate-pulse bg-slate-100" /> : <ApexChart type="bar" height={220} options={{ ...deepBarOptions(undefined, ""), colors: ["#2563eb", "#60a5fa", "#cbd5e1"], chart: { ...deepBarOptions().chart, stacked: true }, dataLabels: { enabled: false }, legend: { show: true, position: "bottom" }, xaxis: { categories: availableLevels.map((level) => level.label), labels: { formatter: (value) => fmt(value) } } }} series={[
-            { name: "Article", data: availableLevels.map((level) => insights?.levels?.[level.key]?.doctypes?.article || 0) },
-            { name: "Conference", data: availableLevels.map((level) => insights?.levels?.[level.key]?.doctypes?.conference || 0) },
-            { name: "Other", data: availableLevels.map((level) => insights?.levels?.[level.key]?.doctypes?.other || 0) },
-          ]} />}
+
+        <Panel title="ประเภทผลงาน" info="Article / Conference / Other ต่อระดับสำหรับปี deep-dive · เลือกดูจำนวนจริงหรือสัดส่วน %"
+          action={<SegTabs ariaLabel="มุมมองประเภทผลงาน" value={typeMode} onChange={setTypeMode} options={[{ key: "count", label: "จำนวน" }, { key: "pct", label: "สัดส่วน %" }]} />}>
+          {insightsLoading ? <div className="h-52 animate-pulse rounded-md bg-slate-100" /> : availableLevels.length
+            ? <ApexChart type="bar" height={230}
+                options={(typeMode === "pct" ? stacked100Options : stackedCountOptions)(levelCategories, [TYPE_COLORS.article, TYPE_COLORS.conference, TYPE_COLORS.other])}
+                series={typeSeries} />
+            : <div className="py-16 text-center text-sm text-slate-400">ไม่มีข้อมูลเชิงลึกในปีนี้</div>}
         </Panel>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="วารสารเด่นของ KKU" info="วารสารที่ผลงาน KKU ในชุด benchmark ทุกปีตีพิมพ์บ่อยที่สุด เรียงตามจำนวนเอกสาร">
+        <Panel title="วารสารเด่นของ KKU" info="วารสารที่ผลงาน KKU ในชุด benchmark ทุกปีตีพิมพ์บ่อยที่สุด เรียงตามจำนวนเอกสาร · ตัวเลขอ้างอิงคือ Citations ต่อเอกสาร (เฉลี่ย)">
           {journalsError ? <p className="text-sm text-red-700">{journalsError}</p> : journals.length ? <div className="space-y-3">{journals.map((journal, index) => <div key={`${journal.name}-${index}`}>
-            <div className="flex items-start justify-between gap-4 text-xs"><span className="min-w-0 text-slate-700"><span className="mr-2 font-semibold text-slate-400">{index + 1}</span>{journal.name}</span><span className="shrink-0 tabular-nums text-slate-500">{fmt(journal.docs)} · cite {fmt(journal.avg_cite, 1)}</span></div>
+            <div className="flex items-start justify-between gap-4 text-xs"><span className="min-w-0 text-slate-700"><span className="mr-2 font-semibold text-slate-400">{index + 1}</span>{journal.name}</span><span className="shrink-0 tabular-nums text-slate-500">{fmt(journal.docs)} ผลงาน · {fmt(journal.avg_cite, 1)} อ้างอิง/ชิ้น</span></div>
             <div className="mt-1.5 h-1.5 bg-slate-100"><div className="h-full bg-sky-500" style={{ width: `${(Number(journal.docs) / maxJournalDocs) * 100}%` }} /></div>
           </div>)}</div> : <div className="py-12 text-center text-sm text-slate-400">ยังไม่มีข้อมูลวารสาร</div>}
         </Panel>
         <Panel title="การมีส่วนร่วมของคณะ" info="สัดส่วนผลงานคณะต่อผลงาน KKU ในแต่ละปีของช่วงที่เลือก ยิ่งสูงยิ่งสะท้อนส่วนร่วมของคณะมาก">
-          <ApexChart type="area" height={300} options={{ ...chartOptions, colors: [COLORS.faculty], fill: { type: "solid", opacity: 0.12 }, yaxis: { min: 0, labels: { formatter: (value) => `${fmt(value, 0)}%` } }, legend: { show: false } }} series={[{ name: "คณะ / KKU", data: selectedRows.map((row) => Number((percent(row.faculty, row.university) || 0).toFixed(2))) }]} />
+          <ApexChart type="area" height={300} options={{ ...baseChart, colors: [COLORS.faculty], stroke: { curve: "smooth", width: 2.5 }, fill: { type: "solid", opacity: 0.12 }, yaxis: { min: 0, labels: { formatter: (value) => `${fmt(value, 0)}%` } }, legend: { show: false }, tooltip: { y: { formatter: (value) => pct(value) } } }} series={[{ name: "คณะ / KKU", data: selectedRows.map((row) => Number((percent(row.faculty, row.university) || 0).toFixed(2))) }]} />
         </Panel>
       </div>
 
