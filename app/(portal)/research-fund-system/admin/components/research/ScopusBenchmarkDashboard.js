@@ -21,7 +21,7 @@ const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 const CURRENT_YEAR = new Date().getFullYear();
 const COLORS = { faculty: "#2563eb", kku: "#0ea5e9", thailand: "#94a3b8" };
-const QUARTILE_COLORS = { q1: "#1d4ed8", q2: "#60a5fa", q3: "#93c5cf", q4: "#cbd5e1" };
+const QUARTILE_COLORS = { t1: "#1e3a8a", q1: "#2563eb", q2: "#60a5fa", q3: "#a5c8e0", q4: "#cbd5e1" };
 const TYPE_COLORS = { article: "#2563eb", conference: "#60a5fa", other: "#cbd5e1" };
 const LEVELS = [
   { key: "faculty", label: "คณะ", color: COLORS.faculty },
@@ -35,11 +35,14 @@ const fmt = (value, digits = 0) => {
 };
 const percent = (part, whole) => (Number(whole) > 0 ? (Number(part || 0) / Number(whole)) * 100 : null);
 const pct = (value, digits = 1) => (value === null || value === undefined ? "–" : `${fmt(value, digits)}%`);
+// High-quality share = T1+Q1+Q2 over all tiered journals. T1 (top 10%) is carved
+// out of Q1 by the API, so including it here keeps the metric complete.
 const q12Percent = (level) => {
   const q = level?.quartile;
   if (!level?.available || !q) return null;
-  const classified = Number(q.q1 || 0) + Number(q.q2 || 0) + Number(q.q3 || 0) + Number(q.q4 || 0);
-  return percent(Number(q.q1 || 0) + Number(q.q2 || 0), classified);
+  const t1 = Number(q.t1 || 0);
+  const classified = t1 + Number(q.q1 || 0) + Number(q.q2 || 0) + Number(q.q3 || 0) + Number(q.q4 || 0);
+  return percent(t1 + Number(q.q1 || 0) + Number(q.q2 || 0), classified);
 };
 
 function InfoTip({ text }) {
@@ -308,7 +311,7 @@ export default function ScopusBenchmarkDashboard({
   });
 
   const impactValues = (key) => availableLevels.map((level) => Number(insights?.levels?.[level.key]?.[key] || 0));
-  const quartileSeries = ["q1", "q2", "q3", "q4"].map((q) => ({ name: q.toUpperCase(), data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.quartile?.[q] || 0)) }));
+  const quartileSeries = ["t1", "q1", "q2", "q3", "q4"].map((q) => ({ name: q.toUpperCase(), data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.quartile?.[q] || 0)) }));
   const typeSeries = [
     { name: "Article", data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.doctypes?.article || 0)) },
     { name: "Conference", data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.doctypes?.conference || 0)) },
@@ -355,17 +358,17 @@ export default function ScopusBenchmarkDashboard({
               ภาพรวมคุณภาพและเครือข่ายงานวิจัย Computer Science
             </h2>
             <p className="mt-2 max-w-3xl text-sm text-slate-600">
-              ปี {deepYear}: ผลงานคณะอยู่ในวารสาร Q1–Q2 {pct(q12Percent(insights?.levels?.faculty), 0)} และมีความร่วมมือต่างชาติ {pct(insights?.levels?.faculty?.intl_pct, 0)}
+              ปี {deepYear}: ผลงานคณะอยู่ในวารสารคุณภาพสูง (T1+Q1+Q2) {pct(q12Percent(insights?.levels?.faculty), 0)} และมีความร่วมมือต่างชาติ {pct(insights?.levels?.faculty?.intl_pct, 0)}
             </p>
             <p className="mt-4 border-l-2 border-blue-600 pl-3 text-sm font-medium text-slate-700">
               {q12Percent(insights?.levels?.faculty) >= q12Percent(insights?.levels?.kku)
-                ? "คณะมีสัดส่วนผลงาน Q1–Q2 สูงกว่าหรือเท่าภาพรวม KKU ในปีที่เลือก"
+                ? "คณะมีสัดส่วนวารสารคุณภาพสูง (T1+Q1+Q2) สูงกว่าหรือเท่าภาพรวม KKU ในปีที่เลือก"
                 : "คุณภาพวารสารของคณะยังมีช่องว่างเมื่อเทียบกับภาพรวม KKU ในปีที่เลือก"}
             </p>
           </div>
           <div className="grid min-w-0 flex-1 gap-4 md:grid-cols-2">
             <div className="rounded-lg border border-blue-100 bg-white/80 p-4">
-              <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-800">ผลงาน Q1–Q2 <InfoTip text="สัดส่วนเอกสาร Q1 และ Q2 ต่อเอกสารที่จับคู่ CiteScore quartile ได้ในแต่ละระดับ" /></div>
+              <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-800">วารสารคุณภาพสูง (T1+Q1+Q2) <InfoTip text="สัดส่วนวารสารคุณภาพสูง — T1 (Top 10%, percentile ≥ 90) บวก Q1 และ Q2 ต่อเอกสารที่จับคู่ CiteScore ได้ · T1 แยกจาก Q1 ไม่นับซ้ำ" /></div>
               <div className="space-y-2">{availableLevels.map((level) => <MiniBar key={level.key} label={level.label} value={q12Percent(insights?.levels?.[level.key])} color={level.color} highlight={level.key === "faculty"} />)}</div>
             </div>
             <div className="rounded-lg border border-blue-100 bg-white/80 p-4">
@@ -410,13 +413,13 @@ export default function ScopusBenchmarkDashboard({
           {chartMode === "index" && <p className="mt-1 text-xs text-slate-400">แต่ละระดับตั้งปีแรกของช่วง = 100 เพื่อเทียบทิศทางการเติบโต</p>}
         </Panel>
 
-        <Panel title="คุณภาพวารสาร" info="CiteScore quartile ต่อระดับสำหรับปี deep-dive ที่เลือก · Q1+Q2 = สัดส่วนคุณภาพสูง, การกระจาย = โครงสร้าง Q1–Q4"
+        <Panel title="คุณภาพวารสาร" info="CiteScore tier ต่อระดับสำหรับปี deep-dive · T1 = Top 10% (percentile ≥ 90) แยกจาก Q1 ไม่นับซ้ำ · conference ไม่จัดเข้ากลุ่ม tier · T1+Q1+Q2 = คุณภาพสูง, การกระจาย = โครงสร้าง T1–Q4"
           action={<select aria-label="ปีข้อมูลเชิงลึก" value={deepYear} onChange={(event) => setDeepYear(Number(event.target.value))} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">{deepYears.filter((year) => year >= yearFrom && year <= yearTo).map((year) => <option key={year} value={year}>{year}</option>)}</select>}>
-          <div className="mb-2"><SegTabs ariaLabel="มุมมองคุณภาพวารสาร" value={qualityMode} onChange={setQualityMode} options={[{ key: "q12", label: "Q1+Q2" }, { key: "dist", label: "การกระจาย Q1–Q4" }]} /></div>
+          <div className="mb-2"><SegTabs ariaLabel="มุมมองคุณภาพวารสาร" value={qualityMode} onChange={setQualityMode} options={[{ key: "q12", label: "T1+Q1+Q2" }, { key: "dist", label: "การกระจาย T1–Q4" }]} /></div>
           {insightsLoading ? <div className="h-64 animate-pulse rounded-md bg-slate-100" /> : availableLevels.length ? <>
             {qualityMode === "q12"
-              ? <ApexChart type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "Q1+Q2", data: availableLevels.map((level) => Number((q12Percent(insights?.levels?.[level.key]) || 0).toFixed(2))) }]} />
-              : <ApexChart type="bar" height={230} options={stacked100Options(levelCategories, [QUARTILE_COLORS.q1, QUARTILE_COLORS.q2, QUARTILE_COLORS.q3, QUARTILE_COLORS.q4])} series={quartileSeries} />}
+              ? <ApexChart type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "T1+Q1+Q2", data: availableLevels.map((level) => Number((q12Percent(insights?.levels?.[level.key]) || 0).toFixed(2))) }]} />
+              : <ApexChart type="bar" height={230} options={stacked100Options(levelCategories, [QUARTILE_COLORS.t1, QUARTILE_COLORS.q1, QUARTILE_COLORS.q2, QUARTILE_COLORS.q3, QUARTILE_COLORS.q4])} series={quartileSeries} />}
             <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">อิงวารสารที่มีค่า CiteScore {pct(coveragePct, 1)} ({fmt(coverage?.classified)}/{fmt(coverage?.total)} ผลงาน)</div>
           </> : <div className="py-16 text-center text-sm text-slate-400">ไม่มีข้อมูลเชิงลึกในปีนี้</div>}
         </Panel>
