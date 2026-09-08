@@ -2734,32 +2734,32 @@ export default function AdminScopusResearchDashboard() {
             )}
           >
             {!isOverviewCollapsed && <div className="space-y-5">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                <div className="rounded-lg border border-slate-200 bg-white p-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">จำนวนอาจารย์ในคณะ</p>
-                  <p className="mt-2 text-3xl font-semibold text-blue-700">{formatNumber(kpi.total_teachers_with_scopus || 0)}</p>
+                  <p className="mt-2 text-2xl font-semibold text-blue-700 lg:text-3xl">{formatNumber(kpi.total_teachers_with_scopus || 0)}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">จำนวนผลงานทั้งหมด (Unique Document)</p>
-                  <p className="mt-2 text-3xl font-semibold text-slate-900">
-                    {formatNumber(overviewKpiByYearType.calendar.uniqueDocuments || 0)}
+                  <p className="mt-2 text-2xl font-semibold text-slate-900 lg:text-3xl">
+                    <span className="whitespace-nowrap">{formatNumber(overviewKpiByYearType.calendar.uniqueDocuments || 0)}</span>
                     <span className="mx-1.5 text-xl font-normal text-slate-300">/</span>
-                    {formatNumber(overviewKpiByYearType.fiscal.uniqueDocuments || 0)}
+                    <span className="whitespace-nowrap">{formatNumber(overviewKpiByYearType.fiscal.uniqueDocuments || 0)}</span>
                   </p>
                   <p className="mt-1 text-xs text-slate-400">ปีปฏิทิน · ปีงบประมาณ</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">จำนวน Citation ทั้งหมด (Total Citation)</p>
-                  <p className="mt-2 text-3xl font-semibold text-slate-900">
-                    {formatNumber(overviewKpiByYearType.calendar.totalCitations || 0)}
+                  <p className="mt-2 text-2xl font-semibold text-slate-900 lg:text-3xl">
+                    <span className="whitespace-nowrap">{formatNumber(overviewKpiByYearType.calendar.totalCitations || 0)}</span>
                     <span className="mx-1.5 text-xl font-normal text-slate-300">/</span>
-                    {formatNumber(overviewKpiByYearType.fiscal.totalCitations || 0)}
+                    <span className="whitespace-nowrap">{formatNumber(overviewKpiByYearType.fiscal.totalCitations || 0)}</span>
                   </p>
                   <p className="mt-1 text-xs text-slate-400">ปีปฏิทิน · ปีงบประมาณ</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">ช่วงปีผลงาน (Publication Year Range)</p>
-                  <p className="mt-2 text-3xl font-semibold text-slate-900">{publicationYearRangeLabel}</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-900 lg:text-3xl">{publicationYearRangeLabel}</p>
                 </div>
               </div>
 
@@ -2876,22 +2876,29 @@ export default function AdminScopusResearchDashboard() {
                           ))}
                         </tr>
                         <tr>
-                          <td colSpan={1 + overviewYearsBE.length * 2} className="border border-slate-200 bg-white px-3 py-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setShowOverviewRatios((v) => !v)}
-                              className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-900"
+                          <td colSpan={1 + overviewYearsBE.length * 2} className="border border-slate-200 bg-white p-0">
+                            <div
+                              className="inline-flex px-3 py-1.5"
+                              style={{ position: "sticky", left: "0px", zIndex: 10 }}
                             >
-                              {showOverviewRatios ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                              {showOverviewRatios ? "ซ่อนกลุ่มสัดส่วน (Ratio)" : "แสดงกลุ่มสัดส่วน (Ratio)"}
-                            </button>
+                              <button
+                                type="button"
+                                onClick={() => setShowOverviewRatios((v) => !v)}
+                                className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-900"
+                              >
+                                {showOverviewRatios ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                                {showOverviewRatios ? "ซ่อนกลุ่มสัดส่วน (Ratio)" : "แสดงกลุ่มสัดส่วน (Ratio)"}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                         {showOverviewRatios && (
                           <>
                         <tr>
-                          <td colSpan={1 + overviewYearsBE.length * 2} className="border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                            กลุ่มสัดส่วนในผลงาน Q1-Q4
+                          <td colSpan={1 + overviewYearsBE.length * 2} className="border border-slate-200 bg-slate-100 p-0 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                            <div className="inline-block px-3 py-1.5" style={{ position: "sticky", left: "0px" }}>
+                              กลุ่มสัดส่วนในผลงาน Q1-Q4
+                            </div>
                           </td>
                         </tr>
                         <tr
@@ -2973,8 +2980,10 @@ export default function AdminScopusResearchDashboard() {
                           ))}
                         </tr>
                         <tr>
-                          <td colSpan={1 + overviewYearsBE.length * 2} className="border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                            กลุ่มสัดส่วนเทียบผลงานทุกประเภท
+                          <td colSpan={1 + overviewYearsBE.length * 2} className="border border-slate-200 bg-slate-100 p-0 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                            <div className="inline-block px-3 py-1.5" style={{ position: "sticky", left: "0px" }}>
+                              กลุ่มสัดส่วนเทียบผลงานทุกประเภท
+                            </div>
                           </td>
                         </tr>
                         <tr
@@ -3082,8 +3091,10 @@ export default function AdminScopusResearchDashboard() {
                           ))}
                         </tr>
                         <tr>
-                          <td colSpan={1 + overviewYearsBE.length * 2} className="border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                            กลุ่มสัดส่วนเทียบจำนวนอาจารย์
+                          <td colSpan={1 + overviewYearsBE.length * 2} className="border border-slate-200 bg-slate-100 p-0 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                            <div className="inline-block px-3 py-1.5" style={{ position: "sticky", left: "0px" }}>
+                              กลุ่มสัดส่วนเทียบจำนวนอาจารย์
+                            </div>
                           </td>
                         </tr>
                         <tr
