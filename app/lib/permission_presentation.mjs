@@ -400,6 +400,20 @@ export const PERMISSION_PRESENTATION = {
     kind: "manage",
     risk: "critical",
   },
+  "users.view": {
+    titleTh: "ดูข้อมูลผู้ใช้งาน",
+    descriptionTh: "เปิดดู ค้นหา และกรองข้อมูลบัญชีผู้ใช้งานในระบบ",
+    category: "access_control",
+    kind: "view",
+    risk: "high",
+  },
+  "users.manage": {
+    titleTh: "เพิ่มและแก้ไขผู้ใช้งาน",
+    descriptionTh: "สร้างบัญชีผู้ใช้งานใหม่และแก้ไขข้อมูลประจำตัว บทบาท หรือตำแหน่ง",
+    category: "access_control",
+    kind: "action",
+    risk: "critical",
+  },
 
   "users.read": {
     titleTh: "ดูข้อมูลผู้ใช้งาน",

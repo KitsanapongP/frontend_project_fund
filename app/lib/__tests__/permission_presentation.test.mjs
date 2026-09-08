@@ -62,7 +62,9 @@ const CURRENT_PERMISSION_CODES = [
   "ui.page.member.promotion_fund.view",
   "ui.page.member.received_funds.view",
   "ui.page.member.research_fund.view",
+  "users.manage",
   "users.read",
+  "users.view",
 ];
 
 test("permission catalog has Thai presentation metadata for every current permission", () => {

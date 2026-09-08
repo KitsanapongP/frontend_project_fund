@@ -73,8 +73,8 @@ export const ADMIN_BASE_MENU_ITEMS = [
   },
   {
     id: "access-control",
-    label: "จัดการสิทธิ์การเข้าถึง",
+    label: "ผู้ใช้และสิทธิ์การเข้าถึง",
     route: "/research-fund-system/admin/access-control",
-    requiredPermissions: ["ui.page.admin.access_control.view", "access.manage"],
+    requiredPermissions: ["ui.page.admin.access_control.view", "access.manage", "users.view", "users.manage"],
   },
 ];

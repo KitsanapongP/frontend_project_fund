@@ -1339,6 +1339,21 @@ export const accessControlAPI = {
 };
 
 export const usersAPI = {
+  async list(params = {}) {
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+    );
+    return apiClient.get('/admin/users', cleanParams);
+  },
+  async getOptions() {
+    return apiClient.get('/admin/users/options');
+  },
+  async create(userData) {
+    return apiClient.post('/admin/users', userData);
+  },
+  async update(userId, userData) {
+    return apiClient.put(`/admin/users/${encodeURIComponent(userId)}`, userData);
+  },
   async search(q) {
     return apiClient.get('/admin/users/search', { q });
   },

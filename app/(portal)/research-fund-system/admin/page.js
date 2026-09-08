@@ -47,7 +47,7 @@ const PAGE_PERMISSIONS_BY_ID = {
   "approval-records": ["ui.page.admin.approval_records.view"],
   "import-export": ["ui.page.admin.import_export.view"],
   "academic-imports": ["ui.page.admin.academic_imports.view"],
-  "access-control": ["ui.page.admin.access_control.view", "access.manage"],
+  "access-control": ["ui.page.admin.access_control.view", "access.manage", "users.view", "users.manage"],
 };
 
 function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fund-system/admin' }) {
@@ -293,7 +293,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
         'approval-records': 'บันทึกข้อมูลการอนุมัติทุน',
         'import-export': 'นำเข้า / ส่งออก',
         'academic-imports': 'ข้อมูลผลงานวิชาการ / Academic Data Import',
-        'access-control': 'จัดการสิทธิ์การเข้าถึง',
+        'access-control': 'ผู้ใช้และสิทธิ์การเข้าถึง',
         'scopus-research-search': 'ค้นหางานวิจัย',
         'notifications': 'การแจ้งเตือน'
     };

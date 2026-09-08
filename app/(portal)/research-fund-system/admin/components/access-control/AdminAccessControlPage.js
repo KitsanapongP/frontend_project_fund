@@ -22,6 +22,7 @@ import {
 import { toast } from "react-hot-toast";
 
 import PageLayout from "../common/PageLayout";
+import UserManagementPanel from "./UserManagementPanel";
 import { accessControlAPI, usersAPI } from "../../../../../lib/api";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
@@ -35,9 +36,10 @@ import {
 } from "@/app/lib/permission_presentation.mjs";
 
 const TAB_ITEMS = [
-  { id: "roles", label: "สิทธิ์ตามบทบาท", description: "กำหนดสิทธิ์พื้นฐานของแต่ละ Role", icon: Users },
-  { id: "users", label: "สิทธิ์เฉพาะบุคคล", description: "เพิ่มหรือปฏิเสธสิทธิ์เป็นรายคน", icon: UserCog },
-  { id: "dictionary", label: "พจนานุกรมสิทธิ์", description: "ค้นหาความหมายของสิทธิ์ทั้งหมด", icon: BookOpenText },
+  { id: "user-management", label: "จัดการผู้ใช้", description: "เพิ่ม ค้นหา และแก้ไขข้อมูลบัญชี", icon: UserCog, area: "users" },
+  { id: "roles", label: "สิทธิ์ตามบทบาท", description: "กำหนดสิทธิ์พื้นฐานของแต่ละ Role", icon: Users, area: "access" },
+  { id: "users", label: "สิทธิ์เฉพาะบุคคล", description: "เพิ่มหรือปฏิเสธสิทธิ์เป็นรายคน", icon: UserCog, area: "access" },
+  { id: "dictionary", label: "พจนานุกรมสิทธิ์", description: "ค้นหาความหมายของสิทธิ์ทั้งหมด", icon: BookOpenText, area: "access" },
 ];
 
 const FILTER_OPTIONS = {
@@ -253,11 +255,20 @@ function EffectiveBadge({ effective, source }) {
 
 export default function AdminAccessControlPage() {
   const { hasPermission, user: currentUser } = useAuth();
-  const canManageAccess = hasPermission("access.manage");
+  const isLegacyAdmin = Number(currentUser?.role_id) === 3 || String(currentUser?.role || "").toLowerCase() === "admin";
+  const canViewUsers = isLegacyAdmin || hasPermission("users.view") || hasPermission("users.manage");
+  const canManageUsers = isLegacyAdmin || hasPermission("users.manage");
+  const canViewAccess = isLegacyAdmin || hasPermission("access.view") || hasPermission("access.manage") || hasPermission("ui.page.admin.access_control.view");
+  const canManageAccess = isLegacyAdmin || hasPermission("access.manage");
+  const visibleTabItems = useMemo(
+    () => TAB_ITEMS.filter((item) => item.area === "users" ? canViewUsers : canViewAccess),
+    [canViewAccess, canViewUsers],
+  );
 
-  const [activeTab, setActiveTab] = useState("roles");
+  const [activeTab, setActiveTab] = useState(canViewUsers ? "user-management" : "roles");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [managementRefreshKey, setManagementRefreshKey] = useState(0);
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
   const [implications, setImplications] = useState({});
@@ -358,6 +369,11 @@ export default function AdminAccessControlPage() {
   }, []);
 
   const loadInitialData = useCallback(async ({ silent = false, preferredRoleId = "" } = {}) => {
+    if (!canViewAccess) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     silent ? setRefreshing(true) : setLoading(true);
     try {
       const [rolesResponse, permissionsResponse] = await Promise.all([accessControlAPI.listRoles(), accessControlAPI.listPermissions()]);
@@ -383,10 +399,15 @@ export default function AdminAccessControlPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [canViewAccess]);
 
   useEffect(() => { loadInitialData(); }, [loadInitialData]);
-  useEffect(() => { if (selectedRoleId) loadRolePermissions(selectedRoleId); }, [loadRolePermissions, selectedRoleId]);
+  useEffect(() => { if (canViewAccess && selectedRoleId) loadRolePermissions(selectedRoleId); }, [canViewAccess, loadRolePermissions, selectedRoleId]);
+  useEffect(() => {
+    if (visibleTabItems.length > 0 && !visibleTabItems.some((item) => item.id === activeTab)) {
+      setActiveTab(visibleTabItems[0].id);
+    }
+  }, [activeTab, visibleTabItems]);
 
   const loadUserOverrideData = useCallback(async (userId, { fallbackUser = null } = {}) => {
     if (!userId) return;
@@ -413,6 +434,10 @@ export default function AdminAccessControlPage() {
   }, []);
 
   const handleRefresh = async () => {
+    if (activeTab === "user-management") {
+      setManagementRefreshKey((value) => value + 1);
+      return;
+    }
     if ((roleDirty || userDirty) && !window.confirm("มีการแก้ไขที่ยังไม่ได้บันทึก ต้องการละทิ้งการเปลี่ยนแปลงและรีเฟรชข้อมูลหรือไม่?")) return;
     await loadInitialData({ silent: true, preferredRoleId: selectedRoleId });
     if (selectedRoleId) await loadRolePermissions(selectedRoleId);
@@ -487,6 +512,17 @@ export default function AdminAccessControlPage() {
     await loadUserOverrideData(getUserId(nextUser), { fallbackUser: nextUser });
   };
 
+  const handleManageUserPermissions = async (nextUser) => {
+    if (!canViewAccess) {
+      toast.error("บัญชีนี้ไม่มีสิทธิ์ตรวจสอบสิทธิ์เฉพาะบุคคล");
+      return;
+    }
+    if (!switchTab("users")) return;
+    setSelectedUser(nextUser);
+    setUserOptions([]);
+    await loadUserOverrideData(getUserId(nextUser), { fallbackUser: nextUser });
+  };
+
   const handleSetOverride = (permissionCode, effect) => {
     if (!canManageAccess) return;
     const code = normalizePermissionCode(permissionCode);
@@ -544,8 +580,8 @@ export default function AdminAccessControlPage() {
 
   return (
     <PageLayout
-      title="จัดการสิทธิ์การเข้าถึง"
-      subtitle="กำหนดว่าแต่ละบทบาทและผู้ใช้งานสามารถเข้าถึงหน้าใดหรือดำเนินการอะไรได้บ้าง"
+      title="ผู้ใช้และสิทธิ์การเข้าถึง"
+      subtitle="เพิ่มหรือแก้ไขบัญชีผู้ใช้ พร้อมกำหนดสิทธิ์ตามบทบาทและข้อยกเว้นรายบุคคล"
       icon={RESEARCH_FUND_PAGE_ICONS.accessControl}
       actions={(
         <button type="button" onClick={handleRefresh} disabled={refreshing} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60">
@@ -555,12 +591,12 @@ export default function AdminAccessControlPage() {
       )}
       loading={loading}
     >
-      {!canManageAccess ? (
+      {(activeTab === "user-management" ? !canManageUsers : !canManageAccess) ? (
         <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900" role="status">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
           <div>
             <p className="font-semibold">กำลังดูข้อมูลในโหมดอ่านอย่างเดียว</p>
-            <p className="mt-0.5 text-sm leading-6 text-amber-800">บัญชีนี้ตรวจสอบสิทธิ์ได้ แต่ต้องมีสิทธิ์ “แก้ไขสิทธิ์การเข้าถึง” จึงจะบันทึกการเปลี่ยนแปลงได้</p>
+            <p className="mt-0.5 text-sm leading-6 text-amber-800">{activeTab === "user-management" ? "บัญชีนี้ดูรายชื่อได้ แต่ต้องมีสิทธิ์เพิ่มและแก้ไขผู้ใช้งานจึงจะบันทึกข้อมูลได้" : "บัญชีนี้ตรวจสอบสิทธิ์ได้ แต่ต้องมีสิทธิ์แก้ไขสิทธิ์การเข้าถึงจึงจะบันทึกการเปลี่ยนแปลงได้"}</p>
           </div>
         </div>
       ) : null}
@@ -572,8 +608,8 @@ export default function AdminAccessControlPage() {
               <KeyRound className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <h2 className="font-semibold text-slate-900">ศูนย์ควบคุมสิทธิ์</h2>
-              <p className="mt-0.5 max-w-2xl text-sm leading-6 text-slate-600">ชื่อภาษาไทยอธิบายผลต่อผู้ใช้งาน ส่วนรหัสภาษาอังกฤษเก็บไว้สำหรับการตรวจสอบทางเทคนิค</p>
+              <h2 className="font-semibold text-slate-900">ศูนย์จัดการผู้ใช้และสิทธิ์</h2>
+              <p className="mt-0.5 max-w-2xl text-sm leading-6 text-slate-600">ดูแลบัญชีผู้ใช้งาน บทบาท และสิทธิ์จากจุดเดียว โดยข้อมูลรหัสผ่านจะไม่ถูกแสดงหลังบันทึก</p>
             </div>
           </div>
           <dl className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">
@@ -582,8 +618,8 @@ export default function AdminAccessControlPage() {
           </dl>
         </div>
 
-        <div className="grid border-b border-slate-200 bg-slate-50 md:grid-cols-3" role="tablist" aria-label="ส่วนจัดการสิทธิ์">
-          {TAB_ITEMS.map((tab) => {
+        <div className={`grid border-b border-slate-200 bg-slate-50 ${visibleTabItems.length >= 4 ? "md:grid-cols-4" : visibleTabItems.length === 3 ? "md:grid-cols-3" : visibleTabItems.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1"}`} role="tablist" aria-label="ส่วนจัดการผู้ใช้และสิทธิ์">
+          {visibleTabItems.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
             return (
@@ -598,10 +634,10 @@ export default function AdminAccessControlPage() {
                 onKeyDown={(event) => {
                   if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
                   event.preventDefault();
-                  const currentIndex = TAB_ITEMS.findIndex((item) => item.id === tab.id);
+                  const currentIndex = visibleTabItems.findIndex((item) => item.id === tab.id);
                   const offset = event.key === "ArrowRight" ? 1 : -1;
-                  const nextIndex = (currentIndex + offset + TAB_ITEMS.length) % TAB_ITEMS.length;
-                  const nextTab = TAB_ITEMS[nextIndex];
+                  const nextIndex = (currentIndex + offset + visibleTabItems.length) % visibleTabItems.length;
+                  const nextTab = visibleTabItems[nextIndex];
                   if (switchTab(nextTab.id)) {
                     event.currentTarget.parentElement?.querySelector(`#access-tab-${nextTab.id}`)?.focus();
                   }
@@ -619,6 +655,14 @@ export default function AdminAccessControlPage() {
             );
           })}
         </div>
+
+        {activeTab === "user-management" ? (
+          <UserManagementPanel
+            canManage={canManageUsers}
+            onManagePermissions={canViewAccess ? handleManageUserPermissions : null}
+            refreshKey={managementRefreshKey}
+          />
+        ) : null}
 
         {activeTab === "roles" ? (
           <div id="access-panel-roles" role="tabpanel" aria-labelledby="access-tab-roles" className="grid min-h-[36rem] xl:grid-cols-[18rem_minmax(0,1fr)]">
