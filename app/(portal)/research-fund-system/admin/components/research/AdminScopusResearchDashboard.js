@@ -2826,30 +2826,7 @@ export default function AdminScopusResearchDashboard() {
                         {renderOverviewCountRow("q3", "Q3 (25-49)", "q3")}
                         {renderOverviewCountRow("q4", "Q4 (0-24)", "q4")}
                         {renderOverviewCountRow("na", "N/A (ไม่มี tier)", "na")}
-                        <tr
-                          onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "tci" ? "" : "tci"))}
-                          className={`cursor-pointer transition-colors ${selectedOverviewMetricsRow === "tci" ? "bg-blue-100" : "hover:bg-blue-50"}`}
-                        >
-                          <td
-                            className={`border border-slate-300 px-3 py-2 font-medium text-slate-700 whitespace-nowrap ${selectedOverviewMetricsRow === "tci" ? "bg-blue-100" : "bg-slate-50"}`}
-                            style={{
-                              position: "sticky",
-                              left: "0px",
-                              zIndex: 20,
-                              minWidth: `${overviewLabelWidth}px`,
-                              width: `${overviewLabelWidth}px`,
-                              maxWidth: `${overviewLabelWidth}px`,
-                            }}
-                          >
-                            TCI
-                          </td>
-                          {overviewYearsBE.map((year) => (
-                            <td key={`cal-tci-${year}`} className="border border-slate-200 bg-white px-3 py-2 text-right">{formatNumber(overviewYearMetricsCalendar[year]?.tci || 0)}</td>
-                          ))}
-                          {overviewYearsBE.map((year) => (
-                            <td key={`fy-tci-${year}`} className="border border-slate-200 bg-white px-3 py-2 text-right">{formatNumber(overviewYearMetricsFiscal[year]?.tci || 0)}</td>
-                          ))}
-                        </tr>
+                        {renderOverviewCountRow("tci", "TCI", "tci")}
                         {renderOverviewCountRow("conference", "Conference Proceeding", "conference")}
                         <tr
                           onClick={() => setSelectedOverviewMetricsRow((prev) => (prev === "total" ? "" : "total"))}
