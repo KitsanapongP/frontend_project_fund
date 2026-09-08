@@ -81,6 +81,7 @@ const PERSON_QUARTILE_COLUMNS = [
   { key: "q3_count", label: "Q3", align: "right", group: "quartile" },
   { key: "q4_count", label: "Q4", align: "right", group: "quartile" },
   { key: "quartile_na", label: "N/A", align: "right", group: "quartile" },
+  { key: "tci_count", label: "TCI", align: "right", group: "quartile" },
 ];
 
 const PERSON_SOURCE_COLUMNS = [
@@ -131,6 +132,7 @@ const PERSON_COLUMN_PRESETS = {
     "avg_cited_by",
     "t1_count",
     "q1_count",
+    "tci_count",
     "journal_count",
     "book_count",
     "conference_count",
@@ -146,6 +148,7 @@ const PERSON_COLUMN_PRESETS = {
     "q3_count",
     "q4_count",
     "quartile_na",
+    "tci_count",
     "first_year",
     "latest_year",
     "active_years",
@@ -1776,7 +1779,7 @@ export default function AdminScopusResearchDashboard() {
 
                   <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">คุณภาพวารสาร</p>
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
                       {qualityOptions.map((item) => {
                         const active = draftFilters.qualityBuckets.includes(item.value);
                         return (
