@@ -418,8 +418,8 @@ export default function ScopusBenchmarkDashboard({
           <div className="mb-2"><SegTabs ariaLabel="มุมมองคุณภาพวารสาร" value={qualityMode} onChange={setQualityMode} options={[{ key: "q12", label: "T1+Q1+Q2" }, { key: "dist", label: "การกระจาย T1–Q4" }]} /></div>
           {insightsLoading ? <div className="h-64 animate-pulse rounded-md bg-slate-100" /> : availableLevels.length ? <>
             {qualityMode === "q12"
-              ? <ApexChart type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "T1+Q1+Q2", data: availableLevels.map((level) => Number((q12Percent(insights?.levels?.[level.key]) || 0).toFixed(2))) }]} />
-              : <ApexChart type="bar" height={230} options={stacked100Options(levelCategories, [QUARTILE_COLORS.t1, QUARTILE_COLORS.q1, QUARTILE_COLORS.q2, QUARTILE_COLORS.q3, QUARTILE_COLORS.q4])} series={quartileSeries} />}
+              ? <ApexChart key={`q-q12-${deepYear}`} type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "T1+Q1+Q2", data: availableLevels.map((level) => Number((q12Percent(insights?.levels?.[level.key]) || 0).toFixed(2))) }]} />
+              : <ApexChart key={`q-dist-${deepYear}`} type="bar" height={230} options={stacked100Options(levelCategories, [QUARTILE_COLORS.t1, QUARTILE_COLORS.q1, QUARTILE_COLORS.q2, QUARTILE_COLORS.q3, QUARTILE_COLORS.q4])} series={quartileSeries} />}
             <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">อิงวารสารที่มีค่า CiteScore {pct(coveragePct, 1)} ({fmt(coverage?.classified)}/{fmt(coverage?.total)} ผลงาน)</div>
           </> : <div className="py-16 text-center text-sm text-slate-400">ไม่มีข้อมูลเชิงลึกในปีนี้</div>}
         </Panel>
@@ -429,9 +429,9 @@ export default function ScopusBenchmarkDashboard({
         <Panel title="ตัวชี้วัดผลกระทบ" info="เทียบ 3 ระดับสำหรับปี deep-dive · Open Access = อ่านฟรี, นานาชาติ = มีผู้ร่วมแต่งต่างประเทศ, อ้างอิง/ชิ้น = citations เฉลี่ยต่อเอกสาร"
           action={<SegTabs ariaLabel="ตัวชี้วัดผลกระทบ" value={impactMode} onChange={setImpactMode} options={[{ key: "oa", label: "Open Access" }, { key: "intl", label: "นานาชาติ" }, { key: "cpd", label: "อ้างอิง/ชิ้น" }]} />}>
           {insightsLoading ? <div className="h-52 animate-pulse rounded-md bg-slate-100" /> : availableLevels.length ? <>
-            {impactMode === "oa" && <ApexChart type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "Open Access", data: impactValues("oa_pct") }]} />}
-            {impactMode === "intl" && <ApexChart type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "นานาชาติ", data: impactValues("intl_pct") }]} />}
-            {impactMode === "cpd" && <><ApexChart type="bar" height={230} options={levelBarOptions("", undefined)} series={[{ name: "อ้างอิง/ชิ้น", data: impactValues("avg_cite") }]} />
+            {impactMode === "oa" && <ApexChart key="impact-oa" type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "Open Access", data: impactValues("oa_pct") }]} />}
+            {impactMode === "intl" && <ApexChart key="impact-intl" type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "นานาชาติ", data: impactValues("intl_pct") }]} />}
+            {impactMode === "cpd" && <><ApexChart key="impact-cpd" type="bar" height={230} options={levelBarOptions("", undefined)} series={[{ name: "อ้างอิง/ชิ้น", data: impactValues("avg_cite") }]} />
               <p className="mt-1 text-xs text-slate-400">การอ้างอิงสะสมตามเวลา — ปีล่าสุดจะต่ำเพราะเพิ่งตีพิมพ์</p></>}
           </> : <div className="py-16 text-center text-sm text-slate-400">ไม่มีข้อมูลเชิงลึกในปีนี้</div>}
         </Panel>
@@ -439,7 +439,7 @@ export default function ScopusBenchmarkDashboard({
         <Panel title="ประเภทผลงาน" info="Article / Conference / Other ต่อระดับสำหรับปี deep-dive · เลือกดูจำนวนจริงหรือสัดส่วน %"
           action={<SegTabs ariaLabel="มุมมองประเภทผลงาน" value={typeMode} onChange={setTypeMode} options={[{ key: "count", label: "จำนวน" }, { key: "pct", label: "สัดส่วน %" }]} />}>
           {insightsLoading ? <div className="h-52 animate-pulse rounded-md bg-slate-100" /> : availableLevels.length
-            ? <ApexChart type="bar" height={230}
+            ? <ApexChart key={`types-${typeMode}-${deepYear}`} type="bar" height={230}
                 options={(typeMode === "pct" ? stacked100Options : stackedCountOptions)(levelCategories, [TYPE_COLORS.article, TYPE_COLORS.conference, TYPE_COLORS.other])}
                 series={typeSeries} />
             : <div className="py-16 text-center text-sm text-slate-400">ไม่มีข้อมูลเชิงลึกในปีนี้</div>}
