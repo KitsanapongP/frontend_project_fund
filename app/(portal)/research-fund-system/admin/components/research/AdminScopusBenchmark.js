@@ -3,24 +3,14 @@
 import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import { scopusBenchmarkAPI } from "@/app/lib/api";
-import { latestPositiveMetric, normalizeYearRange } from "@/app/lib/scopus_benchmark_helpers.mjs";
+import { normalizeYearRange } from "@/app/lib/scopus_benchmark_helpers.mjs";
 import PageLayout from "../common/PageLayout";
-
-const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
+import ScopusBenchmarkDashboard from "./ScopusBenchmarkDashboard";
 
 const CURRENT_YEAR = new Date().getFullYear();
-const ACCENT = "#4f46e5"; // indigo (faculty)
-const C_UNI = "#0ea5e9"; // sky (KKU)
-const C_COUNTRY = "#94a3b8"; // slate (Thailand)
 
 const fmt = (n) => (n === null || n === undefined ? "–" : Number(n).toLocaleString("th-TH"));
-const share = (part, whole) => (part === null || part === undefined || !whole ? null : (Number(part) / Number(whole)) * 100);
-const pctLabel = (part, whole) => {
-  const s = share(part, whole);
-  return s === null ? "–" : `${s.toFixed(1)}%`;
-};
 function formatDateTime(v) {
   if (!v) return "–";
   const d = new Date(v);
@@ -179,18 +169,6 @@ function YearRange({ yearFrom, yearTo, onRangeChange, onDetect, detecting, onRef
   );
 }
 
-function StatTile({ label, value, hint, color }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        <span className="h-2 w-2 rounded-full" style={{ background: color }} />{label}
-      </div>
-      <div className="mt-1 text-2xl font-semibold text-slate-900">{fmt(value)}</div>
-      <div className="text-xs text-slate-400">{hint}</div>
-    </div>
-  );
-}
-
 function Step({ n, title, desc, state, children }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5">
@@ -223,8 +201,6 @@ export default function AdminScopusBenchmark() {
   const [comparison, setComparison] = useState([]);
   const [facultyMetric, setFacultyMetric] = useState(null);
   const [comparisonLoading, setComparisonLoading] = useState(false);
-  const [chartType, setChartType] = useState("bar");
-  const [showTable, setShowTable] = useState(false);
 
   const [countsRunning, setCountsRunning] = useState(false);
   const [harvesting, setHarvesting] = useState(false);
@@ -418,7 +394,6 @@ export default function AdminScopusBenchmark() {
     }
   }
 
-  const facultyHasData = useMemo(() => comparison.some((r) => Number(r.faculty) > 0), [comparison]);
   const countsHasData = useMemo(() => comparison.some((r) => Number(r.university) > 0 || Number(r.country) > 0), [comparison]);
   const lastUniHarvest = useMemo(
     () => runs.find((r) => uni && String(r.scope_id) === String(uni.id) && ["success", "completed"].includes((r.status || "").toLowerCase())) || null,
@@ -436,63 +411,6 @@ export default function AdminScopusBenchmark() {
     ? `มีวันเริ่มงาน ${fmt(facultyMetric.employment_date_set)} จากอาจารย์ที่มี Scopus ID ${fmt(facultyMetric.faculty_with_scopus_id)} คน สำหรับอีก ${fmt(facultyMetric.employment_date_missing)} คน ระบบใช้ AF-ID 60017165 หรือ 60280609 บนผลงานเป็นหลักฐานการสังกัด KKU`
     : null;
 
-  const asc = useMemo(() => [...comparison].sort((a, b) => a.year - b.year), [comparison]);
-  const latestMetrics = useMemo(() => ({
-    faculty: latestPositiveMetric(asc, "faculty"),
-    university: latestPositiveMetric(asc, "university"),
-    country: latestPositiveMetric(asc, "country"),
-  }), [asc]);
-
-  const metricHint = (metric) => {
-    if (!metric) return "ยังไม่มีข้อมูล";
-    return metric.year === CURRENT_YEAR
-      ? `ปีล่าสุดที่มีข้อมูล ${metric.year} (ข้อมูลบางส่วน)`
-      : `ปีล่าสุดที่มีข้อมูล ${metric.year}`;
-  };
-
-  const chartOptions = useMemo(() => {
-    const categories = asc.map((r) => String(r.year));
-    const base = {
-      chart: { toolbar: { show: false }, fontFamily: "inherit", animations: { enabled: false } },
-      dataLabels: { enabled: false },
-      grid: { borderColor: "#f1f5f9", strokeDashArray: 4 },
-      legend: { position: "top", horizontalAlign: "right", markers: { radius: 4 } },
-      xaxis: { categories, axisBorder: { show: false }, axisTicks: { show: false } },
-      tooltip: { shared: true, intersect: false },
-    };
-    if (chartType === "share") {
-      return {
-        ...base,
-        colors: [ACCENT, C_UNI],
-        stroke: { curve: "smooth", width: 2 },
-        yaxis: { max: 100, labels: { formatter: (v) => `${Math.round(v)}%` } },
-      };
-    }
-    return {
-      ...base,
-      colors: [ACCENT, C_UNI, C_COUNTRY],
-      stroke: chartType === "line" ? { curve: "smooth", width: 2 } : { width: 0 },
-      plotOptions: { bar: { columnWidth: "60%", borderRadius: 3 } },
-      yaxis: { labels: { formatter: (v) => Number(v).toLocaleString("th-TH") } },
-    };
-  }, [asc, chartType]);
-
-  const chartSeries = useMemo(() => {
-    if (chartType === "share") {
-      return [
-        { name: "คณะ / KKU", data: asc.map((r) => Number((share(r.faculty, r.university) || 0).toFixed(1))) },
-        { name: "คณะ / Thailand", data: asc.map((r) => Number((share(r.faculty, r.country) || 0).toFixed(1))) },
-      ];
-    }
-    return [
-      { name: "คณะ", data: asc.map((r) => Number(r.faculty || 0)) },
-      { name: "KKU", data: asc.map((r) => Number(r.university || 0)) },
-      { name: "Thailand", data: asc.map((r) => Number(r.country || 0)) },
-    ];
-  }, [asc, chartType]);
-
-  const chartKind = chartType === "bar" ? "bar" : "line";
-
   const yearRangeProps = {
     yearFrom, yearTo,
     onRangeChange: ({ yearFrom: nextFrom, yearTo: nextTo }) => {
@@ -503,100 +421,9 @@ export default function AdminScopusBenchmark() {
     detecting,
   };
 
-  const renderResults = () => (
-    <div className="space-y-5">
-      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-        <YearRange {...yearRangeProps} onRefresh={loadComparison} />
-      </div>
-
-      {facultyMetricBlocked && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          ยังคำนวณตัวเลขคณะไม่ได้เพราะไม่พบอาจารย์ที่ตั้ง Scopus ID ระบบจึงซ่อนค่าคณะเดิมไว้ก่อน
-        </div>
-      )}
-      {facultyMetricUsesFallback && (
-        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-          {facultyCoverageText} และจะใช้วันเริ่มงานเพิ่มโดยอัตโนมัติเมื่อมีข้อมูล
-        </div>
-      )}
-      {facultyBenchmarkIncomplete && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          ข้อมูลเอกสาร KKU ยังไม่ครบสำหรับปี {facultyBenchmarkYearsMissing.join(", ")} จึงซ่อนค่าคณะของปีเหล่านี้ กรุณาดึงเอกสาร KKU ในช่วงดังกล่าวก่อน
-        </div>
-      )}
-
-      {!facultyHasData && !countsHasData && !comparisonLoading ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-          <div className="text-sm font-medium text-slate-700">ยังไม่มีข้อมูลสำหรับเปรียบเทียบ</div>
-          <p className="mx-auto mt-1 max-w-md text-xs text-slate-500">
-            ไปที่แท็บ <b>ตั้งค่า &amp; ดึงข้อมูล</b> แล้วทำตามขั้นตอน 1 → 2 → 3 เพื่อให้ได้ตัวเลขมาแสดง
-          </p>
-          <button type="button" onClick={() => setTab("setup")}
-            className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">ไปหน้าตั้งค่า</button>
-        </div>
-      ) : (
-        <>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <StatTile label="คณะ (CS)" value={latestMetrics.faculty?.value}
-              hint={facultyMetricBlocked ? "รอข้อมูลวันเริ่มงานครบ" : metricHint(latestMetrics.faculty)} color={ACCENT} />
-            <StatTile label="KKU (CS)" value={latestMetrics.university?.value} hint={metricHint(latestMetrics.university)} color={C_UNI} />
-            <StatTile label="Thailand (CS)" value={latestMetrics.country?.value} hint={metricHint(latestMetrics.country)} color={C_COUNTRY} />
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="text-sm font-medium text-slate-700">แนวโน้มรายปี</div>
-              <div className="inline-flex rounded-lg bg-slate-100 p-0.5 text-xs font-medium">
-                {[["bar", "จำนวน"], ["line", "แนวโน้ม"], ["share", "สัดส่วน %"]].map(([k, lbl]) => (
-                  <button key={k} type="button" onClick={() => setChartType(k)}
-                    className={`rounded-md px-3 py-1.5 ${chartType === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>{lbl}</button>
-                ))}
-              </div>
-            </div>
-            {asc.length > 0 ? (
-              <ApexChart key={chartType} options={chartOptions} series={chartSeries} type={chartKind} height={300} />
-            ) : (
-              <div className="py-16 text-center text-sm text-slate-400">{comparisonLoading ? "กำลังโหลด…" : "ไม่มีข้อมูลในช่วงปีนี้"}</div>
-            )}
-            {chartType === "share" && (
-              <p className="mt-1 text-center text-xs text-slate-400">สัดส่วนผลงานคณะเทียบกับ KKU และ Thailand (%)</p>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white">
-            <button type="button" onClick={() => setShowTable((v) => !v)}
-              className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-slate-700">
-              ตารางละเอียด <span className="text-slate-400">{showTable ? "▲" : "▼"}</span>
-            </button>
-            {showTable && (
-              <div className="overflow-x-auto border-t border-slate-100">
-                <table className="min-w-full divide-y divide-slate-100 text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-slate-400">
-                      <th className="px-4 py-2">ปี</th><th className="px-4 py-2">คณะ</th><th className="px-4 py-2">KKU</th>
-                      <th className="px-4 py-2">Thailand</th><th className="px-4 py-2">คณะ/KKU</th><th className="px-4 py-2">คณะ/Thailand</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {comparison.map((r) => (
-                      <tr key={r.year} className="text-slate-700">
-                        <td className="px-4 py-2 font-medium text-slate-900">{r.year}</td>
-                        <td className="px-4 py-2">{fmt(r.faculty)}</td>
-                        <td className="px-4 py-2">{fmt(r.university)}</td>
-                        <td className="px-4 py-2">{fmt(r.country)}</td>
-                        <td className="px-4 py-2">{pctLabel(r.faculty, r.university)}</td>
-                        <td className="px-4 py-2">{pctLabel(r.faculty, r.country)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
+  // The executive report owns its own comparison + insights reads (report context),
+  // kept separate from this setup tab's counts/harvest state (handoff §10.4).
+  const renderResults = () => <ScopusBenchmarkDashboard onGoSetup={() => setTab("setup")} />;
 
   const renderSetup = () => (
     <div className="space-y-4">

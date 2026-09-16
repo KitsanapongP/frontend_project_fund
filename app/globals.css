@@ -495,3 +495,57 @@ option:disabled {
   overflow: visible;
   max-width: 320px;
 }
+
+/* ── Scopus benchmark executive report — print (handoff §7) ────────────────────
+   EVERY rule here is guarded by `body:has(#scopus-report-root)` so it applies ONLY
+   when the executive report is on the page. Other pages keep their normal print
+   behaviour (R2 regression fix). The @page A4 size is NOT set here — it would be
+   global; the report component injects it at runtime only while it is printing. */
+@media print {
+  body:has(#scopus-report-root) * { visibility: hidden !important; }
+  body:has(#scopus-report-root) #scopus-report-root,
+  body:has(#scopus-report-root) #scopus-report-root * { visibility: visible !important; }
+  body:has(#scopus-report-root) #scopus-report-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body:has(#scopus-report-root) #scopus-report-root .no-print,
+  body:has(#scopus-report-root) #scopus-report-root .no-print * { display: none !important; }
+  /* Optional <details> print only when the user left them open; the essential
+     source-note footer is outside any <details> and always prints. We do NOT force
+     an open <details> onto a fresh page — that left large gaps before the quality
+     appendix; it now flows and fills the page, breaking only where the rules below
+     allow. */
+  body:has(#scopus-report-root) #scopus-report-root details:not([open]) > *:not(summary) { display: none !important; }
+
+  /* Pagination — keep a heading with the block it introduces, and never split a table
+     row, a chart, or a grid cell (KPI card / trend chart column / quality column)
+     across a page. This is per-block, NOT a whole-report block: long tables
+     (comparison, year-by-year) may still break between rows, with the header repeated. */
+  body:has(#scopus-report-root) #scopus-report-root h2,
+  body:has(#scopus-report-root) #scopus-report-root h3,
+  body:has(#scopus-report-root) #scopus-report-root summary { break-after: avoid; }
+  body:has(#scopus-report-root) #scopus-report-root h2,
+  body:has(#scopus-report-root) #scopus-report-root h3,
+  body:has(#scopus-report-root) #scopus-report-root tr,
+  body:has(#scopus-report-root) #scopus-report-root svg,
+  body:has(#scopus-report-root) #scopus-report-root .grid > * { break-inside: avoid; }
+  /* The citations block is short — keep its heading, table and note together so the
+     heading + table header are never stranded at the foot of a page. */
+  body:has(#scopus-report-root) #scopus-report-root section[aria-label^="การอ้างอิงสะสม"] { break-inside: avoid; }
+
+  /* Tables must fit the page in print — no horizontal scroll/clipping (§7). Let the
+     scroll wrappers expand and the tables collapse their min-width to the page. */
+  body:has(#scopus-report-root) #scopus-report-root .overflow-x-auto { overflow: visible !important; }
+  body:has(#scopus-report-root) #scopus-report-root table { break-inside: auto; width: 100% !important; min-width: 0 !important; font-size: 10.5pt; }
+  body:has(#scopus-report-root) #scopus-report-root table .text-\[11px\],
+  body:has(#scopus-report-root) #scopus-report-root table small { font-size: 9pt; }
+  /* Chart labels must stay >= 9pt in print (12px = 9pt). */
+  body:has(#scopus-report-root) #scopus-report-root svg text { font-size: 12px; }
+  body:has(#scopus-report-root) #scopus-report-root thead { display: table-header-group; }
+}

@@ -1,0 +1,138 @@
+# Scopus Benchmark — API/data contract (executive report)
+
+สัญญา response ที่ FE ใช้จริง ณ ปัจจุบัน (ตรงกับ `services/scopus_benchmark_insights.go` /
+`controllers/admin_scopus_benchmark_controller.go` ฝั่ง BE และ container/ชิ้นส่วน `report/*` ฝั่ง FE).
+เอกสารนี้เขียนจากพฤติกรรมโค้ด/response จริง — ไม่ใช่ contract ฉบับตกลงครั้งแรก. คู่มือฟีเจอร์: [scopus-benchmark-report.md](./scopus-benchmark-report.md).
+
+ทุก endpoint เป็น **read-only** ในขอบเขต benchmark: ไม่เขียนตาราง `scopus_*`/benchmark, ไม่ harvest/refresh, ไม่ทำ citation snapshot/backfill.
+
+---
+
+## 1. GET `/api/v1/admin/scopus/benchmark/comparison?year_from=&year_to=`
+
+> ตัวเลขในตัวอย่างทุกบล็อกเป็น **ค่าสมมติเพื่ออธิบายรูปแบบ** ไม่ใช่ข้อมูลจริง.
+
+```jsonc
+{ "success": true, "data": {
+  "years": [
+    { "year": YYYY,   "faculty": 58,   "university": 240, "country": 2400 },
+    { "year": YYYY+1, "faculty": null, "university": 150, "country": 1600 } // faculty=null เมื่อ blocked/missing
+  ],
+  "year_meta": {
+    "YYYY": {
+      "faculty":    { "status": "available", "snapshot_exists": true, "snapshot_at": "…Z", "reason": "" },
+      "university": { "status": "available", "snapshot_exists": true, "snapshot_at": "…Z", "reason": "" },
+      "country":    { "status": "available", "snapshot_exists": true, "snapshot_at": "…Z", "reason": "" }
+    }
+    // … ทุกปีในช่วงที่ query
+  },
+  "available_years": { "faculty": [YYYY, YYYY-1, …], "university": […], "country": […] },
+  "report_scope": {
+    "consistent": true,
+    "subject_area": "COMP",
+    "faculty_subject_area": "COMP", "university_subject_area": "COMP", "country_subject_area": "COMP",
+    "faculty_scope_id": 3, "university_scope_id": 1, "country_scope_id": 2
+  },
+  "faculty_metric": {
+    "ready": true, "employment_date_complete": false,
+    "faculty_with_scopus_id": N, "employment_date_set": N, "employment_date_missing": N,
+    "benchmark_years_missing": [YYYY, YYYY-1, …]
+  },
+  "faculty_scope": {…}, "university_scope": {…}, "country_scope": {…} // objects เดิม คงไว้
+}}
+```
+
+กติกาที่ต้องเข้าใจ:
+- **`available_years` = "มี snapshot" (snapshot existence) แยกต่อระดับ รวมปีที่ faculty `blocked`** — ใช้เพียงตัดสิน "โหลดถึงปีไหน" ไม่ใช่ readiness. readiness จริงอยู่ที่ `year_meta[...].status`.
+- **`year_meta[YYYY][level].status`**:
+  - `available` = มี snapshot และผ่านความพร้อม
+  - `blocked` = (faculty เท่านั้น) มี snapshot แต่ยังไม่พร้อม (faculty metric ไม่ ready / ปีอยู่ใน `benchmark_years_missing` / มี KKU harvest ทำงาน) → `years[].faculty` เป็น `null`
+  - `missing` = ไม่มี snapshot
+  - `snapshot_exists` เป็น true แม้ค่าจริงเป็น 0 (zero-snapshot คือปีที่มีข้อมูล). university/country ไม่บล็อกข้ามระดับ.
+- **`report_scope.consistent`** = true เฉพาะเมื่อทั้งสามระดับเป็น subject เดียวกันและเป็น COMP; scope id resolve จาก level/config (ไม่ hardcode).
+
+---
+
+## 2. GET `/api/v1/admin/scopus/benchmark/insights?year=YYYY`
+
+```jsonc
+{ "success": true, "data": {
+  "year": YYYY,
+  "levels": {
+    "faculty": {
+      "available": true,
+      "docs": 40,                       // observed/harvested docs ของปีนี้ (ตัวเดียวที่ share/สัดส่วนใช้)
+      "oa_pct": 55.0, "intl_pct": 50.0, "avg_cite": 8.1,     // legacy rates (คงความหมายเดิม)
+      "quartile": { "t1": 6, "q1": 12, "q2": 8, "q3": 4, "q4": 2,
+                    "unclassified": 8, "unclassified_journal": 0, "excluded_non_journal": 8, "unresolved": 0 },
+      "doctypes": { "article": 32, "conference": 6, "other": 2 },   // รวม = docs
+      "oa":   { "known": 40, "positive": 22, "unknown": 0 },
+      "intl": { "known": 40, "positive": 20, "unknown": 0 },
+      "citations": {
+        "total": 324, "average": 8.1,
+        "known_docs": 40, "cohort_docs": 40, "unknown_docs": 0,
+        "coverage_status": "complete",              // none|partial|complete
+        "denominator_policy": "known_citation_docs",
+        "updated_at": null, "update_range": null, "freshness_status": "unknown"
+      },
+      "readiness": {
+        "comparison_ready": true, "active_run": false,
+        "snapshot_mismatch": false, "expected_docs": 40, "observed_docs": 40, "reasons": [],
+        "metrics": {
+          "count":     { "ready": true,  "reasons": [] },
+          "quality":   { "ready": true,  "reasons": [] },
+          "oa":        { "ready": true,  "reasons": [] },
+          "intl":      { "ready": true,  "reasons": [] },
+          "citations": { "ready": true,  "reasons": [] }
+        }
+      }
+    },
+    "kku": { … },
+    "thailand": { … }
+  },
+  "quartile_coverage": { "classified": 32, "total": 40 },
+  "scope": { "subject_area": "COMP", "faculty_scope_id": 3, "university_scope_id": 1, "country_scope_id": 2 }
+}}
+```
+
+ระดับที่ไม่พร้อม (เช่น country ที่มี count snapshot แต่ยังไม่ harvest) จะเป็น
+`available:false`, `citations` แบบ none (`cohort_docs:0`, `total/average:null`), และ
+`readiness.snapshot_mismatch:true` พร้อม `expected_docs>0, observed_docs:0` + เหตุผล.
+
+### 2.1 citation cohort (สำคัญ — อย่าใช้สมมติฐานเก่า)
+- **`citations.cohort_docs` = observed docs (ที่ harvest จริง) = `readiness.observed_docs` = `level.docs`** — **ไม่ใช่** count snapshot.
+- `known_docs` = docs ที่มี `citedby_count` (≤ `cohort_docs`); `unknown_docs = cohort_docs − known_docs`.
+- `total` = SUM(citedby_count) ของ known docs; `average = total/known_docs`. `known_docs=0` → `total=null, average=null` (ไม่ใช่ 0). ค่าศูนย์จริงทั้งหมด (known_docs>0) → 0.
+- คำนวณจาก distinct document cohort เดียวกับ insights, ใช้ field ที่เก็บไว้ (ไม่เรียก Scopus เพิ่ม), ไม่รวมยอดสามระดับ.
+
+### 2.2 snapshot mismatch (เกิดได้ทั้งสองทิศ — ต้องเปิดเผยเสมอ)
+- `expected_docs` = count snapshot (ยอดทางการ), `observed_docs` = ที่ harvest จริง (= `docs` = `cohort_docs`).
+- **`snapshot_mismatch = true` เมื่อ `expected_docs ≠ observed_docs`** ได้ทั้ง:
+  - `observed < count` — harvest ยังไม่ครบสำหรับปีนั้น
+  - `observed > count` — count snapshot เก่ากว่าที่ harvest ได้จริง
+- ทั้งสองทิศ **ถูก disclose เสมอ** ผ่าน `readiness.metrics.count.ready=false` + reason และ FE โชว์หมายเหตุ/งดการเทียบ — ไม่เงียบ. **ห้ามสมมติว่า `cohort ≤ count`.** `cohort == count` เฉพาะระดับที่ ready (ไม่ mismatch).
+
+### 2.3 readiness ราย metric (ไม่ใช่ boolean เดียว)
+แต่ละ metric พร้อมอิสระต่อกัน — FE เปิด "ส่วนต่างคณะเทียบ KKU" ของ metric ใด ต่อเมื่อ metric นั้น ready **ทั้งสองฝั่ง**:
+- `count` ready = harvest ครบ (ไม่ mismatch)
+- `quality` ready = `unclassified_journal = 0` และ `unresolved = 0`
+- `oa` ready = `oa.unknown = 0`
+- `intl` ready = `intl.unknown = 0`
+- `citations` ready = `citations.unknown_docs = 0`
+ไม่มี threshold coverage % ที่ตั้งเองเพื่อรับรองความเป็นตัวแทน.
+
+### 2.4 OA / นานาชาติ
+`oa`/`intl` = `{ known, positive, unknown }` เป็น positive/known: อัตรา = `positive/known`; `unknown` ไม่อยู่ในตัวหารและไม่นับเป็นลบ. เป็นชุดตัวเลขเดียวกับที่ KPI, ตาราง และ CSV ใช้ (ค่าตรงกันทุกที่).
+
+### 2.5 quartile / doctypes
+- `quartile`: `t1,q1,q2,q3,q4` = วารสารที่จัดกลุ่มได้ (classified); `unclassified_journal` = วารสารที่ยังไม่มี CiteScore; `excluded_non_journal` = คอนเฟอเรนซ์/หนังสือ; `unresolved` = ระบุประเภทไม่ได้. `classified + unclassified_journal + excluded_non_journal (+unresolved) = docs`.
+- `doctypes.article + conference + other = docs` (article ≈ journal docs; conference/other ≈ non-journal).
+
+---
+
+## 3. GET `/api/v1/admin/scopus/benchmark/top-journals?year=YYYY`
+BE มี endpoint นี้ (read-only) แต่ **รายงานผู้บริหารปัจจุบันไม่เรียกใช้** — คงไว้สำหรับส่วนขยายภายหลัง.
+
+## 4. สิ่งที่ **ไม่** อยู่ในสัญญานี้
+ไม่มี migration ใหม่, ไม่แตะ ingest/harvest/dashboard/research-search, ไม่ auto harvest/refresh,
+ไม่สร้าง citation snapshot/backfill/yearly model, ไม่เพิ่ม timestamp ปลอมเพื่อสื่อความสด.
