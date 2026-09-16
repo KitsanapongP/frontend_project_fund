@@ -1,472 +1,463 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import {
-  AlertCircle,
-  BarChart3,
-  Download,
-  FileText,
-  Globe2,
-  Info,
-  LockKeyhole,
-  Printer,
-  RefreshCw,
-  Sparkles,
-  TrendingUp,
-} from "lucide-react";
+import { AlertCircle, BarChart3 } from "lucide-react";
 import { scopusBenchmarkAPI } from "@/app/lib/api";
-
-const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
+import {
+  selectReportYear,
+  resolveBootstrapFloor,
+  buildFindings,
+  buildYearlyCsv,
+  buildComparisonCsv,
+  normalizeReportRow,
+  formatCount,
+  formatPct,
+  formatPoints,
+  highTierShare,
+  shareOf,
+  growthInfo,
+  isUsable,
+  observedRate,
+  metricReady,
+} from "@/app/lib/scopus_benchmark_report.mjs";
+import ReportHeader from "./report/ReportHeader";
+import KpiStrip from "./report/KpiStrip";
+import KeyFindings from "./report/KeyFindings";
+import TrendCharts from "./report/TrendCharts";
+import ComparisonTable from "./report/ComparisonTable";
+import CitationsSection from "./report/CitationsSection";
+import QualityTypeDetails from "./report/QualityTypeDetails";
+import SourceNotes from "./report/SourceNotes";
 
 const CURRENT_YEAR = new Date().getFullYear();
-const COLORS = { faculty: "#2563eb", kku: "#0ea5e9", thailand: "#94a3b8" };
-const QUARTILE_COLORS = { t1: "#1e3a8a", q1: "#2563eb", q2: "#60a5fa", q3: "#a5c8e0", q4: "#cbd5e1" };
-const TYPE_COLORS = { article: "#2563eb", conference: "#60a5fa", other: "#cbd5e1" };
-const LEVELS = [
-  { key: "faculty", label: "คณะ", color: COLORS.faculty },
-  { key: "kku", label: "KKU", color: COLORS.kku },
-  { key: "thailand", label: "Thailand", color: COLORS.thailand },
-];
+// First read covers ~15 years ending at the current year; older windows are loaded
+// on demand when the user selects an earlier report year (§4, R7) — never a
+// year-by-year probe, just one wider GET when needed.
+const DEFAULT_WINDOW_FROM = CURRENT_YEAR - 14;
 
-const fmt = (value, digits = 0) => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return "–";
-  return Number(value).toLocaleString("th-TH", { minimumFractionDigits: digits, maximumFractionDigits: digits });
-};
-const percent = (part, whole) => (Number(whole) > 0 ? (Number(part || 0) / Number(whole)) * 100 : null);
-const pct = (value, digits = 1) => (value === null || value === undefined ? "–" : `${fmt(value, digits)}%`);
-// High-quality share = T1+Q1+Q2 over all tiered journals. T1 (top 10%) is carved
-// out of Q1 by the API, so including it here keeps the metric complete.
-const q12Percent = (level) => {
-  const q = level?.quartile;
-  if (!level?.available || !q) return null;
-  const t1 = Number(q.t1 || 0);
-  const classified = t1 + Number(q.q1 || 0) + Number(q.q2 || 0) + Number(q.q3 || 0) + Number(q.q4 || 0);
-  return percent(t1 + Number(q.q1 || 0) + Number(q.q2 || 0), classified);
-};
-
-function InfoTip({ text }) {
-  return (
-    <span className="group relative inline-flex shrink-0 align-middle">
-      <button type="button" aria-label={`ข้อมูลเพิ่มเติม: ${text}`}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">
-        <Info size={15} aria-hidden="true" />
-      </button>
-      <span role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-64 -translate-x-1/2 rounded-lg bg-slate-900 px-3 py-2 text-left text-xs font-normal leading-relaxed text-white shadow-xl group-hover:block group-focus-within:block">
-        {text}
-      </span>
-    </span>
-  );
-}
-
-function SegTabs({ options, value, onChange, ariaLabel }) {
-  return (
-    <div role="group" aria-label={ariaLabel} className="inline-flex flex-wrap rounded-lg bg-slate-100 p-1 text-xs font-medium">
-      {options.map((option) => (
-        <button key={option.key} type="button" onClick={() => onChange(option.key)} aria-pressed={value === option.key}
-          className={`rounded-md px-3 py-1.5 ${value === option.key ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Panel({ title, info, action, children, className = "" }) {
-  return (
-    <section className={`rounded-lg border border-slate-200 bg-white p-5 ${className}`}>
-      <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-          <InfoTip text={info} />
-        </div>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
+function formatThaiDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
 }
 
 function Skeleton() {
   return (
-    <div className="space-y-5" aria-label="กำลังโหลดแดชบอร์ด">
-      <div className="h-40 animate-pulse rounded-lg bg-slate-200" />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[0, 1, 2, 3].map((item) => <div key={item} className="h-32 animate-pulse rounded-lg bg-slate-200" />)}
+    <div className="rounded-lg border border-slate-200 bg-white p-8" aria-label="กำลังโหลดรายงาน">
+      <div className="h-8 w-64 animate-pulse rounded bg-slate-200" />
+      <div className="mt-6 grid grid-cols-2 gap-6 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((item) => <div key={item} className="h-24 animate-pulse rounded bg-slate-100" />)}
       </div>
-      <div className="grid gap-5 xl:grid-cols-3"><div className="h-96 animate-pulse rounded-lg bg-slate-200 xl:col-span-2" /><div className="h-96 animate-pulse rounded-lg bg-slate-200" /></div>
+      <div className="mt-6 h-56 animate-pulse rounded bg-slate-100" />
     </div>
-  );
-}
-
-function MiniBar({ label, value, color, highlight }) {
-  return (
-    <div className={`rounded-md border px-3 py-2 ${highlight ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white"}`}>
-      <div className="flex items-center justify-between gap-3 text-xs">
-        <span className={highlight ? "font-semibold text-blue-800" : "text-slate-600"}>{label}</span>
-        <span className="font-semibold tabular-nums text-slate-900">{pct(value, 0)}</span>
-      </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-slate-200">
-        <div className="h-full rounded-sm" style={{ width: `${Math.max(0, Math.min(100, value || 0))}%`, backgroundColor: color }} />
-      </div>
-    </div>
-  );
-}
-
-function KpiCard({ icon: Icon, label, value, unit, delta, ytd, hint, color }) {
-  const deltaValue = delta === null || delta === undefined ? null : Number(delta);
-  return (
-    <article className="rounded-lg border border-slate-200 bg-white p-5">
-      <div className="flex items-start justify-between gap-3">
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-slate-50" style={{ color }}>
-          <Icon size={18} aria-hidden="true" />
-        </span>
-        <InfoTip text={hint} />
-      </div>
-      <div className="mt-4 flex items-center gap-2 text-xs font-medium text-slate-500">
-        <span>{label}</span>
-        {ytd && <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">YTD</span>}
-      </div>
-      <div className="mt-1 flex items-end gap-1.5">
-        <span className="text-4xl font-bold leading-none tabular-nums text-slate-900">{value}</span>
-        {unit && <span className="pb-0.5 text-sm text-slate-500">{unit}</span>}
-      </div>
-      <div className="mt-3 text-xs text-slate-500">
-        {ytd ? "ข้อมูลบางส่วน (ยังไม่ครบปี)"
-          : deltaValue === null ? "ไม่มีข้อมูลปีก่อนหน้า"
-          : (
-            <span className={deltaValue > 0 ? "text-green-700" : deltaValue < 0 ? "text-red-700" : "text-slate-500"}>
-              {deltaValue > 0 ? "+" : ""}{fmt(deltaValue, 1)}% จากปีก่อน
-            </span>
-          )}
-      </div>
-    </article>
   );
 }
 
 function EmptyState({ onGoSetup }) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
+    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center">
       <BarChart3 className="mx-auto text-slate-400" size={36} aria-hidden="true" />
-      <h2 className="mt-3 text-base font-semibold text-slate-800">ยังไม่มีข้อมูลสำหรับเปรียบเทียบ</h2>
-      <p className="mx-auto mt-1 max-w-lg text-sm text-slate-500">ไปที่แท็บตั้งค่า &amp; ดึงข้อมูล แล้วอัปเดตตัวเลขหรือดึงเอกสาร benchmark ก่อน</p>
-      <button type="button" onClick={onGoSetup}
-        className="mt-5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
+      <h2 className="mt-3 text-base font-semibold text-slate-800">ยังไม่มีข้อมูลสำหรับรายงาน</h2>
+      <p className="mx-auto mt-1 max-w-lg text-sm text-slate-500">ไปที่แท็บตั้งค่า &amp; ดึงข้อมูล เพื่ออัปเดตตัวเลขหรือดึงเอกสาร benchmark ก่อน</p>
+      <button type="button" onClick={onGoSetup} className="mt-5 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
         ไปหน้าตั้งค่า
       </button>
     </div>
   );
 }
 
-export default function ScopusBenchmarkDashboard({
-  comparison = [], loading, yearFrom, yearTo, onRangeChange, onRefresh, onGoSetup,
-}) {
-  const [chartMode, setChartMode] = useState("count");
-  const [qualityMode, setQualityMode] = useState("q12");
-  const [impactMode, setImpactMode] = useState("oa");
-  const [typeMode, setTypeMode] = useState("count");
-  const [deepYear, setDeepYear] = useState(yearTo);
-  const [insights, setInsights] = useState(null);
-  const [insightsLoading, setInsightsLoading] = useState(true);
+// `api` is injectable so a dev harness can render the real report with fixture
+// data; production always uses the real scopusBenchmarkAPI.
+export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchmarkAPI }) {
+  const [data, setData] = useState(null);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [dataError, setDataError] = useState("");
+  const [reload, setReload] = useState(0);
+
+  const [manualYear, setManualYear] = useState(null);
+  const [trendRange, setTrendRange] = useState(5);
+  const [windowFrom, setWindowFrom] = useState(DEFAULT_WINDOW_FROM);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+
+  const [insightsY, setInsightsY] = useState(null);
+  const [insightsPrev, setInsightsPrev] = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState("");
   const [insightsReload, setInsightsReload] = useState(0);
-  const [journals, setJournals] = useState([]);
-  const [journalsError, setJournalsError] = useState("");
   const insightRequest = useRef(0);
 
-  const rows = useMemo(() => [...comparison].sort((a, b) => Number(a.year) - Number(b.year)), [comparison]);
-  const hasData = rows.some((row) => Number(row.faculty) > 0 || Number(row.university) > 0 || Number(row.country) > 0);
-  const deepYears = useMemo(() => rows.filter((row) => Number(row.faculty) > 0 || Number(row.university) > 0 || Number(row.country) > 0).map((row) => Number(row.year)).sort((a, b) => b - a), [rows]);
-  const minYearOption = Math.min(yearFrom, CURRENT_YEAR - 19);
-  const yearOptions = useMemo(() => Array.from({ length: CURRENT_YEAR - minYearOption + 1 }, (_, index) => CURRENT_YEAR - index), [minYearOption]);
-
+  // A4 page size is applied ONLY while this report is mounted (injected at runtime),
+  // never as a global @page rule — so printing other pages is unaffected (R2).
   useEffect(() => {
-    if (!deepYears.length) return;
-    if (!deepYears.includes(Number(deepYear)) || deepYear < yearFrom || deepYear > yearTo) setDeepYear(deepYears.find((year) => year >= yearFrom && year <= yearTo) || yearTo);
-  }, [deepYear, deepYears, yearFrom, yearTo]);
+    const style = document.createElement("style");
+    style.setAttribute("data-scopus-report-page", "");
+    style.textContent = "@media print { @page { size: A4 portrait; margin: 14mm; } }";
+    document.head.appendChild(style);
+    return () => style.remove();
+  }, []);
 
+  // A printed report must be self-contained: expand every collapsed <details> (the
+  // quality appendix and the source-note definitions) for the duration of the print
+  // so they are never dropped, then restore each to how the reader left it. Bound to
+  // beforeprint/afterprint so it covers the "พิมพ์รายงาน" button AND the browser's own
+  // Ctrl+P. Setting `.open` directly also drives the controlled <details> via its
+  // onToggle, keeping React state in sync.
   useEffect(() => {
-    if (!deepYear) return;
+    let reopened = [];
+    const expand = () => {
+      const root = document.getElementById("scopus-report-root");
+      if (!root) return;
+      reopened = Array.from(root.querySelectorAll("details:not([open])"));
+      reopened.forEach((element) => { element.open = true; });
+    };
+    const restore = () => {
+      reopened.forEach((element) => { element.open = false; });
+      reopened = [];
+    };
+    window.addEventListener("beforeprint", expand);
+    window.addEventListener("afterprint", restore);
+    return () => {
+      window.removeEventListener("beforeprint", expand);
+      window.removeEventListener("afterprint", restore);
+    };
+  }, []);
+
+  // Comparison read (report context) — kept separate from the setup tab's counts.
+  useEffect(() => {
+    let cancelled = false;
+    setDataLoading(true);
+    setDataError("");
+    api
+      .comparison({ year_from: windowFrom, year_to: CURRENT_YEAR })
+      .then((response) => {
+        if (!cancelled) setData(response?.data || null);
+      })
+      .catch((error) => {
+        if (!cancelled) setDataError(error?.message || "โหลดข้อมูลรายงานไม่สำเร็จ");
+      })
+      .finally(() => {
+        if (!cancelled) setDataLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reload, windowFrom]);
+
+  const yearMeta = data?.year_meta || {};
+  // Scope consistency drives EVERY comparison surface (findings, table, KPI share,
+  // trend share, CSV). Declared here — before trendPoints/KPIs use it (R3-1).
+  const scopeConsistent = data?.report_scope ? data.report_scope.consistent !== false : true;
+  const selection = useMemo(() => selectReportYear(yearMeta, CURRENT_YEAR), [yearMeta]);
+  const reportYear = manualYear ?? selection?.year ?? null;
+  const isCurrentYear = reportYear !== null && Number(reportYear) === CURRENT_YEAR;
+  const facultyReady = yearMeta?.[reportYear]?.faculty?.status === "available";
+
+  // Year choices come from available_years (ALL snapshot years across every level),
+  // so years older than the currently loaded window are still selectable (R7).
+  const yearOptions = useMemo(() => {
+    const available = data?.available_years || {};
+    const union = new Set([
+      ...(available.faculty || []),
+      ...(available.university || []),
+      ...(available.country || []),
+    ]);
+    const years = [...union].map(Number).filter(Number.isFinite).sort((a, b) => b - a);
+    return years.length ? years : reportYear ? [reportYear] : [];
+  }, [data, reportYear]);
+
+  // Widen the comparison read so the DEFAULT selection is decided from real
+  // readiness, not from snapshot existence (R4-1). For a default (no manual pick) we
+  // load down to the earliest ended snapshot year (resolveBootstrapFloor) so every
+  // candidate's true faculty status is in year_meta and selectReportYear can prefer
+  // an older faculty-READY year over a recent BLOCKED one. We also always ensure the
+  // shown year's trend window is loaded. A manual pick is respected (only its trend
+  // window is loaded). One wider GET, clamped to the earliest year that has data,
+  // and it settles (the floor is stable) so there is no widen/reload loop.
+  useEffect(() => {
+    if (!yearOptions.length) return;
+    const earliest = yearOptions[yearOptions.length - 1];
+    const candidates = [];
+    const shown = manualYear ?? reportYear;
+    if (shown != null) candidates.push(shown - trendRange + 1);
+    if (manualYear == null) {
+      const floor = resolveBootstrapFloor(data?.available_years, CURRENT_YEAR);
+      if (floor != null) candidates.push(floor);
+    }
+    if (!candidates.length) return;
+    const needed = Math.max(earliest, Math.min(...candidates));
+    if (needed < windowFrom) setWindowFrom(needed);
+  }, [manualYear, reportYear, trendRange, yearOptions, data, windowFrom]);
+
+  // Report year is an atomic context: whenever it changes, prior values are cleared
+  // before the new ones load so no figure from another year is ever shown (§4).
+  useEffect(() => {
+    if (reportYear === null) return;
     const requestId = insightRequest.current + 1;
     insightRequest.current = requestId;
     setInsightsLoading(true);
-    setInsights(null);
     setInsightsError("");
-    scopusBenchmarkAPI.insights({ year: deepYear })
-      .then((response) => {
-        if (insightRequest.current === requestId) setInsights(response?.data || null);
-      })
-      .catch((error) => {
-        if (insightRequest.current === requestId) setInsightsError(error?.message || "โหลดข้อมูลเชิงลึกไม่สำเร็จ");
+    setInsightsY(null);
+    setInsightsPrev(null);
+
+    const requests = [api.insights({ year: reportYear })];
+    // No prior-year insights for a cumulative current year (no YoY) — §9 C.
+    if (!isCurrentYear) requests.push(api.insights({ year: reportYear - 1 }));
+
+    Promise.allSettled(requests)
+      .then(([current, previous]) => {
+        if (insightRequest.current !== requestId) return;
+        if (current.status === "fulfilled") setInsightsY(current.value?.data || null);
+        else setInsightsError(current.reason?.message || "โหลดข้อมูลเชิงลึกไม่สำเร็จ");
+        if (previous && previous.status === "fulfilled") setInsightsPrev(previous.value?.data || null);
       })
       .finally(() => {
         if (insightRequest.current === requestId) setInsightsLoading(false);
       });
-  }, [deepYear, insightsReload]);
+  }, [reportYear, isCurrentYear, insightsReload]);
 
-  useEffect(() => {
-    scopusBenchmarkAPI.topJournals({ limit: 8 })
-      .then((response) => setJournals(Array.isArray(response?.data) ? response.data : []))
-      .catch((error) => setJournalsError(error?.message || "โหลดวารสารเด่นไม่สำเร็จ"));
-  }, []);
+  const rows = useMemo(() => (Array.isArray(data?.years) ? [...data.years].sort((a, b) => Number(a.year) - Number(b.year)) : []), [data]);
+  const rowByYear = useCallback((year) => rows.find((row) => Number(row.year) === Number(year)) || null, [rows]);
 
-  const selectedRows = useMemo(() => rows.filter((row) => Number(row.year) >= yearFrom && Number(row.year) <= yearTo), [rows, yearFrom, yearTo]);
-  const latest = [...selectedRows].reverse().find((row) => Number(row.faculty) > 0 || Number(row.university) > 0 || Number(row.country) > 0) || null;
-  const isYtd = latest ? Number(latest.year) === CURRENT_YEAR : false;
-  const previous = latest ? selectedRows.find((row) => Number(row.year) === Number(latest.year) - 1) : null;
-  const yoy = useCallback((key) => {
-    // Do not compare an incomplete current year to a full prior year.
-    if (isYtd || !latest || !previous || Number(previous[key]) <= 0) return null;
-    return ((Number(latest[key] || 0) - Number(previous[key])) / Number(previous[key])) * 100;
-  }, [isYtd, latest, previous]);
-  const shareNow = latest ? percent(latest.faculty, latest.university) : null;
-  const sharePrev = previous ? percent(previous.faculty, previous.university) : null;
-  const shareDelta = isYtd || shareNow === null || sharePrev === null || sharePrev === 0 ? null : ((shareNow - sharePrev) / sharePrev) * 100;
-  const rangeHasCurrentYear = selectedRows.some((row) => Number(row.year) === CURRENT_YEAR);
+  // Per-year usability comes from the snapshot metadata, so a missing snapshot is a
+  // gap while a real zero snapshot is a value.
+  const usableFaculty = useCallback((year) => yearMeta?.[year]?.faculty?.status === "available", [yearMeta]);
+  const usableKku = useCallback((year) => yearMeta?.[year]?.university?.status === "available", [yearMeta]);
 
-  const baseChart = useMemo(() => ({
-    chart: { toolbar: { show: false }, fontFamily: "Sarabun, sans-serif", animations: { enabled: false } },
-    dataLabels: { enabled: false },
-    grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
-    xaxis: { categories: selectedRows.map((row) => String(row.year)), axisBorder: { color: "#cbd5e1" }, axisTicks: { show: false } },
-  }), [selectedRows]);
-
-  const facultyArr = selectedRows.map((row) => Number(row.faculty || 0));
-  const kkuArr = selectedRows.map((row) => Number(row.university || 0));
-  const thailandArr = selectedRows.map((row) => Number(row.country || 0));
-
-  const trendSeries = useMemo(() => {
-    const mk = (name, data) => ({ name, data });
-    if (chartMode === "index") {
-      const rebase = (arr) => {
-        const base = arr.find((value) => value > 0) || 0;
-        return base ? arr.map((value) => Number(((value / base) * 100).toFixed(1))) : arr.map(() => null);
-      };
-      return [mk("คณะ", rebase(facultyArr)), mk("KKU", rebase(kkuArr)), mk("Thailand", rebase(thailandArr))];
+  const trendPoints = useMemo(() => {
+    if (reportYear === null) return [];
+    const start = reportYear - trendRange + 1;
+    const points = [];
+    for (let year = start; year <= reportYear; year += 1) {
+      const row = rowByYear(year);
+      const faculty = row && usableFaculty(year) && isUsable(row.faculty) ? Number(row.faculty) : null;
+      const kku = row && usableKku(year) && isUsable(row.university) ? Number(row.university) : null;
+      // Share is a คณะ-vs-KKU comparison — withheld entirely when scope is inconsistent (R3-1).
+      points.push({ year, faculty, kku, share: scopeConsistent ? shareOf(faculty, kku) : null });
     }
-    if (chartMode === "yoy") {
-      const growth = (arr) => arr.map((value, index) => (index === 0 || !arr[index - 1] ? null : Number((((value - arr[index - 1]) / arr[index - 1]) * 100).toFixed(1))));
-      return [mk("คณะ", growth(facultyArr)), mk("KKU", growth(kkuArr)), mk("Thailand", growth(thailandArr))];
-    }
-    return [mk("คณะ", facultyArr), mk("KKU", kkuArr), mk("Thailand", thailandArr)];
-  }, [chartMode, facultyArr, kkuArr, thailandArr]);
+    return points;
+  }, [reportYear, trendRange, rowByYear, usableFaculty, usableKku, scopeConsistent]);
 
-  const trendOptions = useMemo(() => {
-    const suffix = chartMode === "count" ? " ผลงาน" : chartMode === "yoy" ? "%" : "";
-    const yFormat = chartMode === "count" ? (value) => fmt(value)
-      : chartMode === "yoy" ? (value) => `${fmt(value, 0)}%`
-      : (value) => fmt(value, 0);
-    return {
-      ...baseChart,
-      colors: [COLORS.faculty, COLORS.kku, COLORS.thailand],
-      stroke: { curve: "smooth", width: 2.5 },
-      markers: { size: 3, strokeWidth: 0 },
-      legend: { position: "top", horizontalAlign: "left", fontSize: "12px" },
-      yaxis: { labels: { formatter: yFormat } },
-      annotations: chartMode === "index" ? { yaxis: [{ y: 100, borderColor: "#94a3b8", strokeDashArray: 3, label: { text: "ฐาน 100", style: { fontSize: "10px", color: "#64748b", background: "transparent" } } }] } : {},
-      tooltip: { shared: true, intersect: false, y: { formatter: (value) => (value === null ? "–" : `${fmt(value, chartMode === "count" ? 0 : 1)}${suffix}`) } },
-    };
-  }, [baseChart, chartMode]);
+  const reportRow = rowByYear(reportYear);
+  const reportMeta = yearMeta?.[reportYear] || null;
+  // Rows carry legacy default-0 for missing snapshots; normalize against year_meta
+  // so the table/CSV/share never read a missing snapshot as a real zero (R4).
+  const normalizedReportRow = useMemo(() => normalizeReportRow(reportRow, reportMeta), [reportRow, reportMeta]);
+  const prevRow = rowByYear(reportYear - 1);
+  const facultyCount = reportRow && facultyReady && isUsable(reportRow.faculty) ? Number(reportRow.faculty) : null;
+  const prevFacultyCount = prevRow && usableFaculty(reportYear - 1) && isUsable(prevRow.faculty) ? Number(prevRow.faculty) : null;
+  const kkuCount = reportRow && usableKku(reportYear) && isUsable(reportRow.university) ? Number(reportRow.university) : null;
+  const prevKkuCount = prevRow && usableKku(reportYear - 1) && isUsable(prevRow.university) ? Number(prevRow.university) : null;
 
-  const availableLevels = LEVELS.filter(({ key }) => insights?.levels?.[key]?.available);
-  const thailandMissing = insights && !insights.levels?.thailand?.available;
-  const coverage = insights?.quartile_coverage;
-  const coveragePct = percent(coverage?.classified, coverage?.total);
-  const maxJournalDocs = Math.max(...journals.map((journal) => Number(journal.docs || 0)), 1);
+  const shareNow = shareOf(facultyCount, kkuCount);
+  const sharePrev = shareOf(prevFacultyCount, prevKkuCount);
 
-  // Horizontal comparison bar (one value per level)
-  const levelBarOptions = (suffix = "%", max) => ({
-    chart: { toolbar: { show: false }, fontFamily: "Sarabun, sans-serif", animations: { enabled: false } },
-    colors: availableLevels.map((level) => level.color),
-    dataLabels: { enabled: true, formatter: (value) => `${fmt(value, suffix === "%" ? 0 : 1)}${suffix}`, style: { colors: ["#0f172a"], fontSize: "11px" }, offsetX: 12 },
-    legend: { show: false },
-    grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
-    plotOptions: { bar: { horizontal: true, borderRadius: 3, barHeight: "55%", distributed: true } },
-    xaxis: { categories: availableLevels.map((level) => level.label), max, labels: { formatter: (value) => `${fmt(value, suffix === "%" ? 0 : 1)}${suffix}` } },
-    tooltip: { y: { formatter: (value) => `${fmt(value, 1)}${suffix}` } },
-  });
+  const facultyInsight = insightsY?.levels?.faculty || null;
+  const kkuInsight = insightsY?.levels?.kku || null;
+  const prevFacultyInsight = insightsPrev?.levels?.faculty || null;
 
-  // 100% stacked horizontal (quartile distribution / doctype share)
-  const stacked100Options = (categories, colors) => ({
-    chart: { toolbar: { show: false }, stacked: true, stackType: "100%", fontFamily: "Sarabun, sans-serif", animations: { enabled: false } },
-    colors,
-    dataLabels: { enabled: true, formatter: (value) => (value >= 8 ? `${Math.round(value)}%` : ""), style: { fontSize: "10px", colors: ["#0f172a"] } },
-    legend: { position: "bottom", fontSize: "12px" },
-    grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
-    plotOptions: { bar: { horizontal: true, borderRadius: 2, barHeight: "58%" } },
-    xaxis: { categories, labels: { formatter: (value) => `${fmt(value, 0)}%` }, max: 100 },
-    tooltip: { y: { formatter: (value) => fmt(value) } },
-  });
-  // absolute stacked (doctype count)
-  const stackedCountOptions = (categories, colors) => ({
-    chart: { toolbar: { show: false }, stacked: true, fontFamily: "Sarabun, sans-serif", animations: { enabled: false } },
-    colors,
-    dataLabels: { enabled: false },
-    legend: { position: "bottom", fontSize: "12px" },
-    grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
-    plotOptions: { bar: { horizontal: true, borderRadius: 2, barHeight: "58%" } },
-    xaxis: { categories, labels: { formatter: (value) => fmt(value) } },
-    tooltip: { y: { formatter: (value) => `${fmt(value)} ผลงาน` } },
-  });
+  const scope = data?.report_scope || insightsY?.scope || { subject_area: "COMP" };
+  const sourceDates = useMemo(() => ({
+    faculty: formatThaiDate(yearMeta?.[reportYear]?.faculty?.snapshot_at),
+    university: formatThaiDate(yearMeta?.[reportYear]?.university?.snapshot_at),
+    country: formatThaiDate(yearMeta?.[reportYear]?.country?.snapshot_at),
+  }), [yearMeta, reportYear]);
 
-  const impactValues = (key) => availableLevels.map((level) => Number(insights?.levels?.[level.key]?.[key] || 0));
-  const quartileSeries = ["t1", "q1", "q2", "q3", "q4"].map((q) => ({ name: q.toUpperCase(), data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.quartile?.[q] || 0)) }));
-  const typeSeries = [
-    { name: "Article", data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.doctypes?.article || 0)) },
-    { name: "Conference", data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.doctypes?.conference || 0)) },
-    { name: "Other", data: availableLevels.map((level) => Number(insights?.levels?.[level.key]?.doctypes?.other || 0)) },
-  ];
-  const levelCategories = availableLevels.map((level) => level.label);
+  const findings = useMemo(() => buildFindings({
+    isCurrentYear,
+    reportYear,
+    facultyCount,
+    prevFacultyCount,
+    kkuCount,
+    prevKkuCount,
+    facultyReady,
+    faculty: facultyInsight,
+    kku: kkuInsight,
+  }), [isCurrentYear, reportYear, facultyCount, prevFacultyCount, kkuCount, prevKkuCount, facultyReady, facultyInsight, kkuInsight]);
 
-  const exportCsv = () => {
-    const header = ["year", "faculty", "kku", "thailand", "faculty_kku_pct", "faculty_thailand_pct"];
-    const lines = selectedRows.map((row) => [row.year, row.faculty ?? "", row.university ?? "", row.country ?? "", percent(row.faculty, row.university)?.toFixed(2) ?? "", percent(row.faculty, row.country)?.toFixed(2) ?? ""]);
-    const blob = new Blob(["﻿" + [header, ...lines].map((line) => line.join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
+  // KPI sublines (§5 B). Every subline shows the prior-year comparator only when it
+  // is usable and the year has ended.
+  const kpiItems = useMemo(() => {
+    const growth = !isCurrentYear ? growthInfo(facultyCount, prevFacultyCount) : { status: "unknown" };
+    const countSub = isCurrentYear
+      ? "ข้อมูลสะสม (ยังไม่ครบปี)"
+      : growth.status === "pct"
+      ? `ปีก่อน ${formatCount(prevFacultyCount)} · ${growth.delta >= 0 ? "+" : "−"}${formatCount(Math.abs(growth.delta))} ผลงาน (${formatPct(growth.pct)})`
+      : growth.status === "from_zero"
+      ? `ปีก่อน 0 · +${formatCount(growth.delta)} ผลงาน`
+      : growth.status === "flat"
+      ? "ไม่เปลี่ยนแปลงจากปีก่อน"
+      : "ไม่มีข้อมูลปีก่อน";
+
+    // Share (คณะ/KKU) is a cross-scope comparison — withheld when scope inconsistent (R3-1).
+    const shareValue = scopeConsistent ? formatPct(shareNow) : "ยังเทียบไม่ได้";
+    const shareSub = !scopeConsistent
+      ? "ขอบเขตไม่ตรง — งดสัดส่วนคณะ/KKU"
+      : isCurrentYear
+      ? "ข้อมูลสะสม (ยังไม่ครบปี)"
+      : shareNow !== null && sharePrev !== null
+      ? `ปีก่อน ${formatPct(sharePrev)} · ${formatPoints(shareNow - sharePrev)}`
+      : "ไม่มีข้อมูลปีก่อน";
+
+    // When the faculty harvest is incomplete for the year, the observed metric
+    // values still show but carry a note (their cohort ≠ the official count) (R2-1).
+    const facultyMismatch = facultyInsight?.readiness?.snapshot_mismatch;
+    const mismatchNote = facultyMismatch ? "ข้อมูลชุดนี้ยังไม่ครบเทียบ snapshot (ค่าที่แสดงเป็นค่าที่สังเกตได้)" : null;
+
+    const htNow = highTierShare(facultyInsight?.quartile);
+    const htPrev = highTierShare(prevFacultyInsight?.quartile);
+    const htQ = facultyInsight?.quartile;
+    const htDenom = htQ
+      ? `${formatCount(Number(htQ.t1 || 0) + Number(htQ.q1 || 0) + Number(htQ.q2 || 0))}/${formatCount(Number(htQ.t1 || 0) + Number(htQ.q1 || 0) + Number(htQ.q2 || 0) + Number(htQ.q3 || 0) + Number(htQ.q4 || 0))} ที่จัดกลุ่มได้`
+      : "ยังไม่มีข้อมูล";
+    // Prior-year comparator only when the QUALITY metric is ready in BOTH years.
+    const qualityComparable = metricReady(facultyInsight, "quality") && metricReady(prevFacultyInsight, "quality");
+    const htSub2 = isCurrentYear
+      ? null
+      : qualityComparable && htPrev !== null
+      ? `ปีก่อน ${formatPct(htPrev)}`
+      : facultyInsight?.available && !metricReady(facultyInsight, "quality")
+      ? "ยังเทียบปีก่อน/ระดับไม่ได้ (ข้อมูลวารสารไม่ครบ)"
+      : null;
+
+    // Observed international-collaboration rate over KNOWN docs (shared helper — R2-2).
+    const intlNowR = observedRate(facultyInsight, "intl");
+    const intlPrevR = observedRate(prevFacultyInsight, "intl");
+    const intlNow = intlNowR.value;
+    const intlSub = facultyInsight?.available
+      ? intlNowR.known !== null
+        ? `${formatCount(intlNowR.positive)}/${formatCount(intlNowR.known)} ที่ทราบ${intlNowR.unknown > 0 ? ` · ไม่ทราบ ${formatCount(intlNowR.unknown)}` : ""}`
+        : `จาก ${formatCount(facultyInsight?.docs)} ผลงาน (observed)`
+      : "ยังไม่มีข้อมูล";
+    const intlComparable = metricReady(facultyInsight, "intl") && metricReady(prevFacultyInsight, "intl");
+    const intlSub2 = isCurrentYear
+      ? null
+      : intlComparable && intlPrevR.value !== null
+      ? `ปีก่อน ${formatPct(intlPrevR.value)}`
+      : facultyInsight?.available && !metricReady(facultyInsight, "intl")
+      ? "ยังเทียบปีก่อน/ระดับไม่ได้ (ข้อมูลสังกัดไม่ครบ)"
+      : null;
+
+    return [
+      { label: "จำนวนผลงานคณะ", value: formatCount(facultyCount), unit: "ผลงาน", sublines: [countSub, mismatchNote].filter(Boolean) },
+      { label: "สัดส่วนผลงานคณะต่อ KKU", value: shareValue, sublines: [shareSub] },
+      { label: "ผลงานในวารสารกลุ่ม T1–Q2", value: formatPct(htNow), sublines: [htDenom, htSub2].filter(Boolean) },
+      { label: "ผลงานร่วมกับต่างประเทศ", value: formatPct(intlNow), sublines: [intlSub, intlSub2].filter(Boolean) },
+    ];
+  }, [isCurrentYear, facultyCount, prevFacultyCount, shareNow, sharePrev, facultyInsight, prevFacultyInsight, scopeConsistent]);
+
+  const download = useCallback((filename, contents) => {
+    const blob = new Blob(["﻿" + contents], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `scopus-benchmark-${yearFrom}-${yearTo}.csv`;
+    anchor.download = filename;
     anchor.click();
     URL.revokeObjectURL(url);
-  };
+  }, []);
 
-  const applyPreset = (years) => {
-    const latestYear = deepYears[0] || CURRENT_YEAR;
-    onRangeChange({ yearFrom: latestYear - years + 1, yearTo: latestYear });
-    setDeepYear(latestYear);
-  };
-  const updateBoundary = (field, value) => {
-    const numeric = Number(value);
-    const next = field === "from"
-      ? { yearFrom: Math.min(numeric, yearTo), yearTo }
-      : { yearFrom: Math.min(yearFrom, numeric), yearTo: numeric };
-    onRangeChange(next);
-    if (field === "to") setDeepYear(numeric);
-  };
+  const exportYearly = useCallback(() => {
+    // Export exactly the trend range shown on screen (5/10 ending at reportYear),
+    // not the full read window (R8).
+    const start = reportYear - trendRange + 1;
+    const visibleRows = rows.filter((row) => Number(row.year) >= start && Number(row.year) <= reportYear);
+    download(`scopus-benchmark-รายปี-${start}-${reportYear}.csv`, buildYearlyCsv({ rows: visibleRows, yearMeta, scope }));
+  }, [download, rows, yearMeta, scope, reportYear, trendRange]);
+  const exportComparison = useCallback(() => {
+    download(`scopus-benchmark-เปรียบเทียบ-${reportYear}.csv`, buildComparisonCsv({ reportYear, row: reportRow, meta: reportMeta, insights: insightsY, scope }));
+  }, [download, reportYear, reportRow, reportMeta, insightsY, scope]);
 
-  if ((loading && !comparison.length) || (insightsLoading && !insights)) return <Skeleton />;
-  if (!hasData) return <EmptyState onGoSetup={onGoSetup} />;
+  if (dataLoading && !data) return <Skeleton />;
+  if (dataError && !data) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <span className="flex items-center gap-2"><AlertCircle size={17} aria-hidden="true" />{dataError}</span>
+        <button type="button" onClick={() => setReload((value) => value + 1)} className="font-semibold underline">ลองใหม่</button>
+      </div>
+    );
+  }
+  if (reportYear === null) {
+    // Snapshots exist (available_years non-empty) but all fall outside the loaded
+    // window — show loading while the widen effect fetches the older range, never a
+    // dead-end empty state (R2-4). True empty only when nothing is available anywhere.
+    if (yearOptions.length) return <Skeleton />;
+    return <EmptyState onGoSetup={onGoSetup} />;
+  }
+
+  const trendRangeLabel = `${reportYear - trendRange + 1}–${reportYear}`;
+  const busy = dataLoading || (insightsLoading && !insightsY);
+  const refreshAll = () => {
+    setReload((value) => value + 1);
+    setInsightsReload((value) => value + 1);
+  };
+  // Scope guard (§4/R2-3/R3-1): on mismatch we withhold every comparative surface —
+  // findings, table gaps, the share KPI, the trend share line, and the CSV share.
+  const scopeMismatch = !scopeConsistent;
+  const shownFindings = scopeMismatch
+    ? ["ขอบเขตข้อมูลของสามระดับไม่ตรงกันหรือไม่ใช่ Computer Science (COMP) จึงงดข้อสรุปเปรียบเทียบจนกว่าจะตั้งค่าขอบเขตให้ตรง"]
+    : findings;
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-lg border border-blue-200 bg-blue-50 p-5 lg:p-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-stretch">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-blue-700"><Sparkles size={16} aria-hidden="true" /> ภาพรวมจุดเด่นของคณะ <InfoTip text="สรุปจุดเด่นของคณะจากข้อมูล document-level ในปีที่เลือก" /></div>
-            <h2 className="mt-3 text-2xl font-semibold leading-snug text-slate-950">
-              ภาพรวมคุณภาพและเครือข่ายงานวิจัย Computer Science
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm text-slate-600">
-              ปี {deepYear}: ผลงานคณะอยู่ในวารสารคุณภาพสูง (T1+Q1+Q2) {pct(q12Percent(insights?.levels?.faculty), 0)} และมีความร่วมมือต่างชาติ {pct(insights?.levels?.faculty?.intl_pct, 0)}
-            </p>
-            <p className="mt-4 border-l-2 border-blue-600 pl-3 text-sm font-medium text-slate-700">
-              {q12Percent(insights?.levels?.faculty) >= q12Percent(insights?.levels?.kku)
-                ? "คณะมีสัดส่วนวารสารคุณภาพสูง (T1+Q1+Q2) สูงกว่าหรือเท่าภาพรวม KKU ในปีที่เลือก"
-                : "คุณภาพวารสารของคณะยังมีช่องว่างเมื่อเทียบกับภาพรวม KKU ในปีที่เลือก"}
-            </p>
+    <div id="scopus-report-root" className="rounded-lg border border-slate-200 bg-white">
+      <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6 lg:px-8">
+        <ReportHeader
+          reportYear={reportYear}
+          yearOptions={yearOptions}
+          onYearChange={setManualYear}
+          trendRangeLabel={trendRangeLabel}
+          sourceDates={sourceDates}
+          cumulative={isCurrentYear}
+          busy={busy}
+          onPrint={() => { if (!busy) window.print(); }}
+          onRefresh={refreshAll}
+          onExportYearly={exportYearly}
+          onExportComparison={exportComparison}
+          onToggleSources={() => {
+            setSourcesOpen(true);
+            requestAnimationFrame(() => document.getElementById("scopus-report-sources")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+          }}
+        />
+
+        {scopeMismatch && (
+          <div className="mt-4 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+            <AlertCircle size={16} aria-hidden="true" />ขอบเขตข้อมูลของสามระดับไม่ตรงกันหรือไม่ใช่ Computer Science (COMP) — งดข้อสรุปและการเปรียบเทียบทั้งหมด แสดงเฉพาะค่าที่สังเกตได้ (คณะ {scope.faculty_subject_area || "?"} · KKU {scope.university_subject_area || scope.subject_area} · ประเทศไทย {scope.country_subject_area || "?"})
           </div>
-          <div className="grid min-w-0 flex-1 gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-blue-100 bg-white/80 p-4">
-              <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-800">วารสารคุณภาพสูง (T1+Q1+Q2) <InfoTip text="สัดส่วนวารสารคุณภาพสูง — T1 (Top 10%, percentile ≥ 90) บวก Q1 และ Q2 ต่อเอกสารที่จับคู่ CiteScore ได้ · T1 แยกจาก Q1 ไม่นับซ้ำ" /></div>
-              <div className="space-y-2">{availableLevels.map((level) => <MiniBar key={level.key} label={level.label} value={q12Percent(insights?.levels?.[level.key])} color={level.color} highlight={level.key === "faculty"} />)}</div>
-            </div>
-            <div className="rounded-lg border border-blue-100 bg-white/80 p-4">
-              <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-800">ความร่วมมือต่างชาติ <InfoTip text="ร้อยละของเอกสารที่มีผู้แต่งอย่างน้อยหนึ่งคนจากหน่วยงานนอกประเทศไทย" /></div>
-              <div className="space-y-2">{availableLevels.map((level) => <MiniBar key={level.key} label={level.label} value={insights?.levels?.[level.key]?.intl_pct} color={level.color} highlight={level.key === "faculty"} />)}</div>
-            </div>
+        )}
+
+        {insightsError && (
+          // Printable so a failed load is visible in the printed report (§7), while
+          // the retry control itself stays screen-only.
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800">
+            <span className="flex items-center gap-2"><AlertCircle size={16} aria-hidden="true" />ข้อมูลเชิงลึกบางส่วนโหลดไม่สำเร็จ: {insightsError}</span>
+            <button type="button" onClick={() => setInsightsReload((value) => value + 1)} className="no-print font-semibold underline">ลองใหม่</button>
           </div>
-        </div>
-      </section>
+        )}
 
-      {insightsError && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          <span className="flex items-center gap-2"><AlertCircle size={17} aria-hidden="true" />{insightsError}</span>
-          <button type="button" onClick={() => setInsightsReload((value) => value + 1)} className="font-semibold underline">ลองใหม่</button>
-        </div>
-      )}
-      {thailandMissing && <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">Thailand ยังไม่มีข้อมูล document-level ในปี {deepYear} — ส่วนเชิงลึกจะแสดงเฉพาะคณะเทียบกับ KKU</div>}
+        <KpiStrip items={kpiItems} />
+        <KeyFindings findings={shownFindings} />
+        <TrendCharts points={trendPoints} reportYear={reportYear} currentYear={CURRENT_YEAR} trendRange={trendRange} onRangeChange={setTrendRange} scopeConsistent={scopeConsistent} />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard icon={FileText} label={`ผลงานคณะ · ${latest?.year || "–"}`} value={fmt(latest?.faculty)} unit="ผลงาน" delta={yoy("faculty")} ytd={isYtd} color={COLORS.faculty} hint="จำนวนผลงาน Computer Science ที่ยืนยันผู้แต่งคณะในปีล่าสุดของช่วงที่เลือก เทียบ YoY กับปีก่อนหน้า (ปีที่ยังไม่ครบจะแสดงเป็น YTD)" />
-        <KpiCard icon={BarChart3} label={`ผลงาน KKU · ${latest?.year || "–"}`} value={fmt(latest?.university)} unit="ผลงาน" delta={yoy("university")} ytd={isYtd} color={COLORS.kku} hint="จำนวนผลงาน Computer Science ทั้งมหาวิทยาลัยขอนแก่นในปีล่าสุดของช่วงที่เลือก" />
-        <KpiCard icon={Globe2} label={`ผลงาน Thailand · ${latest?.year || "–"}`} value={fmt(latest?.country)} unit="ผลงาน" delta={yoy("country")} ytd={isYtd} color={COLORS.thailand} hint="จำนวนผลงาน Computer Science ที่มีหน่วยงานในประเทศไทยในปีล่าสุดของช่วงที่เลือก" />
-        <KpiCard icon={TrendingUp} label={`สัดส่วนคณะ / KKU · ${latest?.year || "–"}`} value={pct(shareNow, 1)} delta={shareDelta} ytd={isYtd} color="#16a34a" hint="จำนวนผลงานคณะหารด้วยจำนวนผลงาน KKU ในปีเดียวกัน พร้อมการเปลี่ยนแปลงเทียบปีก่อน (ยกเว้นปีที่ยังไม่ครบ)" />
+        {insightsLoading && !insightsY ? (
+          <div className="border-b border-slate-200 py-6"><div className="h-40 animate-pulse rounded bg-slate-100" /></div>
+        ) : (
+          <>
+            <ComparisonTable reportYear={reportYear} row={normalizedReportRow} insights={insightsY} scopeConsistent={scopeConsistent} />
+            <CitationsSection reportYear={reportYear} insights={insightsY} />
+            <QualityTypeDetails insights={insightsY} />
+          </>
+        )}
+
+        <SourceNotes
+          reportYear={reportYear}
+          scope={scope}
+          sourceDates={sourceDates}
+          facultyMetric={data?.faculty_metric}
+          open={sourcesOpen}
+          onToggle={setSourcesOpen}
+          onGoSetup={onGoSetup}
+          generatedAt={new Date().toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" })}
+        />
       </div>
-
-      <div className="grid gap-5 xl:grid-cols-3">
-        <Panel title="แนวโน้มรายปี" info="เทียบ 3 ระดับตามช่วงปี · จำนวน = ค่าจริง, ดัชนี = ปีฐาน 100 (เทียบทิศทางแม้จำนวนต่างกันมาก), YoY = อัตราเติบโตเทียบปีก่อน" className="xl:col-span-2"
-          action={<div className="flex flex-wrap items-center gap-2">
-            <select aria-label="ปีเริ่มต้น" value={yearFrom} onChange={(event) => updateBoundary("from", event.target.value)} className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">{yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}</select>
-            <span className="text-xs text-slate-400">ถึง</span>
-            <select aria-label="ปีสิ้นสุด" value={yearTo} onChange={(event) => updateBoundary("to", event.target.value)} className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">{yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}</select>
-            <button type="button" onClick={() => applyPreset(5)} className="rounded-md bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200">5 ปีล่าสุด</button>
-            <button type="button" onClick={() => applyPreset(10)} className="rounded-md bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200">10 ปี</button>
-            <button type="button" aria-label="รีเฟรชข้อมูล" onClick={onRefresh} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-blue-600"><RefreshCw size={15} aria-hidden="true" /></button>
-          </div>}>
-          <div className="mb-2">
-            <SegTabs ariaLabel="มุมมองกราฟแนวโน้ม" value={chartMode} onChange={setChartMode}
-              options={[{ key: "count", label: "จำนวน" }, { key: "index", label: "ดัชนี (100)" }, { key: "yoy", label: "YoY %" }]} />
-          </div>
-          <ApexChart key={`${chartMode}-${yearFrom}-${yearTo}`} type="line" height={330} options={trendOptions} series={trendSeries} />
-          {chartMode === "yoy" && rangeHasCurrentYear && <p className="mt-1 text-xs text-slate-400">* ปี {CURRENT_YEAR} เป็น YTD — อัตราเติบโตอาจต่ำเพราะข้อมูลยังไม่ครบปี</p>}
-          {chartMode === "index" && <p className="mt-1 text-xs text-slate-400">แต่ละระดับตั้งปีแรกของช่วง = 100 เพื่อเทียบทิศทางการเติบโต</p>}
-        </Panel>
-
-        <Panel title="คุณภาพวารสาร" info="CiteScore tier ต่อระดับสำหรับปี deep-dive · T1 = Top 10% (percentile ≥ 90) แยกจาก Q1 ไม่นับซ้ำ · conference ไม่จัดเข้ากลุ่ม tier · T1+Q1+Q2 = คุณภาพสูง, การกระจาย = โครงสร้าง T1–Q4"
-          action={<select aria-label="ปีข้อมูลเชิงลึก" value={deepYear} onChange={(event) => setDeepYear(Number(event.target.value))} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">{deepYears.filter((year) => year >= yearFrom && year <= yearTo).map((year) => <option key={year} value={year}>{year}</option>)}</select>}>
-          <div className="mb-2"><SegTabs ariaLabel="มุมมองคุณภาพวารสาร" value={qualityMode} onChange={setQualityMode} options={[{ key: "q12", label: "T1+Q1+Q2" }, { key: "dist", label: "การกระจาย T1–Q4" }]} /></div>
-          {insightsLoading ? <div className="h-64 animate-pulse rounded-md bg-slate-100" /> : availableLevels.length ? <>
-            {qualityMode === "q12"
-              ? <ApexChart key={`q-q12-${deepYear}`} type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "T1+Q1+Q2", data: availableLevels.map((level) => Number((q12Percent(insights?.levels?.[level.key]) || 0).toFixed(2))) }]} />
-              : <ApexChart key={`q-dist-${deepYear}`} type="bar" height={230} options={stacked100Options(levelCategories, [QUARTILE_COLORS.t1, QUARTILE_COLORS.q1, QUARTILE_COLORS.q2, QUARTILE_COLORS.q3, QUARTILE_COLORS.q4])} series={quartileSeries} />}
-            <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">อิงวารสารที่มีค่า CiteScore {pct(coveragePct, 1)} ({fmt(coverage?.classified)}/{fmt(coverage?.total)} ผลงาน)</div>
-          </> : <div className="py-16 text-center text-sm text-slate-400">ไม่มีข้อมูลเชิงลึกในปีนี้</div>}
-        </Panel>
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Panel title="ตัวชี้วัดผลกระทบ" info="เทียบ 3 ระดับสำหรับปี deep-dive · Open Access = อ่านฟรี, นานาชาติ = มีผู้ร่วมแต่งต่างประเทศ, อ้างอิง/ชิ้น = citations เฉลี่ยต่อเอกสาร"
-          action={<SegTabs ariaLabel="ตัวชี้วัดผลกระทบ" value={impactMode} onChange={setImpactMode} options={[{ key: "oa", label: "Open Access" }, { key: "intl", label: "นานาชาติ" }, { key: "cpd", label: "อ้างอิง/ชิ้น" }]} />}>
-          {insightsLoading ? <div className="h-52 animate-pulse rounded-md bg-slate-100" /> : availableLevels.length ? <>
-            {impactMode === "oa" && <ApexChart key="impact-oa" type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "Open Access", data: impactValues("oa_pct") }]} />}
-            {impactMode === "intl" && <ApexChart key="impact-intl" type="bar" height={230} options={levelBarOptions("%", 100)} series={[{ name: "นานาชาติ", data: impactValues("intl_pct") }]} />}
-            {impactMode === "cpd" && <><ApexChart key="impact-cpd" type="bar" height={230} options={levelBarOptions("", undefined)} series={[{ name: "อ้างอิง/ชิ้น", data: impactValues("avg_cite") }]} />
-              <p className="mt-1 text-xs text-slate-400">การอ้างอิงสะสมตามเวลา — ปีล่าสุดจะต่ำเพราะเพิ่งตีพิมพ์</p></>}
-          </> : <div className="py-16 text-center text-sm text-slate-400">ไม่มีข้อมูลเชิงลึกในปีนี้</div>}
-        </Panel>
-
-        <Panel title="ประเภทผลงาน" info="Article / Conference / Other ต่อระดับสำหรับปี deep-dive · เลือกดูจำนวนจริงหรือสัดส่วน %"
-          action={<SegTabs ariaLabel="มุมมองประเภทผลงาน" value={typeMode} onChange={setTypeMode} options={[{ key: "count", label: "จำนวน" }, { key: "pct", label: "สัดส่วน %" }]} />}>
-          {insightsLoading ? <div className="h-52 animate-pulse rounded-md bg-slate-100" /> : availableLevels.length
-            ? <ApexChart key={`types-${typeMode}-${deepYear}`} type="bar" height={230}
-                options={(typeMode === "pct" ? stacked100Options : stackedCountOptions)(levelCategories, [TYPE_COLORS.article, TYPE_COLORS.conference, TYPE_COLORS.other])}
-                series={typeSeries} />
-            : <div className="py-16 text-center text-sm text-slate-400">ไม่มีข้อมูลเชิงลึกในปีนี้</div>}
-        </Panel>
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="วารสารเด่นของ KKU" info="วารสารที่ผลงาน KKU ในชุด benchmark ทุกปีตีพิมพ์บ่อยที่สุด เรียงตามจำนวนเอกสาร · ตัวเลขอ้างอิงคือ Citations ต่อเอกสาร (เฉลี่ย)">
-          {journalsError ? <p className="text-sm text-red-700">{journalsError}</p> : journals.length ? <div className="space-y-3">{journals.map((journal, index) => <div key={`${journal.name}-${index}`}>
-            <div className="flex items-start justify-between gap-4 text-xs"><span className="min-w-0 text-slate-700"><span className="mr-2 font-semibold text-slate-400">{index + 1}</span>{journal.name}</span><span className="shrink-0 tabular-nums text-slate-500">{fmt(journal.docs)} ผลงาน · {fmt(journal.avg_cite, 1)} อ้างอิง/ชิ้น</span></div>
-            <div className="mt-1.5 h-1.5 bg-slate-100"><div className="h-full bg-sky-500" style={{ width: `${(Number(journal.docs) / maxJournalDocs) * 100}%` }} /></div>
-          </div>)}</div> : <div className="py-12 text-center text-sm text-slate-400">ยังไม่มีข้อมูลวารสาร</div>}
-        </Panel>
-        <Panel title="การมีส่วนร่วมของคณะ" info="สัดส่วนผลงานคณะต่อผลงาน KKU ในแต่ละปีของช่วงที่เลือก ยิ่งสูงยิ่งสะท้อนส่วนร่วมของคณะมาก">
-          <ApexChart type="area" height={300} options={{ ...baseChart, colors: [COLORS.faculty], stroke: { curve: "smooth", width: 2.5 }, fill: { type: "solid", opacity: 0.12 }, yaxis: { min: 0, labels: { formatter: (value) => `${fmt(value, 0)}%` } }, legend: { show: false }, tooltip: { y: { formatter: (value) => pct(value) } } }} series={[{ name: "คณะ / KKU", data: selectedRows.map((row) => Number((percent(row.faculty, row.university) || 0).toFixed(2))) }]} />
-        </Panel>
-      </div>
-
-      <Panel title="รายงานและการส่งออก" info="ส่งออกข้อมูล time-series ตามช่วงปีที่เลือกเป็น CSV หรือเปิดหน้าต่างพิมพ์เพื่อจัดทำรายงาน PDF">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-3"><span className="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><LockKeyhole size={18} aria-hidden="true" /></span><div><div className="text-sm font-semibold text-slate-800">ข้อมูลสำหรับงานบริหารและวางแผน</div><p className="mt-0.5 text-xs text-slate-500">ช่วงปี {yearFrom}–{yearTo} · deep-dive ปี {deepYear}</p></div></div>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={exportCsv} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"><Download size={16} aria-hidden="true" />ส่งออก CSV</button>
-            <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400"><Printer size={16} aria-hidden="true" />พิมพ์รายงาน</button>
-          </div>
-        </div>
-      </Panel>
     </div>
   );
 }

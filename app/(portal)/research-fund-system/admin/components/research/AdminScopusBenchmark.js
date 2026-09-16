@@ -421,20 +421,9 @@ export default function AdminScopusBenchmark() {
     detecting,
   };
 
-  const renderResults = () => (
-    <ScopusBenchmarkDashboard
-      comparison={comparison}
-      loading={comparisonLoading}
-      yearFrom={yearFrom}
-      yearTo={yearTo}
-      onRangeChange={({ yearFrom: nextFrom, yearTo: nextTo }) => {
-        setYearFrom(nextFrom);
-        setYearTo(nextTo);
-      }}
-      onRefresh={() => loadComparison()}
-      onGoSetup={() => setTab("setup")}
-    />
-  );
+  // The executive report owns its own comparison + insights reads (report context),
+  // kept separate from this setup tab's counts/harvest state (handoff §10.4).
+  const renderResults = () => <ScopusBenchmarkDashboard onGoSetup={() => setTab("setup")} />;
 
   const renderSetup = () => (
     <div className="space-y-4">
