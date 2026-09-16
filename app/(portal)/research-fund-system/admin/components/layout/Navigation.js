@@ -6,8 +6,12 @@ import { LogOut } from "lucide-react";
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { normalizeRoleName } from "@/app/lib/access_routing";
-import { MEMBER_BASE_MENU_ITEMS, MEMBER_DEPT_REVIEW_ITEM } from "@/app/lib/member_menu_config";
-import { ADMIN_BASE_MENU_ITEMS } from "@/app/lib/admin_menu_config";
+import {
+  MEMBER_BASE_MENU_ITEMS,
+  MEMBER_DEPT_REVIEW_ITEM,
+  MEMBER_MENU_GROUPS,
+} from "@/app/lib/member_menu_config";
+import { ADMIN_BASE_MENU_ITEMS, ADMIN_MENU_GROUPS } from "@/app/lib/admin_menu_config";
 import {
   ADMIN_MENU_PRESENTATION,
   MEMBER_MENU_PRESENTATION,
@@ -53,6 +57,13 @@ export default function Navigation({
     ? menuItemsWithPermissions.filter((item) => item.id === "dashboard")
     : menuItemsWithPermissions.filter(canViewMenu);
 
+  const visibleMenuGroups = ADMIN_MENU_GROUPS.map((group) => ({
+    ...group,
+    items: group.itemIds
+      .map((itemId) => visibleMenuItems.find((item) => item.id === itemId))
+      .filter(Boolean),
+  })).filter((group) => group.items.length > 0);
+
   const normalizedRole = normalizeRoleName(user?.role ?? user?.role_id);
   const canAccessMemberPortal = ["teacher", "staff", "dept_head"].includes(normalizedRole);
 
@@ -67,6 +78,13 @@ export default function Navigation({
         route: `${MEMBER_BASE_PATH}/${item.id}`,
       }))
     : [];
+
+  const memberShortcutGroups = MEMBER_MENU_GROUPS.map((group) => ({
+    ...group,
+    items: group.itemIds
+      .map((itemId) => memberShortcutItems.find((item) => item.id === `member-${itemId}`))
+      .filter(Boolean),
+  })).filter((group) => group.items.length > 0);
 
   useEffect(() => {
     const adminRoutes = visibleMenuItems.slice(0, 4).map((item) => item.route || `${ADMIN_BASE_PATH}/${item.id}`);
@@ -138,43 +156,55 @@ export default function Navigation({
 
   return (
     <nav className="space-y-1 pb-40" aria-label="เมนูผู้ดูแลระบบ">
-      <p className="portal-nav-section-label">เมนูผู้ดูแล</p>
-      {visibleMenuItems.map((item) => (
-        <div key={item.id}>
-          <button
-            onClick={() => handleMenuClick(item)}
-            disabled={pendingRoute === (item.route || `${ADMIN_BASE_PATH}/${item.id}`)}
-            className={`portal-nav-item group disabled:cursor-wait disabled:opacity-60 ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
-          >
-            <PortalNavIcon icon={item.icon} tone={item.tone} />
-            <div className="flex-1 text-left">
-              <span>{pendingRoute === (item.route || `${ADMIN_BASE_PATH}/${item.id}`) ? "กำลังเปิด..." : item.label}</span>
-              {item.description && (
-                <span className="block text-xs text-slate-500">{item.description}</span>
-              )}
-            </div>
-          </button>
-        </div>
-      ))}
-
-      {memberShortcutItems.length > 0 ? (
-        <>
-          <div className="mt-5 border-t border-slate-200 pt-4">
-            <p className="portal-nav-section-label">เมนูบุคลากร</p>
-          </div>
-          {memberShortcutItems.map((item) => (
-            <div key={item.id}>
+      <p className="portal-nav-portal-label">เมนูผู้ดูแล</p>
+      {visibleMenuGroups.map((group, groupIndex) => (
+        <section key={group.id} className={groupIndex > 0 ? "pt-4" : ""} aria-label={group.label}>
+          <p className="portal-nav-section-label">{group.label}</p>
+          <div className="space-y-1">
+            {group.items.map((item) => (
               <button
+                key={item.id}
                 onClick={() => handleMenuClick(item)}
-                disabled={pendingRoute === item.route}
-                className="portal-nav-item group disabled:cursor-wait disabled:opacity-60"
+                disabled={pendingRoute === (item.route || `${ADMIN_BASE_PATH}/${item.id}`)}
+                className={`portal-nav-item group disabled:cursor-wait disabled:opacity-60 ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
               >
                 <PortalNavIcon icon={item.icon} tone={item.tone} />
                 <div className="flex-1 text-left">
-                  <span>{pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
+                  <span>{pendingRoute === (item.route || `${ADMIN_BASE_PATH}/${item.id}`) ? "กำลังเปิด..." : item.label}</span>
+                  {item.description && (
+                    <span className="block text-xs text-slate-500">{item.description}</span>
+                  )}
                 </div>
               </button>
-            </div>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      {memberShortcutGroups.length > 0 ? (
+        <>
+          <div className="mt-5 border-t border-slate-200 pt-4">
+            <p className="portal-nav-portal-label">เมนูบุคลากร</p>
+          </div>
+          {memberShortcutGroups.map((group, groupIndex) => (
+            <section key={group.id} className={groupIndex > 0 ? "pt-4" : ""} aria-label={group.label}>
+              <p className="portal-nav-section-label">{group.label}</p>
+              <div className="space-y-1">
+                {group.items.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleMenuClick(item)}
+                    disabled={pendingRoute === item.route}
+                    className="portal-nav-item group disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <PortalNavIcon icon={item.icon} tone={item.tone} />
+                    <div className="flex-1 text-left">
+                      <span>{pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
           ))}
         </>
       ) : null}

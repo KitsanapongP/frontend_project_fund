@@ -1,7 +1,7 @@
 export const ADMIN_BASE_MENU_ITEMS = [
   {
     id: "dashboard",
-    label: "แดชบอร์ดผู้ดูแลระบบ",
+    label: "แดชบอร์ด",
     route: "/research-fund-system/admin/dashboard",
     requiredPermissions: ["ui.page.admin.dashboard.view", "dashboard.view.admin"],
   },
@@ -55,7 +55,7 @@ export const ADMIN_BASE_MENU_ITEMS = [
   },
   {
     id: "approval-records",
-    label: "บันทึกข้อมูลการอนุมัติทุน",
+    label: "การอนุมัติทุน",
     route: "/research-fund-system/admin/approval-records",
     requiredPermissions: ["ui.page.admin.approval_records.view"],
   },
@@ -67,7 +67,7 @@ export const ADMIN_BASE_MENU_ITEMS = [
   },
   {
     id: "academic-imports",
-    label: "ข้อมูลผลงานวิชาการ / Academic Data Import",
+    label: "นำเข้าผลงานวิชาการ",
     route: "/research-fund-system/admin/academic-imports",
     requiredPermissions: ["ui.page.admin.academic_imports.view"],
   },
@@ -76,5 +76,34 @@ export const ADMIN_BASE_MENU_ITEMS = [
     label: "ผู้ใช้และสิทธิ์การเข้าถึง",
     route: "/research-fund-system/admin/access-control",
     requiredPermissions: ["ui.page.admin.access_control.view", "access.manage", "users.view", "users.manage"],
+  },
+];
+
+export const ADMIN_MENU_GROUPS = [
+  {
+    id: "overview",
+    label: "ภาพรวม",
+    itemIds: ["dashboard"],
+  },
+  {
+    id: "research",
+    label: "งานวิจัย",
+    itemIds: ["research-dashboard", "scopus-research-search", "scopus-benchmark"],
+  },
+  {
+    id: "funding",
+    label: "ทุนวิจัย",
+    itemIds: [
+      "research-fund",
+      "promotion-fund",
+      "applications-list",
+      "fund-settings",
+      "approval-records",
+    ],
+  },
+  {
+    id: "system",
+    label: "จัดการระบบ",
+    itemIds: ["projects", "import-export", "academic-imports", "access-control"],
   },
 ];

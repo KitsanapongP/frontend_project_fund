@@ -321,6 +321,19 @@ html[data-portal-font-scale="large"] {
   font-weight: 600;
 }
 
+.portal-nav-portal-label {
+  margin: 0 0 0.75rem;
+  border: 1px solid #bfdbfe;
+  border-left-width: 4px;
+  border-radius: 0.5rem;
+  background: #eff6ff;
+  padding: 0.625rem 0.75rem;
+  color: #1e3a8a;
+  font-size: var(--text-body);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 /* globals.css - เพิ่มใน app/globals.css */
 
 /* Consistent Button Styles */

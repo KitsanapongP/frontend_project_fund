@@ -5,8 +5,12 @@ import { ChevronDown, LogOut } from "lucide-react";
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { hasAdminPortalAccess } from "@/app/lib/access_routing";
-import { MEMBER_BASE_MENU_ITEMS, MEMBER_DEPT_REVIEW_ITEM } from "@/app/lib/member_menu_config";
-import { ADMIN_BASE_MENU_ITEMS } from "@/app/lib/admin_menu_config";
+import {
+  MEMBER_BASE_MENU_ITEMS,
+  MEMBER_DEPT_REVIEW_ITEM,
+  MEMBER_MENU_GROUPS,
+} from "@/app/lib/member_menu_config";
+import { ADMIN_BASE_MENU_ITEMS, ADMIN_MENU_GROUPS } from "@/app/lib/admin_menu_config";
 import {
   ADMIN_MENU_PRESENTATION,
   MEMBER_MENU_PRESENTATION,
@@ -66,6 +70,20 @@ export default function Navigation({
     }
     return hasPermission(item.requiredPermission);
   });
+
+  const adminShortcutGroups = ADMIN_MENU_GROUPS.map((group) => ({
+    ...group,
+    items: group.itemIds
+      .map((itemId) => adminShortcutItems.find((item) => item.id === `admin-${itemId}`))
+      .filter(Boolean),
+  })).filter((group) => group.items.length > 0);
+
+  const visibleMemberGroups = MEMBER_MENU_GROUPS.map((group) => ({
+    ...group,
+    items: group.itemIds
+      .map((itemId) => visibleMemberItems.find((item) => item.id === itemId))
+      .filter(Boolean),
+  })).filter((group) => group.items.length > 0);
 
   const closeMobileMenu = () => {
     if (typeof closeMenu === "function") {
@@ -152,62 +170,74 @@ export default function Navigation({
 
   return (
     <nav className="space-y-1 pb-40" aria-label="เมนูระบบกองทุน">
-      {canSwitchToAdminPortal && adminShortcutItems.length > 0 ? (
+      {canSwitchToAdminPortal && adminShortcutGroups.length > 0 ? (
         <div className="pt-1">
-          <p className="portal-nav-section-label">เมนูผู้ดูแล</p>
-          {adminShortcutItems.map((item) => (
-            <div key={item.id}>
-              <button
-                onClick={() => handleMenuClick({ ...item, hasSubmenu: false })}
-                disabled={pendingRoute === item.route}
-                className="portal-nav-item group disabled:cursor-wait disabled:opacity-60"
-              >
-                <PortalNavIcon icon={item.icon} tone={item.tone} />
-                <span className="flex-1 text-left">{pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
-              </button>
-            </div>
+          <p className="portal-nav-portal-label">เมนูผู้ดูแล</p>
+          {adminShortcutGroups.map((group, groupIndex) => (
+            <section key={group.id} className={groupIndex > 0 ? "pt-4" : ""} aria-label={group.label}>
+              <p className="portal-nav-section-label">{group.label}</p>
+              <div className="space-y-1">
+                {group.items.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleMenuClick({ ...item, hasSubmenu: false })}
+                    disabled={pendingRoute === item.route}
+                    className="portal-nav-item group disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <PortalNavIcon icon={item.icon} tone={item.tone} />
+                    <span className="flex-1 text-left">{pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       ) : null}
 
-      <div className="mt-3 border-t border-slate-200 pt-4">
-        <p className="portal-nav-section-label">เมนูบุคลากร</p>
-      </div>
+      <div className={canSwitchToAdminPortal && adminShortcutGroups.length > 0 ? "mt-5 border-t border-slate-200 pt-4" : ""}>
+        <p className="portal-nav-portal-label">เมนูบุคลากร</p>
+        {visibleMemberGroups.map((group, groupIndex) => (
+          <section key={group.id} className={groupIndex > 0 ? "pt-4" : ""} aria-label={group.label}>
+            <p className="portal-nav-section-label">{group.label}</p>
+            <div className="space-y-1">
+              {group.items.map((item) => (
+                <div key={item.id}>
+                  <button
+                    onClick={() => handleMenuClick(item)}
+                    className={`portal-nav-item group ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
+                  >
+                    <PortalNavIcon icon={item.icon} tone={item.tone} />
+                    <span className="flex-1 text-left">{item.label}</span>
+                    {item.hasSubmenu && (
+                      <ChevronDown
+                        size={16}
+                        className={`transition-transform duration-300 ${
+                          submenuOpen && item.id === "submit-request" ? "rotate-180" : ""
+                        }`}
+                      />
+                    )}
+                  </button>
 
-      {visibleMemberItems.map((item) => (
-        <div key={item.id}>
-          <button
-            onClick={() => handleMenuClick(item)}
-            className={`portal-nav-item group ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
-          >
-            <PortalNavIcon icon={item.icon} tone={item.tone} />
-            <span className="flex-1 text-left">{item.label}</span>
-            {item.hasSubmenu && (
-              <ChevronDown
-                size={16}
-                className={`transition-transform duration-300 ${
-                  submenuOpen && item.id === "submit-request" ? "rotate-180" : ""
-                }`}
-              />
-            )}
-          </button>
-
-          {item.hasSubmenu && submenuOpen && item.id === "submit-request" && (
-            <div className="ml-5 mt-1 space-y-1 border-l border-slate-200 pl-2 animate-in slide-in-from-top-2">
-              {item.submenu.map((subItem) => (
-                <button
-                  key={subItem.id}
-                  onClick={() => handleSubmenuClick(item.id, subItem)}
-                  className={`portal-nav-item group min-h-10 py-1.5 ${currentPage === subItem.id ? "portal-nav-item--active" : ""}`}
-                >
-                  <PortalNavIcon icon={subItem.icon} tone="sky" size={16} className="h-7 w-7" />
-                  <span>{subItem.label}</span>
-                </button>
+                  {item.hasSubmenu && submenuOpen && item.id === "submit-request" && (
+                    <div className="ml-5 mt-1 space-y-1 border-l border-slate-200 pl-2 animate-in slide-in-from-top-2">
+                      {item.submenu.map((subItem) => (
+                        <button
+                          key={subItem.id}
+                          onClick={() => handleSubmenuClick(item.id, subItem)}
+                          className={`portal-nav-item group min-h-10 py-1.5 ${currentPage === subItem.id ? "portal-nav-item--active" : ""}`}
+                        >
+                          <PortalNavIcon icon={subItem.icon} tone="sky" size={16} className="h-7 w-7" />
+                          <span>{subItem.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
-          )}
-        </div>
-      ))}
+          </section>
+        ))}
+      </div>
 
       <div className="mt-5 border-t border-slate-200 pt-4">
         <PortalBackLink placement="nav" onNavigate={closeMobileMenu} />

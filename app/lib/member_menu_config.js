@@ -21,17 +21,17 @@ export const MEMBER_BASE_MENU_ITEMS = [
   },
   {
     id: "received-funds",
-    label: "ทุนที่เคยได้รับ",
+    label: "ทุนที่ได้รับ",
     requiredPermission: "ui.page.member.received_funds.view",
   },
   {
     id: "approval-records",
-    label: "บันทึกข้อมูลการอนุมัติทุน",
+    label: "ข้อมูลการอนุมัติทุน",
     requiredPermission: "ui.page.member.applications.view",
   },
   {
     id: "announcements",
-    label: "ประกาศกองทุนวิจัยและนวัตกรรม",
+    label: "ประกาศกองทุน",
     requiredPermission: "ui.page.member.announcements.view",
   },
   {
@@ -46,3 +46,26 @@ export const MEMBER_DEPT_REVIEW_ITEM = {
   label: "พิจารณาคำร้องของหัวหน้าสาขา",
   requiredPermission: "ui.page.member.dept_review.view",
 };
+
+export const MEMBER_MENU_GROUPS = [
+  {
+    id: "account",
+    label: "บัญชี",
+    itemIds: ["profile"],
+  },
+  {
+    id: "funding",
+    label: "ทุนวิจัย",
+    itemIds: ["research-fund", "promotion-fund"],
+  },
+  {
+    id: "my-funds",
+    label: "ทุนของฉัน",
+    itemIds: ["applications", "received-funds", "approval-records", "dept-review"],
+  },
+  {
+    id: "news-and-activities",
+    label: "ข่าวสารและกิจกรรม",
+    itemIds: ["announcements", "projects"],
+  },
+];
