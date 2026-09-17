@@ -145,6 +145,39 @@ export function refreshSettled(loaded) {
   return !!(loaded && loaded.comparison && loaded.insights);
 }
 
+// The refresh tracker is a small pure state machine (§6/R1, R1.1) so the async
+// ordering — insights of range A succeeds, the user applies range B, B's insights
+// fails — can be unit-tested without a browser. It is bound to a range key: whenever
+// the applied range changes while a refresh is pending, the RANGE-SPECIFIC insights
+// success is invalidated, so only the CURRENT range's insights can clear stale. The
+// comparison read is window-scoped, not range-scoped, so it is not invalidated by a
+// range change within the same window (the reviewer's exact scenario).
+export function newRefreshTracker() {
+  return { pending: false, comparison: false, insights: false, rangeKey: null };
+}
+
+export function armRefresh(rangeKey) {
+  return { pending: true, comparison: false, insights: false, rangeKey };
+}
+
+// invalidateRefreshRange drops the range-specific (insights) success when the applied
+// range changes mid-refresh, so a stale success from the previous range can never
+// combine with a later comparison success to clear stale (R1.1).
+export function invalidateRefreshRange(tracker, rangeKey) {
+  if (!tracker?.pending) return tracker;
+  if (tracker.rangeKey === rangeKey) return tracker;
+  return { ...tracker, insights: false, rangeKey };
+}
+
+// advanceRefresh marks one read of the current refresh as loaded and reports whether
+// stale may now be cleared (both reads of the current context succeeded).
+export function advanceRefresh(tracker, stream) {
+  if (!tracker?.pending) return { tracker, cleared: false };
+  const next = { ...tracker, [stream]: true };
+  if (refreshSettled(next)) return { tracker: { ...next, pending: false }, cleared: true };
+  return { tracker: next, cleared: false };
+}
+
 // ── range aggregation over comparison rows (§3.2) ────────────────────────────
 
 // aggregateRangeCounts sums a level's per-year snapshot counts across an inclusive

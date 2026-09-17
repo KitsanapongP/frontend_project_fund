@@ -19,6 +19,9 @@ import {
   intlDenomText,
   buildRangeFindings,
   refreshSettled,
+  armRefresh,
+  invalidateRefreshRange,
+  advanceRefresh,
 } from "../scopus_benchmark_report.mjs";
 
 test("isUsable treats a real zero as usable but rejects null/NaN", () => {
@@ -367,4 +370,48 @@ test("refreshSettled clears stale only when BOTH reads of the refresh succeed (R
   assert.equal(refreshSettled({ comparison: false, insights: false }), false);
   assert.equal(refreshSettled(null), false);
   assert.equal(refreshSettled(undefined), false);
+});
+
+test("refresh tracker: a range change mid-refresh invalidates the previous range's insights (R1.1)", () => {
+  // Reproduces the reviewer's async ordering:
+  // 1. refresh of range A armed
+  let t = armRefresh("2024:2024");
+  // 2. insights of A succeeds; comparison still pending → not cleared
+  let step = advanceRefresh(t, "insights");
+  t = step.tracker;
+  assert.equal(step.cleared, false);
+  assert.equal(t.insights, true);
+  // 3. user applies range B (same comparison window) → invalidate A's insights success
+  t = invalidateRefreshRange(t, "2025:2025");
+  assert.equal(t.insights, false);
+  // 4. insights B FAILS → no advance for insights
+  // 5. the pending comparison succeeds → comparison=true but insights=false → NOT cleared
+  step = advanceRefresh(t, "comparison");
+  t = step.tracker;
+  assert.equal(step.cleared, false, "stale must stay because range B insights failed");
+  assert.equal(t.pending, true);
+});
+
+test("refresh tracker: stale clears only when the CURRENT range's both reads succeed", () => {
+  let t = armRefresh("2024:2024");
+  t = invalidateRefreshRange(t, "2025:2025"); // moved to B before anything loaded
+  let step = advanceRefresh(t, "comparison");
+  t = step.tracker;
+  assert.equal(step.cleared, false);
+  step = advanceRefresh(t, "insights"); // B's insights now succeeds
+  assert.equal(step.cleared, true);
+  assert.equal(step.tracker.pending, false);
+});
+
+test("refresh tracker: same-range refresh does not invalidate, and a failed read never clears", () => {
+  let t = armRefresh("2024:2025");
+  t = invalidateRefreshRange(t, "2024:2025"); // no range change → unchanged
+  let step = advanceRefresh(t, "comparison");
+  t = step.tracker;
+  assert.equal(step.cleared, false); // insights not loaded yet
+  // insights fails → never advanced → stale stays pending
+  assert.equal(t.pending, true);
+  assert.equal(t.insights, false);
+  // a non-pending tracker never clears
+  assert.equal(advanceRefresh({ pending: false, comparison: true, insights: true }, "insights").cleared, false);
 });

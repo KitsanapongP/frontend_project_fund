@@ -23,7 +23,10 @@ import {
   isUsable,
   observedRate,
   metricReady,
-  refreshSettled,
+  newRefreshTracker,
+  armRefresh,
+  invalidateRefreshRange,
+  advanceRefresh,
   HINT_T1Q2,
   HINT_INTL,
 } from "@/app/lib/scopus_benchmark_report.mjs";
@@ -109,20 +112,17 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   const [insightsReload, setInsightsReload] = useState(0);
   const insightRequest = useRef(0);
 
-  // Refresh coordination (§6/R1): a รีเฟรช marks a pending refresh and stale is cleared
-  // ONLY after BOTH the comparison and insights reads of THAT refresh succeed — never
-  // on the click, and never by a stale/failed response.
-  const refreshTracker = useRef({ pending: false, comparison: false, insights: false });
+  // Refresh coordination (§6/R1, R1.1): a รีเฟรช arms a pending refresh bound to the
+  // applied range; stale is cleared ONLY after BOTH the comparison and insights reads
+  // of the CURRENT context succeed — never on the click, never by a stale/failed
+  // response, and never by an insights success from a range the user has since left.
+  const refreshTracker = useRef(newRefreshTracker());
   const onRefreshedRef = useRef(onRefreshed);
   onRefreshedRef.current = onRefreshed;
   const markRefreshLoaded = useCallback((stream) => {
-    const tracker = refreshTracker.current;
-    if (!tracker.pending) return;
-    tracker[stream] = true;
-    if (refreshSettled(tracker)) {
-      tracker.pending = false;
-      onRefreshedRef.current?.();
-    }
+    const { tracker, cleared } = advanceRefresh(refreshTracker.current, stream);
+    refreshTracker.current = tracker;
+    if (cleared) onRefreshedRef.current?.();
   }, []);
 
   // A4 page size is applied ONLY while this report is the active tab (injected at
@@ -288,6 +288,13 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
         if (insightRequest.current === requestId) setInsightsLoading(false);
       });
   }, [appliedFrom, appliedTo, isRange, reportYear, isCurrentYear, insightsReload, api, markRefreshLoaded]);
+
+  // When the applied range changes while a refresh is pending, invalidate the range-
+  // specific (insights) success so only the NEW range's insights can clear stale — a
+  // prior range's success must never combine with a later comparison success (R1.1).
+  useEffect(() => {
+    refreshTracker.current = invalidateRefreshRange(refreshTracker.current, `${appliedFrom}:${appliedTo}`);
+  }, [appliedFrom, appliedTo]);
 
   const rows = useMemo(() => (Array.isArray(data?.years) ? [...data.years].sort((a, b) => Number(a.year) - Number(b.year)) : []), [data]);
   const rowByYear = useCallback((year) => rows.find((row) => Number(row.year) === Number(year)) || null, [rows]);
@@ -565,8 +572,9 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   const trendRangeLabel = `${reportYear - trendRange + 1}–${reportYear}`;
   const busy = dataLoading || (insightsLoading && !insightsForDisplay);
   const refreshAll = () => {
-    // Arm the refresh; stale is cleared later, only once BOTH reads succeed (R1).
-    refreshTracker.current = { pending: true, comparison: false, insights: false };
+    // Arm the refresh bound to the current range; stale is cleared later, only once
+    // BOTH reads of THIS context succeed (R1/R1.1).
+    refreshTracker.current = armRefresh(`${appliedFrom}:${appliedTo}`);
     setReload((value) => value + 1);
     setInsightsReload((value) => value + 1);
   };
