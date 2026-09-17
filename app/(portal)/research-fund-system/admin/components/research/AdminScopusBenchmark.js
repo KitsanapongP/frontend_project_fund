@@ -217,6 +217,13 @@ export default function AdminScopusBenchmark() {
   const rangeEffectMounted = useRef(false);
   const skipAutoReloadRange = useRef(null);
 
+  // §6: the report stays mounted across tab switches. It is marked stale (not
+  // auto-reloaded) after any setup action that may have written data — a counts
+  // refresh, an AF-ID save, or a harvest that finished/was cancelled — so returning
+  // to the report shows a "refresh" prompt instead of silently reusing old numbers.
+  const [reportStale, setReportStale] = useState(false);
+  const prevActiveRunId = useRef(null);
+
   const notify = (text, tone = "info") => setMsg(text ? { text, tone } : null);
   const yearParams = useCallback(() => ({ year_from: yearFrom, year_to: yearTo }), [yearFrom, yearTo]);
 
@@ -256,6 +263,15 @@ export default function AdminScopusBenchmark() {
     const t = setInterval(() => loadRuns(), 5000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeRun?.id]);
+
+  // A harvest that just ended (running → gone) may have written benchmark documents,
+  // so the report is marked stale (§6). A still-running poll is not "complete".
+  useEffect(() => {
+    const prev = prevActiveRunId.current;
+    const curr = activeRun?.id ?? null;
+    if (prev && !curr) setReportStale(true);
+    prevActiveRunId.current = curr;
   }, [activeRun?.id]);
 
   async function loadScopes() {
@@ -320,6 +336,7 @@ export default function AdminScopusBenchmark() {
     notify("");
     try {
       const res = await scopusBenchmarkAPI.refreshCounts(yearParams());
+      setReportStale(true);
       await loadComparison();
       const results = Array.isArray(res?.data) ? res.data : [];
       const failed = results.filter((item) => item?.error);
@@ -385,6 +402,7 @@ export default function AdminScopusBenchmark() {
     if (!uni) return;
     try {
       await scopusBenchmarkAPI.updateScope(uni.id, { af_id: afId });
+      setReportStale(true);
       notify("บันทึก AF-ID แล้ว", "success");
       setLookupHits([]);
       setLookupOpen(false);
@@ -422,8 +440,9 @@ export default function AdminScopusBenchmark() {
   };
 
   // The executive report owns its own comparison + insights reads (report context),
-  // kept separate from this setup tab's counts/harvest state (handoff §10.4).
-  const renderResults = () => <ScopusBenchmarkDashboard onGoSetup={() => setTab("setup")} />;
+  // kept separate from this setup tab's counts/harvest state (handoff §10.4). It stays
+  // mounted regardless of the active tab (§6) — `isActive` gates its print styles and
+  // `stale` shows a refresh prompt instead of auto-reloading on a tab switch.
 
   const renderSetup = () => (
     <div className="space-y-4">
@@ -614,7 +633,19 @@ export default function AdminScopusBenchmark() {
           </div>
         )}
 
-        {tab === "results" ? renderResults() : renderSetup()}
+        {/* Both panels stay mounted; only the inactive one is hidden (§6), so
+            switching tabs never re-fetches the report or drops its applied range. */}
+        <div className={tab === "results" ? "" : "hidden"} aria-hidden={tab !== "results"}>
+          <ScopusBenchmarkDashboard
+            onGoSetup={() => setTab("setup")}
+            isActive={tab === "results"}
+            stale={reportStale}
+            onRefreshed={() => setReportStale(false)}
+          />
+        </div>
+        <div className={tab === "setup" ? "" : "hidden"} aria-hidden={tab !== "setup"}>
+          {renderSetup()}
+        </div>
       </div>
 
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}

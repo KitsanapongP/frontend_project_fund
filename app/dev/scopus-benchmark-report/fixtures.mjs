@@ -31,11 +31,25 @@ function distribute(total, weights) {
   return out;
 }
 
-const emptyLevel = (reason) => ({
-  available: false,
-  citations: { total: null, average: null, known_docs: 0, cohort_docs: 0, unknown_docs: 0, coverage_status: "none", denominator_policy: "known_citation_docs", updated_at: null, update_range: null, freshness_status: "unknown" },
-  readiness: { comparison_ready: false, active_run: false, reasons: reason ? [reason] : [] },
-});
+const emptyLevel = (reason) => {
+  const reasons = reason ? [reason] : [];
+  return {
+    available: false,
+    citations: { total: null, average: null, known_docs: 0, cohort_docs: 0, unknown_docs: 0, coverage_status: "none", denominator_policy: "known_citation_docs", updated_at: null, update_range: null, freshness_status: "unknown" },
+    // A full per-metric readiness map (mirroring the BE) so a range that includes an
+    // unavailable year propagates a not-ready reason for that year (§3.2).
+    readiness: {
+      comparison_ready: false, active_run: false, snapshot_mismatch: false, expected_docs: null, observed_docs: 0, reasons,
+      metrics: {
+        count: { ready: false, reasons },
+        quality: { ready: false, reasons },
+        oa: { ready: false, reasons },
+        intl: { ready: false, reasons },
+        citations: { ready: false, reasons },
+      },
+    },
+  };
+};
 
 // Build a fully self-consistent level insight from a single official `count`
 // (== the comparison-table "จำนวนผลงาน" for the same level/year). Every derived
@@ -140,6 +154,88 @@ export function insightsFor(year, { full, thailandMissing = false, facultyMismat
     year,
     levels: { faculty, kku, thailand },
     quartile_coverage,
+    scope: { subject_area: "COMP", faculty_scope_id: 3, university_scope_id: 1, country_scope_id: 2 },
+  };
+}
+
+// Aggregate a level across the years of a range the same way the BE does
+// (aggregateRangeLevel): pool numerators/denominators and re-derive the rates, never
+// average per-year percentages. Only the fields the report reads are aggregated.
+function aggregateFixtureLevel(perYear, years) {
+  const metricNames = ["count", "quality", "intl", "oa", "citations"];
+  const ready = Object.fromEntries(metricNames.map((m) => [m, true]));
+  const reasons = Object.fromEntries(metricNames.map((m) => [m, []]));
+  const agg = {
+    available: false, docs: 0,
+    quartile: { t1: 0, q1: 0, q2: 0, q3: 0, q4: 0, unclassified: 0, unclassified_journal: 0, excluded_non_journal: 0, unresolved: 0 },
+    doctypes: { article: 0, conference: 0, other: 0 },
+    oa: { known: 0, positive: 0, unknown: 0 },
+    intl: { known: 0, positive: 0, unknown: 0 },
+  };
+  let citTotal = 0, citKnown = 0, citCohort = 0, citHasKnown = false, observed = 0, expected = 0, expectedAny = false, anyMismatch = false;
+  years.forEach((y) => {
+    const lvl = perYear[y];
+    if (!lvl) return;
+    if (lvl.available) agg.available = true;
+    agg.docs += lvl.docs || 0;
+    for (const k of ["t1", "q1", "q2", "q3", "q4", "unclassified_journal", "excluded_non_journal", "unresolved"]) agg.quartile[k] += Number(lvl.quartile?.[k] || 0);
+    for (const k of ["article", "conference", "other"]) agg.doctypes[k] += Number(lvl.doctypes?.[k] || 0);
+    for (const k of ["known", "positive", "unknown"]) { agg.oa[k] += Number(lvl.oa?.[k] || 0); agg.intl[k] += Number(lvl.intl?.[k] || 0); }
+    citCohort += Number(lvl.citations?.cohort_docs || 0);
+    citKnown += Number(lvl.citations?.known_docs || 0);
+    if (lvl.citations?.total != null) { citTotal += Number(lvl.citations.total); citHasKnown = true; }
+    observed += Number(lvl.readiness?.observed_docs || 0);
+    if (lvl.readiness?.expected_docs != null) { expected += Number(lvl.readiness.expected_docs); expectedAny = true; }
+    if (lvl.readiness?.snapshot_mismatch) anyMismatch = true;
+    for (const m of metricNames) {
+      const mr = lvl.readiness?.metrics?.[m];
+      if (mr && mr.ready === false) ready[m] = false;
+      (mr?.reasons || []).forEach((r) => reasons[m].push(`${y}: ${r}`));
+    }
+  });
+  agg.quartile.unclassified = agg.docs - (agg.quartile.t1 + agg.quartile.q1 + agg.quartile.q2 + agg.quartile.q3 + agg.quartile.q4);
+  agg.oa_pct = agg.oa.known > 0 ? Math.round((10000 * agg.oa.positive) / agg.oa.known) / 100 : 0;
+  agg.intl_pct = agg.intl.known > 0 ? Math.round((10000 * agg.intl.positive) / agg.intl.known) / 100 : 0;
+  const unknownDocs = citCohort - citKnown;
+  agg.citations = {
+    total: citHasKnown ? citTotal : null,
+    average: citKnown > 0 ? Math.round((100 * citTotal) / citKnown) / 100 : null,
+    known_docs: citKnown, cohort_docs: citCohort, unknown_docs: unknownDocs,
+    coverage_status: citCohort === 0 ? "none" : unknownDocs === 0 ? "complete" : "partial",
+    denominator_policy: "known_citation_docs", updated_at: null, update_range: null, freshness_status: "unknown",
+  };
+  agg.avg_cite = agg.citations.average || 0;
+  agg.readiness = {
+    comparison_ready: ready.count, active_run: false, snapshot_mismatch: anyMismatch,
+    expected_docs: expectedAny ? expected : null, observed_docs: observed, reasons: reasons.count,
+    metrics: Object.fromEntries(metricNames.map((m) => [m, { ready: ready[m], reasons: reasons[m] }])),
+  };
+  if (!agg.available) return emptyLevel(reasons.count[0] || null);
+  return agg;
+}
+
+export function insightsRangeFor(yearFrom, yearTo, opts = {}) {
+  const years = {};
+  const perYear = { faculty: {}, kku: {}, thailand: {} };
+  const list = [];
+  for (let y = yearFrom; y <= yearTo; y += 1) {
+    const iy = insightsFor(y, opts);
+    years[y] = iy;
+    list.push(y);
+    perYear.faculty[y] = iy.levels.faculty;
+    perYear.kku[y] = iy.levels.kku;
+    perYear.thailand[y] = iy.levels.thailand;
+  }
+  const levels = {
+    faculty: aggregateFixtureLevel(perYear.faculty, list),
+    kku: aggregateFixtureLevel(perYear.kku, list),
+    thailand: aggregateFixtureLevel(perYear.thailand, list),
+  };
+  const fq = levels.faculty.available ? levels.faculty.quartile : null;
+  const classified = fq ? Number(fq.t1) + Number(fq.q1) + Number(fq.q2) + Number(fq.q3) + Number(fq.q4) : 0;
+  return {
+    year_from: yearFrom, year_to: yearTo, years, levels,
+    quartile_coverage: { classified, total: levels.faculty.available ? levels.faculty.docs : 0 },
     scope: { subject_area: "COMP", faculty_scope_id: 3, university_scope_id: 1, country_scope_id: 2 },
   };
 }
@@ -288,9 +384,13 @@ export function buildApi(scenario) {
   const full = buildFull(scenario);
   return {
     comparison: (params = {}) => Promise.resolve({ success: true, data: windowComparison(full, params) }),
-    insights: ({ year }) => {
+    insights: ({ year, year_from, year_to } = {}) => {
       if (scenario === "error") return Promise.reject(new Error("จำลองข้อผิดพลาดของ insights (fixture)"));
-      return Promise.resolve({ success: true, data: insightsFor(year, { full, thailandMissing, facultyMismatch: scenario === "mismatch" }) });
+      const opts = { full, thailandMissing, facultyMismatch: scenario === "mismatch" };
+      if (year_from != null && year_to != null) {
+        return Promise.resolve({ success: true, data: insightsRangeFor(Number(year_from), Number(year_to), opts) });
+      }
+      return Promise.resolve({ success: true, data: insightsFor(year, opts) });
     },
   };
 }

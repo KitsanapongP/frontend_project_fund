@@ -1,12 +1,17 @@
 "use client";
 
+import Hint from "./Hint";
+
 // KPI strip (§5 B): one row of four columns separated by thin vertical rules on
 // desktop, 2×2 with horizontal rules on mobile. No per-card borders, no icon
 // containers, no per-KPI colours. Faculty figures only — KKU/country are context.
-function Kpi({ label, value, unit, sublines }) {
+function Kpi({ label, value, unit, sublines, hint }) {
   return (
     <div className="flex flex-col px-0 sm:px-5">
-      <div className="text-sm leading-snug text-slate-500">{label}</div>
+      <div className="flex items-center gap-1 text-sm leading-snug text-slate-500">
+        <span>{label}</span>
+        {hint ? <Hint text={hint} label={label} /> : null}
+      </div>
       <div className="mt-1.5 text-[33px] font-semibold leading-none tracking-tight text-slate-900 tabular-nums">
         {value}
         {unit ? <span className="ml-1.5 text-sm font-normal text-slate-500">{unit}</span> : null}

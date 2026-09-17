@@ -93,6 +93,163 @@ export function canCompareMetric(faculty, kku, metric) {
   return metricReady(faculty, metric) && metricReady(kku, metric);
 }
 
+// ── shared metric hint text (§5) ──────────────────────────────────────────────
+// These strings are the single source of the KPI/table hints and the printed notes,
+// so every surface explains a metric the same way (a tooltip does not print — §5).
+
+export const HINT_T1Q2 =
+  "คำนวณจากจำนวนผลงานในวารสารกลุ่ม T1, Q1 และ Q2 หารด้วยจำนวนผลงานวารสารที่ระบุกลุ่มได้ทั้งหมด (T1, Q1, Q2, Q3 และ Q4) โดย T1 แยกจาก Q1 ไม่นับซ้ำ และไม่นำผลงานวารสารที่ยังระบุกลุ่มไม่ได้มาคิดสัดส่วน";
+
+export const HINT_INTL =
+  "พิจารณาจากประเทศในข้อมูลสังกัดผู้เขียน (affiliation) โดยนับผลงานที่พบสังกัดในประเทศอื่นนอกประเทศไทยอย่างน้อยหนึ่งแห่ง เทียบกับผลงานที่มีข้อมูลประเทศของสังกัดอย่างน้อยหนึ่งรายการ ผลงานที่ไม่มีข้อมูลประเทศไม่นำมาคิดสัดส่วน ทั้งนี้เป็นประเทศของสังกัด ไม่ใช่สัญชาติผู้เขียน";
+
+// highTierDenom returns the numerator (T1+Q1+Q2) and denominator (all classified) of
+// the high-tier share, or null when no journal is classified. Never binds a fixed
+// total (§5 — the "36" must come from the data, not a constant).
+export function highTierDenom(quartile) {
+  if (!quartile) return null;
+  const t1 = Number(quartile.t1 || 0);
+  const q1 = Number(quartile.q1 || 0);
+  const q2 = Number(quartile.q2 || 0);
+  const classified = t1 + q1 + q2 + Number(quartile.q3 || 0) + Number(quartile.q4 || 0);
+  if (classified <= 0) return null;
+  return { numerator: t1 + q1 + q2, denominator: classified };
+}
+
+// highTierDenomText: e.g. "34 จาก 36 ผลงานวารสารที่จัดกลุ่มได้".
+export function highTierDenomText(quartile) {
+  const d = highTierDenom(quartile);
+  if (!d) return "ยังไม่มีวารสารที่จัดกลุ่มได้";
+  return `${formatCount(d.numerator)} จาก ${formatCount(d.denominator)} ผลงานวารสารที่จัดกลุ่มได้`;
+}
+
+// intlDenomText: e.g. "30 จาก 58 ผลงานที่มีข้อมูลประเทศสังกัด" with the unknown note
+// appended when some documents carry no affiliation country. Falls back to the legacy
+// docs-denominator phrasing only when coverage counts are absent (§5 fallback).
+export function intlDenomText(level) {
+  if (!level?.available) return "ยังไม่มีข้อมูล";
+  const r = observedRate(level, "intl");
+  if (r.known === null) return `จาก ${formatCount(level.docs)} ผลงาน (observed)`;
+  let text = `${formatCount(r.positive)} จาก ${formatCount(r.known)} ผลงานที่มีข้อมูลประเทศสังกัด`;
+  if (r.unknown > 0) text += ` · อีก ${formatCount(r.unknown)} ผลงานไม่มีข้อมูลประเทศสังกัด จึงไม่นำมาคิดสัดส่วน`;
+  return text;
+}
+
+// ── refresh lifecycle (§6 / R1) ──────────────────────────────────────────────
+
+// refreshSettled decides whether a "รีเฟรช" may clear the stale warning: ONLY when
+// BOTH required reads of the SAME refresh (comparison AND insights) have succeeded. A
+// failed read leaves stale in place so a half-refreshed report is never presented as
+// fully up to date. Pure, so the rule is unit-tested without a DOM.
+export function refreshSettled(loaded) {
+  return !!(loaded && loaded.comparison && loaded.insights);
+}
+
+// The refresh tracker is a small pure state machine (§6/R1, R1.1) so the async
+// ordering — insights of range A succeeds, the user applies range B, B's insights
+// fails — can be unit-tested without a browser. It is bound to a range key: whenever
+// the applied range changes while a refresh is pending, the RANGE-SPECIFIC insights
+// success is invalidated, so only the CURRENT range's insights can clear stale. The
+// comparison read is window-scoped, not range-scoped, so it is not invalidated by a
+// range change within the same window (the reviewer's exact scenario).
+export function newRefreshTracker() {
+  return { pending: false, comparison: false, insights: false, rangeKey: null };
+}
+
+export function armRefresh(rangeKey) {
+  return { pending: true, comparison: false, insights: false, rangeKey };
+}
+
+// invalidateRefreshRange drops the range-specific (insights) success when the applied
+// range changes mid-refresh, so a stale success from the previous range can never
+// combine with a later comparison success to clear stale (R1.1).
+export function invalidateRefreshRange(tracker, rangeKey) {
+  if (!tracker?.pending) return tracker;
+  if (tracker.rangeKey === rangeKey) return tracker;
+  return { ...tracker, insights: false, rangeKey };
+}
+
+// advanceRefresh marks one read of the current refresh as loaded and reports whether
+// stale may now be cleared (both reads of the current context succeeded).
+export function advanceRefresh(tracker, stream) {
+  if (!tracker?.pending) return { tracker, cleared: false };
+  const next = { ...tracker, [stream]: true };
+  if (refreshSettled(next)) return { tracker: { ...next, pending: false }, cleared: true };
+  return { tracker: next, cleared: false };
+}
+
+// ── range aggregation over comparison rows (§3.2) ────────────────────────────
+
+// aggregateRangeCounts sums a level's per-year snapshot counts across an inclusive
+// [yearFrom, yearTo] window — but ONLY when EVERY year of the range is "available"
+// for that level. A single missing/blocked year makes the whole-range count null and
+// records the offending years, so a partial sum is never shown as a full-range total
+// (§3.2). A real zero-snapshot ("available") year legitimately contributes 0.
+export function aggregateRangeCounts(rows, yearMeta, yearFrom, yearTo) {
+  const rowByYear = new Map((Array.isArray(rows) ? rows : []).map((r) => [Number(r.year), r]));
+  // rows use faculty/university/country; year_meta uses the same three keys.
+  const levels = { faculty: "faculty", university: "university", country: "country" };
+  const out = { faculty: null, university: null, country: null, missing: { faculty: [], university: [], country: [] } };
+  for (const [levelKey, metaKey] of Object.entries(levels)) {
+    let sum = 0;
+    let complete = true;
+    for (let year = yearFrom; year <= yearTo; year += 1) {
+      const status = yearMeta?.[year]?.[metaKey]?.status;
+      const row = rowByYear.get(year);
+      if (status === "available" && row && isUsable(row[levelKey])) {
+        sum += Number(row[levelKey]);
+      } else {
+        complete = false;
+        out.missing[levelKey].push(year);
+      }
+    }
+    out[levelKey] = complete ? sum : null;
+  }
+  return out;
+}
+
+// buildRangeFindings returns 0–2 descriptive sentences for a multi-year report. It
+// intentionally carries NO year-over-year / growth statements (§3.2 hides YoY in
+// range mode); it states the range total (or why it cannot be totalled) and, when
+// both sides are ready, the คณะ-vs-KKU high-tier relationship over the range.
+export function buildRangeFindings({
+  yearFrom,
+  yearTo,
+  includesCurrentYear = false,
+  facultyCount = null,
+  facultyMissingYears = [],
+  faculty = null,
+  kku = null,
+  scopeConsistent = true,
+}) {
+  const findings = [];
+  const label = `${yearFrom}–${yearTo}`;
+
+  if (Array.isArray(facultyMissingYears) && facultyMissingYears.length) {
+    findings.push(`ยังรวมจำนวนผลงานคณะทั้งช่วง ${label} ไม่ได้ เพราะข้อมูลปี ${facultyMissingYears.join(", ")} ยังไม่พร้อม`);
+  } else if (isUsable(facultyCount)) {
+    findings.push(
+      `ผลงานคณะรวมช่วง ${label}: ${formatCount(facultyCount)} ผลงาน` +
+        (includesCurrentYear ? ` (รวมปี ${yearTo} ที่ยังไม่ครบปี)` : ""),
+    );
+  }
+
+  if (findings.length < 2 && scopeConsistent && faculty && kku && canCompareMetric(faculty, kku, "quality")) {
+    const htFaculty = highTierShare(faculty.quartile);
+    const htKku = highTierShare(kku.quartile);
+    if (htFaculty !== null && htKku !== null) {
+      const diff = htFaculty - htKku;
+      if (Number(diff.toFixed(1)) === 0) {
+        findings.push(`สัดส่วนผลงานในวารสารกลุ่ม T1–Q2 ของคณะ (${formatPct(htFaculty)}) ใกล้เคียง KKU (${formatPct(htKku)}) ในช่วง ${label}`);
+      } else {
+        findings.push(`สัดส่วนผลงานในวารสารกลุ่ม T1–Q2 ของคณะ ${formatPct(htFaculty)} เทียบ KKU ${formatPct(htKku)} ในช่วง ${label} (ต่าง ${formatPoints(Math.abs(diff)).replace("+", "")})`);
+      }
+    }
+  }
+
+  return findings.slice(0, 2);
+}
+
 // growthInfo describes a year-over-year count change without ever producing
 // Infinity or a false "decline" (§8). Only meaningful for an ended year.
 export function growthInfo(current, previous) {
@@ -314,13 +471,18 @@ export function buildYearlyCsv({ rows, yearMeta, scope }) {
 // Report-year comparison CSV: the on-screen comparison table plus citations, with
 // visible numerators/denominators, coverage, per-level status/readiness and
 // citation freshness so a partial/observed subset never reads as complete (R8).
-export function buildComparisonCsv({ reportYear, row, meta, insights, scope }) {
+export function buildComparisonCsv({ reportYear, yearFrom, yearTo, row, meta, insights, scope, counts: countsOverride }) {
   const levels = ["faculty", "kku", "thailand"];
   const label = { faculty: "คณะ", kku: "มหาวิทยาลัยขอนแก่น", thailand: "ประเทศไทย" };
+  // Range mode: an explicit aggregate `counts` (null when a year is missing/blocked)
+  // and a period label replace the single-year normalizeReportRow counts. All other
+  // rows come from insights.levels, whose aggregate shape is identical (§4.3).
+  const isRange = isUsable(yearFrom) && isUsable(yearTo) && Number(yearFrom) !== Number(yearTo);
+  const periodLabel = isRange ? `${yearFrom}–${yearTo}` : String(reportYear);
   const norm = normalizeReportRow(row, meta);
-  const counts = { faculty: norm.faculty, kku: norm.university, thailand: norm.country };
+  const counts = countsOverride || { faculty: norm.faculty, kku: norm.university, thailand: norm.country };
   const metaByLevel = { faculty: meta?.faculty, kku: meta?.university, thailand: meta?.country };
-  const lines = [csvLine([`# เปรียบเทียบปี ${reportYear}`]), ...scopeHeaderLines(scope)];
+  const lines = [csvLine([`# เปรียบเทียบ${isRange ? "ช่วงปี" : "ปี"} ${periodLabel}`]), ...scopeHeaderLines(scope)];
   lines.push(csvLine([`# สร้างรายงานเมื่อ: ${new Date().toISOString()}`]));
   lines.push(csvLine(["metric", ...levels.map((l) => label[l])]));
 
@@ -372,6 +534,6 @@ export function buildComparisonCsv({ reportYear, row, meta, insights, scope }) {
   }
   [htRow, htDenomRow, htReadyRow, intlRow, intlDenomRow, intlReadyRow, oaRow, oaDenomRow, oaReadyRow, citeTotalRow, citeAvgRow, citeCovRow, citeFreshRow].forEach((r) => lines.push(csvLine(r)));
   lines.push(csvLine([`# OA/intl เป็นอัตราจากเอกสารที่ทราบสถานะ (positive/known) เอกสารที่ไม่ทราบไม่ถูกนับเป็นตัวหาร; “พร้อมเทียบ”=false เมื่อยังมี unknown/ข้อมูลไม่ครบ`]));
-  lines.push(csvLine([`# การอ้างอิงเป็นยอดสะสม ณ ครั้งที่อัปเดต ไม่ใช่การอ้างอิงที่เกิดในปี ${reportYear} · ไม่ทราบวันที่อัปเดตการอ้างอิง · สามระดับทับซ้อนกัน ห้ามรวมยอด`]));
+  lines.push(csvLine([`# การอ้างอิงเป็นยอดสะสม ณ ครั้งที่อัปเดต ไม่ใช่การอ้างอิงที่เกิดใน${isRange ? "ช่วงปี" : "ปี"} ${periodLabel} · ไม่ทราบวันที่อัปเดตการอ้างอิง · สามระดับทับซ้อนกัน ห้ามรวมยอด`]));
   return lines.join("\n");
 }
