@@ -1273,6 +1273,16 @@ export const scopusBenchmarkAPI = {
   async topJournals(params = {}) {
     return apiClient.get('/admin/scopus/benchmark/top-journals', cleanParams(params));
   },
+  // Document-level CSV export for one benchmark level (university → KKU, country →
+  // Thailand) over the applied year range (§10). downloadFile fetches the whole file
+  // as a blob and throws an APIError on any non-2xx (incl. 404 "no documents"), so a
+  // failed export never produces a partial "successful" download.
+  async exportDocuments(level, { year_from, year_to } = {}) {
+    const qs = benchmarkQuery({ level, year_from, year_to });
+    const label = level === 'country' ? 'thailand' : 'kku';
+    const filename = `scopus-benchmark-documents-${label}-${year_from}-${year_to}.csv`;
+    return apiClient.downloadFile(`/admin/scopus/benchmark/documents/export${qs}`, filename);
+  },
 };
 
 function cleanParams(params = {}) {

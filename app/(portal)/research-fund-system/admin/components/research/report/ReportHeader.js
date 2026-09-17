@@ -25,6 +25,9 @@ export default function ReportHeader({
   onExportYearly,
   onExportComparison,
   exportComparisonLabel = "ตารางเปรียบเทียบปีรายงาน (CSV)",
+  onExportDocsKku,
+  onExportDocsThailand,
+  exportingLevel = null,
   onToggleSources,
 }) {
   const [exportOpen, setExportOpen] = useState(false);
@@ -163,6 +166,21 @@ export default function ReportHeader({
                   <button type="button" role="menuitem" onClick={() => { setExportOpen(false); onExportComparison(); }} className="block w-full border-t border-slate-100 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50">
                     {exportComparisonLabel}
                   </button>
+                  {(onExportDocsKku || onExportDocsThailand) && (
+                    <div className="border-t border-slate-200 bg-slate-50 px-4 py-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                      รายการเอกสาร · ช่วงปี {periodLabel}
+                    </div>
+                  )}
+                  {onExportDocsKku && (
+                    <button type="button" role="menuitem" disabled={!!exportingLevel} onClick={() => { setExportOpen(false); onExportDocsKku(); }} className="block w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                      {exportingLevel === "university" ? "กำลังส่งออกเอกสาร KKU…" : "ส่งออกเอกสาร KKU (CSV)"}
+                    </button>
+                  )}
+                  {onExportDocsThailand && (
+                    <button type="button" role="menuitem" disabled={!!exportingLevel} onClick={() => { setExportOpen(false); onExportDocsThailand(); }} className="block w-full border-t border-slate-100 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                      {exportingLevel === "country" ? "กำลังส่งออกเอกสาร Thailand…" : "ส่งออกเอกสาร Thailand (CSV)"}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

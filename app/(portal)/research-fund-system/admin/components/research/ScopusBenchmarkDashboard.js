@@ -466,6 +466,39 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     setAppliedTo(to);
   }, []);
 
+  // Document-level CSV export (§10). The level + applied range are captured at call
+  // time so a later range change never redirects an in-flight export. One export runs
+  // at a time; a 404 ("no documents") and any other failure surface a message and
+  // never leave a half-written file.
+  const [exportingLevel, setExportingLevel] = useState(null);
+  const [exportDocMsg, setExportDocMsg] = useState(null);
+  const exportDocuments = useCallback(async (level) => {
+    if (exportingLevel) return;
+    if (typeof api.exportDocuments !== "function") {
+      setExportDocMsg({ tone: "error", text: "การส่งออกเอกสารใช้ได้เฉพาะบนระบบจริง (ไม่รองรับในตัวอย่าง)" });
+      return;
+    }
+    const from = Number(appliedFrom);
+    const to = Number(appliedTo);
+    const levelLabel = level === "country" ? "Thailand" : "KKU";
+    setExportingLevel(level);
+    setExportDocMsg(null);
+    try {
+      await api.exportDocuments(level, { year_from: from, year_to: to });
+      setExportDocMsg({ tone: "success", text: `ส่งออกเอกสาร ${levelLabel} ช่วงปี ${from}–${to} แล้ว` });
+    } catch (error) {
+      const status = error?.status;
+      setExportDocMsg({
+        tone: "error",
+        text: status === 404
+          ? `ไม่พบเอกสาร ${levelLabel} ในช่วงปี ${from}–${to}`
+          : `ส่งออกเอกสาร ${levelLabel} ไม่สำเร็จ: ${error?.message || "เกิดข้อผิดพลาด"}`,
+      });
+    } finally {
+      setExportingLevel(null);
+    }
+  }, [api, appliedFrom, appliedTo, exportingLevel]);
+
   if (dataLoading && !data) return <Skeleton />;
   if (dataError && !data) {
     return (
@@ -513,11 +546,20 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
           onExportYearly={exportYearly}
           onExportComparison={exportComparison}
           exportComparisonLabel={isRange ? "ตารางเปรียบเทียบช่วงปี (CSV)" : "ตารางเปรียบเทียบปีรายงาน (CSV)"}
+          onExportDocsKku={() => exportDocuments("university")}
+          onExportDocsThailand={() => exportDocuments("country")}
+          exportingLevel={exportingLevel}
           onToggleSources={() => {
             setSourcesOpen(true);
             requestAnimationFrame(() => document.getElementById("scopus-report-sources")?.scrollIntoView({ behavior: "smooth", block: "start" }));
           }}
         />
+
+        {exportDocMsg && (
+          <div className={`no-print mt-4 flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm ${exportDocMsg.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`} role="status">
+            <AlertCircle size={16} aria-hidden="true" />{exportDocMsg.text}
+          </div>
+        )}
 
         {stale && (
           <div className="no-print mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">

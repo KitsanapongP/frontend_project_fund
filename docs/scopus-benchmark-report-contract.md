@@ -180,6 +180,63 @@
 - `levels.*.available` = true เมื่อมี observed docs อย่างน้อยหนึ่งปี (เป็น **observed subset** — ยังไม่ยืนยันครบช่วง; ความครบดูจาก readiness).
 - ยอดจำนวนผลงานช่วง (สำหรับ KPI/สัดส่วน) FE รวมเองจาก `comparison.years[]` + `year_meta` โดยเป็น **null ถ้ามีปี missing/blocked** (ไม่เอา insights `docs` มาเป็นยอดทางการ — `docs` คือ observed/harvested).
 
+## 2.7 GET `/api/v1/admin/scopus/benchmark/documents/export?level=&year_from=&year_to=` (CSV รายการเอกสาร §10)
+
+Read-only. คืน **CSV** (ไม่ใช่ JSON) ของรายการเอกสาร benchmark หนึ่งระดับตามช่วงปีที่ apply.
+`level` = `university` (KKU) หรือ `country` (Thailand) เท่านั้น — ไม่มีระดับคณะ. `year_from`/`year_to`
+บังคับทั้งคู่, integer, from ≤ to, อยู่ใน [1900, ปีปัจจุบัน+1], กว้างไม่เกิน 60 ปี — มิฉะนั้น 400.
+ไม่พบเอกสาร → **404** `{success:false, error:"ไม่พบเอกสาร…"}` (ไม่คืนไฟล์ว่างที่ดูเหมือนสำเร็จ).
+
+- หนึ่งเอกสารหนึ่งแถวเสมอ (join authors/affiliations ไม่ทำให้แถวเพิ่ม): metrics join ผูก 1 แถว
+  ล่าสุดด้วย `source_metric_id`, authors เป็น `GROUP_CONCAT` subquery, affiliations query แยกแล้ว group ใน Go.
+- ordering `pub_year DESC, document id ASC`; UTF-8 BOM; escape ตาม RFC4180; กัน formula injection
+  (ค่าเริ่มด้วย `= + - @` เติม `'` นำหน้า); ID/ISSN/ISBN เก็บเป็นข้อความ (auto-format เป็นเรื่องของโปรแกรมที่เปิด).
+- สร้างไฟล์ทั้งก้อนใน memory แล้วส่งเมื่อสำเร็จครบเท่านั้น (ไม่มี partial file); FE ใช้ `apiClient.downloadFile`
+  ที่ดึงเป็น blob และ throw เมื่อ non-2xx.
+
+### 36 คอลัมน์ (ตรงชื่อ/ลำดับกับ `EXPORT_COLUMNS` ชีต Documents หน้า search) และแหล่งข้อมูล benchmark
+
+| # | column | benchmark source |
+|---|--------|------------------|
+|1|ลำดับ|running index (1..N)|
+|2|scopus_id|`scopus_benchmark_documents.scopus_id`|
+|3|scopus_link|`.scopus_link`|
+|4|title|`.title`|
+|5|authors|`GROUP_CONCAT(full_name/surname/scopus_author_id ORDER BY author_seq)` ผ่าน `benchmark_document_authors`+`benchmark_authors`|
+|6|abstract|`.abstract`|
+|7|aggregation_type|`.aggregation_type`|
+|8|source_id|`.source_id`|
+|9|publication_name|`.publication_name`|
+|10|afid|primary affiliation (ตัวแรกตาม author_seq) จาก `benchmark_affiliations.afid`|
+|11|name|primary `.name`|
+|12|city|primary `.city`|
+|13|country|primary `.country`|
+|14|affiliation_url|primary `.affiliation_url`|
+|15|affiliations_json|JSON array ของสังกัดทั้งหมดของเอกสาร (afid/name/city/country/affiliation_url)|
+|16|issn|`.issn`|
+|17|eissn|`.eissn`|
+|18|isbn|`.isbn`|
+|19|volume|`.volume`|
+|20|issue|`.issue`|
+|21|page_range|`.page_range`|
+|22|article_number|`.article_number`|
+|23|cover_date|`.cover_date` (รูปแบบ `YYYY-MM-DD`)|
+|24|doi|`.doi`|
+|25|citedby_count|`.citedby_count` (0 จริงคง 0, ไม่มีค่า=ว่าง)|
+|26|authkeywords|parse `.authkeywords` JSON → `"kw1; kw2"` (unparseable → ว่าง)|
+|27|fund_sponsor|`.fund_sponsor`|
+|28|cite_score_status|`scopus_source_metrics.cite_score_status` (แถว metric_year ล่าสุด, doc_type='all')|
+|29|cite_score_rank|`.cite_score_rank`|
+|30|cite_score_percentile|`.cite_score_percentile`|
+|31|journal_tier_bucket|derived จาก percentile (≥90 T1 / ≥75 Q1 / ≥50 Q2 / ≥25 Q3 / >0 Q4) — สูตรเดียวกับหน้า search|
+|32|cite_score_quartile|`.cite_score_quartile` (uppercase)|
+|33|publication_year|`benchmark_documents.pub_year`|
+|34|eid|`.eid`|
+|35|scopus_url|= `.scopus_link` (benchmark ไม่มีคอลัมน์ scopus_url แยก — mapping note)|
+|36|doi_url|= `.doi` (benchmark ไม่มีคอลัมน์ doi_url แยก)|
+
+filename: `scopus-benchmark-documents-{kku|thailand}-{from}-{to}.csv`.
+
 ## 3. GET `/api/v1/admin/scopus/benchmark/top-journals?year=YYYY`
 BE มี endpoint นี้ (read-only) แต่ **รายงานผู้บริหารปัจจุบันไม่เรียกใช้** — คงไว้สำหรับส่วนขยายภายหลัง.
 
