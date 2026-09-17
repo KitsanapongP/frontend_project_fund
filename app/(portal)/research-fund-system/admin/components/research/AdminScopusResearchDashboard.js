@@ -1244,7 +1244,7 @@ export default function AdminScopusResearchDashboard() {
   }, [facultyQuartileHistoryFiscal]);
 
   const buildOverviewYearMetrics = useCallback((sourceMap) => {
-    const teacherCount = Number(kpi.total_teachers_with_scopus || 0);
+    const teacherCount = Number(kpi.total_teachers_in_faculty || 0);
     return overviewYearsBE.reduce((acc, year) => {
       const bucket = sourceMap[year] || {};
       const t1 = Number(bucket.t1 || 0);
@@ -1300,7 +1300,7 @@ export default function AdminScopusResearchDashboard() {
       };
       return acc;
     }, {});
-  }, [kpi.total_teachers_with_scopus, overviewYearsBE]);
+  }, [kpi.total_teachers_in_faculty, overviewYearsBE]);
 
   const overviewYearMetricsCalendar = useMemo(
     () => buildOverviewYearMetrics(calendarHistoryByYear),
@@ -2780,7 +2780,7 @@ export default function AdminScopusResearchDashboard() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">จำนวนอาจารย์ในคณะ</p>
-                  <p className="mt-2 text-2xl font-semibold text-blue-700 lg:text-3xl">{formatNumber(kpi.total_teachers_with_scopus || 0)}</p>
+                  <p className="mt-2 text-2xl font-semibold text-blue-700 lg:text-3xl">{formatNumber(kpi.total_teachers_in_faculty || 0)}</p>
                 </div>
                 <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">จำนวนผลงานทั้งหมด (Unique Document)</p>
