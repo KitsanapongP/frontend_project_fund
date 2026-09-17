@@ -18,7 +18,8 @@ const COVERAGE_TEXT = {
 // tab or details. A cumulative total and per-known-doc average side by side, with
 // visible coverage. It never sums the three overlapping levels and never reads the
 // average as field-normalised quality.
-export default function CitationsSection({ reportYear, insights }) {
+export default function CitationsSection({ periodLabel, isRange = false, insights }) {
+  const scopeWord = isRange ? "ช่วงปี" : "ปี";
   const cite = (key) => insights?.levels?.[key]?.citations || null;
   const missing = <span className="font-normal text-slate-400">ยังไม่มีข้อมูล</span>;
 
@@ -67,12 +68,12 @@ export default function CitationsSection({ reportYear, insights }) {
   );
 
   return (
-    <section className="border-b border-slate-200 py-6" aria-label={`การอ้างอิงสะสมของผลงานที่ตีพิมพ์ปี ${reportYear}`}>
-      <h2 className="text-lg font-semibold text-slate-900">การอ้างอิงสะสมของผลงานที่ตีพิมพ์ปี {reportYear}</h2>
-      <p className="mt-1 text-xs text-slate-500">ยอดสะสม ณ ครั้งที่อัปเดตข้อมูล ไม่ใช่จำนวนการอ้างอิงที่เกิดขึ้นในปี {reportYear}</p>
+    <section className="border-b border-slate-200 py-6" aria-label={`การอ้างอิงสะสมของผลงานที่ตีพิมพ์${scopeWord} ${periodLabel}`}>
+      <h2 className="text-lg font-semibold text-slate-900">การอ้างอิงสะสมของผลงานที่ตีพิมพ์{scopeWord} {periodLabel}</h2>
+      <p className="mt-1 text-xs text-slate-500">ยอดสะสม ณ ครั้งที่อัปเดตข้อมูล ไม่ใช่จำนวนการอ้างอิงที่เกิดขึ้นใน{scopeWord} {periodLabel}</p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[560px] border-collapse text-sm">
-          <caption className="sr-only">การอ้างอิงสะสมของผลงานที่ตีพิมพ์ปี {reportYear} แยกตามคณะ มหาวิทยาลัยขอนแก่น และประเทศไทย</caption>
+          <caption className="sr-only">การอ้างอิงสะสมของผลงานที่ตีพิมพ์{scopeWord} {periodLabel} แยกตามคณะ มหาวิทยาลัยขอนแก่น และประเทศไทย</caption>
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500">
               <th scope="col" className="px-3 py-2.5 text-left font-medium">ตัวชี้วัด</th>

@@ -130,6 +130,56 @@
 
 ---
 
+### 2.6 GET `/api/v1/admin/scopus/benchmark/insights?year_from=&year_to=` (ช่วงปี)
+
+ฟอร์มช่วงปี (inclusive) เพิ่มเข้ามาสำหรับรายงานหลายปี. ฟอร์มปีเดียว `?year=YYYY` **คงเดิมทุกฟิลด์**
+สำหรับ caller เก่า. การส่ง `year` ปนกับ `year_from`/`year_to`, ส่งช่วงไม่ครบข้าง, parse ไม่ได้,
+`year_from > year_to`, อยู่นอกขอบเขต [1900, ปีปัจจุบัน+1] หรือช่วงกว้างเกิน 60 ปี → **400** (ไม่ swap เงียบ ๆ).
+
+```jsonc
+{ "success": true, "data": {
+  "year_from": 2025, "year_to": 2026,      // ไม่มี top-level "year" — ช่วงไม่ใช่ปีเดียว (§4.3)
+  "years": {                                // insight รายปีเต็มรูป (แต่ละคีย์ = payload แบบข้อ 2)
+    "2025": { "year": 2025, "levels": {…}, "quartile_coverage": {…}, "scope": {…} },
+    "2026": { "year": 2026, "levels": {…}, "quartile_coverage": {…}, "scope": {…} }
+  },
+  "levels": {                               // aggregate ตลอดช่วง — ตัวที่ KPI/ตาราง/CSV ใช้
+    "faculty": {
+      "available": true,                    // true เมื่อมี observed docs ปีใดปีหนึ่งในช่วง
+      "docs": 20,                           // Σ observed docs
+      "oa_pct": …, "intl_pct": 50.0, "avg_cite": …,  // re-derive จากผลรวม ไม่ใช่เฉลี่ย % รายปี (§3.2)
+      "quartile": { "t1": 2, "q1": 3, "q2": 3, "q3": 1, "q4": 1, "unclassified": …, "unclassified_journal": …, "excluded_non_journal": …, "unresolved": … },
+      "doctypes": { … },                    // Σ รายปี
+      "oa":   { "known": 20, "positive": 8,  "unknown": 0 },   // Σ; อัตรา = positive/known
+      "intl": { "known": 20, "positive": 10, "unknown": 0 },
+      "citations": { … },                   // computeCitationSummary(Σcohort, Σknown, Σtotal)
+      "readiness": {
+        "comparison_ready": false,          // = metrics.count.ready
+        "active_run": false, "snapshot_mismatch": false,
+        "expected_docs": 20, "observed_docs": 20,
+        "reasons": ["2026: no KKU documents for this year"],   // reason ผูกปีต้นเหตุเสมอ (§3.2)
+        "metrics": {
+          "count":     { "ready": false, "reasons": ["2026: …"] },  // ready เฉพาะเมื่อ "ทุกปี" ready
+          "quality":   { "ready": true,  "reasons": [] },
+          "oa":        { "ready": true,  "reasons": [] },
+          "intl":      { "ready": true,  "reasons": [] },
+          "citations": { "ready": true,  "reasons": [] }
+        }
+      }
+    },
+    "kku": { … }, "thailand": { … }
+  },
+  "quartile_coverage": { "classified": …, "total": … },   // Σ ของ level ที่ available
+  "scope": { "subject_area": "COMP", "faculty_scope_id": …, "university_scope_id": …, "country_scope_id": … }
+}}
+```
+
+กติกา aggregate (ตรงกับ `aggregateRangeLevel` — pure/testable, §4.4):
+- **ทุกอัตรา (T1–Q2, intl, OA, citations avg) re-derive จากผลรวมตัวตั้ง/ตัวหาร ไม่เฉลี่ยเปอร์เซ็นต์รายปี.** เช่น intl 1/2 + 9/18 → 10/20 = 50%; 1/2 + 9/10 → 10/12 = 83.3%.
+- **readiness ราย metric aggregate แบบ AND**: metric ช่วง ready ก็ต่อเมื่อ **ทุกปี** ในช่วง ready; reason แต่ละอันขึ้นต้นด้วย `"<ปี>: "`.
+- `levels.*.available` = true เมื่อมี observed docs อย่างน้อยหนึ่งปี (เป็น **observed subset** — ยังไม่ยืนยันครบช่วง; ความครบดูจาก readiness).
+- ยอดจำนวนผลงานช่วง (สำหรับ KPI/สัดส่วน) FE รวมเองจาก `comparison.years[]` + `year_meta` โดยเป็น **null ถ้ามีปี missing/blocked** (ไม่เอา insights `docs` มาเป็นยอดทางการ — `docs` คือ observed/harvested).
+
 ## 3. GET `/api/v1/admin/scopus/benchmark/top-journals?year=YYYY`
 BE มี endpoint นี้ (read-only) แต่ **รายงานผู้บริหารปัจจุบันไม่เรียกใช้** — คงไว้สำหรับส่วนขยายภายหลัง.
 

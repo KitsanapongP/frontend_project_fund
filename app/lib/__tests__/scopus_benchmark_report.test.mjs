@@ -14,6 +14,10 @@ import {
   canCompareMetric,
   resolveBootstrapFloor,
   formatPoints,
+  aggregateRangeCounts,
+  highTierDenomText,
+  intlDenomText,
+  buildRangeFindings,
 } from "../scopus_benchmark_report.mjs";
 
 test("isUsable treats a real zero as usable but rejects null/NaN", () => {
@@ -266,4 +270,91 @@ test("CSV withholds cross-scope comparison and records per-level subjects when s
   });
   assert.match(comparison, /ประเทศไทย=MEDI/);
   assert.match(comparison, /ขอบเขตสามระดับไม่ตรงกัน/);
+});
+
+// ── year-range helpers (§3.2, §5) ────────────────────────────────────────────
+
+test("aggregateRangeCounts sums only when every year of the range is available", () => {
+  const rows = [
+    { year: 2025, faculty: 40, university: 200, country: 2000 },
+    { year: 2026, faculty: 18, university: 150, country: 1600 },
+  ];
+  const yearMeta = {
+    2025: { faculty: { status: "available" }, university: { status: "available" }, country: { status: "available" } },
+    2026: { faculty: { status: "available" }, university: { status: "available" }, country: { status: "available" } },
+  };
+  const agg = aggregateRangeCounts(rows, yearMeta, 2025, 2026);
+  assert.equal(agg.faculty, 58);
+  assert.equal(agg.university, 350);
+  assert.equal(agg.country, 3600);
+  assert.deepEqual(agg.missing.faculty, []);
+});
+
+test("aggregateRangeCounts returns null and lists the offending year when one is blocked", () => {
+  const rows = [
+    { year: 2025, faculty: 40, university: 200, country: 2000 },
+    { year: 2026, faculty: null, university: 150, country: 1600 },
+  ];
+  const yearMeta = {
+    2025: { faculty: { status: "available" }, university: { status: "available" }, country: { status: "available" } },
+    2026: { faculty: { status: "blocked" }, university: { status: "available" }, country: { status: "available" } },
+  };
+  const agg = aggregateRangeCounts(rows, yearMeta, 2025, 2026);
+  assert.equal(agg.faculty, null); // one blocked year → whole-range count withheld
+  assert.deepEqual(agg.missing.faculty, [2026]);
+  assert.equal(agg.university, 350); // university available both years
+});
+
+test("aggregateRangeCounts keeps a real zero-snapshot year as a value, not missing", () => {
+  const rows = [
+    { year: 2025, faculty: 0, university: 200, country: 2000 },
+    { year: 2026, faculty: 18, university: 150, country: 1600 },
+  ];
+  const yearMeta = {
+    2025: { faculty: { status: "available" }, university: { status: "available" }, country: { status: "available" } },
+    2026: { faculty: { status: "available" }, university: { status: "available" }, country: { status: "available" } },
+  };
+  const agg = aggregateRangeCounts(rows, yearMeta, 2025, 2026);
+  assert.equal(agg.faculty, 18); // 0 + 18
+  assert.deepEqual(agg.missing.faculty, []);
+});
+
+test("highTierDenomText reads the total from the data, never a fixed number", () => {
+  assert.equal(highTierDenomText({ t1: 6, q1: 12, q2: 16, q3: 1, q4: 1 }), "34 จาก 36 ผลงานวารสารที่จัดกลุ่มได้");
+  assert.equal(highTierDenomText({ t1: 0, q1: 0, q2: 0, q3: 0, q4: 0 }), "ยังไม่มีวารสารที่จัดกลุ่มได้");
+});
+
+test("intlDenomText shows positive/known and an unknown note when some docs lack country", () => {
+  const level = { available: true, docs: 60, intl: { known: 58, positive: 30, unknown: 2 } };
+  assert.equal(intlDenomText(level), "30 จาก 58 ผลงานที่มีข้อมูลประเทศสังกัด · อีก 2 ผลงานไม่มีข้อมูลประเทศสังกัด จึงไม่นำมาคิดสัดส่วน");
+  const clean = { available: true, docs: 58, intl: { known: 58, positive: 30, unknown: 0 } };
+  assert.equal(intlDenomText(clean), "30 จาก 58 ผลงานที่มีข้อมูลประเทศสังกัด");
+});
+
+test("buildRangeFindings carries no YoY and withholds the total when a year is missing", () => {
+  const missing = buildRangeFindings({ yearFrom: 2025, yearTo: 2026, facultyCount: null, facultyMissingYears: [2026] });
+  assert.equal(missing.length, 1);
+  assert.match(missing[0], /ยังรวมจำนวนผลงานคณะทั้งช่วง 2025–2026 ไม่ได้/);
+  assert.match(missing[0], /2026/);
+
+  const ok = buildRangeFindings({
+    yearFrom: 2025, yearTo: 2026, facultyCount: 58, facultyMissingYears: [],
+    scopeConsistent: true,
+    faculty: { available: true, quartile: { t1: 4, q1: 4, q2: 2, q3: 1, q4: 1 }, readiness: { metrics: { quality: { ready: true } } } },
+    kku: { available: true, quartile: { t1: 2, q1: 4, q2: 4, q3: 5, q4: 5 }, readiness: { metrics: { quality: { ready: true } } } },
+  });
+  assert.equal(ok.some((f) => /ผลงานคณะรวมช่วง 2025–2026: 58 ผลงาน/.test(f)), true);
+  assert.equal(ok.some((f) => /T1–Q2/.test(f)), true);
+  assert.equal(ok.every((f) => !/ปีก่อน/.test(f)), true); // no YoY language
+});
+
+test("buildComparisonCsv range mode labels the period and uses aggregate counts", () => {
+  const csv = buildComparisonCsv({
+    yearFrom: 2025, yearTo: 2026,
+    counts: { faculty: 58, kku: 350, thailand: 3600 },
+    insights: { levels: { faculty: { available: true, docs: 58, quartile: {}, citations: {} }, kku: { available: true, docs: 350, quartile: {}, citations: {} }, thailand: { available: true, docs: 3600, quartile: {}, citations: {} } } },
+    scope: { consistent: true, subject_area: "COMP" },
+  });
+  assert.match(csv, /# เปรียบเทียบช่วงปี 2025–2026/);
+  assert.equal(csv.split("\n").find((l) => l.startsWith("จำนวนผลงาน,")), "จำนวนผลงาน,58,350,3600");
 });

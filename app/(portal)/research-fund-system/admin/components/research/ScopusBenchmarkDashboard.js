@@ -7,18 +7,24 @@ import {
   selectReportYear,
   resolveBootstrapFloor,
   buildFindings,
+  buildRangeFindings,
   buildYearlyCsv,
   buildComparisonCsv,
   normalizeReportRow,
+  aggregateRangeCounts,
   formatCount,
   formatPct,
   formatPoints,
   highTierShare,
+  highTierDenomText,
+  intlDenomText,
   shareOf,
   growthInfo,
   isUsable,
   observedRate,
   metricReady,
+  HINT_T1Q2,
+  HINT_INTL,
 } from "@/app/lib/scopus_benchmark_report.mjs";
 import ReportHeader from "./report/ReportHeader";
 import KpiStrip from "./report/KpiStrip";
@@ -31,7 +37,7 @@ import SourceNotes from "./report/SourceNotes";
 
 const CURRENT_YEAR = new Date().getFullYear();
 // First read covers ~15 years ending at the current year; older windows are loaded
-// on demand when the user selects an earlier report year (§4, R7) — never a
+// on demand when the user selects an earlier report year/range (§4, R7) — never a
 // year-by-year probe, just one wider GET when needed.
 const DEFAULT_WINDOW_FROM = CURRENT_YEAR - 14;
 
@@ -69,41 +75,56 @@ function EmptyState({ onGoSetup }) {
 
 // `api` is injectable so a dev harness can render the real report with fixture
 // data; production always uses the real scopusBenchmarkAPI.
-export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchmarkAPI }) {
+//
+// isActive (§6): the dashboard stays MOUNTED while the user is on the setup tab so
+// switching tabs never re-fetches or loses state. The report-only print styles and
+// the browser-print listeners are attached ONLY while the report is the active tab,
+// so printing the setup tab never inherits the report's A4 page rule. `stale` shows a
+// "data may have changed — refresh" banner after a setup write, without auto-reloading
+// on a mere tab switch.
+export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchmarkAPI, isActive = true, stale = false, onRefreshed }) {
   const [data, setData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState("");
   const [reload, setReload] = useState(0);
 
-  const [manualYear, setManualYear] = useState(null);
+  // Applied range is the atomic report context (§3.1). Draft edits in the header do
+  // not touch this until the user presses "แสดงผล". null until the default resolves.
+  const [appliedFrom, setAppliedFrom] = useState(null);
+  const [appliedTo, setAppliedTo] = useState(null);
+  const userApplied = useRef(false);
+
   const [trendRange, setTrendRange] = useState(5);
   const [windowFrom, setWindowFrom] = useState(DEFAULT_WINDOW_FROM);
   const [sourcesOpen, setSourcesOpen] = useState(false);
 
+  // insightsY: single-year insight; insightsPrev: prior year (single mode only);
+  // rangeInsights: aggregated range payload (range mode only).
   const [insightsY, setInsightsY] = useState(null);
   const [insightsPrev, setInsightsPrev] = useState(null);
+  const [rangeInsights, setRangeInsights] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState("");
   const [insightsReload, setInsightsReload] = useState(0);
   const insightRequest = useRef(0);
 
-  // A4 page size is applied ONLY while this report is mounted (injected at runtime),
-  // never as a global @page rule — so printing other pages is unaffected (R2).
+  // A4 page size is applied ONLY while this report is the active tab (injected at
+  // runtime), never as a global @page rule — so printing other pages/tabs is
+  // unaffected (§6/R2).
   useEffect(() => {
+    if (!isActive) return undefined;
     const style = document.createElement("style");
     style.setAttribute("data-scopus-report-page", "");
     style.textContent = "@media print { @page { size: A4 portrait; margin: 14mm; } }";
     document.head.appendChild(style);
     return () => style.remove();
-  }, []);
+  }, [isActive]);
 
-  // A printed report must be self-contained: expand every collapsed <details> (the
-  // quality appendix and the source-note definitions) for the duration of the print
-  // so they are never dropped, then restore each to how the reader left it. Bound to
-  // beforeprint/afterprint so it covers the "พิมพ์รายงาน" button AND the browser's own
-  // Ctrl+P. Setting `.open` directly also drives the controlled <details> via its
-  // onToggle, keeping React state in sync.
+  // A printed report must be self-contained: expand every collapsed <details> for the
+  // duration of the print, then restore. Bound only while the report is active so the
+  // setup tab's Ctrl+P is never affected (§6).
   useEffect(() => {
+    if (!isActive) return undefined;
     let reopened = [];
     const expand = () => {
       const root = document.getElementById("scopus-report-root");
@@ -121,7 +142,7 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
       window.removeEventListener("beforeprint", expand);
       window.removeEventListener("afterprint", restore);
     };
-  }, []);
+  }, [isActive]);
 
   // Comparison read (report context) — kept separate from the setup tab's counts.
   useEffect(() => {
@@ -142,16 +163,13 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     return () => {
       cancelled = true;
     };
-  }, [reload, windowFrom]);
+  }, [reload, windowFrom, api]);
 
   const yearMeta = data?.year_meta || {};
   // Scope consistency drives EVERY comparison surface (findings, table, KPI share,
   // trend share, CSV). Declared here — before trendPoints/KPIs use it (R3-1).
   const scopeConsistent = data?.report_scope ? data.report_scope.consistent !== false : true;
   const selection = useMemo(() => selectReportYear(yearMeta, CURRENT_YEAR), [yearMeta]);
-  const reportYear = manualYear ?? selection?.year ?? null;
-  const isCurrentYear = reportYear !== null && Number(reportYear) === CURRENT_YEAR;
-  const facultyReady = yearMeta?.[reportYear]?.faculty?.status === "available";
 
   // Year choices come from available_years (ALL snapshot years across every level),
   // so years older than the currently loaded window are still selectable (R7).
@@ -163,42 +181,73 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
       ...(available.country || []),
     ]);
     const years = [...union].map(Number).filter(Number.isFinite).sort((a, b) => b - a);
-    return years.length ? years : reportYear ? [reportYear] : [];
-  }, [data, reportYear]);
+    if (years.length) return years;
+    return selection?.year ? [selection.year] : [];
+  }, [data, selection]);
 
-  // Widen the comparison read so the DEFAULT selection is decided from real
-  // readiness, not from snapshot existence (R4-1). For a default (no manual pick) we
-  // load down to the earliest ended snapshot year (resolveBootstrapFloor) so every
-  // candidate's true faculty status is in year_meta and selectReportYear can prefer
-  // an older faculty-READY year over a recent BLOCKED one. We also always ensure the
-  // shown year's trend window is loaded. A manual pick is respected (only its trend
-  // window is loaded). One wider GET, clamped to the earliest year that has data,
-  // and it settles (the floor is stable) so there is no widen/reload loop.
+  // Default applied range = the deterministically selected single report year. Once
+  // the user applies their own range we never override it on a data reload (§3.1).
+  useEffect(() => {
+    if (userApplied.current) return;
+    if (selection?.year != null) {
+      setAppliedFrom(selection.year);
+      setAppliedTo(selection.year);
+    }
+  }, [selection]);
+
+  const isRange = appliedFrom != null && appliedTo != null && Number(appliedFrom) !== Number(appliedTo);
+  const reportYear = appliedTo; // single-year paths read the (single) applied year
+  const includesCurrentYear = appliedTo != null && appliedFrom != null && Number(appliedFrom) <= CURRENT_YEAR && Number(appliedTo) >= CURRENT_YEAR;
+  const isCurrentYear = !isRange && reportYear !== null && Number(reportYear) === CURRENT_YEAR;
+  const facultyReady = yearMeta?.[reportYear]?.faculty?.status === "available";
+
+  // Widen the comparison read so the applied range/default selection is decided from
+  // real readiness (R4-1). We load down to the lowest of: the applied range start, the
+  // single-year trend window start, and (for a default) the earliest ended snapshot.
   useEffect(() => {
     if (!yearOptions.length) return;
     const earliest = yearOptions[yearOptions.length - 1];
     const candidates = [];
-    const shown = manualYear ?? reportYear;
-    if (shown != null) candidates.push(shown - trendRange + 1);
-    if (manualYear == null) {
+    if (appliedFrom != null) candidates.push(appliedFrom);
+    if (!isRange && reportYear != null) candidates.push(reportYear - trendRange + 1);
+    if (!userApplied.current) {
       const floor = resolveBootstrapFloor(data?.available_years, CURRENT_YEAR);
       if (floor != null) candidates.push(floor);
     }
     if (!candidates.length) return;
     const needed = Math.max(earliest, Math.min(...candidates));
     if (needed < windowFrom) setWindowFrom(needed);
-  }, [manualYear, reportYear, trendRange, yearOptions, data, windowFrom]);
+  }, [appliedFrom, isRange, reportYear, trendRange, yearOptions, data, windowFrom]);
 
-  // Report year is an atomic context: whenever it changes, prior values are cleared
-  // before the new ones load so no figure from another year is ever shown (§4).
+  // Insights read for the applied context. Range mode issues ONE range request (no
+  // per-year fan-out); single-year mode keeps the year + prior-year reads. A request
+  // id guards against a stale response overwriting a newer range (§6).
   useEffect(() => {
-    if (reportYear === null) return;
+    if (appliedFrom === null || appliedTo === null) return;
     const requestId = insightRequest.current + 1;
     insightRequest.current = requestId;
     setInsightsLoading(true);
     setInsightsError("");
     setInsightsY(null);
     setInsightsPrev(null);
+    setRangeInsights(null);
+
+    if (isRange) {
+      api
+        .insights({ year_from: appliedFrom, year_to: appliedTo })
+        .then((response) => {
+          if (insightRequest.current !== requestId) return;
+          setRangeInsights(response?.data || null);
+        })
+        .catch((error) => {
+          if (insightRequest.current !== requestId) return;
+          setInsightsError(error?.message || "โหลดข้อมูลเชิงลึกของช่วงปีไม่สำเร็จ");
+        })
+        .finally(() => {
+          if (insightRequest.current === requestId) setInsightsLoading(false);
+        });
+      return;
+    }
 
     const requests = [api.insights({ year: reportYear })];
     // No prior-year insights for a cumulative current year (no YoY) — §9 C.
@@ -214,7 +263,7 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
       .finally(() => {
         if (insightRequest.current === requestId) setInsightsLoading(false);
       });
-  }, [reportYear, isCurrentYear, insightsReload]);
+  }, [appliedFrom, appliedTo, isRange, reportYear, isCurrentYear, insightsReload, api]);
 
   const rows = useMemo(() => (Array.isArray(data?.years) ? [...data.years].sort((a, b) => Number(a.year) - Number(b.year)) : []), [data]);
   const rowByYear = useCallback((year) => rows.find((row) => Number(row.year) === Number(year)) || null, [rows]);
@@ -224,11 +273,18 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   const usableFaculty = useCallback((year) => yearMeta?.[year]?.faculty?.status === "available", [yearMeta]);
   const usableKku = useCallback((year) => yearMeta?.[year]?.university?.status === "available", [yearMeta]);
 
+  // Insight payload used by every downstream surface: the aggregate levels in range
+  // mode, the single-year insight otherwise. Both expose the same `.levels` shape.
+  const insightsForDisplay = isRange ? rangeInsights : insightsY;
+
+  // Trend points. Single mode: the 5/10-year window ending at the report year. Range
+  // mode: exactly the selected years, so the chart shows the chosen span (§3.1).
   const trendPoints = useMemo(() => {
-    if (reportYear === null) return [];
-    const start = reportYear - trendRange + 1;
+    if (appliedFrom === null || appliedTo === null) return [];
+    const start = isRange ? Number(appliedFrom) : reportYear - trendRange + 1;
+    const end = isRange ? Number(appliedTo) : reportYear;
     const points = [];
-    for (let year = start; year <= reportYear; year += 1) {
+    for (let year = start; year <= end; year += 1) {
       const row = rowByYear(year);
       const faculty = row && usableFaculty(year) && isUsable(row.faculty) ? Number(row.faculty) : null;
       const kku = row && usableKku(year) && isUsable(row.university) ? Number(row.university) : null;
@@ -236,102 +292,124 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
       points.push({ year, faculty, kku, share: scopeConsistent ? shareOf(faculty, kku) : null });
     }
     return points;
-  }, [reportYear, trendRange, rowByYear, usableFaculty, usableKku, scopeConsistent]);
+  }, [appliedFrom, appliedTo, isRange, reportYear, trendRange, rowByYear, usableFaculty, usableKku, scopeConsistent]);
+
+  // Range count aggregation: sum per level across the applied window, null when any
+  // year is missing/blocked (with the offending years recorded) — §3.2.
+  const rangeCounts = useMemo(
+    () => (isRange ? aggregateRangeCounts(rows, yearMeta, Number(appliedFrom), Number(appliedTo)) : null),
+    [isRange, rows, yearMeta, appliedFrom, appliedTo],
+  );
 
   const reportRow = rowByYear(reportYear);
   const reportMeta = yearMeta?.[reportYear] || null;
-  // Rows carry legacy default-0 for missing snapshots; normalize against year_meta
-  // so the table/CSV/share never read a missing snapshot as a real zero (R4).
   const normalizedReportRow = useMemo(() => normalizeReportRow(reportRow, reportMeta), [reportRow, reportMeta]);
   const prevRow = rowByYear(reportYear - 1);
-  const facultyCount = reportRow && facultyReady && isUsable(reportRow.faculty) ? Number(reportRow.faculty) : null;
+
+  // Counts feeding the KPI + share: aggregate in range mode, single-year otherwise.
+  const facultyCount = isRange
+    ? rangeCounts?.faculty ?? null
+    : reportRow && facultyReady && isUsable(reportRow.faculty) ? Number(reportRow.faculty) : null;
+  const kkuCount = isRange
+    ? rangeCounts?.university ?? null
+    : reportRow && usableKku(reportYear) && isUsable(reportRow.university) ? Number(reportRow.university) : null;
   const prevFacultyCount = prevRow && usableFaculty(reportYear - 1) && isUsable(prevRow.faculty) ? Number(prevRow.faculty) : null;
-  const kkuCount = reportRow && usableKku(reportYear) && isUsable(reportRow.university) ? Number(reportRow.university) : null;
   const prevKkuCount = prevRow && usableKku(reportYear - 1) && isUsable(prevRow.university) ? Number(prevRow.university) : null;
 
   const shareNow = shareOf(facultyCount, kkuCount);
   const sharePrev = shareOf(prevFacultyCount, prevKkuCount);
 
-  const facultyInsight = insightsY?.levels?.faculty || null;
-  const kkuInsight = insightsY?.levels?.kku || null;
+  const facultyInsight = insightsForDisplay?.levels?.faculty || null;
+  const kkuInsight = insightsForDisplay?.levels?.kku || null;
   const prevFacultyInsight = insightsPrev?.levels?.faculty || null;
 
-  const scope = data?.report_scope || insightsY?.scope || { subject_area: "COMP" };
+  const scope = data?.report_scope || insightsForDisplay?.scope || { subject_area: "COMP" };
   const sourceDates = useMemo(() => ({
     faculty: formatThaiDate(yearMeta?.[reportYear]?.faculty?.snapshot_at),
     university: formatThaiDate(yearMeta?.[reportYear]?.university?.snapshot_at),
     country: formatThaiDate(yearMeta?.[reportYear]?.country?.snapshot_at),
   }), [yearMeta, reportYear]);
 
-  const findings = useMemo(() => buildFindings({
-    isCurrentYear,
-    reportYear,
-    facultyCount,
-    prevFacultyCount,
-    kkuCount,
-    prevKkuCount,
-    facultyReady,
-    faculty: facultyInsight,
-    kku: kkuInsight,
-  }), [isCurrentYear, reportYear, facultyCount, prevFacultyCount, kkuCount, prevKkuCount, facultyReady, facultyInsight, kkuInsight]);
+  const periodLabel = isRange ? `${appliedFrom}–${appliedTo}` : String(reportYear ?? "–");
 
-  // KPI sublines (§5 B). Every subline shows the prior-year comparator only when it
-  // is usable and the year has ended.
+  const findings = useMemo(() => {
+    if (isRange) {
+      return buildRangeFindings({
+        yearFrom: Number(appliedFrom),
+        yearTo: Number(appliedTo),
+        includesCurrentYear,
+        facultyCount,
+        facultyMissingYears: rangeCounts?.missing?.faculty || [],
+        faculty: facultyInsight,
+        kku: kkuInsight,
+        scopeConsistent,
+      });
+    }
+    return buildFindings({
+      isCurrentYear,
+      reportYear,
+      facultyCount,
+      prevFacultyCount,
+      kkuCount,
+      prevKkuCount,
+      facultyReady,
+      faculty: facultyInsight,
+      kku: kkuInsight,
+    });
+  }, [isRange, appliedFrom, appliedTo, includesCurrentYear, isCurrentYear, reportYear, facultyCount, prevFacultyCount, kkuCount, prevKkuCount, facultyReady, facultyInsight, kkuInsight, rangeCounts, scopeConsistent]);
+
+  // KPI strip (§5 B). In range mode there is NO year-over-year subline (§3.2); the
+  // T1–Q2 and international cards always carry a self-explaining denominator + a hint.
   const kpiItems = useMemo(() => {
-    const growth = !isCurrentYear ? growthInfo(facultyCount, prevFacultyCount) : { status: "unknown" };
-    const countSub = isCurrentYear
-      ? "ข้อมูลสะสม (ยังไม่ครบปี)"
-      : growth.status === "pct"
-      ? `ปีก่อน ${formatCount(prevFacultyCount)} · ${growth.delta >= 0 ? "+" : "−"}${formatCount(Math.abs(growth.delta))} ผลงาน (${formatPct(growth.pct)})`
-      : growth.status === "from_zero"
-      ? `ปีก่อน 0 · +${formatCount(growth.delta)} ผลงาน`
-      : growth.status === "flat"
-      ? "ไม่เปลี่ยนแปลงจากปีก่อน"
-      : "ไม่มีข้อมูลปีก่อน";
+    const growth = !isRange && !isCurrentYear ? growthInfo(facultyCount, prevFacultyCount) : { status: "unknown" };
+    let countSub;
+    if (isRange) {
+      countSub = rangeCounts?.faculty == null
+        ? `ยังรวมทั้งช่วงไม่ได้ (ข้อมูลปี ${(rangeCounts?.missing?.faculty || []).join(", ")} ยังไม่พร้อม)`
+        : `รวมช่วง ${periodLabel}${includesCurrentYear ? ` · รวมปี ${appliedTo} ที่ยังไม่ครบปี` : ""}`;
+    } else {
+      countSub = isCurrentYear
+        ? "ข้อมูลสะสม (ยังไม่ครบปี)"
+        : growth.status === "pct"
+        ? `ปีก่อน ${formatCount(prevFacultyCount)} · ${growth.delta >= 0 ? "+" : "−"}${formatCount(Math.abs(growth.delta))} ผลงาน (${formatPct(growth.pct)})`
+        : growth.status === "from_zero"
+        ? `ปีก่อน 0 · +${formatCount(growth.delta)} ผลงาน`
+        : growth.status === "flat"
+        ? "ไม่เปลี่ยนแปลงจากปีก่อน"
+        : "ไม่มีข้อมูลปีก่อน";
+    }
 
-    // Share (คณะ/KKU) is a cross-scope comparison — withheld when scope inconsistent (R3-1).
     const shareValue = scopeConsistent ? formatPct(shareNow) : "ยังเทียบไม่ได้";
-    const shareSub = !scopeConsistent
-      ? "ขอบเขตไม่ตรง — งดสัดส่วนคณะ/KKU"
-      : isCurrentYear
-      ? "ข้อมูลสะสม (ยังไม่ครบปี)"
-      : shareNow !== null && sharePrev !== null
-      ? `ปีก่อน ${formatPct(sharePrev)} · ${formatPoints(shareNow - sharePrev)}`
-      : "ไม่มีข้อมูลปีก่อน";
+    let shareSub;
+    if (!scopeConsistent) shareSub = "ขอบเขตไม่ตรง — งดสัดส่วนคณะ/KKU";
+    else if (shareNow === null) shareSub = isRange ? "ยังคำนวณสัดส่วนไม่ได้ (ข้อมูลช่วงยังไม่ครบ)" : "ยังคำนวณสัดส่วนไม่ได้";
+    else if (isRange) shareSub = `สัดส่วนรวมช่วง ${periodLabel}`;
+    else if (isCurrentYear) shareSub = "ข้อมูลสะสม (ยังไม่ครบปี)";
+    else if (shareNow !== null && sharePrev !== null) shareSub = `ปีก่อน ${formatPct(sharePrev)} · ${formatPoints(shareNow - sharePrev)}`;
+    else shareSub = "ไม่มีข้อมูลปีก่อน";
 
-    // When the faculty harvest is incomplete for the year, the observed metric
-    // values still show but carry a note (their cohort ≠ the official count) (R2-1).
     const facultyMismatch = facultyInsight?.readiness?.snapshot_mismatch;
     const mismatchNote = facultyMismatch ? "ข้อมูลชุดนี้ยังไม่ครบเทียบ snapshot (ค่าที่แสดงเป็นค่าที่สังเกตได้)" : null;
 
     const htNow = highTierShare(facultyInsight?.quartile);
+    const htDenom = facultyInsight?.available ? highTierDenomText(facultyInsight?.quartile) : "ยังไม่มีข้อมูล";
     const htPrev = highTierShare(prevFacultyInsight?.quartile);
-    const htQ = facultyInsight?.quartile;
-    const htDenom = htQ
-      ? `${formatCount(Number(htQ.t1 || 0) + Number(htQ.q1 || 0) + Number(htQ.q2 || 0))}/${formatCount(Number(htQ.t1 || 0) + Number(htQ.q1 || 0) + Number(htQ.q2 || 0) + Number(htQ.q3 || 0) + Number(htQ.q4 || 0))} ที่จัดกลุ่มได้`
-      : "ยังไม่มีข้อมูล";
-    // Prior-year comparator only when the QUALITY metric is ready in BOTH years.
     const qualityComparable = metricReady(facultyInsight, "quality") && metricReady(prevFacultyInsight, "quality");
-    const htSub2 = isCurrentYear
-      ? null
+    const htSub2 = isRange || isCurrentYear
+      ? (facultyInsight?.available && !metricReady(facultyInsight, "quality") ? "ข้อมูลวารสารบางส่วนยังไม่ครบในช่วงนี้" : null)
       : qualityComparable && htPrev !== null
       ? `ปีก่อน ${formatPct(htPrev)}`
       : facultyInsight?.available && !metricReady(facultyInsight, "quality")
       ? "ยังเทียบปีก่อน/ระดับไม่ได้ (ข้อมูลวารสารไม่ครบ)"
       : null;
 
-    // Observed international-collaboration rate over KNOWN docs (shared helper — R2-2).
     const intlNowR = observedRate(facultyInsight, "intl");
-    const intlPrevR = observedRate(prevFacultyInsight, "intl");
     const intlNow = intlNowR.value;
-    const intlSub = facultyInsight?.available
-      ? intlNowR.known !== null
-        ? `${formatCount(intlNowR.positive)}/${formatCount(intlNowR.known)} ที่ทราบ${intlNowR.unknown > 0 ? ` · ไม่ทราบ ${formatCount(intlNowR.unknown)}` : ""}`
-        : `จาก ${formatCount(facultyInsight?.docs)} ผลงาน (observed)`
-      : "ยังไม่มีข้อมูล";
+    const intlSub = facultyInsight?.available ? intlDenomText(facultyInsight) : "ยังไม่มีข้อมูล";
+    const intlPrevR = observedRate(prevFacultyInsight, "intl");
     const intlComparable = metricReady(facultyInsight, "intl") && metricReady(prevFacultyInsight, "intl");
-    const intlSub2 = isCurrentYear
-      ? null
+    const intlSub2 = isRange || isCurrentYear
+      ? (facultyInsight?.available && !metricReady(facultyInsight, "intl") ? "ข้อมูลสังกัดบางส่วนยังไม่ครบในช่วงนี้" : null)
       : intlComparable && intlPrevR.value !== null
       ? `ปีก่อน ${formatPct(intlPrevR.value)}`
       : facultyInsight?.available && !metricReady(facultyInsight, "intl")
@@ -339,12 +417,12 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
       : null;
 
     return [
-      { label: "จำนวนผลงานคณะ", value: formatCount(facultyCount), unit: "ผลงาน", sublines: [countSub, mismatchNote].filter(Boolean) },
+      { label: isRange ? "จำนวนผลงานคณะ (รวมช่วง)" : "จำนวนผลงานคณะ", value: formatCount(facultyCount), unit: "ผลงาน", sublines: [countSub, mismatchNote].filter(Boolean) },
       { label: "สัดส่วนผลงานคณะต่อ KKU", value: shareValue, sublines: [shareSub] },
-      { label: "ผลงานในวารสารกลุ่ม T1–Q2", value: formatPct(htNow), sublines: [htDenom, htSub2].filter(Boolean) },
-      { label: "ผลงานร่วมกับต่างประเทศ", value: formatPct(intlNow), sublines: [intlSub, intlSub2].filter(Boolean) },
+      { label: "ผลงานในวารสารกลุ่ม T1–Q2", value: formatPct(htNow), sublines: [htDenom, htSub2].filter(Boolean), hint: HINT_T1Q2 },
+      { label: "ผลงานร่วมกับต่างประเทศ", value: formatPct(intlNow), sublines: [intlSub, intlSub2].filter(Boolean), hint: HINT_INTL },
     ];
-  }, [isCurrentYear, facultyCount, prevFacultyCount, shareNow, sharePrev, facultyInsight, prevFacultyInsight, scopeConsistent]);
+  }, [isRange, isCurrentYear, includesCurrentYear, appliedTo, periodLabel, rangeCounts, facultyCount, prevFacultyCount, shareNow, sharePrev, facultyInsight, prevFacultyInsight, scopeConsistent]);
 
   const download = useCallback((filename, contents) => {
     const blob = new Blob(["﻿" + contents], { type: "text/csv;charset=utf-8" });
@@ -357,15 +435,36 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   }, []);
 
   const exportYearly = useCallback(() => {
-    // Export exactly the trend range shown on screen (5/10 ending at reportYear),
-    // not the full read window (R8).
-    const start = reportYear - trendRange + 1;
-    const visibleRows = rows.filter((row) => Number(row.year) >= start && Number(row.year) <= reportYear);
-    download(`scopus-benchmark-รายปี-${start}-${reportYear}.csv`, buildYearlyCsv({ rows: visibleRows, yearMeta, scope }));
-  }, [download, rows, yearMeta, scope, reportYear, trendRange]);
+    // Export the years actually shown: the applied range in range mode, else the
+    // trend window ending at the report year (R8).
+    const start = isRange ? Number(appliedFrom) : reportYear - trendRange + 1;
+    const end = isRange ? Number(appliedTo) : reportYear;
+    const visibleRows = rows.filter((row) => Number(row.year) >= start && Number(row.year) <= end);
+    download(`scopus-benchmark-รายปี-${start}-${end}.csv`, buildYearlyCsv({ rows: visibleRows, yearMeta, scope }));
+  }, [download, rows, yearMeta, scope, isRange, appliedFrom, appliedTo, reportYear, trendRange]);
+
   const exportComparison = useCallback(() => {
+    if (isRange) {
+      download(
+        `scopus-benchmark-เปรียบเทียบ-${appliedFrom}-${appliedTo}.csv`,
+        buildComparisonCsv({
+          yearFrom: Number(appliedFrom),
+          yearTo: Number(appliedTo),
+          counts: { faculty: rangeCounts?.faculty ?? null, kku: rangeCounts?.university ?? null, thailand: rangeCounts?.country ?? null },
+          insights: rangeInsights,
+          scope,
+        }),
+      );
+      return;
+    }
     download(`scopus-benchmark-เปรียบเทียบ-${reportYear}.csv`, buildComparisonCsv({ reportYear, row: reportRow, meta: reportMeta, insights: insightsY, scope }));
-  }, [download, reportYear, reportRow, reportMeta, insightsY, scope]);
+  }, [download, isRange, appliedFrom, appliedTo, rangeCounts, rangeInsights, reportYear, reportRow, reportMeta, insightsY, scope]);
+
+  const applyRange = useCallback((from, to) => {
+    userApplied.current = true;
+    setAppliedFrom(from);
+    setAppliedTo(to);
+  }, []);
 
   if (dataLoading && !data) return <Skeleton />;
   if (dataError && !data) {
@@ -376,22 +475,19 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
       </div>
     );
   }
-  if (reportYear === null) {
-    // Snapshots exist (available_years non-empty) but all fall outside the loaded
-    // window — show loading while the widen effect fetches the older range, never a
-    // dead-end empty state (R2-4). True empty only when nothing is available anywhere.
+  if (appliedFrom === null || appliedTo === null) {
     if (yearOptions.length) return <Skeleton />;
     return <EmptyState onGoSetup={onGoSetup} />;
   }
 
   const trendRangeLabel = `${reportYear - trendRange + 1}–${reportYear}`;
-  const busy = dataLoading || (insightsLoading && !insightsY);
+  const busy = dataLoading || (insightsLoading && !insightsForDisplay);
   const refreshAll = () => {
     setReload((value) => value + 1);
     setInsightsReload((value) => value + 1);
+    onRefreshed?.();
   };
-  // Scope guard (§4/R2-3/R3-1): on mismatch we withhold every comparative surface —
-  // findings, table gaps, the share KPI, the trend share line, and the CSV share.
+  // Scope guard (§4/R2-3/R3-1): on mismatch we withhold every comparative surface.
   const scopeMismatch = !scopeConsistent;
   const shownFindings = scopeMismatch
     ? ["ขอบเขตข้อมูลของสามระดับไม่ตรงกันหรือไม่ใช่ Computer Science (COMP) จึงงดข้อสรุปเปรียบเทียบจนกว่าจะตั้งค่าขอบเขตให้ตรง"]
@@ -401,22 +497,34 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     <div id="scopus-report-root" className="rounded-lg border border-slate-200 bg-white">
       <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6 lg:px-8">
         <ReportHeader
-          reportYear={reportYear}
-          yearOptions={yearOptions}
-          onYearChange={setManualYear}
+          yearFrom={Number(appliedFrom)}
+          yearTo={Number(appliedTo)}
+          minYear={yearOptions.length ? yearOptions[yearOptions.length - 1] : 1900}
+          maxYear={CURRENT_YEAR}
+          onApply={applyRange}
+          periodLabel={periodLabel}
+          isRange={isRange}
+          includesCurrentYear={includesCurrentYear}
           trendRangeLabel={trendRangeLabel}
           sourceDates={sourceDates}
-          cumulative={isCurrentYear}
           busy={busy}
           onPrint={() => { if (!busy) window.print(); }}
           onRefresh={refreshAll}
           onExportYearly={exportYearly}
           onExportComparison={exportComparison}
+          exportComparisonLabel={isRange ? "ตารางเปรียบเทียบช่วงปี (CSV)" : "ตารางเปรียบเทียบปีรายงาน (CSV)"}
           onToggleSources={() => {
             setSourcesOpen(true);
             requestAnimationFrame(() => document.getElementById("scopus-report-sources")?.scrollIntoView({ behavior: "smooth", block: "start" }));
           }}
         />
+
+        {stale && (
+          <div className="no-print mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+            <span className="flex items-center gap-2"><AlertCircle size={16} aria-hidden="true" />ข้อมูลอาจมีการอัปเดต กดรีเฟรชเพื่อดูข้อมูลล่าสุด</span>
+            <button type="button" onClick={refreshAll} className="rounded-md border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100">รีเฟรช</button>
+          </div>
+        )}
 
         {scopeMismatch && (
           <div className="mt-4 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
@@ -425,8 +533,6 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
         )}
 
         {insightsError && (
-          // Printable so a failed load is visible in the printed report (§7), while
-          // the retry control itself stays screen-only.
           <div className="mt-4 flex items-center justify-between gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800">
             <span className="flex items-center gap-2"><AlertCircle size={16} aria-hidden="true" />ข้อมูลเชิงลึกบางส่วนโหลดไม่สำเร็จ: {insightsError}</span>
             <button type="button" onClick={() => setInsightsReload((value) => value + 1)} className="no-print font-semibold underline">ลองใหม่</button>
@@ -435,20 +541,29 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
 
         <KpiStrip items={kpiItems} />
         <KeyFindings findings={shownFindings} />
-        <TrendCharts points={trendPoints} reportYear={reportYear} currentYear={CURRENT_YEAR} trendRange={trendRange} onRangeChange={setTrendRange} scopeConsistent={scopeConsistent} />
+        <TrendCharts
+          points={trendPoints}
+          reportYear={isRange ? null : reportYear}
+          currentYear={CURRENT_YEAR}
+          trendRange={trendRange}
+          onRangeChange={setTrendRange}
+          scopeConsistent={scopeConsistent}
+          showRangeSelector={!isRange}
+          periodLabel={periodLabel}
+        />
 
-        {insightsLoading && !insightsY ? (
+        {insightsLoading && !insightsForDisplay ? (
           <div className="border-b border-slate-200 py-6"><div className="h-40 animate-pulse rounded bg-slate-100" /></div>
         ) : (
           <>
-            <ComparisonTable reportYear={reportYear} row={normalizedReportRow} insights={insightsY} scopeConsistent={scopeConsistent} />
-            <CitationsSection reportYear={reportYear} insights={insightsY} />
-            <QualityTypeDetails insights={insightsY} />
+            <ComparisonTable periodLabel={periodLabel} isRange={isRange} row={isRange ? { faculty: rangeCounts?.faculty ?? null, university: rangeCounts?.university ?? null, country: rangeCounts?.country ?? null } : normalizedReportRow} insights={insightsForDisplay} scopeConsistent={scopeConsistent} />
+            <CitationsSection periodLabel={periodLabel} isRange={isRange} insights={insightsForDisplay} />
+            <QualityTypeDetails insights={insightsForDisplay} />
           </>
         )}
 
         <SourceNotes
-          reportYear={reportYear}
+          periodLabel={periodLabel}
           scope={scope}
           sourceDates={sourceDates}
           facultyMetric={data?.faculty_metric}

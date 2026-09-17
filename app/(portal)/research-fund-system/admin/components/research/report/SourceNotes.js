@@ -1,10 +1,11 @@
 "use client";
 
-import { formatCount } from "@/app/lib/scopus_benchmark_report.mjs";
+import { formatCount, HINT_T1Q2, HINT_INTL } from "@/app/lib/scopus_benchmark_report.mjs";
 
 // Methodology + footer (§5 G). The definitions live in a collapsible; the essential
-// source dates and the "generated vs data updated" distinction always print.
-export default function SourceNotes({ reportYear, scope, sourceDates = {}, facultyMetric, open, onToggle, onGoSetup, generatedAt }) {
+// source dates and the "generated vs data updated" distinction always print. The
+// tooltip hints do not print, so their full text is repeated here (§5).
+export default function SourceNotes({ periodLabel, scope, sourceDates = {}, facultyMetric, open, onToggle, onGoSetup, generatedAt }) {
   const date = (value) => value || "ไม่ทราบวันที่อัปเดตข้อมูล";
 
   return (
@@ -15,6 +16,8 @@ export default function SourceNotes({ reportYear, scope, sourceDates = {}, facul
           <p><b className="font-medium text-slate-700">คณะ (verified faculty):</b> ผลงาน Computer Science ในชุด KKU ที่มีอาจารย์ในระบบเป็นผู้แต่ง มี AF-ID 60017165 หรือ 60280609 บนผลงาน และตีพิมพ์ตั้งแต่วันเริ่มงานเมื่อมีข้อมูลวันเริ่มงาน (มิฉะนั้นใช้ AF-ID เป็นหลักฐานการสังกัด) เป็นชุดเดียวกับที่ใช้นับ KPI</p>
           <p><b className="font-medium text-slate-700">แหล่งข้อมูลและการนับ:</b> จำนวนผลงานมาจาก snapshot การนับ ส่วนตัวชี้วัดเชิงลึก (คุณภาพวารสาร ความร่วมมือ Open Access การอ้างอิง) มาจากเอกสารที่เก็บไว้จริง หากจำนวนสองส่วนไม่ตรงกันจะไม่สรุปเปรียบเทียบ</p>
           <p><b className="font-medium text-slate-700">ปีของตัวชี้วัด:</b> ปีรายงานคือปีตีพิมพ์ของผลงาน · กลุ่มคุณภาพวารสารใช้ค่า CiteScore ล่าสุดต่อวารสาร (ไม่ใช่ค่า ณ ปีตีพิมพ์) · การอ้างอิงเป็นยอดสะสม ไม่ใช่ค่าที่ปรับตามสาขา</p>
+          <p><b className="font-medium text-slate-700">ผลงานในวารสารกลุ่ม T1–Q2:</b> {HINT_T1Q2}</p>
+          <p><b className="font-medium text-slate-700">ผลงานร่วมกับต่างประเทศ:</b> {HINT_INTL}</p>
           <p><b className="font-medium text-slate-700">ขอบเขต:</b> {scope?.subject_area || "COMP"} (Computer Science) · คณะเป็นส่วนหนึ่งของ KKU และ KKU เป็นส่วนหนึ่งของประเทศไทย สามระดับมีผลงานทับซ้อนกัน จึงไม่รวมยอดเป็นผลรวมเดียว และไม่ตีความเป็นการจัดอันดับ</p>
           <p><b className="font-medium text-slate-700">ความพร้อมของข้อมูล:</b> การสิ้นสุดปีปฏิทินไม่ได้แปลว่าเก็บเอกสารครบ · ความครอบคลุมของการอ้างอิงแสดงเป็น known/cohort ต่อระดับ และยังไม่ทราบวันที่อัปเดตการอ้างอิงที่พิสูจน์ได้</p>
           {facultyMetric?.ready === false && (
@@ -27,7 +30,7 @@ export default function SourceNotes({ reportYear, scope, sourceDates = {}, facul
       </details>
 
       <footer className="mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-slate-200 pt-4 text-xs text-slate-500">
-        <span>ขอบเขต {scope?.subject_area || "COMP"} · ปีรายงาน {reportYear ?? "–"}</span>
+        <span>ขอบเขต {scope?.subject_area || "COMP"} · {periodLabel ?? "–"}</span>
         <span>สร้างรายงานเมื่อ {generatedAt} · ข้อมูลอัปเดต คณะ {date(sourceDates.faculty)} · KKU {date(sourceDates.university)} · ประเทศไทย {date(sourceDates.country)}</span>
         <button type="button" onClick={onGoSetup} className="no-print font-medium text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline">
           ตั้งค่า & ดึงข้อมูล

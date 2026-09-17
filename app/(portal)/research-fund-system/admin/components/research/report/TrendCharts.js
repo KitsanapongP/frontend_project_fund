@@ -172,27 +172,29 @@ function ShareChart({ points, width }) {
   );
 }
 
-export default function TrendCharts({ points, reportYear, currentYear, trendRange, onRangeChange, scopeConsistent = true }) {
+export default function TrendCharts({ points, reportYear, currentYear, trendRange, onRangeChange, scopeConsistent = true, showRangeSelector = true, periodLabel }) {
   const [volumeRef, volumeWidth] = useMeasuredWidth(520);
   const [shareRef, shareWidth] = useMeasuredWidth(360);
 
   return (
-    <section className="border-b border-slate-200 py-6" aria-label="แนวโน้มย้อนหลัง">
+    <section className="border-b border-slate-200 py-6" aria-label="แนวโน้มรายปีของคณะ">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-slate-900">แนวโน้มผลงานคณะ</h2>
-        <div className="no-print inline-flex overflow-hidden rounded-md border border-slate-300" role="group" aria-label="ช่วงปีของกราฟแนวโน้ม">
-          {[5, 10].map((range) => (
-            <button
-              key={range}
-              type="button"
-              onClick={() => onRangeChange(range)}
-              aria-pressed={trendRange === range}
-              className={`px-3 py-1.5 text-xs font-medium ${trendRange === range ? "bg-blue-50 text-blue-700" : "bg-white text-slate-600 hover:bg-slate-50"}`}
-            >
-              {range} ปี
-            </button>
-          ))}
-        </div>
+        <h2 className="text-lg font-semibold text-slate-900">แนวโน้มผลงานคณะ{showRangeSelector ? "" : ` (ช่วงปี ${periodLabel})`}</h2>
+        {showRangeSelector ? (
+          <div className="no-print inline-flex overflow-hidden rounded-md border border-slate-300" role="group" aria-label="ช่วงปีของกราฟแนวโน้ม">
+            {[5, 10].map((range) => (
+              <button
+                key={range}
+                type="button"
+                onClick={() => onRangeChange(range)}
+                aria-pressed={trendRange === range}
+                className={`px-3 py-1.5 text-xs font-medium ${trendRange === range ? "bg-blue-50 text-blue-700" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+              >
+                {range} ปี
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[3fr_2fr]">
