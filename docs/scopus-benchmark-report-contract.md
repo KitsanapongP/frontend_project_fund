@@ -191,8 +191,11 @@ Read-only. คืน **CSV** (ไม่ใช่ JSON) ของรายกา�
   ล่าสุดด้วย `source_metric_id`, authors เป็น `GROUP_CONCAT` subquery, affiliations query แยกแล้ว group ใน Go.
 - ordering `pub_year DESC, document id ASC`; UTF-8 BOM; escape ตาม RFC4180; กัน formula injection
   (ค่าเริ่มด้วย `= + - @` เติม `'` นำหน้า); ID/ISSN/ISBN เก็บเป็นข้อความ (auto-format เป็นเรื่องของโปรแกรมที่เปิด).
-- สร้างไฟล์ทั้งก้อนใน memory แล้วส่งเมื่อสำเร็จครบเท่านั้น (ไม่มี partial file); FE ใช้ `apiClient.downloadFile`
-  ที่ดึงเป็น blob และ throw เมื่อ non-2xx.
+- สร้างไฟล์ทั้งก้อนใน memory แล้วส่งเมื่อสำเร็จครบเท่านั้น (ไม่มี partial file); FE ดึงเป็น blob และ throw เมื่อ non-2xx.
+- **ความครบ (R4):** response แนบ header `X-Total-Count` (จำนวนแถวที่ export), `X-Benchmark-Expected`
+  (ผลรวม snapshot ของช่วง), `X-Benchmark-Incomplete`, `X-Benchmark-Missing-Years` (ตรวจ **รายปี** ด้วย
+  `missingBenchmarkYears` — ปีที่ over-harvest หักปีที่ขาดไม่ได้), `X-Benchmark-Active-Harvest`. FE แสดง
+  จำนวนแถว + คำเตือนเมื่อไม่ครบ แต่ยังส่งออกข้อมูลที่มีได้. headers เปิดผ่าน `Access-Control-Expose-Headers`.
 
 ### 36 คอลัมน์ (ตรงชื่อ/ลำดับกับ `EXPORT_COLUMNS` ชีต Documents หน้า search) และแหล่งข้อมูล benchmark
 
@@ -207,11 +210,11 @@ Read-only. คืน **CSV** (ไม่ใช่ JSON) ของรายกา�
 |7|aggregation_type|`.aggregation_type`|
 |8|source_id|`.source_id`|
 |9|publication_name|`.publication_name`|
-|10|afid|primary affiliation (ตัวแรกตาม author_seq) จาก `benchmark_affiliations.afid`|
-|11|name|primary `.name`|
-|12|city|primary `.city`|
-|13|country|primary `.country`|
-|14|affiliation_url|primary `.affiliation_url`|
+|10|afid|**ทุกสังกัดของเอกสาร** join ด้วย ` \| ` (dedup, stable order) — รูปแบบเดียวกับหน้า search (`joinNonEmptyValues`) ไม่ใช่แค่สังกัดแรก (R2)|
+|11|name|ทุกสังกัด `.name` join ` \| `|
+|12|city|ทุกสังกัด `.city` join ` \| `|
+|13|country|ทุกสังกัด `.country` join ` \| ` (เอกสารไทย+ต่างประเทศ เห็นครบ เช่น `India \| Thailand \| Lebanon`)|
+|14|affiliation_url|ทุกสังกัด `.affiliation_url` join ` \| `|
 |15|affiliations_json|JSON array ของสังกัดทั้งหมดของเอกสาร (afid/name/city/country/affiliation_url)|
 |16|issn|`.issn`|
 |17|eissn|`.eissn`|

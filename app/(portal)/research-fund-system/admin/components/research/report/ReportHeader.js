@@ -202,11 +202,17 @@ export default function ReportHeader({
           </>
         )}
         <span aria-hidden="true">·</span>
-        <span>คณะอัปเดต {dateText(sourceDates.faculty)}</span>
-        <span aria-hidden="true">·</span>
-        <span>KKU {dateText(sourceDates.university)}</span>
-        <span aria-hidden="true">·</span>
-        <span>ประเทศไทย {dateText(sourceDates.country)}</span>
+        {isRange ? (
+          <span>ข้อมูลอัปเดตต่างกันในแต่ละปี — ดูวันอัปเดตรายปีที่แหล่งข้อมูล</span>
+        ) : (
+          <>
+            <span>คณะอัปเดต {dateText(sourceDates.faculty)}</span>
+            <span aria-hidden="true">·</span>
+            <span>KKU {dateText(sourceDates.university)}</span>
+            <span aria-hidden="true">·</span>
+            <span>ประเทศไทย {dateText(sourceDates.country)}</span>
+          </>
+        )}
         <button type="button" onClick={onToggleSources} className="no-print font-medium text-blue-600 underline-offset-2 hover:underline">
           ดูแหล่งข้อมูล
         </button>

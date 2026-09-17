@@ -135,6 +135,16 @@ export function intlDenomText(level) {
   return text;
 }
 
+// ── refresh lifecycle (§6 / R1) ──────────────────────────────────────────────
+
+// refreshSettled decides whether a "รีเฟรช" may clear the stale warning: ONLY when
+// BOTH required reads of the SAME refresh (comparison AND insights) have succeeded. A
+// failed read leaves stale in place so a half-refreshed report is never presented as
+// fully up to date. Pure, so the rule is unit-tested without a DOM.
+export function refreshSettled(loaded) {
+  return !!(loaded && loaded.comparison && loaded.insights);
+}
+
 // ── range aggregation over comparison rows (§3.2) ────────────────────────────
 
 // aggregateRangeCounts sums a level's per-year snapshot counts across an inclusive

@@ -23,6 +23,7 @@ import {
   isUsable,
   observedRate,
   metricReady,
+  refreshSettled,
   HINT_T1Q2,
   HINT_INTL,
 } from "@/app/lib/scopus_benchmark_report.mjs";
@@ -108,6 +109,22 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   const [insightsReload, setInsightsReload] = useState(0);
   const insightRequest = useRef(0);
 
+  // Refresh coordination (§6/R1): a รีเฟรช marks a pending refresh and stale is cleared
+  // ONLY after BOTH the comparison and insights reads of THAT refresh succeed — never
+  // on the click, and never by a stale/failed response.
+  const refreshTracker = useRef({ pending: false, comparison: false, insights: false });
+  const onRefreshedRef = useRef(onRefreshed);
+  onRefreshedRef.current = onRefreshed;
+  const markRefreshLoaded = useCallback((stream) => {
+    const tracker = refreshTracker.current;
+    if (!tracker.pending) return;
+    tracker[stream] = true;
+    if (refreshSettled(tracker)) {
+      tracker.pending = false;
+      onRefreshedRef.current?.();
+    }
+  }, []);
+
   // A4 page size is applied ONLY while this report is the active tab (injected at
   // runtime), never as a global @page rule — so printing other pages/tabs is
   // unaffected (§6/R2).
@@ -152,7 +169,9 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     api
       .comparison({ year_from: windowFrom, year_to: CURRENT_YEAR })
       .then((response) => {
-        if (!cancelled) setData(response?.data || null);
+        if (cancelled) return;
+        setData(response?.data || null);
+        markRefreshLoaded("comparison"); // a superseded (cancelled) read never clears stale
       })
       .catch((error) => {
         if (!cancelled) setDataError(error?.message || "โหลดข้อมูลรายงานไม่สำเร็จ");
@@ -163,7 +182,7 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     return () => {
       cancelled = true;
     };
-  }, [reload, windowFrom, api]);
+  }, [reload, windowFrom, api, markRefreshLoaded]);
 
   const yearMeta = data?.year_meta || {};
   // Scope consistency drives EVERY comparison surface (findings, table, KPI share,
@@ -238,6 +257,7 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
         .then((response) => {
           if (insightRequest.current !== requestId) return;
           setRangeInsights(response?.data || null);
+          markRefreshLoaded("insights");
         })
         .catch((error) => {
           if (insightRequest.current !== requestId) return;
@@ -256,14 +276,18 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     Promise.allSettled(requests)
       .then(([current, previous]) => {
         if (insightRequest.current !== requestId) return;
-        if (current.status === "fulfilled") setInsightsY(current.value?.data || null);
-        else setInsightsError(current.reason?.message || "โหลดข้อมูลเชิงลึกไม่สำเร็จ");
+        if (current.status === "fulfilled") {
+          setInsightsY(current.value?.data || null);
+          // Only the primary year read is required for a refresh; the optional prior-year
+          // read failing must not keep the report stale.
+          markRefreshLoaded("insights");
+        } else setInsightsError(current.reason?.message || "โหลดข้อมูลเชิงลึกไม่สำเร็จ");
         if (previous && previous.status === "fulfilled") setInsightsPrev(previous.value?.data || null);
       })
       .finally(() => {
         if (insightRequest.current === requestId) setInsightsLoading(false);
       });
-  }, [appliedFrom, appliedTo, isRange, reportYear, isCurrentYear, insightsReload, api]);
+  }, [appliedFrom, appliedTo, isRange, reportYear, isCurrentYear, insightsReload, api, markRefreshLoaded]);
 
   const rows = useMemo(() => (Array.isArray(data?.years) ? [...data.years].sort((a, b) => Number(a.year) - Number(b.year)) : []), [data]);
   const rowByYear = useCallback((year) => rows.find((row) => Number(row.year) === Number(year)) || null, [rows]);
@@ -329,6 +353,24 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     university: formatThaiDate(yearMeta?.[reportYear]?.university?.snapshot_at),
     country: formatThaiDate(yearMeta?.[reportYear]?.country?.snapshot_at),
   }), [yearMeta, reportYear]);
+
+  // Range mode: per-year/per-level snapshot dates so the report never presents the
+  // last year's data date as if it covered the whole range (R3). Unknown dates stay
+  // unknown — the year is kept, not dropped, so the table can't imply a full window.
+  const perYearSnapshots = useMemo(() => {
+    if (!isRange || appliedFrom === null || appliedTo === null) return null;
+    const out = [];
+    for (let year = Number(appliedFrom); year <= Number(appliedTo); year += 1) {
+      const meta = yearMeta?.[year] || {};
+      out.push({
+        year,
+        faculty: formatThaiDate(meta.faculty?.snapshot_at),
+        university: formatThaiDate(meta.university?.snapshot_at),
+        country: formatThaiDate(meta.country?.snapshot_at),
+      });
+    }
+    return out;
+  }, [isRange, appliedFrom, appliedTo, yearMeta]);
 
   const periodLabel = isRange ? `${appliedFrom}–${appliedTo}` : String(reportYear ?? "–");
 
@@ -484,8 +526,15 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     setExportingLevel(level);
     setExportDocMsg(null);
     try {
-      await api.exportDocuments(level, { year_from: from, year_to: to });
-      setExportDocMsg({ tone: "success", text: `ส่งออกเอกสาร ${levelLabel} ช่วงปี ${from}–${to} แล้ว` });
+      const meta = await api.exportDocuments(level, { year_from: from, year_to: to });
+      const rows = meta?.count ? `${meta.count.toLocaleString("th-TH")} แถว ` : "";
+      if (meta?.incomplete) {
+        const yearNote = meta.missingYears?.length ? `: ปี ${meta.missingYears.join(", ")} ยังดึงเอกสารไม่ครบ` : "";
+        const harvestNote = meta.activeHarvest ? " · กำลังดึงข้อมูลอยู่" : "";
+        setExportDocMsg({ tone: "warn", text: `ส่งออกเอกสาร ${levelLabel} ${rows}ช่วงปี ${from}–${to} แล้ว — ข้อมูลที่จัดเก็บอาจยังไม่ครบตาม snapshot${yearNote}${harvestNote}` });
+      } else {
+        setExportDocMsg({ tone: "success", text: `ส่งออกเอกสาร ${levelLabel} ${rows}ช่วงปี ${from}–${to} แล้ว` });
+      }
     } catch (error) {
       const status = error?.status;
       setExportDocMsg({
@@ -516,9 +565,10 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   const trendRangeLabel = `${reportYear - trendRange + 1}–${reportYear}`;
   const busy = dataLoading || (insightsLoading && !insightsForDisplay);
   const refreshAll = () => {
+    // Arm the refresh; stale is cleared later, only once BOTH reads succeed (R1).
+    refreshTracker.current = { pending: true, comparison: false, insights: false };
     setReload((value) => value + 1);
     setInsightsReload((value) => value + 1);
-    onRefreshed?.();
   };
   // Scope guard (§4/R2-3/R3-1): on mismatch we withhold every comparative surface.
   const scopeMismatch = !scopeConsistent;
@@ -556,7 +606,7 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
         />
 
         {exportDocMsg && (
-          <div className={`no-print mt-4 flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm ${exportDocMsg.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`} role="status">
+          <div className={`no-print mt-4 flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm ${exportDocMsg.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : exportDocMsg.tone === "warn" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-rose-200 bg-rose-50 text-rose-700"}`} role="status">
             <AlertCircle size={16} aria-hidden="true" />{exportDocMsg.text}
           </div>
         )}
@@ -571,6 +621,16 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
         {scopeMismatch && (
           <div className="mt-4 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
             <AlertCircle size={16} aria-hidden="true" />ขอบเขตข้อมูลของสามระดับไม่ตรงกันหรือไม่ใช่ Computer Science (COMP) — งดข้อสรุปและการเปรียบเทียบทั้งหมด แสดงเฉพาะค่าที่สังเกตได้ (คณะ {scope.faculty_subject_area || "?"} · KKU {scope.university_subject_area || scope.subject_area} · ประเทศไทย {scope.country_subject_area || "?"})
+          </div>
+        )}
+
+        {dataError && data && (
+          // A refresh/reload of the comparison read failed but a previous set is still
+          // shown — say so explicitly so old counts + new insights are never read as one
+          // freshly-refreshed set (R1). Printable; retry is screen-only.
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+            <span className="flex items-center gap-2"><AlertCircle size={16} aria-hidden="true" />โหลดข้อมูลเปรียบเทียบใหม่ไม่สำเร็จ — กำลังแสดงข้อมูลชุดเดิม: {dataError}</span>
+            <button type="button" onClick={() => setReload((value) => value + 1)} className="no-print font-semibold underline">ลองใหม่</button>
           </div>
         )}
 
@@ -606,6 +666,8 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
 
         <SourceNotes
           periodLabel={periodLabel}
+          isRange={isRange}
+          perYearSnapshots={perYearSnapshots}
           scope={scope}
           sourceDates={sourceDates}
           facultyMetric={data?.faculty_metric}

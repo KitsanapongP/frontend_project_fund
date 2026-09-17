@@ -18,6 +18,7 @@ import {
   highTierDenomText,
   intlDenomText,
   buildRangeFindings,
+  refreshSettled,
 } from "../scopus_benchmark_report.mjs";
 
 test("isUsable treats a real zero as usable but rejects null/NaN", () => {
@@ -357,4 +358,13 @@ test("buildComparisonCsv range mode labels the period and uses aggregate counts"
   });
   assert.match(csv, /# เปรียบเทียบช่วงปี 2025–2026/);
   assert.equal(csv.split("\n").find((l) => l.startsWith("จำนวนผลงาน,")), "จำนวนผลงาน,58,350,3600");
+});
+
+test("refreshSettled clears stale only when BOTH reads of the refresh succeed (R1)", () => {
+  assert.equal(refreshSettled({ comparison: true, insights: true }), true);
+  assert.equal(refreshSettled({ comparison: true, insights: false }), false); // insights read failed
+  assert.equal(refreshSettled({ comparison: false, insights: true }), false); // comparison read failed
+  assert.equal(refreshSettled({ comparison: false, insights: false }), false);
+  assert.equal(refreshSettled(null), false);
+  assert.equal(refreshSettled(undefined), false);
 });

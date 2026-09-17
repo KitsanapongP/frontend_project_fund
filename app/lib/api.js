@@ -1274,14 +1274,45 @@ export const scopusBenchmarkAPI = {
     return apiClient.get('/admin/scopus/benchmark/top-journals', cleanParams(params));
   },
   // Document-level CSV export for one benchmark level (university → KKU, country →
-  // Thailand) over the applied year range (§10). downloadFile fetches the whole file
-  // as a blob and throws an APIError on any non-2xx (incl. 404 "no documents"), so a
-  // failed export never produces a partial "successful" download.
+  // Thailand) over the applied year range (§10). Fetches the whole file as a blob and
+  // throws an APIError on any non-2xx (incl. 404 "no documents"), so a failed export
+  // never produces a partial "successful" download. Returns the exported row count and
+  // completeness metadata (from response headers) so the UI can warn when the level's
+  // documents are not yet fully harvested (R4).
   async exportDocuments(level, { year_from, year_to } = {}) {
     const qs = benchmarkQuery({ level, year_from, year_to });
     const label = level === 'country' ? 'thailand' : 'kku';
     const filename = `scopus-benchmark-documents-${label}-${year_from}-${year_to}.csv`;
-    return apiClient.downloadFile(`/admin/scopus/benchmark/documents/export${qs}`, filename);
+    const token = apiClient.getToken();
+    const headers = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const response = await fetch(
+      `${apiClient.baseURL}/admin/scopus/benchmark/documents/export${qs}`,
+      { method: 'GET', headers, credentials: 'include' },
+    );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new APIError(errorData.error || `Export failed: ${response.statusText}`, response.status);
+    }
+    const blob = await response.blob();
+    const meta = {
+      count: Number(response.headers.get('X-Total-Count')) || 0,
+      expected: Number(response.headers.get('X-Benchmark-Expected')) || 0,
+      incomplete: response.headers.get('X-Benchmark-Incomplete') === 'true',
+      missingYears: (response.headers.get('X-Benchmark-Missing-Years') || '').split(',').filter(Boolean),
+      activeHarvest: response.headers.get('X-Benchmark-Active-Harvest') === 'true',
+    };
+    if (typeof window !== 'undefined') {
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    }
+    return meta;
   },
 };
 
