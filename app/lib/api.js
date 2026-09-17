@@ -1202,7 +1202,7 @@ export const scopusConfigAPI = {
   async listConferenceRuns(params = {}) {
     return apiClient.get('/admin/scopus/conference/runs', params);
   },
-  // ดึง h-index อาจารย์ทุกคน (อิง users.scopus_id) แบบ async
+  // ดึง H-index อาจารย์ทุกคน (อิง users.scopus_id) แบบ async
   async refreshAuthorMetrics({ user_ids, limit } = {}) {
     const qs = new URLSearchParams();
     if (user_ids) {

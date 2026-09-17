@@ -127,7 +127,7 @@ export default function AdminScopusFacultyHIndex() {
     const nmin = c - (c - min) * (newSpan / span);
     applyZoomRange(nmin, nmin + newSpan);
   }
-  // ปุ่มซูม: โฟกัสไปที่จุด h-index (ส่วนที่สนใจจริง) — ปรับแรงขึ้นให้ซูมเข้า/ออกไวกว่าเดิม
+  // ปุ่มซูม: โฟกัสไปที่จุด H-index (ส่วนที่สนใจจริง) — ปรับแรงขึ้นให้ซูมเข้า/ออกไวกว่าเดิม
   const zoomInStep = () => zoomBy(0.45, graph?.h_index);
   const zoomOutStep = () => zoomBy(2.2, graph?.h_index);
   const zoomReset = () => applyZoomRange(0, axisMax);
@@ -240,7 +240,7 @@ export default function AdminScopusFacultyHIndex() {
       } catch (_) {}
       const res = await ApexCharts.exec(CHART_ID, "dataURI", { scale: 2 });
       if (res?.imgURI) {
-        imgTag = `<img src="${res.imgURI}" alt="กราฟ h-index ระดับคณะ" style="max-width:100%;border:1px solid #e2e8f0;border-radius:8px;margin-top:8px" />`;
+        imgTag = `<img src="${res.imgURI}" alt="กราฟ H-index ระดับคณะ" style="max-width:100%;border:1px solid #e2e8f0;border-radius:8px;margin-top:8px" />`;
       }
     } catch (e) {
       // ถ้าดึงภาพกราฟไม่ได้ ก็ยังออกรายงานพร้อมตารางได้
@@ -262,7 +262,7 @@ export default function AdminScopusFacultyHIndex() {
       .join("");
 
     const html = `<!doctype html>
-<html lang="th"><head><meta charset="utf-8"><title>h-index ระดับคณะ (Scopus)</title>
+<html lang="th"><head><meta charset="utf-8"><title>H-index ระดับคณะ (Scopus)</title>
 <style>
   body{font-family:'Sarabun',Tahoma,-apple-system,'Segoe UI',sans-serif;color:#0f172a;margin:28px;max-width:960px}
   h1{font-size:20px;margin:0 0 4px}.muted{color:#64748b;font-size:13px}
@@ -273,10 +273,10 @@ export default function AdminScopusFacultyHIndex() {
   th,td{border:1px solid #e2e8f0;padding:6px 9px;vertical-align:top}th{background:#f1f5f9;text-align:left}
   @media print{body{margin:0}}
 </style></head><body>
-  <h1>h-index ระดับคณะ (Scopus)</h1>
+  <h1>H-index ระดับคณะ (Scopus)</h1>
   <div class="muted">นับเฉพาะผลงานที่สังกัด KKU (dedupe ต่อบทความ) · ช่วงปี: ${yearLabel} · ออกรายงาน ${new Date().toLocaleDateString("th-TH")}</div>
   <div class="stats">
-    <div class="stat"><span>h-index</span><b>${h}</b></div>
+    <div class="stat"><span>H-index</span><b>${h}</b></div>
     <div class="stat"><span>เอกสาร</span><b>${graph.document_count}</b></div>
     <div class="stat"><span>การอ้างอิงรวม</span><b>${graph.citation_total}</b></div>
   </div>
@@ -300,7 +300,7 @@ export default function AdminScopusFacultyHIndex() {
       const res = await scopusConfigAPI.getFacultyHIndexGraph(params);
       const data = res?.data || null;
       setGraph(data);
-      // ตอนโหลดช่วงเต็ม (ไม่กรองปี) เก็บรายการปีที่มีเอกสารจริง + ตั้ง default เป็นช่วงเต็ม (h-index เป็นค่าสะสม)
+      // ตอนโหลดช่วงเต็ม (ไม่กรองปี) เก็บรายการปีที่มีเอกสารจริง + ตั้ง default เป็นช่วงเต็ม (H-index เป็นค่าสะสม)
       if (data && !yf && !yt) {
         let ys = Array.isArray(data.available_years) ? data.available_years.map(Number) : [];
         if (ys.length === 0 && Array.isArray(data.points)) {
@@ -312,7 +312,7 @@ export default function AdminScopusFacultyHIndex() {
         if (data.available_year_max != null) setYearTo(String(data.available_year_max));
       }
     } catch (e) {
-      setError(e?.message || "ไม่สามารถโหลดกราฟ h-index ระดับคณะได้");
+      setError(e?.message || "ไม่สามารถโหลดกราฟ H-index ระดับคณะได้");
       setGraph(null);
     } finally {
       setLoading(false);
@@ -385,7 +385,7 @@ export default function AdminScopusFacultyHIndex() {
       legend: { show: false },
       tooltip: {
         // intersect:false = ชี้ใกล้ ๆ ก็ขึ้น (ไม่ต้องจ่อจุดเป๊ะ); enabledOnSeries:[0] = ให้ tooltip
-        // ผูกกับเส้น citations เท่านั้น ไม่ให้เส้นทแยง y=x แย่ง (โดยเฉพาะจุดตรง h-index ที่เส้นตัดกัน)
+        // ผูกกับเส้น citations เท่านั้น ไม่ให้เส้นทแยง y=x แย่ง (โดยเฉพาะจุดตรง H-index ที่เส้นตัดกัน)
         shared: false,
         intersect: false,
         enabledOnSeries: [0],
@@ -401,7 +401,7 @@ export default function AdminScopusFacultyHIndex() {
         },
       },
       annotations: {
-        // เส้นตั้งที่ h = ขอบเขตบทความที่นับเข้า h-index (h บทความแรกถูกอ้างอิง ≥ h ครั้ง)
+        // เส้นตั้งที่ h = ขอบเขตบทความที่นับเข้า H-index (h บทความแรกถูกอ้างอิง ≥ h ครั้ง)
         xaxis:
           h > 0
             ? [{ x: h, borderColor: "#a16207", strokeDashArray: 4, label: { text: `h แรก`, style: { background: "#fef9c3", color: "#713f12" } } }]
@@ -414,7 +414,7 @@ export default function AdminScopusFacultyHIndex() {
                   y: h,
                   marker: { size: 7, fillColor: "#facc15", strokeColor: "#a16207", strokeWidth: 2 },
                   label: {
-                    text: `h-index = ${h}`,
+                    text: `H-index = ${h}`,
                     borderColor: "#a16207",
                     style: { background: "#fef9c3", color: "#713f12", fontWeight: 600 },
                   },
@@ -436,9 +436,9 @@ export default function AdminScopusFacultyHIndex() {
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Faculty h-index</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Faculty H-index</div>
           <div className="flex items-center gap-1.5">
-            <div className="text-xl font-semibold text-slate-900">h-index ระดับคณะ (Scopus)</div>
+            <div className="text-xl font-semibold text-slate-900">H-index ระดับคณะ (Scopus)</div>
             <div className="relative">
               <button
                 type="button"
@@ -453,7 +453,7 @@ export default function AdminScopusFacultyHIndex() {
               </button>
               {showDesc && (
                 <div className="absolute left-0 top-7 z-20 w-80 rounded-lg border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-600 shadow-lg">
-                  h-index ของทั้งคณะ รวมผลงานของอาจารย์ทุกคนที่มี Scopus ID โดย
+                  H-index ของทั้งคณะ รวมผลงานของอาจารย์ทุกคนที่มี Scopus ID โดย
                   <span className="font-medium text-slate-700"> นับเฉพาะผลงานที่สังกัด KKU ตอนตีพิมพ์</span> และ
                   นับบทความที่อาจารย์ร่วมมือกันหลายคนเพียงครั้งเดียว ตัวเลขนับจากข้อมูลที่นำเข้าระบบ
                   อาจน้อยกว่าใน scopus.com หากยังไม่ได้อัปเดตจำนวนการอ้างอิงล่าสุด
@@ -534,7 +534,7 @@ export default function AdminScopusFacultyHIndex() {
       <div className="mt-6 grid gap-6 lg:grid-cols-[220px_1fr]">
         <div className="space-y-3">
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-xs font-medium uppercase tracking-wide text-slate-500">h-index</div>
+            <div className="text-xs font-medium uppercase tracking-wide text-slate-500">H-index</div>
             <div className="mt-1 text-4xl font-bold text-slate-900">{graph ? formatNumber(graph.h_index) : "-"}</div>
             <div className="mt-1 text-xs text-slate-500">ทั้งคณะ (เฉพาะผลงานสังกัด KKU)</div>
           </div>
@@ -591,10 +591,10 @@ export default function AdminScopusFacultyHIndex() {
                 </button>
                 {showHint && (
                   <div className="absolute right-0 top-9 z-20 w-72 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 shadow-lg">
-                    แต่ละจุดคือ 1 บทความของคณะ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่ม/เลื่อนเมาส์ (โฟกัสที่ h-index) · เมื่อซูมแล้วกดค้างลากเพื่อเลื่อนดูช่วงอื่นได้
+                    แต่ละจุดคือ 1 บทความของคณะ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่ม/เลื่อนเมาส์ (โฟกัสที่ H-index) · เมื่อซูมแล้วกดค้างลากเพื่อเลื่อนดูช่วงอื่นได้
                     {graph?.h_index > 0 && (
                       <span className="mt-1.5 block text-slate-700">
-                        h-index = {graph.h_index} หมายถึงคณะมี {graph.h_index} บทความที่ถูกอ้างอิงอย่างน้อยบทความละ {graph.h_index} ครั้ง (บทความทางซ้ายของเส้นประ)
+                        H-index = {graph.h_index} หมายถึงคณะมี {graph.h_index} บทความที่ถูกอ้างอิงอย่างน้อยบทความละ {graph.h_index} ครั้ง (บทความทางซ้ายของเส้นประ)
                       </span>
                     )}
                   </div>

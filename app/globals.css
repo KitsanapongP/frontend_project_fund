@@ -482,14 +482,14 @@ option:disabled {
 .ck.ck-editor__editable.ck-focused {
   border: none !important;
 }
-/* กราฟ h-index (Scopus): ให้ hover ทะลุ annotation ไปโดนจุดข้อมูลจริงได้
+/* กราฟ H-index (Scopus): ให้ hover ทะลุ annotation ไปโดนจุดข้อมูลจริงได้
    (จุด/เส้นประที่ตำแหน่ง h วางทับจุดบทความตัวที่ rank = h อยู่ เลยบัง hover) */
 .hidx-chart .apexcharts-point-annotations,
 .hidx-chart .apexcharts-xaxis-annotations {
   pointer-events: none;
 }
 
-/* กราฟ h-index (Scopus): ให้ tooltip ตัดบรรทัดชื่อบทความยาว ๆ ได้ ไม่ถูกตัด */
+/* กราฟ H-index (Scopus): ให้ tooltip ตัดบรรทัดชื่อบทความยาว ๆ ได้ ไม่ถูกตัด */
 .hidx-chart .apexcharts-tooltip {
   white-space: normal;
   overflow: visible;

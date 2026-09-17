@@ -64,10 +64,10 @@ const PERSON_BASE_COLUMNS = [
   { key: "user_scopus_id", label: "Scopus ID", align: "left", group: "base" },
   {
     key: "h_index",
-    label: "h-index",
+    label: "H-index",
     align: "right",
     group: "base",
-    tooltip: "ค่า h-index อย่างเป็นทางการจาก Scopus (Author API) เป็นค่าสะสมรวมทุกปี ไม่เปลี่ยนตามตัวกรองช่วงปีที่เลือก",
+    tooltip: "ค่า H-index อย่างเป็นทางการจาก Scopus (Author API) เป็นค่าสะสมรวมทุกปี ไม่เปลี่ยนตามตัวกรองช่วงปีที่เลือก",
   },
   { key: "publication_rows", label: "จำนวนแถวผลงาน", align: "right", group: "base" },
   { key: "unique_documents", label: "ผลงานไม่ซ้ำ", align: "right", group: "base" },
@@ -103,9 +103,9 @@ const PERSON_MATRIX_IDENTITY_COLUMNS = [
   { key: "user_scopus_id", label: "Scopus ID" },
   {
     key: "h_index",
-    label: "h-index",
+    label: "H-index",
     align: "right",
-    tooltip: "ค่า h-index อย่างเป็นทางการจาก Scopus (Author API) เป็นค่าสะสมรวมทุกปี ไม่เปลี่ยนตามตัวกรองช่วงปีที่เลือก",
+    tooltip: "ค่า H-index อย่างเป็นทางการจาก Scopus (Author API) เป็นค่าสะสมรวมทุกปี ไม่เปลี่ยนตามตัวกรองช่วงปีที่เลือก",
   },
 ];
 
