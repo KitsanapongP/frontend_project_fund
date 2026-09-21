@@ -50,3 +50,6 @@ next-env.d.ts
 # impeccable / local design tooling (machine-local, not shared)
 .claude/skills/impeccable/
 .claude/settings.local.json
+
+# local Claude tooling / preview config (machine-local, not shared)
+/.claude/
