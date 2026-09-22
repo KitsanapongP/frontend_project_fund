@@ -53,6 +53,7 @@ import {
   validatePriorRewardRevisionFee,
 } from './PublicationRewardForm.helpers.mjs';
 import sdgAPI from '../../../../../lib/sdg_api';
+import paperAIAPI from '../../../../../lib/paper_ai_api';
 import SDGSelector from '../common/SDGSelector';
 
 // =================================================================
@@ -74,6 +75,12 @@ const Toast = Swal.mixin({
 
 const MAX_CURRENCY_AMOUNT = 1_000_000;
 const FEE_NET_NON_NEGATIVE_MESSAGE = 'ค่าปรับปรุงบทความและค่าธรรมเนียมการตีพิมพ์หลังหักเงินสนับสนุนจากภายนอก ต้องไม่น้อยกว่า 0 บาท';
+const CLASSIFICATION_CONFIDENCE_LABELS = {
+  High: 'สูง',
+  Medium: 'กลาง',
+  Low: 'ต่ำ',
+  Preface: 'รอตรวจสอบ',
+};
 
 const clampCurrencyValue = (rawValue) => {
   if (rawValue === null || rawValue === undefined) {
@@ -1711,7 +1718,15 @@ export default function PublicationRewardForm({
     // Other info
     university_ranking: '',
     has_university_fund: '',
-    university_fund_ref: ''
+    university_fund_ref: '',
+    abstract: '',
+    abstract_summary_th: '',
+    paper_category_id: null,
+    paper_category_name: '',
+    classification_confidence: null,
+    classification_model: '',
+    classification_taxonomy_version: '',
+    scopus_benchmark_document_id: null,
   });
   const [selectedSDGIds, setSelectedSDGIds] = useState([]);
 
@@ -1729,6 +1744,8 @@ export default function PublicationRewardForm({
   const [termAcknowledgements, setTermAcknowledgements] = useState({});
   const [termsLoading, setTermsLoading] = useState(false);
   const [termsError, setTermsError] = useState('');
+  const [paperAIProcessing, setPaperAIProcessing] = useState(false);
+  const [paperAIWarnings, setPaperAIWarnings] = useState([]);
 
   // External funding sources
   const [externalFundings, setExternalFundings] = useState([])
@@ -1764,6 +1781,7 @@ export default function PublicationRewardForm({
     setDetachedDocumentIds([]);
     setDocumentReplacements({});
     setReviewComments({ admin: null, head: null });
+    setPaperAIWarnings([]);
     externalFundingsRef.current = [];
 
     setFormData({
@@ -1802,6 +1820,14 @@ export default function PublicationRewardForm({
       university_ranking: '',
       has_university_fund: '',
       university_fund_ref: '',
+      abstract: '',
+      abstract_summary_th: '',
+      paper_category_id: null,
+      paper_category_name: '',
+      classification_confidence: null,
+      classification_model: '',
+      classification_taxonomy_version: '',
+      scopus_benchmark_document_id: null,
     });
 
     setCoauthors([]);
@@ -2691,6 +2717,16 @@ export default function PublicationRewardForm({
             journal_year: resolvedYear || prev.journal_year || '',
             journal_url: detail.url ?? prev.journal_url ?? '',
             doi: detail.doi ?? prev.doi ?? '',
+            abstract: detail.abstract ?? prev.abstract ?? '',
+            abstract_summary_th: detail.abstract_summary_th ?? prev.abstract_summary_th ?? '',
+            paper_category_id: detail.paper_category_id !== undefined ? detail.paper_category_id : (prev.paper_category_id ?? null),
+            paper_category_name: detail.classification_confidence === 'Preface'
+              ? ''
+              : (detail.paper_category_name ?? prev.paper_category_name ?? ''),
+            classification_confidence: detail.classification_confidence !== undefined ? detail.classification_confidence : (prev.classification_confidence ?? null),
+            classification_model: detail.classification_model ?? prev.classification_model ?? '',
+            classification_taxonomy_version: detail.classification_taxonomy_version ?? prev.classification_taxonomy_version ?? '',
+            scopus_benchmark_document_id: detail.scopus_benchmark_document_id ?? prev.scopus_benchmark_document_id ?? null,
             article_online_db: detail.indexing ?? prev.article_online_db ?? '',
             in_isi: indexingFlags.isi,
             in_scopus: indexingFlags.scopus,
@@ -4019,10 +4055,20 @@ export default function PublicationRewardForm({
     }
 
     else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      setFormData(prev => {
+        const next = { ...prev, [name]: value };
+        if (name === 'article_title') {
+          next.paper_category_id = null;
+          next.paper_category_name = '';
+          next.classification_confidence = null;
+          next.classification_model = '';
+          next.classification_taxonomy_version = '';
+        }
+        if (name === 'doi') {
+          next.scopus_benchmark_document_id = null;
+        }
+        return next;
+      });
       if (['author_status', 'journal_quartile'].includes(name)) {
         setResolutionError('');
         setPolicyContext(null);
@@ -4796,7 +4842,6 @@ export default function PublicationRewardForm({
     );
   };
 
-  // Handle file uploads
   const getFileSignature = useCallback((entry) => {
     if (!entry) {
       return null;
@@ -4811,6 +4856,134 @@ export default function PublicationRewardForm({
     return [name, size, lastModified || '', type].join('::');
   }, []);
 
+  const applyPaperAIResult = useCallback(async (metadata) => {
+    let title = String(metadata?.title || '').trim();
+    const doi = String(metadata?.doi || formData.doi || '').trim();
+    const abstract = String(metadata?.abstract || '').trim();
+    const content = String(metadata?.text || '').trim();
+    if (!doi && !title) {
+      throw new Error('AI ไม่พบ DOI หรือชื่อบทความ กรุณาตรวจไฟล์หรือกรอกข้อมูลด้วยตนเอง');
+    }
+
+    // DOI extracted from the PDF (or already entered in the form) is always
+    // matched before summarization and classification. Title matching is the fallback.
+    const matchResult = await paperAIAPI.match({ doi, title });
+    const candidates = Array.isArray(matchResult?.candidates) ? matchResult.candidates : [];
+    let matchedBenchmarkId = null;
+    if (candidates.length > 0) {
+      const candidateText = candidates.slice(0, 5).map((item) =>
+        `${item.source}: ${item.title || '-'}${item.doi ? ` (${item.doi})` : ''}`
+      ).join('\n');
+      const confirmation = await Swal.fire({
+        icon: 'warning',
+        title: 'พบบทความที่อาจมีอยู่แล้ว',
+        text: `กรุณาตรวจสอบก่อนนำข้อมูลมาเติมในคำขอ\n\n${candidateText}`,
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยันว่าเป็นบทความนี้',
+        cancelButtonText: 'ยกเลิก',
+      });
+      if (!confirmation.isConfirmed) {
+        return false;
+      }
+      if (!title && candidates.length === 1) {
+        title = String(candidates[0]?.title || '').trim();
+      }
+      const exactBenchmark = candidates.filter((item) =>
+        item.source === 'scopus_benchmark_documents' && item.match_type === 'doi_exact'
+      );
+      if (exactBenchmark.length === 1) {
+        matchedBenchmarkId = exactBenchmark[0].id;
+      }
+    }
+    if (!title) {
+      throw new Error('ไม่พบชื่อบทความจาก PDF หรือข้อมูลเดิม กรุณากรอกชื่อด้วยตนเอง');
+    }
+
+    const summary = abstract || content
+      ? await paperAIAPI.summarize(abstract ? { abstract } : { content: content.slice(0, 500000) })
+      : { summary_th: '' };
+    const classification = await paperAIAPI.classify({
+      title,
+      abstract,
+      content: abstract ? '' : content.slice(0, 180000),
+    });
+    setFormData((previous) => ({
+      ...previous,
+      article_title: title,
+      doi: doi || previous.doi,
+      journal_name: metadata?.journal_name || previous.journal_name,
+      author_name_list: Array.isArray(metadata?.authors) && metadata.authors.length > 0
+        ? metadata.authors.join(', ')
+        : previous.author_name_list,
+      journal_year: metadata?.publication_year ? String(metadata.publication_year) : previous.journal_year,
+      abstract,
+      abstract_summary_th: summary?.summary_th || '',
+      paper_category_id: classification?.paper_category_id ?? null,
+      paper_category_name: classification?.paper_category_name || classification?.primary_category_code || '',
+      classification_confidence: classification?.confidence ?? null,
+      classification_model: classification?.model || '',
+      classification_taxonomy_version: classification?.taxonomy_version || '',
+      scopus_benchmark_document_id: matchedBenchmarkId,
+    }));
+    setPaperAIWarnings(Array.isArray(metadata?.warnings) ? metadata.warnings : []);
+    Toast.fire({ icon: 'success', title: 'อ่านและจัดหมวดบทความแล้ว กรุณาตรวจข้อมูลก่อนบันทึก' });
+    return true;
+  }, [formData.doi]);
+
+  const handlePaperAIFile = useCallback(async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      Toast.fire({ icon: 'error', title: 'กรุณาเลือกไฟล์ PDF' });
+      return;
+    }
+    setPaperAIProcessing(true);
+    try {
+      const metadata = await paperAIAPI.extract(file);
+      const applied = await applyPaperAIResult(metadata);
+      if (applied) {
+        setOtherDocuments((previous) => {
+          const items = Array.isArray(previous) ? previous : [];
+          const signature = getFileSignature(file);
+          return signature && !items.some((item) => getFileSignature(item) === signature)
+            ? [...items, file]
+            : items;
+        });
+      }
+    } catch (error) {
+      Toast.fire({ icon: 'error', title: 'ไม่สามารถอ่านบทความได้', text: error?.message || 'เกิดข้อผิดพลาด' });
+    } finally {
+      setPaperAIProcessing(false);
+    }
+  }, [applyPaperAIResult, getFileSignature]);
+
+  const handlePaperAIReclassify = useCallback(async () => {
+    const title = String(formData.article_title || '').trim();
+    if (!title) return;
+    setPaperAIProcessing(true);
+    try {
+      const classification = await paperAIAPI.classify({
+        title,
+        abstract: formData.abstract || '',
+      });
+      setFormData((previous) => ({
+        ...previous,
+        paper_category_id: classification?.paper_category_id ?? null,
+        paper_category_name: classification?.paper_category_name || classification?.primary_category_code || '',
+        classification_confidence: classification?.confidence ?? null,
+        classification_model: classification?.model || '',
+        classification_taxonomy_version: classification?.taxonomy_version || '',
+      }));
+      Toast.fire({ icon: 'success', title: 'จัดหมวดบทความใหม่แล้ว' });
+    } catch (error) {
+      Toast.fire({ icon: 'error', title: 'ไม่สามารถจัดหมวดบทความได้', text: error?.message || 'เกิดข้อผิดพลาด' });
+    } finally {
+      setPaperAIProcessing(false);
+    }
+  }, [formData.abstract, formData.article_title]);
+
+  // Handle file uploads
   const handleFileUpload = (documentTypeId, files) => {
     const key = documentTypeId;
 
@@ -6096,6 +6269,13 @@ export default function PublicationRewardForm({
           formData.in_web_of_science && 'Web of Science',
           formData.in_tci && 'TCI'
         ].filter(Boolean).join(', ') || '',
+        scopus_benchmark_document_id: formData.scopus_benchmark_document_id ?? null,
+        abstract: formData.abstract || null,
+        abstract_summary_th: formData.abstract_summary_th || null,
+        paper_category_id: formData.paper_category_id ?? null,
+        classification_confidence: formData.classification_confidence ?? null,
+        classification_model: formData.classification_model || null,
+        classification_taxonomy_version: formData.classification_taxonomy_version || null,
         reward_amount: effectiveRewardAmount,
         has_received_reward: formData.has_received_reward === true,
         revision_fee: parseFloat(formData.revision_fee) || 0,
@@ -7439,6 +7619,44 @@ const showSubmissionConfirmation = async () => {
         // ================================================================= */}
         <SimpleCard title="ข้อมูลบทความ (Article Information)" icon={FileText}>
           <div className="space-y-4">
+            {!isReadOnly && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium text-blue-900">ช่วยกรอกข้อมูลด้วย AI</p>
+                    <p className="text-sm text-blue-700">อัปโหลด paper PDF เพื่ออ่าน DOI, abstract และจัดหมวด จากนั้นตรวจข้อมูลก่อนบันทึก</p>
+                  </div>
+                  <label className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white ${paperAIProcessing ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                    {paperAIProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    {paperAIProcessing ? 'กำลังประมวลผล...' : 'เลือกไฟล์ PDF'}
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="hidden"
+                      disabled={paperAIProcessing}
+                      onChange={handlePaperAIFile}
+                    />
+                  </label>
+                </div>
+                {paperAIWarnings.length > 0 && (
+                  <ul className="mt-3 list-disc pl-5 text-sm text-amber-700">
+                    {paperAIWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+                  </ul>
+                )}
+                {formData.article_title && !formData.paper_category_id && (
+                  <button
+                    type="button"
+                    onClick={handlePaperAIReclassify}
+                    disabled={paperAIProcessing}
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-700 disabled:text-slate-400"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${paperAIProcessing ? 'animate-spin' : ''}`} />
+                    จัดหมวดจากข้อมูลปัจจุบัน
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Article Title */}
             <div id="field-article_title">
               <label htmlFor="article_title" className="block text-sm font-medium text-slate-700 mb-2">
@@ -7687,6 +7905,23 @@ const showSubmissionConfirmation = async () => {
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
+
+            {(formData.abstract_summary_th || formData.paper_category_name || formData.classification_confidence) && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                <p className="font-medium text-emerald-900">ผลวิเคราะห์ AI — กรุณาตรวจสอบก่อนบันทึก</p>
+                {(formData.paper_category_name || formData.classification_confidence === 'Preface') && (
+                  <p className="mt-2 text-sm text-emerald-800">
+                    {formData.classification_confidence === 'Preface'
+                      ? 'สถานะการจัดหมวด: รอตรวจสอบ'
+                      : `หมวด: ${formData.paper_category_name}`}
+                    {formData.classification_confidence != null && formData.classification_confidence !== 'Preface'
+                      ? ` (ความมั่นใจ ${CLASSIFICATION_CONFIDENCE_LABELS[formData.classification_confidence] || formData.classification_confidence})`
+                      : ''}
+                  </p>
+                )}
+                {formData.abstract_summary_th && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{formData.abstract_summary_th}</p>}
+              </div>
+            )}
 
             {/* URL */}
             <div>
