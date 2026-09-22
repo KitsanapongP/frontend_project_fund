@@ -62,6 +62,13 @@ const PERSON_BASE_COLUMNS = [
   { key: "user_name", label: "ชื่อ-สกุล", align: "left", group: "base" },
   { key: "user_email", label: "อีเมล", align: "left", group: "base" },
   { key: "user_scopus_id", label: "Scopus ID", align: "left", group: "base" },
+  {
+    key: "h_index",
+    label: "H-index",
+    align: "right",
+    group: "base",
+    tooltip: "ค่า H-index อย่างเป็นทางการจาก Scopus (Author API) เป็นค่าสะสมรวมทุกปี ไม่เปลี่ยนตามตัวกรองช่วงปีที่เลือก",
+  },
   { key: "publication_rows", label: "จำนวนแถวผลงาน", align: "right", group: "base" },
   { key: "unique_documents", label: "ผลงานไม่ซ้ำ", align: "right", group: "base" },
   { key: "cited_by_total", label: "Citation รวม", align: "right", group: "base" },
@@ -94,12 +101,19 @@ const PERSON_MATRIX_IDENTITY_COLUMNS = [
   { key: "user_name", label: "ชื่อ-สกุล" },
   { key: "user_email", label: "อีเมล" },
   { key: "user_scopus_id", label: "Scopus ID" },
+  {
+    key: "h_index",
+    label: "H-index",
+    align: "right",
+    tooltip: "ค่า H-index อย่างเป็นทางการจาก Scopus (Author API) เป็นค่าสะสมรวมทุกปี ไม่เปลี่ยนตามตัวกรองช่วงปีที่เลือก",
+  },
 ];
 
 const PERSON_MATRIX_STICKY_WIDTHS = {
   user_name: 220,
   user_email: 220,
   user_scopus_id: 170,
+  h_index: 100,
 };
 const PERSON_MATRIX_RANK_WIDTH = 72;
 const OVERVIEW_METRICS_LABEL_WIDTH = 410;
@@ -127,6 +141,7 @@ const PERSON_COLUMN_PRESETS = {
   executive: [
     "user_name",
     "user_scopus_id",
+    "h_index",
     "unique_documents",
     "cited_by_total",
     "avg_cited_by",
@@ -247,6 +262,7 @@ export default function AdminScopusResearchDashboard() {
     user_name: true,
     user_email: true,
     user_scopus_id: true,
+    h_index: true,
   });
   const [personMatrixSort, setPersonMatrixSort] = useState({ key: "user_name", direction: "asc" });
   const [personSummarySearch, setPersonSummarySearch] = useState("");
@@ -964,6 +980,7 @@ export default function AdminScopusResearchDashboard() {
       : [...personSummaryRows];
 
     const numericSortColumns = new Set([
+      "h_index",
       "publication_rows",
       "unique_documents",
       "cited_by_total",
@@ -1094,6 +1111,11 @@ export default function AdminScopusResearchDashboard() {
         const left = Number(a?.year_counts?.[year] || 0);
         const right = Number(b?.year_counts?.[year] || 0);
         compare = left - right;
+      } else if (personMatrixSort.key === "h_index") {
+        // ค่าที่ยังไม่มี snapshot (null/undefined) ให้ไปอยู่ท้ายสุดเสมอ
+        const left = a?.h_index === null || a?.h_index === undefined ? -1 : Number(a.h_index);
+        const right = b?.h_index === null || b?.h_index === undefined ? -1 : Number(b.h_index);
+        compare = left - right;
       } else {
         const left = String(a?.[personMatrixSort.key] || "");
         const right = String(b?.[personMatrixSort.key] || "");
@@ -1222,7 +1244,7 @@ export default function AdminScopusResearchDashboard() {
   }, [facultyQuartileHistoryFiscal]);
 
   const buildOverviewYearMetrics = useCallback((sourceMap) => {
-    const teacherCount = Number(kpi.total_teachers_with_scopus || 0);
+    const teacherCount = Number(kpi.total_teachers_in_faculty || 0);
     return overviewYearsBE.reduce((acc, year) => {
       const bucket = sourceMap[year] || {};
       const t1 = Number(bucket.t1 || 0);
@@ -1278,7 +1300,7 @@ export default function AdminScopusResearchDashboard() {
       };
       return acc;
     }, {});
-  }, [kpi.total_teachers_with_scopus, overviewYearsBE]);
+  }, [kpi.total_teachers_in_faculty, overviewYearsBE]);
 
   const overviewYearMetricsCalendar = useMemo(
     () => buildOverviewYearMetrics(calendarHistoryByYear),
@@ -2058,9 +2080,14 @@ export default function AdminScopusResearchDashboard() {
                             key={col.key}
                             rowSpan={hasGroupedPersonColumns ? 2 : 1}
                             onClick={() => handlePersonSort(col.key)}
+                            title={col.tooltip || undefined}
                             className={`cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 font-semibold text-blue-900 ${col.align === "right" ? "text-right" : "text-left"}`}
                           >
-                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-xs text-blue-700">{personSortIndicator(col.key)}</span></span>
+                            <span className={`inline-flex items-center gap-1 ${col.align === "right" ? "justify-end" : ""}`}>
+                              {col.label}
+                              {col.tooltip && <CircleHelp size={12} className="text-blue-400" aria-label={col.tooltip} />}
+                              <span className="text-xs text-blue-700">{personSortIndicator(col.key)}</span>
+                            </span>
                           </th>
                         ))}
                         {visiblePersonQuartileColumns.length > 0 && (
@@ -2125,6 +2152,7 @@ export default function AdminScopusResearchDashboard() {
                             {visiblePersonBaseColumns.map((col) => {
                               const value = row?.[col.key];
                               let displayValue = value;
+                              if (col.key === "h_index") displayValue = value === null || value === undefined ? "-" : formatNumber(value);
                               if (col.key === "avg_cited_by") displayValue = Number(value || 0).toFixed(2);
                               if (col.key === "first_year" || col.key === "latest_year") displayValue = Number(value || 0) > 0 ? value : "-";
                               if (["publication_rows", "unique_documents", "cited_by_total", "active_years"].includes(col.key)) {
@@ -2272,7 +2300,8 @@ export default function AdminScopusResearchDashboard() {
                           <th
                             key={col.key}
                             onClick={() => handlePersonMatrixSort(col.key)}
-                            className="cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 text-left font-semibold text-blue-900"
+                            title={col.tooltip || undefined}
+                            className={`cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 font-semibold text-blue-900 ${col.align === "right" ? "text-right" : "text-left"}`}
                             style={{
                               minWidth: `${personMatrixStickyWidths[col.key] || 180}px`,
                               position: "sticky",
@@ -2280,7 +2309,11 @@ export default function AdminScopusResearchDashboard() {
                               zIndex: 20,
                             }}
                           >
-                            <span className="inline-flex items-center gap-1">{col.label}<span className="text-xs text-blue-700">{personMatrixSortIndicator(col.key)}</span></span>
+                            <span className={`inline-flex items-center gap-1 ${col.align === "right" ? "justify-end" : ""}`}>
+                              {col.label}
+                              {col.tooltip && <CircleHelp size={12} className="text-blue-400" aria-label={col.tooltip} />}
+                              <span className="text-xs text-blue-700">{personMatrixSortIndicator(col.key)}</span>
+                            </span>
                           </th>
                         ))}
                         {personMatrixVisibleYears.map((year, yearIdx) => (
@@ -2332,10 +2365,17 @@ export default function AdminScopusResearchDashboard() {
                                 {index + 1}
                               </td>
                               {visiblePersonMatrixIdentityColumns.map((col) => {
+                                let cellContent;
+                                if (col.key === "h_index") {
+                                  const hv = row?.h_index;
+                                  cellContent = hv === null || hv === undefined ? "-" : formatNumber(hv);
+                                } else {
+                                  cellContent = row?.[col.key] || "-";
+                                }
                                 return (
                                   <td
                                     key={`${rowKey}-${col.key}`}
-                                    className={`border border-slate-200 px-3 py-2 text-left ${col.key === "user_name" ? "font-medium text-slate-700" : ""} ${stickyBgClass}`}
+                                    className={`border border-slate-200 px-3 py-2 ${col.align === "right" ? "text-right" : "text-left"} ${col.key === "user_name" ? "font-medium text-slate-700" : ""} ${stickyBgClass}`}
                                     style={{
                                       minWidth: `${personMatrixStickyWidths[col.key] || 180}px`,
                                       position: "sticky",
@@ -2343,7 +2383,7 @@ export default function AdminScopusResearchDashboard() {
                                       zIndex: 10,
                                     }}
                                   >
-                                    {row?.[col.key] || "-"}
+                                    {cellContent}
                                   </td>
                                 );
                               })}
@@ -2740,7 +2780,7 @@ export default function AdminScopusResearchDashboard() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">จำนวนอาจารย์ในคณะ</p>
-                  <p className="mt-2 text-2xl font-semibold text-blue-700 lg:text-3xl">{formatNumber(kpi.total_teachers_with_scopus || 0)}</p>
+                  <p className="mt-2 text-2xl font-semibold text-blue-700 lg:text-3xl">{formatNumber(kpi.total_teachers_in_faculty || 0)}</p>
                 </div>
                 <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">จำนวนผลงานทั้งหมด (Unique Document)</p>

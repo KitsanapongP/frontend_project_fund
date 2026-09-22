@@ -155,6 +155,10 @@ export default function AdminScopusImport() {
   const [lastBatchSummary, setLastBatchSummary] = useState(null);
   const [lastMetricsRefreshSummary, setLastMetricsRefreshSummary] = useState(null);
   const [lastMetricsBackfillSummary, setLastMetricsBackfillSummary] = useState(null);
+  const [
+    lastMetricsBenchmarkBackfillSummary,
+    setLastMetricsBenchmarkBackfillSummary,
+  ] = useState(null);
   const [batchRuns, setBatchRuns] = useState([]);
   const [batchRunsLoading, setBatchRunsLoading] = useState(false);
   const [batchRunsError, setBatchRunsError] = useState("");
@@ -183,6 +187,20 @@ export default function AdminScopusImport() {
       page: 1,
     },
     backfill: {
+      runs: [],
+      loading: false,
+      error: "",
+      pagination: {
+        current_page: 1,
+        per_page: 10,
+        total_pages: 0,
+        total_count: 0,
+        has_next: false,
+        has_prev: false,
+      },
+      page: 1,
+    },
+    benchmark_backfill: {
       runs: [],
       loading: false,
       error: "",
@@ -245,6 +263,8 @@ export default function AdminScopusImport() {
   const [apiKeyConfirming, setApiKeyConfirming] = useState(false);
   const [apiKeyValidationError, setApiKeyValidationError] = useState("");
   const [metricsBackfillRunning, setMetricsBackfillRunning] = useState(false);
+  const [metricsBenchmarkBackfillRunning, setMetricsBenchmarkBackfillRunning] =
+    useState(false);
   const [metricsRefreshRunning, setMetricsRefreshRunning] = useState(false);
 
   const [jobs, setJobs] = useState([]);
@@ -283,10 +303,16 @@ export default function AdminScopusImport() {
 
   const hasMetricsRunRunning = useMemo(
     () =>
-      [...metricHistory.refresh.runs, ...metricHistory.backfill.runs].some((run) =>
-        isRunningStatus(run?.status)
-      ),
-    [metricHistory.refresh.runs, metricHistory.backfill.runs]
+      [
+        ...metricHistory.refresh.runs,
+        ...metricHistory.backfill.runs,
+        ...metricHistory.benchmark_backfill.runs,
+      ].some((run) => isRunningStatus(run?.status)),
+    [
+      metricHistory.refresh.runs,
+      metricHistory.backfill.runs,
+      metricHistory.benchmark_backfill.runs,
+    ]
   );
 
   const disableManualActions = manualBusy || batchRunning;
@@ -297,6 +323,8 @@ export default function AdminScopusImport() {
   );
   const disableBatchButton = batchRunning || manualBusy || hasBatchRunRunning;
   const disableBackfillButton = metricsBackfillRunning || hasMetricsRunRunning;
+  const disableBenchmarkBackfillButton =
+    metricsBenchmarkBackfillRunning || hasMetricsRunRunning;
   const disableRefreshButton = metricsRefreshRunning || hasMetricsRunRunning;
 
   const hasConferenceRunRunning = useMemo(
@@ -350,6 +378,14 @@ export default function AdminScopusImport() {
     [lastMetricsBackfillSummary, metricHistory.backfill.runs]
   );
 
+  const benchmarkBackfillLatest = useMemo(
+    () =>
+      lastMetricsBenchmarkBackfillSummary ||
+      metricHistory.benchmark_backfill.runs[0] ||
+      null,
+    [lastMetricsBenchmarkBackfillSummary, metricHistory.benchmark_backfill.runs]
+  );
+
   const computedJobTotalPages =
     jobsPagination.total_pages ||
     (jobsPagination.total_count && jobsPagination.per_page
@@ -398,12 +434,29 @@ export default function AdminScopusImport() {
   const backfillHasPrev = backfillPagination.has_prev ?? metricHistory.backfill.page > 1;
   const backfillHasNext = backfillPagination.has_next ?? metricHistory.backfill.page < backfillTotalPages;
 
+  const benchmarkBackfillPagination = metricHistory.benchmark_backfill.pagination;
+  const benchmarkBackfillComputedPages =
+    benchmarkBackfillPagination.total_pages ||
+    (benchmarkBackfillPagination.total_count && benchmarkBackfillPagination.per_page
+      ? Math.ceil(
+          benchmarkBackfillPagination.total_count / benchmarkBackfillPagination.per_page
+        )
+      : 1);
+  const benchmarkBackfillTotalPages =
+    benchmarkBackfillComputedPages > 0 ? benchmarkBackfillComputedPages : 1;
+  const benchmarkBackfillHasPrev =
+    benchmarkBackfillPagination.has_prev ?? metricHistory.benchmark_backfill.page > 1;
+  const benchmarkBackfillHasNext =
+    benchmarkBackfillPagination.has_next ??
+    metricHistory.benchmark_backfill.page < benchmarkBackfillTotalPages;
+
   useEffect(() => {
     fetchApiKey();
     fetchJobs(1);
     fetchBatchRuns(1);
     fetchMetricRuns("refresh", 1);
     fetchMetricRuns("backfill", 1);
+    fetchMetricRuns("benchmark_backfill", 1);
     fetchConferenceRuns(1);
     fetchAuthorMetricsRuns(1);
   }, []);
@@ -510,6 +563,8 @@ export default function AdminScopusImport() {
         setLastMetricsRefreshSummary(items[0] || null);
       } else if (runType === "backfill") {
         setLastMetricsBackfillSummary(items[0] || null);
+      } else if (runType === "benchmark_backfill") {
+        setLastMetricsBenchmarkBackfillSummary(items[0] || null);
       }
     } catch (error) {
       setMetricHistory((prev) => ({
@@ -527,6 +582,8 @@ export default function AdminScopusImport() {
         setLastMetricsRefreshSummary(null);
       } else if (runType === "backfill") {
         setLastMetricsBackfillSummary(null);
+      } else if (runType === "benchmark_backfill") {
+        setLastMetricsBenchmarkBackfillSummary(null);
       }
     }
   }
@@ -628,7 +685,7 @@ export default function AdminScopusImport() {
         runs: [],
         loading: false,
         page,
-        error: error?.message || "ไม่สามารถโหลดประวัติการดึง h-index ได้",
+        error: error?.message || "ไม่สามารถโหลดประวัติการดึง H-index ได้",
       }));
       setLastAuthorMetricsSummary(null);
     }
@@ -645,11 +702,11 @@ export default function AdminScopusImport() {
     try {
       const summary = await scopusConfigAPI.refreshAuthorMetrics();
       setLastAuthorMetricsSummary(summary);
-      setMsg("เริ่มดึง h-index อาจารย์ทุกคนแล้ว ติดตามสถานะได้จากประวัติการรัน");
+      setMsg("เริ่มดึง H-index อาจารย์ทุกคนแล้ว ติดตามสถานะได้จากประวัติการรัน");
       setMsgTone("success");
       fetchAuthorMetricsRuns(1);
     } catch (error) {
-      setMsg(error?.message || "ดึง h-index ไม่สำเร็จ");
+      setMsg(error?.message || "ดึง H-index ไม่สำเร็จ");
       setMsgTone("error");
     } finally {
       setAuthorMetricsRunning(false);
@@ -908,6 +965,23 @@ export default function AdminScopusImport() {
       setMsgTone("error");
     } finally {
       setMetricsBackfillRunning(false);
+    }
+  }
+
+  async function backfillBenchmarkCiteScoreMetrics() {
+    setMetricsBenchmarkBackfillRunning(true);
+    setMsg("");
+    try {
+      const summary = await scopusConfigAPI.backfillBenchmarkMetrics();
+      setLastMetricsBenchmarkBackfillSummary(summary);
+      setMsg("เริ่มสแกนวารสารจากเอกสาร Benchmark แล้ว ติดตามสถานะได้จากประวัติการสแกน");
+      setMsgTone("success");
+      fetchMetricRuns("benchmark_backfill", 1);
+    } catch (error) {
+      setMsg(error?.message || "ดึง CiteScore metrics (Benchmark) ไม่สำเร็จ");
+      setMsgTone("error");
+    } finally {
+      setMetricsBenchmarkBackfillRunning(false);
     }
   }
 
@@ -1475,6 +1549,121 @@ export default function AdminScopusImport() {
               </div>
             </div>
           </div>
+
+          <div className="mt-8 rounded-xl border border-indigo-200 bg-indigo-50/40 p-5">
+            <div className="flex flex-col gap-2">
+              <div className="text-sm font-semibold text-slate-900">เติมข้อมูลวารสารจากเอกสาร Benchmark</div>
+              <p className="text-sm text-slate-600">
+                สแกนวารสารจากเอกสารในชุด Benchmark (ตาราง <code>scopus_benchmark_documents</code>) แล้วดึง CiteScore / SJR / SNIP
+                ให้วารสารที่ยังไม่เคยบันทึก — ช่วยเติมคะแนนที่ขาดในตาราง/รายงาน Benchmark
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-6 md:grid-cols-2">
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600">
+                  ชุด Benchmark มักมีวารสารจากสถาบันอื่นจำนวนมาก การทำงานนี้อาจเรียก API มากกว่าการเติมข้อมูลปกติ — ควรตรวจสอบ API Key และ quota ก่อนเริ่ม
+                </p>
+                <button
+                  type="button"
+                  onClick={backfillBenchmarkCiteScoreMetrics}
+                  disabled={disableBenchmarkBackfillButton}
+                  className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {metricsBenchmarkBackfillRunning ? "กำลังสแกน..." : "สั่งดึง CiteScore ให้เอกสาร Benchmark"}
+                </button>
+                <p className="text-xs text-slate-500">
+                  เขียนลงตาราง <code>scopus_source_metrics</code> เดียวกัน และข้ามวารสารที่มีข้อมูลอยู่แล้ว · ทำงานพร้อมกับการสแกนอื่นไม่ได้
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-dashed border-indigo-300 bg-white px-4 py-4">
+                <div className="text-sm font-semibold text-slate-900">สรุปการสแกนล่าสุด</div>
+                {benchmarkBackfillLatest ? (
+                  <>
+                    <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
+                      <StatusBadge status={benchmarkBackfillLatest.status} />
+                      <span>
+                        อัปเดตล่าสุด: {formatDateTime(benchmarkBackfillLatest.finished_at || benchmarkBackfillLatest.started_at)}
+                      </span>
+                    </div>
+                    <SummaryGrid summary={benchmarkBackfillLatest} items={metricsSummaryItems} />
+                  </>
+                ) : (
+                  <p className="mt-2 text-xs text-slate-500">ยังไม่เคยสแกน</p>
+                )}
+
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                    <span>ประวัติการสแกน Benchmark</span>
+                    {metricHistory.benchmark_backfill.loading && <span className="text-slate-500">กำลังโหลด...</span>}
+                  </div>
+                  {metricHistory.benchmark_backfill.error ? (
+                    <p className="text-sm text-rose-600">{metricHistory.benchmark_backfill.error}</p>
+                  ) : metricHistory.benchmark_backfill.runs.length === 0 && !metricHistory.benchmark_backfill.loading ? (
+                    <p className="text-sm text-slate-500">ยังไม่มีประวัติการสแกน</p>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200 text-sm">
+                          <thead>
+                            <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+                              <th className="px-3 py-2">เริ่ม</th>
+                              <th className="px-3 py-2">เสร็จสิ้น</th>
+                              <th className="px-3 py-2">สถานะ</th>
+                              <th className="px-3 py-2">สแกน</th>
+                              <th className="px-3 py-2">ดึงข้อมูล</th>
+                              <th className="px-3 py-2">ข้าม/ผิดพลาด</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {metricHistory.benchmark_backfill.runs.map((run) => (
+                              <tr key={run.id} className="hover:bg-slate-50">
+                                <td className="px-3 py-2 text-xs text-slate-700">{formatDateTime(run.started_at)}</td>
+                                <td className="px-3 py-2 text-xs text-slate-700">{formatDateTime(run.finished_at)}</td>
+                                <td className="px-3 py-2 text-xs">
+                                  <StatusBadge status={run.status} />
+                                </td>
+                                <td className="px-3 py-2 text-xs text-slate-700">{run.journals_scanned ?? 0}</td>
+                                <td className="px-3 py-2 text-xs text-slate-700">{run.metrics_fetched ?? 0}</td>
+                                <td className="px-3 py-2 text-xs text-slate-700">
+                                  <div>ข้าม: {run.skipped_existing ?? 0}</div>
+                                  <div>ผิดพลาด: {run.errors ?? 0}</div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-slate-600">
+                        <div>
+                          หน้า {metricHistory.benchmark_backfill.page} / {benchmarkBackfillTotalPages}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => goToMetricRunsPage("benchmark_backfill", metricHistory.benchmark_backfill.page - 1)}
+                            disabled={!benchmarkBackfillHasPrev || metricHistory.benchmark_backfill.loading}
+                            className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            ก่อนหน้า
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => goToMetricRunsPage("benchmark_backfill", metricHistory.benchmark_backfill.page + 1)}
+                            disabled={!benchmarkBackfillHasNext || metricHistory.benchmark_backfill.loading}
+                            className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            ถัดไป
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -1853,17 +2042,17 @@ export default function AdminScopusImport() {
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-2">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Author Metrics (Author API)</div>
-            <div className="text-xl font-semibold text-slate-900">h-index อาจารย์ (Scopus)</div>
+            <div className="text-xl font-semibold text-slate-900">H-index อาจารย์ (Scopus)</div>
             <p className="text-sm text-slate-600">
-              ดึง h-index / จำนวนเอกสาร / จำนวนการอ้างอิง ของอาจารย์ทุกคนจาก Scopus Author Retrieval API
+              ดึง H-index / จำนวนเอกสาร / จำนวนการอ้างอิง ของอาจารย์ทุกคนจาก Scopus Author Retrieval API
               โดยอิง Scopus ID ในระบบ (users.scopus_id) เก็บเป็น snapshot รายวัน (ยิงซ้ำในวันเดียวจะทับค่าเดิม)
-              เหมาะกับการรันเดือนละครั้งเพราะ h-index เปลี่ยนช้า · ต้องเรียกจาก IP สถาบัน/VPN ไม่งั้นจะได้ 401
+              เหมาะกับการรันเดือนละครั้งเพราะ H-index เปลี่ยนช้า · ต้องเรียกจาก IP สถาบัน/VPN ไม่งั้นจะได้ 401
             </p>
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-              <div className="text-sm font-semibold text-slate-900">ดึง h-index ทุกคน</div>
+              <div className="text-sm font-semibold text-slate-900">ดึง H-index ทุกคน</div>
               <p className="text-sm text-slate-600">
                 วนอาจารย์ทุกคนที่มี Scopus ID แล้วยิง Author API ทีละคน (1 คำขอ/คน) · ระบบกันการรันซ้อนอัตโนมัติ
               </p>
@@ -1874,7 +2063,7 @@ export default function AdminScopusImport() {
                   disabled={disableAuthorMetricsButton}
                   className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {disableAuthorMetricsButton ? "กำลังดึง..." : "ดึง h-index ทุกคน"}
+                  {disableAuthorMetricsButton ? "กำลังดึง..." : "ดึง H-index ทุกคน"}
                 </button>
               </div>
               <p className="text-xs text-slate-500">
@@ -1901,13 +2090,13 @@ export default function AdminScopusImport() {
 
               <div className="mt-4 space-y-3">
                 <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-                  <span>ประวัติการดึง h-index</span>
+                  <span>ประวัติการดึง H-index</span>
                   {authorMetricsHistory.loading && <span className="text-slate-500">กำลังโหลด...</span>}
                 </div>
                 {authorMetricsHistory.error ? (
                   <p className="text-sm text-rose-600">{authorMetricsHistory.error}</p>
                 ) : authorMetricsHistory.runs.length === 0 && !authorMetricsHistory.loading ? (
-                  <p className="text-sm text-slate-500">ยังไม่มีประวัติการดึง h-index</p>
+                  <p className="text-sm text-slate-500">ยังไม่มีประวัติการดึง H-index</p>
                 ) : (
                   <div className="space-y-3">
                     <div className="overflow-x-auto">

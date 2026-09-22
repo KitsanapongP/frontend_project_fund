@@ -1184,6 +1184,10 @@ export const scopusConfigAPI = {
     const res = await apiClient.post('/admin/scopus/metrics/backfill');
     return res.summary || res;
   },
+  async backfillBenchmarkMetrics() {
+    const res = await apiClient.post('/admin/scopus/metrics/benchmark-backfill');
+    return res.summary || res;
+  },
   async refreshMetrics() {
     const res = await apiClient.post('/admin/scopus/metrics/refresh');
     return res.summary || res;
@@ -1202,7 +1206,7 @@ export const scopusConfigAPI = {
   async listConferenceRuns(params = {}) {
     return apiClient.get('/admin/scopus/conference/runs', params);
   },
-  // ดึง h-index อาจารย์ทุกคน (อิง users.scopus_id) แบบ async
+  // ดึง H-index อาจารย์ทุกคน (อิง users.scopus_id) แบบ async
   async refreshAuthorMetrics({ user_ids, limit } = {}) {
     const qs = new URLSearchParams();
     if (user_ids) {
@@ -1266,6 +1270,89 @@ export const scopusBenchmarkAPI = {
   },
   async comparison(params = {}) {
     return apiClient.get('/admin/scopus/benchmark/comparison', cleanParams(params));
+  },
+  async insights(params = {}) {
+    return apiClient.get('/admin/scopus/benchmark/insights', cleanParams(params));
+  },
+  async topJournals(params = {}) {
+    return apiClient.get('/admin/scopus/benchmark/top-journals', cleanParams(params));
+  },
+  // Document-level CSV export for one benchmark level (university → KKU, country →
+  // Thailand) over the applied year range (§10). The file is fetched in KEYSET PAGES
+  // and stitched into ONE CSV blob client-side, so no single HTTP response is large
+  // enough to hit the production proxy's size ceiling (net::ERR_FAILED on big Thailand
+  // exports). Each page is gzipped on the wire and transparently decompressed by
+  // fetch(); the first page carries the BOM+header, the rest are data rows numbered
+  // continuously. Any page failing throws (nothing is downloaded — no partial file);
+  // a 404 on the first page ("no documents") propagates as an APIError. Returns the
+  // total row count + completeness metadata (from the first page's headers).
+  async exportDocuments(level, { year_from, year_to } = {}) {
+    const label = level === 'country' ? 'thailand' : 'kku';
+    const filename = `scopus-benchmark-documents-${label}-${year_from}-${year_to}.csv`;
+    const token = apiClient.getToken();
+    const headers = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const base = `${apiClient.baseURL}/admin/scopus/benchmark/documents/export`;
+    const LIMIT = 2000;
+    const MAX_PAGES = 1000; // hard stop against an unexpected cursor loop
+
+    const parts = [];
+    let cursor = null; // { year, id } from X-Next-Cursor
+    let rowOffset = 0;
+    let meta = { count: 0, expected: 0, incomplete: false, missingYears: [], activeHarvest: false };
+
+    for (let page = 0; page < MAX_PAGES; page += 1) {
+      const params = new URLSearchParams({
+        level,
+        year_from: String(year_from),
+        year_to: String(year_to),
+        limit: String(LIMIT),
+        row_offset: String(rowOffset),
+      });
+      if (cursor) {
+        params.set('after_year', cursor.year);
+        params.set('after_id', cursor.id);
+      }
+      const response = await fetch(`${base}?${params.toString()}`, { method: 'GET', headers, credentials: 'include' });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new APIError(errorData.error || `Export failed: ${response.statusText}`, response.status);
+      }
+      parts.push(await response.blob()); // decompressed CSV part (first has BOM+header)
+
+      if (page === 0) {
+        meta = {
+          count: Number(response.headers.get('X-Total-Count')) || 0,
+          expected: Number(response.headers.get('X-Benchmark-Expected')) || 0,
+          incomplete: response.headers.get('X-Benchmark-Incomplete') === 'true',
+          missingYears: (response.headers.get('X-Benchmark-Missing-Years') || '').split(',').filter(Boolean),
+          activeHarvest: response.headers.get('X-Benchmark-Active-Harvest') === 'true',
+        };
+      }
+
+      const nextCursor = response.headers.get('X-Next-Cursor');
+      if (nextCursor) {
+        const [year, id] = nextCursor.split(',');
+        cursor = { year, id };
+        rowOffset += LIMIT; // a page with a next-cursor always has exactly LIMIT rows
+      } else {
+        cursor = null;
+        break;
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      const finalBlob = new Blob(parts, { type: 'text/csv;charset=utf-8' });
+      const downloadUrl = window.URL.createObjectURL(finalBlob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    }
+    return meta;
   },
 };
 

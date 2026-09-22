@@ -5,7 +5,7 @@ import { Award, BookOpen, Quote } from "lucide-react";
 import memberAPI from "@/app/lib/member_api";
 import { formatNumber } from "@/app/utils/format";
 
-// การ์ดภาพรวมผลงาน Scopus แบบกระชับ (h-index / จำนวนผลงาน / การอ้างอิงรวม) — ค่าสะสมทั้งอาชีพ (ช่วงปีเต็ม)
+// การ์ดภาพรวมผลงาน Scopus แบบกระชับ (H-index / จำนวนผลงาน / การอ้างอิงรวม) — ค่าสะสมทั้งอาชีพ (ช่วงปีเต็ม)
 export default function MemberScopusOverview() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +32,7 @@ export default function MemberScopusOverview() {
   }, []);
 
   const stats = [
-    { label: "h-index", value: data ? formatNumber(data.h_index) : "-", Icon: Award, iconClass: "text-blue-600", tileClass: "border-blue-100 bg-blue-50" },
+    { label: "H-index", value: data ? formatNumber(data.h_index) : "-", Icon: Award, iconClass: "text-blue-600", tileClass: "border-blue-100 bg-blue-50" },
     { label: "ผลงาน (Scopus)", value: data ? formatNumber(data.document_count) : "-", Icon: BookOpen, iconClass: "text-slate-500", tileClass: "border-slate-200 bg-slate-50" },
     { label: "การอ้างอิงรวม", value: data ? formatNumber(data.citation_total) : "-", Icon: Quote, iconClass: "text-slate-500", tileClass: "border-slate-200 bg-slate-50" },
   ];

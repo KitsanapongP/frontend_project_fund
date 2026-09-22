@@ -165,7 +165,7 @@ export default function MemberScopusAuthorHIndex() {
     const nmin = c - (c - min) * (newSpan / span);
     applyZoomRange(nmin, nmin + newSpan);
   }
-  // ปุ่มซูม: โฟกัสไปที่จุด h-index (ส่วนที่สนใจจริง) — ปรับแรงขึ้นให้ซูมเข้า/ออกไวกว่าเดิม
+  // ปุ่มซูม: โฟกัสไปที่จุด H-index (ส่วนที่สนใจจริง) — ปรับแรงขึ้นให้ซูมเข้า/ออกไวกว่าเดิม
   const zoomInStep = () => zoomBy(0.45, graph?.h_index);
   const zoomOutStep = () => zoomBy(2.2, graph?.h_index);
   const zoomReset = () => applyZoomRange(0, axisMax);
@@ -278,7 +278,7 @@ export default function MemberScopusAuthorHIndex() {
       } catch (_) {}
       const res = await ApexCharts.exec(CHART_ID, "dataURI", { scale: 2 });
       if (res?.imgURI) {
-        imgTag = `<img src="${res.imgURI}" alt="กราฟ h-index" style="max-width:100%;border:1px solid #e2e8f0;border-radius:8px;margin-top:8px" />`;
+        imgTag = `<img src="${res.imgURI}" alt="กราฟ H-index" style="max-width:100%;border:1px solid #e2e8f0;border-radius:8px;margin-top:8px" />`;
       }
     } catch (e) {
       // ถ้าดึงภาพกราฟไม่ได้ ก็ยังออกรายงานพร้อมตารางได้
@@ -300,7 +300,7 @@ export default function MemberScopusAuthorHIndex() {
       .join("");
 
     const html = `<!doctype html>
-<html lang="th"><head><meta charset="utf-8"><title>h-index (Scopus)</title>
+<html lang="th"><head><meta charset="utf-8"><title>H-index (Scopus)</title>
 <style>
   body{font-family:'Sarabun',Tahoma,-apple-system,'Segoe UI',sans-serif;color:#0f172a;margin:28px;max-width:960px}
   h1{font-size:20px;margin:0 0 4px}.muted{color:#64748b;font-size:14px}
@@ -311,10 +311,10 @@ export default function MemberScopusAuthorHIndex() {
   th,td{border:1px solid #e2e8f0;padding:6px 9px;vertical-align:top}th{background:#f1f5f9;text-align:left}
   @media print{body{margin:0}}
 </style></head><body>
-  <h1>h-index (Scopus)</h1>
+  <h1>H-index (Scopus)</h1>
   <div class="muted">Scopus Author ID: ${htmlEscape(sid)} · ช่วงปี: ${yearLabel} · ออกรายงาน ${new Date().toLocaleDateString("th-TH")}</div>
   <div class="stats">
-    <div class="stat"><span>h-index</span><b>${h}</b></div>
+    <div class="stat"><span>H-index</span><b>${h}</b></div>
     <div class="stat"><span>เอกสาร</span><b>${graph.document_count}</b></div>
     <div class="stat"><span>การอ้างอิงรวม</span><b>${graph.citation_total}</b></div>
   </div>
@@ -339,7 +339,7 @@ export default function MemberScopusAuthorHIndex() {
       const data = res?.data || null;
       setGraph(data);
       setNoScopus(data == null); // backend คืน data:null เมื่อผู้ใช้ยังไม่ผูก Scopus ID
-      // ตอนโหลดช่วงเต็ม (ไม่กรองปี) เก็บรายการปีที่มีเอกสารจริง + ตั้ง default เป็นช่วงเต็ม (h-index เป็นค่าสะสม)
+      // ตอนโหลดช่วงเต็ม (ไม่กรองปี) เก็บรายการปีที่มีเอกสารจริง + ตั้ง default เป็นช่วงเต็ม (H-index เป็นค่าสะสม)
       if (data && !yf && !yt) {
         let ys = Array.isArray(data.available_years) ? data.available_years.map(Number) : [];
         if (ys.length === 0 && Array.isArray(data.points)) {
@@ -351,7 +351,7 @@ export default function MemberScopusAuthorHIndex() {
         if (data.available_year_max != null) setYearTo(String(data.available_year_max));
       }
     } catch (e) {
-      setError(e?.message || "ไม่สามารถโหลดกราฟ h-index ได้");
+      setError(e?.message || "ไม่สามารถโหลดกราฟ H-index ได้");
       setGraph(null);
     } finally {
       setLoading(false);
@@ -443,7 +443,7 @@ export default function MemberScopusAuthorHIndex() {
       legend: { show: false },
       tooltip: {
         // intersect:false = ชี้ใกล้ ๆ ก็ขึ้น (ไม่ต้องจ่อจุดเป๊ะ); enabledOnSeries:[0] = ให้ tooltip
-        // ผูกกับเส้น citations เท่านั้น ไม่ให้เส้นทแยง y=x แย่ง (โดยเฉพาะจุดตรง h-index ที่เส้นตัดกัน)
+        // ผูกกับเส้น citations เท่านั้น ไม่ให้เส้นทแยง y=x แย่ง (โดยเฉพาะจุดตรง H-index ที่เส้นตัดกัน)
         shared: false,
         intersect: false,
         enabledOnSeries: [0],
@@ -459,7 +459,7 @@ export default function MemberScopusAuthorHIndex() {
         },
       },
       annotations: {
-        // เส้นตั้งที่ h = ขอบเขตบทความที่นับเข้า h-index (h บทความแรกถูกอ้างอิง ≥ h ครั้ง)
+        // เส้นตั้งที่ h = ขอบเขตบทความที่นับเข้า H-index (h บทความแรกถูกอ้างอิง ≥ h ครั้ง)
         xaxis:
           h > 0
             ? [{ x: h, borderColor: "#d97706", strokeDashArray: 4, label: { text: `h แรก`, style: { background: "#fef9c3", color: "#854d0e" } } }]
@@ -472,7 +472,7 @@ export default function MemberScopusAuthorHIndex() {
                   y: h,
                   marker: { size: 7, fillColor: "#d97706", strokeColor: "#854d0e", strokeWidth: 2 },
                   label: {
-                    text: `h-index = ${h}`,
+                    text: `H-index = ${h}`,
                     borderColor: "#d97706",
                     style: { background: "#fef9c3", color: "#854d0e", fontWeight: 600 },
                   },
@@ -495,12 +495,12 @@ export default function MemberScopusAuthorHIndex() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-1.5">
-            <h3 className="text-xl font-semibold text-slate-900">h-index (Scopus)</h3>
+            <h3 className="text-xl font-semibold text-slate-900">H-index (Scopus)</h3>
             <div className="relative" data-hindex-popover>
               <button
                 type="button"
                 onClick={() => setShowDesc((v) => !v)}
-                aria-label="รายละเอียด h-index"
+                aria-label="รายละเอียด H-index"
                 aria-expanded={showDesc}
                 aria-describedby={showDesc ? "member-hindex-desc" : undefined}
                 title="รายละเอียด"
@@ -512,7 +512,7 @@ export default function MemberScopusAuthorHIndex() {
               </button>
               {showDesc && (
                 <div id="member-hindex-desc" role="note" className="absolute left-0 top-7 z-20 w-80 rounded-lg border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-600 shadow-lg">
-                  h-index ของคุณคำนวณจากผลงานใน Scopus ที่นำเข้าระบบ เลือกช่วงปีได้ตามต้องการ
+                  H-index ของคุณคำนวณจากผลงานใน Scopus ที่นำเข้าระบบ เลือกช่วงปีได้ตามต้องการ
                   ตัวเลขอาจน้อยกว่าใน scopus.com หากยังไม่ได้อัปเดตจำนวนการอ้างอิงล่าสุด
                 </div>
               )}
@@ -590,7 +590,7 @@ export default function MemberScopusAuthorHIndex() {
       <div className="mt-6 grid gap-6 lg:grid-cols-[220px_1fr]">
         <div className="space-y-3">
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-xs font-medium uppercase tracking-wide text-slate-500">h-index</div>
+            <div className="text-xs font-medium uppercase tracking-wide text-slate-500">H-index</div>
             <div className="mt-1 text-4xl font-bold text-slate-900">{graph ? formatNumber(graph.h_index) : "-"}</div>
             <div className="mt-1 text-xs text-slate-500">ตามช่วงปีที่เลือก</div>
           </div>
@@ -649,10 +649,10 @@ export default function MemberScopusAuthorHIndex() {
                 </button>
                 {showHint && (
                   <div id="member-hindex-hint" role="note" className="absolute right-0 top-9 z-20 w-72 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 shadow-lg">
-                    แต่ละจุดคือ 1 บทความ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่ม/เลื่อนเมาส์ (โฟกัสที่ h-index) · เมื่อซูมแล้วกดค้างลากเพื่อเลื่อนดูช่วงอื่นได้
+                    แต่ละจุดคือ 1 บทความ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่ม/เลื่อนเมาส์ (โฟกัสที่ H-index) · เมื่อซูมแล้วกดค้างลากเพื่อเลื่อนดูช่วงอื่นได้
                     {graph?.h_index > 0 && (
                       <span className="mt-1.5 block text-slate-700">
-                        h-index = {graph.h_index} หมายถึงมี {graph.h_index} บทความที่ถูกอ้างอิงอย่างน้อยบทความละ {graph.h_index} ครั้ง (บทความทางซ้ายของเส้นประ)
+                        H-index = {graph.h_index} หมายถึงมี {graph.h_index} บทความที่ถูกอ้างอิงอย่างน้อยบทความละ {graph.h_index} ครั้ง (บทความทางซ้ายของเส้นประ)
                       </span>
                     )}
                   </div>
@@ -671,7 +671,7 @@ export default function MemberScopusAuthorHIndex() {
                   <>
                     <p className="font-medium text-slate-700">บัญชีของคุณยังไม่ได้เชื่อมกับ Scopus ID</p>
                     <p className="max-w-md">
-                      ระบบจึงยังแสดง h-index ให้ไม่ได้ — โปรดติดต่อผู้ดูแลระบบหรือเจ้าหน้าที่กองทุนวิจัย
+                      ระบบจึงยังแสดง H-index ให้ไม่ได้ — โปรดติดต่อผู้ดูแลระบบหรือเจ้าหน้าที่กองทุนวิจัย
                       เพื่อเชื่อม Scopus Author ID เข้ากับบัญชีของคุณ
                     </p>
                   </>
@@ -685,7 +685,7 @@ export default function MemberScopusAuthorHIndex() {
           {chart && graph && Array.isArray(graph.points) && (
             <div className="sr-only">
             <table>
-              <caption>ตาราง h-index (Scopus) — บทความเรียงตามจำนวนการอ้างอิงจากมากไปน้อย</caption>
+              <caption>ตาราง H-index (Scopus) — บทความเรียงตามจำนวนการอ้างอิงจากมากไปน้อย</caption>
               <thead>
                 <tr>
                   <th>อันดับ</th>
