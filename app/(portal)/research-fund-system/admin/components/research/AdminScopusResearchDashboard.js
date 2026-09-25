@@ -2,7 +2,7 @@
 
 import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   SlidersHorizontal,
@@ -120,6 +120,170 @@ const OVERVIEW_METRICS_LABEL_WIDTH = 410;
 const DRILLDOWN_PAGE_SIZE = 10; // แถวต่อหน้าฝั่ง client
 const DRILLDOWN_FETCH_SIZE = 200; // ดึงทั้งช่องมาครั้งเดียวแล้วแบ่งหน้าใน browser (1 ช่องปกติมีไม่กี่สิบรายการ)
 
+const OVERVIEW_EXPORT_COUNT_ROWS = [
+  { key: "t1", label: "T1 (90-100)" },
+  { key: "q1", label: "Q1 (75-89)" },
+  { key: "q2", label: "Q2 (50-74)" },
+  { key: "q3", label: "Q3 (25-49)" },
+  { key: "q4", label: "Q4 (0-24)" },
+  { key: "na", label: "N/A (ไม่มี tier)" },
+  { key: "tci", label: "TCI" },
+  { key: "conference", label: "Conference Proceeding" },
+];
+
+const OVERVIEW_EXPORT_RATIO_GROUPS = [
+  {
+    label: "กลุ่มสัดส่วนในผลงาน Q1-Q4",
+    rows: [
+      { key: "t1PerGrouped", label: "ร้อยละของ T1 ต่อ จำนวนผลงาน Q1-Q4" },
+      { key: "q1PerGrouped", label: "ร้อยละของ Q1 ต่อ จำนวนผลงาน Q1-Q4" },
+      { key: "t1Q1PerGrouped", label: "ร้อยละของ (T1+Q1) ต่อ จำนวนผลงาน Q1-Q4" },
+    ],
+  },
+  {
+    label: "กลุ่มสัดส่วนในผลงานทุกประเภท",
+    rows: [
+      { key: "q1PerAllNoTCI", label: "ร้อยละของ (T1+Q1) ต่อ จำนวนผลงานทุกประเภท (ไม่รวม TCI)" },
+      { key: "q1PerAllWithTCI", label: "ร้อยละของ (T1+Q1) ต่อ จำนวนผลงานทุกประเภท (รวม TCI)" },
+      { key: "t1PerAllNoTCI", label: "ร้อยละของ T1 ต่อ จำนวนผลงานทุกประเภท (ไม่รวม TCI)" },
+      { key: "tciPerAllWithTCI", label: "ร้อยละของ TCI ต่อ จำนวนผลงานทุกประเภท (รวม TCI)" },
+    ],
+  },
+  {
+    label: "กลุ่มสัดส่วนเทียบจำนวนอาจารย์",
+    rows: [
+      { key: "worksWithQPerTeacher", label: "ร้อยละของจำนวนผลงาน T1-Q4 ต่อจำนวนอาจารย์" },
+      { key: "allNoTCIPerTeacher", label: "ร้อยละผลงานทุกประเภทต่อ จำนวนอาจารย์ (ไม่รวม TCI)" },
+      { key: "allWithTCIPerTeacher", label: "ร้อยละผลงานทุกประเภทต่อ จำนวนอาจารย์ (รวม TCI)" },
+    ],
+  },
+];
+
+function filterSignature(filters = {}) {
+  return JSON.stringify(filterToQueryParams(filters));
+}
+
+function chunkYears(years, size) {
+  const chunks = [];
+  for (let index = 0; index < years.length; index += size) {
+    chunks.push(years.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function OverviewExportTables({ years, calendarMetrics, fiscalMetrics, orientation, formatRatioValue }) {
+  const yearsPerTable = orientation === "portrait" ? 3 : 5;
+  const yearChunks = chunkYears(years, yearsPerTable);
+
+  if (years.length === 0) {
+    return <p className="text-sm text-slate-500">ไม่พบข้อมูลรายปี</p>;
+  }
+
+  const renderCombinedHeader = (yearChunk, keyPrefix) => (
+    <thead>
+      <tr>
+        <th className="border border-blue-200 bg-blue-100 px-2 py-1.5 text-left font-semibold text-blue-900" />
+        <th colSpan={yearChunk.length} className="border border-blue-200 bg-blue-100 px-2 py-1.5 text-center font-semibold text-blue-900">
+          ปีปฏิทิน (ม.ค. - ธ.ค.)
+        </th>
+        <th colSpan={yearChunk.length} className="border border-blue-200 border-l-2 border-l-blue-300 bg-blue-100 px-2 py-1.5 text-center font-semibold text-blue-900">
+          ปีงบประมาณ (ต.ค. - ก.ย.)
+        </th>
+      </tr>
+      <tr>
+        <th className="border border-blue-200 bg-blue-100 px-2 py-1.5 text-left font-semibold text-blue-900">รายการ</th>
+        {yearChunk.map((year) => (
+          <th key={`${keyPrefix}-calendar-head-${year}`} className="border border-blue-200 bg-blue-50 px-2 py-1.5 text-right font-semibold text-blue-800">{year}</th>
+        ))}
+        {yearChunk.map((year, yearIndex) => (
+          <th key={`${keyPrefix}-fiscal-head-${year}`} className={`border border-blue-200 bg-blue-50 px-2 py-1.5 text-right font-semibold text-blue-800 ${yearIndex === 0 ? "border-l-2 border-l-blue-300" : ""}`}>{year}</th>
+        ))}
+      </tr>
+    </thead>
+  );
+
+  return (
+    <div className="overview-export-print-only">
+      <div className="space-y-4">
+        {yearChunks.map((yearChunk, chunkIndex) => (
+          <section key={`count-${chunkIndex}`} className="overview-export-year-section">
+          <table className="overview-export-year-table w-full border-collapse text-xs">
+            {renderCombinedHeader(yearChunk, `count-${chunkIndex}`)}
+            <tbody>
+              {OVERVIEW_EXPORT_COUNT_ROWS.map((row) => (
+                <tr key={`count-${chunkIndex}-${row.key}`}>
+                  <td className="border border-slate-200 bg-slate-50 px-2 py-1.5 font-medium text-slate-700">{row.label}</td>
+                  {yearChunk.map((year) => (
+                    <td key={`count-calendar-${row.key}-${year}`} className="border border-slate-200 px-2 py-1.5 text-right">
+                      {formatNumber(calendarMetrics[year]?.[row.key] || 0)}
+                    </td>
+                  ))}
+                  {yearChunk.map((year, yearIndex) => (
+                    <td key={`count-fiscal-${row.key}-${year}`} className={`border border-slate-200 px-2 py-1.5 text-right ${yearIndex === 0 ? "border-l-2 border-l-slate-300" : ""}`}>
+                      {formatNumber(fiscalMetrics[year]?.[row.key] || 0)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              <tr>
+                <td className="border border-slate-300 bg-slate-200 px-2 py-1.5 font-semibold text-slate-900">รวม</td>
+                {yearChunk.map((year) => (
+                  <td key={`count-calendar-total-${year}`} className="border border-slate-300 bg-slate-200 px-2 py-1.5 text-right font-semibold text-slate-900">
+                    {formatNumber(calendarMetrics[year]?.totalWithConferenceAndTCI || 0)}
+                  </td>
+                ))}
+                {yearChunk.map((year, yearIndex) => (
+                  <td key={`count-fiscal-total-${year}`} className={`border border-slate-300 bg-slate-200 px-2 py-1.5 text-right font-semibold text-slate-900 ${yearIndex === 0 ? "border-l-2 border-l-slate-400" : ""}`}>
+                    {formatNumber(fiscalMetrics[year]?.totalWithConferenceAndTCI || 0)}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </section>
+        ))}
+      </div>
+
+      <section className="overview-export-ratio-section">
+        <h3 className="mb-3 text-base font-semibold text-slate-900">กลุ่มสัดส่วน (Ratio)</h3>
+        <div className="space-y-4">
+          {yearChunks.map((yearChunk, chunkIndex) => (
+            <table key={`ratio-${chunkIndex}`} className="overview-export-year-table w-full border-collapse text-xs">
+              {renderCombinedHeader(yearChunk, `ratio-${chunkIndex}`)}
+              <tbody>
+              {OVERVIEW_EXPORT_RATIO_GROUPS.map((group) => (
+                <Fragment key={`ratio-${chunkIndex}-${group.label}`}>
+                  <tr>
+                    <td colSpan={1 + yearChunk.length * 2} className="border border-slate-200 bg-slate-100 px-2 py-1.5 text-xs font-semibold text-slate-600">
+                      {group.label}
+                    </td>
+                  </tr>
+                  {group.rows.map((row) => (
+                    <tr key={`ratio-${chunkIndex}-${row.key}`}>
+                      <td className="border border-slate-200 bg-slate-50 px-2 py-1.5 font-medium text-slate-700">{row.label}</td>
+                      {yearChunk.map((year) => (
+                        <td key={`ratio-calendar-${row.key}-${year}`} className="border border-slate-200 px-2 py-1.5 text-right font-semibold">
+                          {formatRatioValue(calendarMetrics[year]?.[row.key] || 0)}
+                        </td>
+                      ))}
+                      {yearChunk.map((year, yearIndex) => (
+                        <td key={`ratio-fiscal-${row.key}-${year}`} className={`border border-slate-200 px-2 py-1.5 text-right font-semibold ${yearIndex === 0 ? "border-l-2 border-l-slate-300" : ""}`}>
+                          {formatRatioValue(fiscalMetrics[year]?.[row.key] || 0)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+              </tbody>
+            </table>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 const PERSON_ALL_COLUMNS = [
   ...PERSON_BASE_COLUMNS,
   ...PERSON_QUARTILE_COLUMNS,
@@ -227,8 +391,13 @@ export default function AdminScopusResearchDashboard() {
   const [draftFilters, setDraftFilters] = useState(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
   const [summary, setSummary] = useState(null);
+  const [summaryFilterSignature, setSummaryFilterSignature] = useState("");
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportOrientation, setExportOrientation] = useState("landscape");
+  const [exportingOverview, setExportingOverview] = useState(false);
+  const [overviewExportedAt, setOverviewExportedAt] = useState(null);
   const [isSourceCollapsed, setIsSourceCollapsed] = useState(false);
   const [isSponsorCollapsed, setIsSponsorCollapsed] = useState(false);
   const [isOverviewCollapsed, setIsOverviewCollapsed] = useState(false);
@@ -288,6 +457,7 @@ export default function AdminScopusResearchDashboard() {
   const [optionsError, setOptionsError] = useState("");
   const [summaryError, setSummaryError] = useState("");
   const drilldownPanelRef = useRef(null);
+  const overviewPrintCleanupRef = useRef(null);
   const [drilldownScrollTick, setDrilldownScrollTick] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(1280);
 
@@ -555,9 +725,14 @@ export default function AdminScopusResearchDashboard() {
     setSummaryError("");
     try {
       const response = await adminAPI.getScopusDashboardSummary(filterToQueryParams(filters));
-      setSummary(response?.data || null);
+      const nextSummary = response?.data || null;
+      setSummary(nextSummary);
+      setAppliedFilters(filters);
+      setSummaryFilterSignature(filterSignature(filters));
+      return true;
     } catch (error) {
       setSummaryError(error?.message || "ไม่สามารถโหลดข้อมูลสรุปได้");
+      return false;
     } finally {
       setLoadingSummary(false);
     }
@@ -578,7 +753,6 @@ export default function AdminScopusResearchDashboard() {
 
         const initialFilters = withDefaultYearRange(DEFAULT_FILTERS, payload);
         setDraftFilters(initialFilters);
-        setAppliedFilters(initialFilters);
         await loadSummary(initialFilters);
       } catch (error) {
         if (!mounted) return;
@@ -649,7 +823,6 @@ export default function AdminScopusResearchDashboard() {
   }, []);
 
   const handleApplyFilters = async () => {
-    setAppliedFilters(draftFilters);
     setDrilldownPanelOpen(false);
     setSelectedOverviewMetricsRow("");
     await loadSummary(draftFilters);
@@ -658,7 +831,6 @@ export default function AdminScopusResearchDashboard() {
   const handleResetFilters = async () => {
     const reset = withDefaultYearRange(DEFAULT_FILTERS, options);
     setDraftFilters(reset);
-    setAppliedFilters(reset);
     setDrilldownPanelOpen(false);
     setSelectedOverviewMetricsRow("");
     await loadSummary(reset);
@@ -1331,6 +1503,98 @@ export default function AdminScopusResearchDashboard() {
   }, [overviewYearMetricsCalendar, overviewYearMetricsFiscal, overviewYearsBE]);
 
   const formatRatio = useCallback((value) => Number(value || 0).toFixed(2), []);
+
+  const canExportOverview = Boolean(
+    isFacultyOverview
+    && summary
+    && !loadingSummary
+    && !summaryError
+    && summaryFilterSignature
+    && summaryFilterSignature === filterSignature(appliedFilters)
+  );
+
+  const cleanupOverviewPrint = useCallback(() => {
+    if (typeof window === "undefined") return;
+    document.body.classList.remove(
+      "research-overview-printing",
+      "research-overview-print-portrait",
+      "research-overview-print-landscape"
+    );
+    document.head.querySelector("style[data-research-overview-print-page]")?.remove();
+    window.removeEventListener("afterprint", overviewPrintCleanupRef.current);
+    overviewPrintCleanupRef.current = null;
+    setExportingOverview(false);
+  }, []);
+
+  useEffect(() => () => {
+    if (typeof window === "undefined") return;
+    document.body.classList.remove(
+      "research-overview-printing",
+      "research-overview-print-portrait",
+      "research-overview-print-landscape"
+    );
+    document.head.querySelector("style[data-research-overview-print-page]")?.remove();
+  }, []);
+
+  const handleExportOverview = useCallback(async () => {
+    if (!canExportOverview || typeof window === "undefined") return;
+
+    const orientation = exportOrientation === "portrait" ? "portrait" : "landscape";
+    setExportingOverview(true);
+    setOverviewExportedAt(new Date());
+    setExportDialogOpen(false);
+
+    // ตัว Overview ที่หุบอยู่ไม่ได้อยู่ใน DOM จึงเปิดเฉพาะช่วงพิมพ์ แล้วคืนค่าเดิมหลังปิด print dialog
+    const previousOverviewCollapsed = isOverviewCollapsed;
+    setIsOverviewCollapsed(false);
+
+    document.body.classList.add(
+      "research-overview-printing",
+      `research-overview-print-${orientation}`
+    );
+    const pageStyle = document.createElement("style");
+    pageStyle.setAttribute("data-research-overview-print-page", "");
+    pageStyle.textContent = `@media print {
+      @page {
+        size: A4 ${orientation};
+        margin: 5mm 5mm 8mm;
+        @top-left { content: ""; }
+        @top-center { content: ""; }
+        @top-right { content: ""; }
+        @bottom-left { content: ""; }
+        @bottom-center {
+          content: counter(page);
+          color: #64748b;
+          font-size: 8pt;
+        }
+        @bottom-right { content: ""; }
+      }
+    }`;
+    document.head.appendChild(pageStyle);
+
+    const cleanup = () => {
+      setIsOverviewCollapsed(previousOverviewCollapsed);
+      cleanupOverviewPrint();
+    };
+    overviewPrintCleanupRef.current = cleanup;
+    window.addEventListener("afterprint", cleanup, { once: true });
+
+    try {
+      // รอ React render ส่วนที่ถูกกาง, รอฟอนต์ไทย และให้ ApexCharts คำนวณขนาดใหม่ก่อนพิมพ์
+      await new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+      if (document.fonts?.ready) await document.fonts.ready;
+      window.dispatchEvent(new Event("resize"));
+      await new Promise((resolve) => window.setTimeout(resolve, 350));
+      window.print();
+    } catch (error) {
+      cleanup();
+    }
+  }, [
+    canExportOverview,
+    cleanupOverviewPrint,
+    exportOrientation,
+    isOverviewCollapsed,
+  ]);
 
   const overviewMetricFormulaByKey = useMemo(() => ({
     t1_per_q: {
@@ -2763,21 +3027,54 @@ export default function AdminScopusResearchDashboard() {
 
         {isFacultyOverview && (
           <>
+          <div id="research-overview-export-root" className="overview-export-root">
           <SimpleCard
             title="ภาพรวม (Overview)"
             action={(
-              <button
-                type="button"
-                onClick={toggleOverviewCollapsed}
-                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
-              >
-                <span>{isOverviewCollapsed ? "แสดง" : "ซ่อน"}</span>
-                {isOverviewCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-              </button>
+              <div className="overview-export-screen-only flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setExportDialogOpen(true)}
+                  disabled={!canExportOverview || exportingOverview}
+                  title={canExportOverview ? "ส่งออกการ์ดภาพรวมเป็น PDF" : "รอให้ข้อมูลตามตัวกรองโหลดสำเร็จก่อนส่งออก"}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Download size={14} />
+                  {exportingOverview ? "กำลังเตรียม..." : "ส่งออก PDF"}
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleOverviewCollapsed}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
+                >
+                  <span>{isOverviewCollapsed ? "แสดง" : "ซ่อน"}</span>
+                  {isOverviewCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                </button>
+              </div>
             )}
           >
             {!isOverviewCollapsed && <div className="space-y-5">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="overview-export-print-only border-b border-slate-200 pb-4">
+                <p className="text-lg font-semibold text-slate-900">รายงานภาพรวมงานวิจัย</p>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+                  <span><strong className="text-slate-700">รูปแบบ:</strong> {exportOrientation === "portrait" ? "A4 แนวตั้ง" : "A4 แนวนอน"}</span>
+                  <span><strong className="text-slate-700">ส่งออกเมื่อ:</strong> {overviewExportedAt ? overviewExportedAt.toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }) : "-"}</span>
+                  <span><strong className="text-slate-700">ข้อมูลอัปเดตล่าสุด:</strong> {latestScopusPullLabel}</span>
+                </div>
+                <div className="overview-export-filter-summary mt-3 border-y border-slate-200 py-2.5">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">ตัวกรองที่ใช้ในการส่งออก</p>
+                  <dl className="overview-export-filter-grid mt-2 grid gap-x-5 gap-y-2">
+                    {appliedFilterSummaryItems.map((item) => (
+                      <div key={`export-filter-${item.key}`} className="overview-export-filter-item min-w-0 border-l-2 border-blue-200 pl-2.5">
+                        <dt className="text-[10px] font-medium text-slate-500">{item.label}</dt>
+                        <dd className="mt-0.5 text-xs font-semibold leading-snug text-slate-800">{item.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </div>
+
+              <div className="overview-export-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
                   <p className="text-xs font-medium text-slate-500">จำนวนอาจารย์ในคณะ</p>
                   <p className="mt-2 text-2xl font-semibold text-blue-700 lg:text-3xl">{formatNumber(kpi.total_teachers_in_faculty || 0)}</p>
@@ -2810,7 +3107,7 @@ export default function AdminScopusResearchDashboard() {
                 <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-slate-800">จำนวนบทความที่เผยแพร่</p>
                 </div>
-                <p className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-700">
+                <p className="overview-export-screen-only mb-3 inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-700">
                   <MousePointerClick size={13} className="text-blue-500" />
                   คลิกตัวเลขในตารางเพื่อดูรายการผลงานที่ถูกนับ
                 </p>
@@ -2818,7 +3115,14 @@ export default function AdminScopusResearchDashboard() {
                   <p className="text-sm text-slate-500">ไม่พบข้อมูลรายปี</p>
                 ) : (
                   <>
-                  <div className="overflow-x-auto overflow-y-hidden">
+                  <OverviewExportTables
+                    years={overviewYearsBE}
+                    calendarMetrics={overviewYearMetricsCalendar}
+                    fiscalMetrics={overviewYearMetricsFiscal}
+                    orientation={exportOrientation}
+                    formatRatioValue={formatRatio}
+                  />
+                  <div className="overview-export-screen-table overflow-x-auto overflow-y-hidden">
                     <table className="min-w-[980px] border-collapse text-sm">
                       <thead>
                         <tr>
@@ -3202,7 +3506,7 @@ export default function AdminScopusResearchDashboard() {
                   </div>
                   <p className="mt-3 text-xs text-slate-500">อัปเดตล่าสุด: <span className="font-medium text-slate-700">{latestScopusPullLabel}</span></p>
                   {drilldownPanelOpen && (
-                    <div className="mt-3 rounded-xl border-2 border-blue-300 bg-white p-3 shadow-lg ring-2 ring-blue-100">
+                    <div className="overview-export-screen-only mt-3 rounded-xl border-2 border-blue-300 bg-white p-3 shadow-lg ring-2 ring-blue-100">
                       <div ref={drilldownPanelRef} className="mb-2 flex flex-wrap items-center justify-between gap-2">
                         <p className="text-sm font-semibold text-slate-800">
                           ตรวจสอบรายการที่ถูกนับ: {drilldownState.bucketLabel || "-"} • ปี{drilldownState.yearType === "fiscal" ? "งบประมาณ" : "ปฏิทิน"} {drilldownState.yearBE || "-"}
@@ -3287,11 +3591,11 @@ export default function AdminScopusResearchDashboard() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <div className="overview-export-chart-grid grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-slate-800">ประเภทผลงาน (Document Type - Aggregation)</p>
-                    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs">
+                    <div className="overview-export-screen-only inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs">
                       <button
                         type="button"
                         onClick={() => setDocumentChartView("bar")}
@@ -3312,11 +3616,20 @@ export default function AdminScopusResearchDashboard() {
                     <p className="text-sm text-slate-500">ไม่พบข้อมูล</p>
                   ) : (
                     <ApexChart
-                      key={`doc-${documentChartView}`}
+                      key={`doc-${documentChartView}-${exportingOverview ? `print-${exportOrientation}` : "screen"}`}
                       type={documentChartOptions.type}
-                      options={documentChartOptions.options}
+                      options={exportingOverview ? {
+                        ...documentChartOptions.options,
+                        chart: {
+                          ...documentChartOptions.options.chart,
+                          animations: { enabled: false },
+                          redrawOnParentResize: true,
+                          redrawOnWindowResize: true,
+                        },
+                      } : documentChartOptions.options}
                       series={documentChartOptions.series}
                       height={documentChartOptions.height}
+                      width="100%"
                     />
                   )}
                 </div>
@@ -3324,7 +3637,7 @@ export default function AdminScopusResearchDashboard() {
                 <div className="rounded-xl border border-slate-200 p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-slate-800">Quartile (T1-Q4)</p>
-                    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs">
+                    <div className="overview-export-screen-only inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs">
                       <button
                         type="button"
                         onClick={() => setQuartileChartView("donut")}
@@ -3342,23 +3655,32 @@ export default function AdminScopusResearchDashboard() {
                     </div>
                   </div>
                   <ApexChart
-                    key={`quartile-${quartileChartView}`}
+                    key={`quartile-${quartileChartView}-${exportingOverview ? `print-${exportOrientation}` : "screen"}`}
                     type={quartileChartOptions.type}
-                    options={quartileChartOptions.options}
+                    options={exportingOverview ? {
+                      ...quartileChartOptions.options,
+                      chart: {
+                        ...quartileChartOptions.options.chart,
+                        animations: { enabled: false },
+                        redrawOnParentResize: true,
+                        redrawOnWindowResize: true,
+                      },
+                    } : quartileChartOptions.options}
                     series={quartileChartOptions.series}
                     height={quartileChartOptions.height}
+                    width="100%"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <div className="overview-export-screen-only overview-export-detail-grid grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-slate-800">แหล่งตีพิมพ์สูงสุด (Top Publication Sources)</p>
                     <button
                       type="button"
                       onClick={toggleSourceCollapsed}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
+                      className="overview-export-screen-only inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
                     >
                       <span>{isSourceCollapsed ? "แสดง" : "ซ่อน"}</span>
                       {isSourceCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
@@ -3369,7 +3691,7 @@ export default function AdminScopusResearchDashboard() {
                       {publicationSourceRows.length === 0 ? (
                         <p className="text-sm text-slate-500">ไม่พบข้อมูล</p>
                       ) : (
-                        <div className="max-h-[360px] overflow-y-auto rounded-lg border border-slate-200">
+                        <div className="overview-export-scroll-content max-h-[360px] overflow-y-auto rounded-lg border border-slate-200">
                           <table className="min-w-full border-collapse text-sm">
                             <thead className="sticky top-0 z-10 bg-blue-100 text-blue-900">
                               <tr>
@@ -3409,7 +3731,7 @@ export default function AdminScopusResearchDashboard() {
                     <button
                       type="button"
                       onClick={toggleSponsorCollapsed}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
+                      className="overview-export-screen-only inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
                     >
                       <span>{isSponsorCollapsed ? "แสดง" : "ซ่อน"}</span>
                       {isSponsorCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
@@ -3420,7 +3742,7 @@ export default function AdminScopusResearchDashboard() {
                       {fundingSponsorBreakdown.length === 0 ? (
                         <p className="text-sm text-slate-500">ไม่พบข้อมูล</p>
                       ) : (
-                        <div className="max-h-[360px] overflow-y-auto rounded-lg border border-slate-200 bg-white">
+                        <div className="overview-export-scroll-content max-h-[360px] overflow-y-auto rounded-lg border border-slate-200 bg-white">
                           <div className="space-y-2 p-2">
                             {fundingSponsorBreakdown.map((item, index) => (
                               <div key={`${item.label}-${index}`} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
@@ -3437,6 +3759,7 @@ export default function AdminScopusResearchDashboard() {
               </div>
             </div>}
           </SimpleCard>
+          </div>
 
           <SimpleCard
             title="ประวัติควอไทล์ระดับคณะ (Faculty Quartile History)"
@@ -3517,6 +3840,90 @@ export default function AdminScopusResearchDashboard() {
 
         <AdminScopusFacultyHIndex />
       </div>
+
+      {exportDialogOpen && (
+        <div className="overview-export-screen-only fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/50 p-4" role="presentation">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="overview-export-dialog-title"
+            className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="overview-export-dialog-title" className="text-lg font-semibold text-slate-900">ส่งออกภาพรวมเป็น PDF</h2>
+                <p className="mt-1 text-sm text-slate-600">เลือกแนวกระดาษ ระบบจะใช้กราฟและตัวกรองที่กำลังแสดงผลอยู่</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExportDialogOpen(false)}
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                aria-label="ปิดหน้าต่างส่งออก"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {[
+                { value: "portrait", label: "A4 แนวตั้ง", description: "เหมาะกับรายงานที่อ่านเรียงลงมา" },
+                { value: "landscape", label: "A4 แนวนอน", description: "เหมาะกับตารางและช่วงปีหลายปี" },
+              ].map((option) => {
+                const selected = exportOrientation === option.value;
+                return (
+                  <label
+                    key={option.value}
+                    className={`cursor-pointer rounded-xl border p-4 transition ${selected ? "border-blue-500 bg-blue-50 ring-1 ring-blue-200" : "border-slate-200 hover:border-slate-300"}`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="overview-export-orientation"
+                        value={option.value}
+                        checked={selected}
+                        onChange={(event) => setExportOrientation(event.target.value)}
+                        className="h-4 w-4 border-slate-300 text-blue-600"
+                      />
+                      <span className="font-semibold text-slate-800">{option.label}</span>
+                    </span>
+                    <span className="mt-2 block text-xs leading-relaxed text-slate-500">{option.description}</span>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className={`mt-3 rounded-lg border px-3 py-2 text-xs leading-relaxed ${overviewYearsBE.length > 3 ? "border-amber-300 bg-amber-50 text-amber-800" : "border-blue-200 bg-blue-50 text-blue-700"}`}>
+              <span className="font-semibold">คำแนะนำ:</span> หากส่งออกข้อมูลหลายปี ควรเลือก A4 แนวนอนเพื่อให้ตารางอ่านง่ายและลดการแบ่งตารางออกเป็นหลายหน้า
+            </div>
+
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+              <p><span className="font-semibold text-slate-700">กราฟ:</span> Document Type แบบ{documentChartView === "percent" ? "สัดส่วน" : "จำนวน"} · Quartile แบบ{quartileChartView === "bar" ? "แท่ง" : "โดนัท"}</p>
+              <p className="mt-1"><span className="font-semibold text-slate-700">ช่วงปี:</span> {publicationYearRangeLabel}</p>
+              <p className="mt-1 text-slate-500">เมื่อหน้าต่างพิมพ์เปิดขึ้น ให้เลือกปลายทาง “บันทึกเป็น PDF” และใช้แนวกระดาษเดียวกับที่เลือกไว้</p>
+              <p className="mt-1 text-slate-500">หากยังเห็นวันที่ ชื่อเว็บ หรือ URL ให้เปิด “การตั้งค่าเพิ่มเติม” แล้วปิด “ส่วนหัวและส่วนท้าย” เลขหน้าของรายงานจะยังแสดงอยู่</p>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setExportDialogOpen(false)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={handleExportOverview}
+                disabled={!canExportOverview || exportingOverview}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Download size={16} />
+                เปิดตัวอย่าง PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageLayout>
   );
 }

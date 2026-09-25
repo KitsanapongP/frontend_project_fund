@@ -549,3 +549,174 @@ option:disabled {
   body:has(#scopus-report-root) #scopus-report-root svg text { font-size: 12px; }
   body:has(#scopus-report-root) #scopus-report-root thead { display: table-header-group; }
 }
+
+/* Research dashboard Overview PDF export. The body class is added only after the
+   user confirms an orientation, so normal Ctrl+P on this page is unaffected. */
+.overview-export-print-only { display: none; }
+
+/* Lock the report to the physical A4 content box before opening print preview.
+   This also gives ApexCharts a stable width on ultrawide and narrow displays. */
+body.research-overview-printing.research-overview-print-portrait #research-overview-export-root {
+  box-sizing: border-box;
+  width: 200mm !important;
+  max-width: 200mm !important;
+  padding-inline: 5mm !important;
+}
+body.research-overview-printing.research-overview-print-landscape #research-overview-export-root {
+  box-sizing: border-box;
+  width: 287mm !important;
+  max-width: 287mm !important;
+  padding-inline: 5mm !important;
+}
+body.research-overview-printing.research-overview-print-portrait #research-overview-export-root .overview-export-chart-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+body.research-overview-printing.research-overview-print-landscape #research-overview-export-root .overview-export-chart-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+body.research-overview-printing #research-overview-export-root .overview-export-chart-grid > div {
+  box-sizing: border-box;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+body.research-overview-printing #research-overview-export-root .overview-export-chart-grid .apexcharts-canvas,
+body.research-overview-printing #research-overview-export-root .overview-export-chart-grid .apexcharts-svg {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-inline: auto !important;
+}
+
+@media print {
+  body.research-overview-printing * { visibility: hidden !important; }
+  body.research-overview-printing #research-overview-export-root,
+  body.research-overview-printing #research-overview-export-root * { visibility: visible !important; }
+  body.research-overview-printing #research-overview-export-root {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    color: #0f172a;
+    background: #fff;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body.research-overview-printing #research-overview-export-root > section {
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  body.research-overview-printing #research-overview-export-root > section > header {
+    min-height: 0 !important;
+    padding: 0 0 10px !important;
+  }
+  body.research-overview-printing #research-overview-export-root > section > div {
+    padding: 12px 0 0 !important;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-screen-only,
+  body.research-overview-printing #research-overview-export-root .overview-export-screen-table {
+    display: none !important;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-print-only {
+    display: block !important;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-kpi-grid,
+  body.research-overview-printing #research-overview-export-root .overview-export-chart-grid {
+    display: grid !important;
+  }
+  body.research-overview-print-portrait #research-overview-export-root .overview-export-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  body.research-overview-print-landscape #research-overview-export-root .overview-export-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+  body.research-overview-print-portrait #research-overview-export-root .overview-export-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  body.research-overview-print-landscape #research-overview-export-root .overview-export-filter-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-filter-summary,
+  body.research-overview-printing #research-overview-export-root .overview-export-filter-item {
+    break-inside: avoid;
+  }
+  body.research-overview-print-portrait #research-overview-export-root .overview-export-chart-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  body.research-overview-print-landscape #research-overview-export-root .overview-export-chart-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-chart-grid {
+    break-before: page;
+    page-break-before: always;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    align-items: start;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-chart-grid > div {
+    box-sizing: border-box;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-chart-grid .apexcharts-canvas,
+  body.research-overview-printing #research-overview-export-root .overview-export-chart-grid .apexcharts-svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: auto !important;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-scroll-content,
+  body.research-overview-printing #research-overview-export-root .overflow-x-auto {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  body.research-overview-printing #research-overview-export-root .truncate {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+  }
+  body.research-overview-printing #research-overview-export-root table {
+    width: 100% !important;
+    min-width: 0 !important;
+    break-inside: auto;
+  }
+  body.research-overview-printing #research-overview-export-root thead {
+    display: table-header-group;
+  }
+  body.research-overview-printing #research-overview-export-root tr,
+  body.research-overview-printing #research-overview-export-root .overview-export-kpi-grid > div,
+  body.research-overview-printing #research-overview-export-root .overview-export-chart-grid > div,
+  body.research-overview-printing #research-overview-export-root .apexcharts-canvas {
+    break-inside: avoid;
+  }
+  body.research-overview-printing #research-overview-export-root h2,
+  body.research-overview-printing #research-overview-export-root h3 {
+    break-after: avoid;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-year-section + .overview-export-year-section {
+    break-before: page;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-ratio-section {
+    break-before: page;
+    page-break-before: always;
+    padding-top: 0;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-year-table {
+    table-layout: fixed;
+    font-size: 8pt !important;
+  }
+  body.research-overview-print-portrait #research-overview-export-root .overview-export-year-table th:first-child,
+  body.research-overview-print-portrait #research-overview-export-root .overview-export-year-table td:first-child {
+    width: 46%;
+  }
+  body.research-overview-print-landscape #research-overview-export-root .overview-export-year-table th:first-child,
+  body.research-overview-print-landscape #research-overview-export-root .overview-export-year-table td:first-child {
+    width: 34%;
+  }
+  body.research-overview-printing #research-overview-export-root svg text {
+    font-size: 11px !important;
+  }
+  body.research-overview-printing #research-overview-export-root .overview-export-screen-only.overview-export-detail-grid {
+    display: none !important;
+  }
+}
