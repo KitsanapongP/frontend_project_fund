@@ -1012,7 +1012,6 @@ export default function AdminScopusImport() {
       ]}
     >
       <div className="space-y-6">
-        <AdminScopusClassification />
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-2">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">CiteScore Metrics</div>
@@ -2275,6 +2274,7 @@ export default function AdminScopusImport() {
           </div>
         </div>
 
+        <AdminScopusClassification />
       </div>
     </PageLayout>
   );
