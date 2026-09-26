@@ -24,6 +24,7 @@ export default function AdminScopusClassification() {
   const [itemPage, setItemPage] = useState(1);
   const [itemTotal, setItemTotal] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
@@ -67,17 +68,21 @@ export default function AdminScopusClassification() {
     return () => clearInterval(timer);
   }, [refresh]);
 
-  async function act(action) {
+  async function act(action, isStarting = false) {
     setBusy(true); setError("");
+    setStarting(isStarting);
     try {
       const result = await action();
       if (result?.run_id) { setSelectedId(result.run_id); setItemPage(1); }
       await refresh();
     } catch (cause) { setError(cause.message || "ดำเนินการไม่สำเร็จ"); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setStarting(false); }
   }
 
-  const active = runs.some((run) => run.status === "running");
+  const activeRun = runs.find((run) => run.status === "running");
+  const active = Boolean(activeRun);
+  const activeProcessed = activeRun ? activeRun.completed + activeRun.failed : 0;
+  const activePercentage = activeRun?.total ? Math.min(100, Math.round(activeProcessed / activeRun.total * 100)) : 0;
   const processed = selected ? selected.completed + selected.failed : 0;
   const percentage = selected?.total ? Math.round(processed / selected.total * 100) : 0;
 
@@ -108,8 +113,19 @@ export default function AdminScopusClassification() {
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <p className="text-sm text-slate-700">รายการที่จะจัดหมวด: <strong>{preview?.count ?? "–"}</strong></p>
-        <button type="button" disabled={busy || active || !preview?.count} onClick={() => act(() => api.start({ source, scope, year: year ? Number(year) : null }))} className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">เริ่มจัดหมวด</button>
+        <button type="button" disabled={busy || active || !preview?.count} onClick={() => act(() => api.start({ source, scope, year: year ? Number(year) : null }), true)} className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">{starting ? "กำลังเริ่มงาน..." : active ? "กำลังดำเนินการ" : "เริ่มจัดหมวด"}</button>
       </div>
+      {(starting || activeRun) && <div role="status" aria-live="polite" className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-950">
+        <div className="flex items-start gap-3">
+          <span aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-blue-200 border-t-blue-700 motion-reduce:animate-none" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">กำลังดำเนินการจัดหมวดบทความ</p>
+            <p className="mt-1 text-sm">{activeRun ? `${sources.find((option) => option.key === activeRun.source)?.label || activeRun.source} · ${activeRun.publication_year || "ทุกปี"} · ดำเนินการแล้ว ${activeProcessed}/${activeRun.total} รายการ` : "กำลังสร้างงาน กรุณารอสักครู่"}</p>
+            {activeRun && <div className="mt-3 h-2 overflow-hidden rounded-full bg-blue-200" role="progressbar" aria-label="ความคืบหน้าการจัดหมวด" aria-valuenow={activeProcessed} aria-valuemin={0} aria-valuemax={Math.max(1, activeRun.total)}><div className="h-full rounded-full bg-blue-700 transition-all" style={{ width: `${activePercentage}%` }} /></div>}
+            <p className="mt-2 text-xs text-blue-800">งานจะดำเนินต่อแม้ออกจากหน้านี้ สามารถกลับมาตรวจสอบผลได้ในประวัติงานจัดหมวด</p>
+          </div>
+        </div>
+      </div>}
       {scope === "all" && <p className="mt-2 text-sm text-amber-700">การจัดหมวดใหม่จะแทนผลล่าสุด รวมถึงรายการที่ได้ผล “รอตรวจสอบ” โดยเก็บผลเดิมไว้ในประวัติงาน</p>}
       {error && <p role="alert" className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
       <div className="mt-6 rounded-lg border border-slate-200">
