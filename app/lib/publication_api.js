@@ -238,13 +238,6 @@ export const publicationDetailsAPI = {
         in_scopus: details.in_scopus,
         in_web_of_science: details.in_web_of_science,
         in_tci: details.in_tci,
-        scopus_benchmark_document_id: details.scopus_benchmark_document_id,
-        abstract: details.abstract,
-        abstract_summary_th: details.abstract_summary_th,
-        paper_category_id: details.paper_category_id,
-        classification_confidence: details.classification_confidence,
-        classification_model: details.classification_model,
-        classification_taxonomy_version: details.classification_taxonomy_version,
         
         
         // เงินรางวัลและการคำนวณ
