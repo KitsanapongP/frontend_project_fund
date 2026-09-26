@@ -9,6 +9,20 @@ const sources = [
 ];
 const statusLabel = { running: "กำลังดำเนินการ", completed: "เสร็จสิ้น", stopped: "หยุดแล้ว", interrupted: "ขัดจังหวะ", pending: "รอดำเนินการ", processing: "กำลังจัดหมวด", preface: "รอตรวจสอบ", failed: "ไม่สำเร็จ" };
 
+function resultSummary(item) {
+  if (item.error_message) return item.error_message;
+  if (!item.result_json) return "–";
+  try {
+    const result = JSON.parse(item.result_json);
+    const category = result.primary_category_code || "–";
+    const confidence = result.confidence || "–";
+    if (result.confidence_source === "conservative_cap_pending_independent_validation" && result.model_reported_confidence) {
+      return `${category} · บันทึก ${confidence} (โมเดลระบุ ${result.model_reported_confidence})`;
+    }
+    return `${category} · โมเดลระบุ ${confidence}`;
+  } catch { return "–"; }
+}
+
 export default function AdminScopusClassification() {
   const [source, setSource] = useState("benchmark");
   const [year, setYear] = useState("");
@@ -91,6 +105,7 @@ export default function AdminScopusClassification() {
       <div className="mb-5">
         <h2 className="text-xl font-semibold text-slate-900">จัดหมวดบทความด้วย AI</h2>
         <p className="mt-1 text-sm text-slate-600">ใช้ชื่อบทความ บทคัดย่อ และคำสำคัญจาก Scopus เพื่อจัดหมวดข้อมูลแต่ละชุดแยกกัน ผลที่จัดหมวดไม่ได้จะแสดงเป็น “รอตรวจสอบ”</p>
+        <p className="mt-1 text-xs text-slate-500">งานใหม่บันทึกระดับความมั่นใจตามที่โมเดลระบุ ค่านี้ยังไม่ผ่านการสอบเทียบกับผลประเมินโดยผู้เชี่ยวชาญ</p>
       </div>
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="ชุดข้อมูล Scopus">
         {sources.map((option) => <button key={option.key} type="button" role="tab" aria-selected={source === option.key} onClick={() => { setSource(option.key); setYear(""); setPreviewPage(1); setPreview(null); }} className={`rounded-lg border px-4 py-2 text-sm ${source === option.key ? "border-blue-600 bg-blue-50 text-blue-900" : "border-slate-300 text-slate-700"}`}>{option.label}</button>)}
@@ -177,7 +192,7 @@ export default function AdminScopusClassification() {
       {selected && <div className="mt-6 overflow-x-auto">
         <h3 className="mb-2 font-semibold text-slate-900">ผลรายบทความ</h3>
         <table className="w-full text-left text-sm"><thead className="bg-slate-50"><tr><th className="p-2">ID</th><th className="p-2">ชื่อบทความ</th><th className="p-2">สถานะ</th><th className="p-2">รายละเอียด</th></tr></thead><tbody>
-          {items.map((item) => <tr key={item.id} className="border-t border-slate-100"><td className="p-2">{item.document_id}</td><td className="max-w-md p-2">{item.title_snapshot || "ไม่มีชื่อบทความ"}</td><td className="p-2">{statusLabel[item.status] || item.status}</td><td className="max-w-sm break-words p-2 text-slate-600">{item.error_message || (item.result_json ? (() => { try { const result = JSON.parse(item.result_json); return `${result.primary_category_code || "–"} · ${result.confidence || "–"}`; } catch { return "–"; } })() : "–")}</td></tr>)}
+          {items.map((item) => <tr key={item.id} className="border-t border-slate-100"><td className="p-2">{item.document_id}</td><td className="max-w-md p-2">{item.title_snapshot || "ไม่มีชื่อบทความ"}</td><td className="p-2">{statusLabel[item.status] || item.status}</td><td className="max-w-sm break-words p-2 text-slate-600">{resultSummary(item)}</td></tr>)}
         </tbody></table>
         <div className="mt-3 flex items-center gap-3 text-sm"><button type="button" disabled={itemPage <= 1} onClick={() => setItemPage((page) => page - 1)} className="rounded border px-3 py-1 disabled:opacity-50">ก่อนหน้า</button><span>หน้า {itemPage} / {Math.max(1, Math.ceil(itemTotal / 50))}</span><button type="button" disabled={itemPage * 50 >= itemTotal} onClick={() => setItemPage((page) => page + 1)} className="rounded border px-3 py-1 disabled:opacity-50">ถัดไป</button></div>
       </div>}
