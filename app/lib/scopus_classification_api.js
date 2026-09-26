@@ -3,6 +3,7 @@ import apiClient from './api';
 const root = '/admin/paper-ai/classification';
 
 export const scopusClassificationAPI = {
+  years(params) { return apiClient.get(`${root}/years`, params); },
   preview(params) { return apiClient.get(`${root}/preview`, params); },
   listRuns() { return apiClient.get(`${root}/runs`); },
   start(payload) { return apiClient.post(`${root}/runs`, payload); },

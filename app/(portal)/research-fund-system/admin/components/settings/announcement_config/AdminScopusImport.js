@@ -1015,318 +1015,6 @@ export default function AdminScopusImport() {
         <AdminScopusClassification />
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-2">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Scopus Publications Import</div>
-            <div className="text-xl font-semibold text-slate-900">นำเข้าผลงานวิชาการ (Scopus)</div>
-            <p className="text-sm text-slate-600">
-              ค้นหาและบันทึก Scopus Author ID แล้วสั่งนำเข้าแบบรายบุคคลหรือแบบกลุ่มได้จากหน้านี้
-            </p>
-          </div>
-
-          <div className="mt-6 space-y-8">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="space-y-5">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
-                    1
-                  </span>
-                  <div>
-                    <div className="font-medium text-slate-900">ค้นหาและเลือกผู้ใช้</div>
-                    <p className="text-xs text-slate-500">ค้นหาจากชื่อ/อีเมล หรือกรอก User ID ได้โดยตรง</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                    placeholder="พิมพ์ชื่อหรืออีเมล"
-                    value={userQuery}
-                    onChange={(e) => setUserQuery(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={searchUsers}
-                    disabled={disableSearchButton}
-                    className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                  >
-                    {searching ? "กำลังค้นหา..." : "ค้นหา"}
-                  </button>
-                </div>
-
-                {userHits.length > 0 && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">ผลการค้นหา</div>
-                    <ul className="max-h-64 space-y-2 overflow-y-auto pr-1">
-                      {userHits.map((hit) => {
-                        const isSelected = String(hit.user_id) === String(userId);
-                        return (
-                          <li
-                            key={hit.user_id}
-                            className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-3 text-sm shadow-sm transition ${
-                              isSelected
-                                ? "border-slate-900 bg-white ring-1 ring-slate-300"
-                                : "border-slate-200 bg-white hover:border-slate-300"
-                            }`}
-                          >
-                            <div className="space-y-1">
-                              <div className="font-medium text-slate-900">{hit.name || `(ID: ${hit.user_id})`}</div>
-                              {hit.email && <div className="text-xs text-slate-500">{hit.email}</div>}
-                              {hit.scopus_id ? (
-                                <div className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                                  Scopus ID <code className="font-mono text-xs">{hit.scopus_id}</code>
-                                </div>
-                              ) : (
-                                <div className="text-xs text-slate-400">ยังไม่บันทึก Scopus ID</div>
-                              )}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setUserId(String(hit.user_id));
-                                setScopusId(hit.scopus_id || "");
-                                setMsg("");
-                              }}
-                              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                                isSelected
-                                  ? "border border-slate-900 bg-slate-900 text-white"
-                                  : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                              }`}
-                            >
-                              {isSelected ? "เลือกแล้ว" : "เลือก"}
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-5 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
-                    2
-                  </span>
-                  <div>
-                    <div className="font-medium text-slate-900">บันทึก Scopus Author ID</div>
-                    <p className="text-xs text-slate-500">ตรวจสอบความถูกต้องก่อนบันทึกและดึงข้อมูล</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Scopus Author ID</label>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <input
-                      className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                      placeholder="เช่น 57203294219"
-                      value={scopusId}
-                      onChange={(e) => setScopusId(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={saveScopusId}
-                      disabled={manualBusy}
-                      className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                    >
-                      {manualAction === "save" ? "กำลังบันทึก..." : "บันทึก Scopus ID"}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">นำเข้าเฉพาะบุคคล</label>
-                  <p className="text-xs text-slate-500">จะดึงข้อมูลผลงานทั้งหมดของผู้ใช้ที่เลือกทันที</p>
-                  <button
-                    type="button"
-                    onClick={importManual}
-                    disabled={manualBusy}
-                    className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {manualAction === "import" ? "กำลังนำเข้า..." : "นำเข้าจาก Scopus"}
-                  </button>
-                </div>
-
-                {selectedUser ? (
-                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-                    <div className="font-semibold text-slate-900">กำลังทำงานกับ</div>
-                    <div className="mt-1 space-y-1">
-                      <div>ชื่อ: {selectedUser.name || "-"}</div>
-                      <div>อีเมล: {selectedUser.email || "-"}</div>
-                      <div>User ID: {selectedUser.user_id}</div>
-                      <div>Scopus ID: {selectedUser.scopus_id || "(ยังไม่บันทึก)"}</div>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="mt-2 text-xs text-slate-500">ยังไม่ได้เลือกผู้ใช้</p>
-                )}
-
-                {lastManualSummary && (
-                  <div className="mt-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">สรุปรอบล่าสุด</div>
-                    <SummaryGrid summary={lastManualSummary} items={manualSummaryItems} />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {msg && (
-              <div
-                className={`rounded-2xl border px-4 py-3 text-sm shadow-sm ${
-                  MESSAGE_TONE_STYLES[msgTone] || MESSAGE_TONE_STYLES.info
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-base leading-6">{MESSAGE_TONE_ICONS[msgTone] || MESSAGE_TONE_ICONS.info}</span>
-                  <p className="flex-1 leading-relaxed">{msg}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="border-t border-slate-200 pt-6">
-              <div className="flex flex-col gap-2">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Batch Import</div>
-                <div className="text-lg font-semibold text-slate-900">รันงานนำเข้าแบบกลุ่ม</div>
-                <p className="text-sm text-slate-600">
-                  หากไม่ระบุ User ID ระบบจะรันให้ผู้ใช้ที่มี Scopus ID ทั้งหมด สามารถกำหนดจำนวนสูงสุดต่อรอบได้
-                </p>
-              </div>
-
-              <div className="mt-4 grid gap-6 md:grid-cols-2">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-600">User IDs (CSV, ไม่บังคับ)</label>
-                    <textarea
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                      rows={3}
-                      placeholder="เช่น 12,34,56"
-                      value={batchUserIds}
-                      onChange={(e) => setBatchUserIds(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-600">Limit ต่อรอบ (ไม่บังคับ)</label>
-                    <input
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                      placeholder="เช่น 25"
-                      value={batchLimit}
-                      onChange={(e) => setBatchLimit(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4">
-                  <div className="text-sm font-semibold text-slate-900">สรุปการรันล่าสุด</div>
-                  {lastBatchSummary ? (
-                    <>
-                      <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
-                        <StatusBadge status={lastBatchSummary.status} />
-                        <span>
-                          อัปเดตล่าสุด: {formatDateTime(lastBatchSummary.finished_at || lastBatchSummary.started_at)}
-                        </span>
-                      </div>
-                      <SummaryGrid summary={lastBatchSummary} items={batchSummaryItems} />
-                    </>
-                  ) : (
-                    <p className="mt-2 text-xs text-slate-500">ยังไม่มีข้อมูลการรัน</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-slate-900">ประวัติการรัน Batch Import</div>
-                    <p className="text-xs text-slate-600">ดูผลย้อนหลังตามรอบการรัน</p>
-                  </div>
-                  {batchRunsLoading && <span className="text-xs text-slate-500">กำลังโหลด...</span>}
-                </div>
-
-                {batchRunsError ? (
-                  <p className="mt-3 text-sm text-rose-600">{batchRunsError}</p>
-                ) : batchRuns.length === 0 && !batchRunsLoading ? (
-                  <p className="mt-3 text-sm text-slate-500">ยังไม่มีประวัติการรันแบบกลุ่ม</p>
-                ) : (
-                  <div className="mt-4 space-y-3">
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-slate-200 text-sm">
-                        <thead>
-                          <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-                            <th className="px-3 py-2">เริ่ม</th>
-                            <th className="px-3 py-2">เสร็จสิ้น</th>
-                            <th className="px-3 py-2">สถานะ</th>
-                            <th className="px-3 py-2">ผู้ใช้</th>
-                            <th className="px-3 py-2">เอกสาร</th>
-                            <th className="px-3 py-2">เวลา (s)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {batchRuns.map((run) => (
-                            <tr key={run.id} className="align-top hover:bg-slate-50">
-                              <td className="px-3 py-2 text-xs text-slate-700">{formatDateTime(run.started_at)}</td>
-                              <td className="px-3 py-2 text-xs text-slate-700">{formatDateTime(run.finished_at)}</td>
-                              <td className="px-3 py-2 text-xs">
-                                <StatusBadge status={run.status} />
-                                {run.limit !== undefined && run.limit !== null && (
-                                  <div className="mt-1 text-xs text-slate-500">Limit: {run.limit}</div>
-                                )}
-                              </td>
-                              <td className="px-3 py-2 text-xs text-slate-700">
-                                <div className="font-semibold text-slate-900">{run.users_processed ?? 0}</div>
-                                <div className="text-xs text-slate-500">ผิดพลาด: {run.users_with_errors ?? 0}</div>
-                              </td>
-                              <td className="px-3 py-2 text-xs text-slate-700">
-                                <div>ดึง: {run.documents_fetched ?? 0}</div>
-                                <div>เพิ่ม: {run.documents_created ?? 0} / อัปเดต: {run.documents_updated ?? 0}</div>
-                                <div>ผิดพลาด: {run.documents_failed ?? 0}</div>
-                              </td>
-                              <td className="px-3 py-2 text-xs text-slate-700">{run.duration_seconds ?? "-"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-slate-600">
-                      <div>
-                        หน้า {batchRunsPage} / {batchRunsTotalPages}
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => goToBatchRunsPage(batchRunsPage - 1)}
-                          disabled={!batchHasPrev || batchRunsLoading}
-                          className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          ก่อนหน้า
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => goToBatchRunsPage(batchRunsPage + 1)}
-                          disabled={!batchHasNext || batchRunsLoading}
-                          className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          ถัดไป
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={importBatch}
-                  disabled={disableBatchButton}
-                  className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {batchRunning ? "กำลังรัน..." : "เริ่ม Batch Import"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-2">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">CiteScore Metrics</div>
             <div className="text-xl font-semibold text-slate-900">อัปเดตข้อมูลวารสาร</div>
             <p className="text-sm text-slate-600">
@@ -2275,6 +1963,318 @@ export default function AdminScopusImport() {
             </div>
           )}
         </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Scopus Publications Import</div>
+            <div className="text-xl font-semibold text-slate-900">นำเข้าผลงานวิชาการ (Scopus)</div>
+            <p className="text-sm text-slate-600">
+              ค้นหาและบันทึก Scopus Author ID แล้วสั่งนำเข้าแบบรายบุคคลหรือแบบกลุ่มได้จากหน้านี้
+            </p>
+          </div>
+
+          <div className="mt-6 space-y-8">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="space-y-5">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+                    1
+                  </span>
+                  <div>
+                    <div className="font-medium text-slate-900">ค้นหาและเลือกผู้ใช้</div>
+                    <p className="text-xs text-slate-500">ค้นหาจากชื่อ/อีเมล หรือกรอก User ID ได้โดยตรง</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    placeholder="พิมพ์ชื่อหรืออีเมล"
+                    value={userQuery}
+                    onChange={(e) => setUserQuery(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={searchUsers}
+                    disabled={disableSearchButton}
+                    className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                  >
+                    {searching ? "กำลังค้นหา..." : "ค้นหา"}
+                  </button>
+                </div>
+
+                {userHits.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">ผลการค้นหา</div>
+                    <ul className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                      {userHits.map((hit) => {
+                        const isSelected = String(hit.user_id) === String(userId);
+                        return (
+                          <li
+                            key={hit.user_id}
+                            className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-3 text-sm shadow-sm transition ${
+                              isSelected
+                                ? "border-slate-900 bg-white ring-1 ring-slate-300"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                            }`}
+                          >
+                            <div className="space-y-1">
+                              <div className="font-medium text-slate-900">{hit.name || `(ID: ${hit.user_id})`}</div>
+                              {hit.email && <div className="text-xs text-slate-500">{hit.email}</div>}
+                              {hit.scopus_id ? (
+                                <div className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                                  Scopus ID <code className="font-mono text-xs">{hit.scopus_id}</code>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-slate-400">ยังไม่บันทึก Scopus ID</div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUserId(String(hit.user_id));
+                                setScopusId(hit.scopus_id || "");
+                                setMsg("");
+                              }}
+                              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                                isSelected
+                                  ? "border border-slate-900 bg-slate-900 text-white"
+                                  : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              {isSelected ? "เลือกแล้ว" : "เลือก"}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-5 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+                    2
+                  </span>
+                  <div>
+                    <div className="font-medium text-slate-900">บันทึก Scopus Author ID</div>
+                    <p className="text-xs text-slate-500">ตรวจสอบความถูกต้องก่อนบันทึกและดึงข้อมูล</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Scopus Author ID</label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      placeholder="เช่น 57203294219"
+                      value={scopusId}
+                      onChange={(e) => setScopusId(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={saveScopusId}
+                      disabled={manualBusy}
+                      className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                    >
+                      {manualAction === "save" ? "กำลังบันทึก..." : "บันทึก Scopus ID"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">นำเข้าเฉพาะบุคคล</label>
+                  <p className="text-xs text-slate-500">จะดึงข้อมูลผลงานทั้งหมดของผู้ใช้ที่เลือกทันที</p>
+                  <button
+                    type="button"
+                    onClick={importManual}
+                    disabled={manualBusy}
+                    className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {manualAction === "import" ? "กำลังนำเข้า..." : "นำเข้าจาก Scopus"}
+                  </button>
+                </div>
+
+                {selectedUser ? (
+                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                    <div className="font-semibold text-slate-900">กำลังทำงานกับ</div>
+                    <div className="mt-1 space-y-1">
+                      <div>ชื่อ: {selectedUser.name || "-"}</div>
+                      <div>อีเมล: {selectedUser.email || "-"}</div>
+                      <div>User ID: {selectedUser.user_id}</div>
+                      <div>Scopus ID: {selectedUser.scopus_id || "(ยังไม่บันทึก)"}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-slate-500">ยังไม่ได้เลือกผู้ใช้</p>
+                )}
+
+                {lastManualSummary && (
+                  <div className="mt-4">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">สรุปรอบล่าสุด</div>
+                    <SummaryGrid summary={lastManualSummary} items={manualSummaryItems} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {msg && (
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm shadow-sm ${
+                  MESSAGE_TONE_STYLES[msgTone] || MESSAGE_TONE_STYLES.info
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-base leading-6">{MESSAGE_TONE_ICONS[msgTone] || MESSAGE_TONE_ICONS.info}</span>
+                  <p className="flex-1 leading-relaxed">{msg}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="border-t border-slate-200 pt-6">
+              <div className="flex flex-col gap-2">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Batch Import</div>
+                <div className="text-lg font-semibold text-slate-900">รันงานนำเข้าแบบกลุ่ม</div>
+                <p className="text-sm text-slate-600">
+                  หากไม่ระบุ User ID ระบบจะรันให้ผู้ใช้ที่มี Scopus ID ทั้งหมด สามารถกำหนดจำนวนสูงสุดต่อรอบได้
+                </p>
+              </div>
+
+              <div className="mt-4 grid gap-6 md:grid-cols-2">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">User IDs (CSV, ไม่บังคับ)</label>
+                    <textarea
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      rows={3}
+                      placeholder="เช่น 12,34,56"
+                      value={batchUserIds}
+                      onChange={(e) => setBatchUserIds(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">Limit ต่อรอบ (ไม่บังคับ)</label>
+                    <input
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      placeholder="เช่น 25"
+                      value={batchLimit}
+                      onChange={(e) => setBatchLimit(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4">
+                  <div className="text-sm font-semibold text-slate-900">สรุปการรันล่าสุด</div>
+                  {lastBatchSummary ? (
+                    <>
+                      <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
+                        <StatusBadge status={lastBatchSummary.status} />
+                        <span>
+                          อัปเดตล่าสุด: {formatDateTime(lastBatchSummary.finished_at || lastBatchSummary.started_at)}
+                        </span>
+                      </div>
+                      <SummaryGrid summary={lastBatchSummary} items={batchSummaryItems} />
+                    </>
+                  ) : (
+                    <p className="mt-2 text-xs text-slate-500">ยังไม่มีข้อมูลการรัน</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-900">ประวัติการรัน Batch Import</div>
+                    <p className="text-xs text-slate-600">ดูผลย้อนหลังตามรอบการรัน</p>
+                  </div>
+                  {batchRunsLoading && <span className="text-xs text-slate-500">กำลังโหลด...</span>}
+                </div>
+
+                {batchRunsError ? (
+                  <p className="mt-3 text-sm text-rose-600">{batchRunsError}</p>
+                ) : batchRuns.length === 0 && !batchRunsLoading ? (
+                  <p className="mt-3 text-sm text-slate-500">ยังไม่มีประวัติการรันแบบกลุ่ม</p>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead>
+                          <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+                            <th className="px-3 py-2">เริ่ม</th>
+                            <th className="px-3 py-2">เสร็จสิ้น</th>
+                            <th className="px-3 py-2">สถานะ</th>
+                            <th className="px-3 py-2">ผู้ใช้</th>
+                            <th className="px-3 py-2">เอกสาร</th>
+                            <th className="px-3 py-2">เวลา (s)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {batchRuns.map((run) => (
+                            <tr key={run.id} className="align-top hover:bg-slate-50">
+                              <td className="px-3 py-2 text-xs text-slate-700">{formatDateTime(run.started_at)}</td>
+                              <td className="px-3 py-2 text-xs text-slate-700">{formatDateTime(run.finished_at)}</td>
+                              <td className="px-3 py-2 text-xs">
+                                <StatusBadge status={run.status} />
+                                {run.limit !== undefined && run.limit !== null && (
+                                  <div className="mt-1 text-xs text-slate-500">Limit: {run.limit}</div>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-xs text-slate-700">
+                                <div className="font-semibold text-slate-900">{run.users_processed ?? 0}</div>
+                                <div className="text-xs text-slate-500">ผิดพลาด: {run.users_with_errors ?? 0}</div>
+                              </td>
+                              <td className="px-3 py-2 text-xs text-slate-700">
+                                <div>ดึง: {run.documents_fetched ?? 0}</div>
+                                <div>เพิ่ม: {run.documents_created ?? 0} / อัปเดต: {run.documents_updated ?? 0}</div>
+                                <div>ผิดพลาด: {run.documents_failed ?? 0}</div>
+                              </td>
+                              <td className="px-3 py-2 text-xs text-slate-700">{run.duration_seconds ?? "-"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-600">
+                      <div>
+                        หน้า {batchRunsPage} / {batchRunsTotalPages}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => goToBatchRunsPage(batchRunsPage - 1)}
+                          disabled={!batchHasPrev || batchRunsLoading}
+                          className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          ก่อนหน้า
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => goToBatchRunsPage(batchRunsPage + 1)}
+                          disabled={!batchHasNext || batchRunsLoading}
+                          className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          ถัดไป
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={importBatch}
+                  disabled={disableBatchButton}
+                  className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {batchRunning ? "กำลังรัน..." : "เริ่ม Batch Import"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </PageLayout>
   );

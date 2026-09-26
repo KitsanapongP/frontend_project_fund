@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { scopusClassificationAPI as api } from "@/app/lib/scopus_classification_api";
 
 const sources = [
@@ -12,8 +12,11 @@ const statusLabel = { running: "กำลังดำเนินการ", com
 export default function AdminScopusClassification() {
   const [source, setSource] = useState("benchmark");
   const [year, setYear] = useState("");
+  const [yearOptions, setYearOptions] = useState([]);
   const [scope, setScope] = useState("unprocessed");
   const [preview, setPreview] = useState(null);
+  const [previewPage, setPreviewPage] = useState(1);
+  const refreshId = useRef(0);
   const [runs, setRuns] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -24,23 +27,39 @@ export default function AdminScopusClassification() {
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
+    const requestId = ++refreshId.current;
     try {
       const [runResponse, previewResponse] = await Promise.all([
         api.listRuns(),
-        api.preview({ source, scope, ...(year ? { year } : {}) }),
+        api.preview({ source, scope, page: previewPage, ...(year ? { year } : {}) }),
       ]);
+      if (requestId !== refreshId.current) return;
+      setError("");
       setRuns(runResponse.runs || []);
       setPreview(previewResponse);
       if (selectedId) {
         const [run, itemResponse] = await Promise.all([
           api.getRun(selectedId), api.listItems(selectedId, { page: itemPage }),
         ]);
-        setSelected(run);
-        setItems(itemResponse.items || []);
-        setItemTotal(itemResponse.total || 0);
+        if (requestId === refreshId.current) {
+          setSelected(run);
+          setItems(itemResponse.items || []);
+          setItemTotal(itemResponse.total || 0);
+        }
       }
-    } catch (cause) { setError(cause.message || "ไม่สามารถโหลดข้อมูลการจัดหมวดได้"); }
-  }, [source, scope, year, selectedId, itemPage]);
+    } catch (cause) { if (requestId === refreshId.current) setError(cause.message || "ไม่สามารถโหลดข้อมูลการจัดหมวดได้"); }
+  }, [source, scope, year, previewPage, selectedId, itemPage]);
+
+  useEffect(() => {
+    let current = true;
+    setYearOptions([]);
+    api.years({ source }).then((response) => {
+      if (current) setYearOptions(response.years || []);
+    }).catch((cause) => {
+      if (current) setError(cause.message || "ไม่สามารถโหลดปีที่เผยแพร่ได้");
+    });
+    return () => { current = false; };
+  }, [source]);
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => {
@@ -69,27 +88,50 @@ export default function AdminScopusClassification() {
         <p className="mt-1 text-sm text-slate-600">ใช้ชื่อบทความ บทคัดย่อ และคำสำคัญจาก Scopus เพื่อจัดหมวดข้อมูลแต่ละชุดแยกกัน ผลที่จัดหมวดไม่ได้จะแสดงเป็น “รอตรวจสอบ”</p>
       </div>
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="ชุดข้อมูล Scopus">
-        {sources.map((option) => <button key={option.key} type="button" role="tab" aria-selected={source === option.key} onClick={() => { setSource(option.key); setPreview(null); }} className={`rounded-lg border px-4 py-2 text-sm ${source === option.key ? "border-blue-600 bg-blue-50 text-blue-900" : "border-slate-300 text-slate-700"}`}>{option.label}</button>)}
+        {sources.map((option) => <button key={option.key} type="button" role="tab" aria-selected={source === option.key} onClick={() => { setSource(option.key); setYear(""); setPreviewPage(1); setPreview(null); }} className={`rounded-lg border px-4 py-2 text-sm ${source === option.key ? "border-blue-600 bg-blue-50 text-blue-900" : "border-slate-300 text-slate-700"}`}>{option.label}</button>)}
       </div>
       <p className="mt-2 text-xs text-slate-500">ตาราง {sources.find((option) => option.key === source)?.table}</p>
       <div className="mt-5 flex flex-wrap items-end gap-4">
         <label className="text-sm text-slate-700">ปีที่เผยแพร่
-          <input type="number" min="1900" max={new Date().getFullYear() + 1} placeholder="ทุกปี" value={year} onChange={(event) => { setYear(event.target.value); setPreview(null); }} className="mt-1 block w-36 rounded-lg border border-slate-300 px-3 py-2" />
+          <select value={year} onChange={(event) => { setYear(event.target.value); setPreviewPage(1); setPreview(null); }} className="mt-1 block w-44 rounded-lg border border-slate-300 px-3 py-2">
+            <option value="">ทุกปี</option>
+            {yearOptions.map((option) => <option key={option.year} value={option.year}>{option.year}</option>)}
+          </select>
         </label>
         <label className="text-sm text-slate-700">ขอบเขต
-          <select value={scope} onChange={(event) => { setScope(event.target.value); setPreview(null); }} className="mt-1 block rounded-lg border border-slate-300 px-3 py-2">
+          <select value={scope} onChange={(event) => { setScope(event.target.value); setPreviewPage(1); setPreview(null); }} className="mt-1 block rounded-lg border border-slate-300 px-3 py-2">
             <option value="unprocessed">เฉพาะรายการที่ยังไม่จัดหมวด</option>
             <option value="all">จัดหมวดใหม่ทุกรายการในขอบเขต</option>
           </select>
         </label>
-        <button type="button" onClick={refresh} className="rounded-lg border border-slate-300 px-4 py-2 text-sm">ตรวจสอบจำนวน</button>
+        <button type="button" onClick={refresh} className="rounded-lg border border-slate-300 px-4 py-2 text-sm">รีเฟรชรายการ</button>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <p className="text-sm text-slate-700">รายการที่จะจัดหมวด: <strong>{preview?.count ?? "–"}</strong></p>
-        <button type="button" disabled={busy || active || !preview?.count || (year && (!/^\d{4}$/.test(year) || +year > new Date().getFullYear() + 1))} onClick={() => act(() => api.start({ source, scope, year: year ? Number(year) : null }))} className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">เริ่มจัดหมวด</button>
+        <button type="button" disabled={busy || active || !preview?.count} onClick={() => act(() => api.start({ source, scope, year: year ? Number(year) : null }))} className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">เริ่มจัดหมวด</button>
       </div>
       {scope === "all" && <p className="mt-2 text-sm text-amber-700">การจัดหมวดใหม่จะแทนผลล่าสุด รวมถึงรายการที่ได้ผล “รอตรวจสอบ” โดยเก็บผลเดิมไว้ในประวัติงาน</p>}
       {error && <p role="alert" className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
+      <div className="mt-6 rounded-lg border border-slate-200">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <h3 className="font-semibold text-slate-900">บทความที่จะจัดหมวด</h3>
+          <span className="text-sm text-slate-600">{year || "ทุกปี"} · {preview?.count ?? "–"} รายการ</span>
+        </div>
+        {preview && preview.documents?.length > 0 ? <>
+          <ul className="divide-y divide-slate-100">
+            {preview.documents.map((document) => <li key={document.id} className="px-4 py-3 text-sm">
+              <span className="mr-2 text-slate-500">#{document.id}</span>
+              <span className="font-medium text-slate-900">{document.title?.trim() || "ไม่มีชื่อบทความ"}</span>
+              {document.doi && <span className="mt-1 block break-all text-xs text-slate-500">DOI: {document.doi}</span>}
+            </li>)}
+          </ul>
+          <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-4 py-3 text-sm">
+            <button type="button" disabled={previewPage <= 1} onClick={() => { setPreviewPage((page) => page - 1); setPreview(null); }} className="rounded border px-3 py-1 disabled:opacity-50">ก่อนหน้า</button>
+            <span>หน้า {previewPage} / {Math.max(1, Math.ceil(preview.count / preview.page_size))}</span>
+            <button type="button" disabled={previewPage * preview.page_size >= preview.count} onClick={() => { setPreviewPage((page) => page + 1); setPreview(null); }} className="rounded border px-3 py-1 disabled:opacity-50">ถัดไป</button>
+          </div>
+        </> : <p className="px-4 py-5 text-sm text-slate-500">{preview ? "ไม่มีบทความในขอบเขตที่เลือก" : "กำลังโหลดรายชื่อบทความ..."}</p>}
+      </div>
       <div className="mt-8 grid gap-5 lg:grid-cols-2">
         <div>
           <h3 className="font-semibold text-slate-900">ประวัติงานจัดหมวด</h3>
