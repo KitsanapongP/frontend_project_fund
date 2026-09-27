@@ -1844,6 +1844,10 @@ export default function PublicationRewardForm({
           return false;
         }
 
+        if (/สำเนาบัญชีธนาคาร|bank account copy/i.test(doc.document_type_name || doc.name || '')) {
+          return false;
+        }
+
         const fundTypeMode = resolveFundTypeMode(doc);
         if (fundTypeMode === 'inactive') {
           return false;
@@ -5995,7 +5999,7 @@ export default function PublicationRewardForm({
         const createPayload = {
           submission_type: 'publication_reward',
           year_id: formData.year_id,
-          contact_phone: formData.phone_number || '',
+          contact_phone: null,
         };
 
         const resolvedCategoryId = formData.category_id || categoryId || null;
@@ -6034,7 +6038,7 @@ export default function PublicationRewardForm({
           updatePayload.subcategory_budget_id = submissionSubcategoryBudgetId;
         }
 
-        updatePayload.contact_phone = formData.phone_number || '';
+        updatePayload.contact_phone = '';
         updatePayload.bank_account = '';
         updatePayload.bank_account_name = '';
         updatePayload.bank_name = '';
@@ -6108,7 +6112,7 @@ export default function PublicationRewardForm({
         author_status: formData.author_status || '',
         author_type: formData.author_status || '',
         ...authorSubmissionFields,
-        phone_number: formData.phone_number || '',
+        phone_number: '',
         has_university_funding: formData.has_university_fund || '',
         university_fund_ref: formData.university_fund_ref || '',
         funding_references: formData.university_fund_ref || '',
@@ -6690,7 +6694,7 @@ const showSubmissionConfirmation = async () => {
           category_id: formData.category_id || categoryId,
           subcategory_id: submissionSubcategoryId,        // Dynamic resolved
           subcategory_budget_id: submissionSubcategoryBudgetId,  // Dynamic resolved
-          contact_phone: formData.phone_number || '',
+          contact_phone: null,
         });
         
         submissionId = submissionResponse.submission.submission_id;
@@ -6700,6 +6704,7 @@ const showSubmissionConfirmation = async () => {
       // Publication reward requests no longer collect bank information. Clear
       // legacy values when an older draft is submitted so the database remains NULL.
       await submissionAPI.update(submissionId, {
+        contact_phone: '',
         bank_account: '',
         bank_account_name: '',
         bank_name: '',
@@ -6872,7 +6877,7 @@ const showSubmissionConfirmation = async () => {
         author_type: formData.author_status || '', // เพิ่ม field นี้ด้วย
         ...authorSubmissionFields,
 
-        phone_number: formData.phone_number || '',
+        phone_number: '',
         
         // Additional info
         has_university_funding: formData.has_university_fund || 'no',
@@ -7400,36 +7405,6 @@ const showSubmissionConfirmation = async () => {
               )}
             </div>
 
-            {/* Phone Number */}
-            <div id="field-phone_number">
-              <label htmlFor="phone_number" className="block text-sm font-medium text-slate-700 mb-2">
-                เบอร์โทรศัพท์ (Phone Number) <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="phone_number"
-                type="tel"
-                name="phone_number"
-                value={formData.phone_number}
-                onChange={handleInputChange}
-                onKeyDown={handlePhoneKeyDown}
-                placeholder="081-234-5678"
-                maxLength="12"
-                required
-                aria-required="true"
-                aria-invalid={errors.phone_number ? 'true' : 'false'}
-                aria-describedby={errors.phone_number ? 'error-phone_number' : undefined}
-                pattern="\d{3}-\d{3}-\d{4}"
-                data-pattern-message="กรุณากรอกเบอร์โทรศัพท์ให้เป็นรูปแบบ XXX-XXX-XXXX"
-                inputMode="tel"
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.phone_number ? 'border-red-500' : 'border-slate-300'
-                }`}
-              />
-              <p className="text-xs text-slate-500 mt-1">รูปแบบ (Format): XXX-XXX-XXXX</p>
-              {errors.phone_number && (
-                <p id="error-phone_number" className="text-red-500 text-sm mt-1">{errors.phone_number}</p>
-              )}
-            </div>
           </div>
         </SimpleCard>
         )}
