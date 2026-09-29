@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { publicationsAPI, usersAPI, scopusConfigAPI, scopusImportAPI } from "@/app/lib/api";
 import PageLayout from "../../common/PageLayout";
+import AdminScopusAuthorRoles from "./AdminScopusAuthorRoles";
 
 const MESSAGE_TONE_STYLES = {
   success: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -1911,6 +1912,8 @@ export default function AdminScopusImport() {
             </div>
           </div>
         </div>
+
+        <AdminScopusAuthorRoles />
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-2">

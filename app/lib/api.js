@@ -1206,6 +1206,18 @@ export const scopusConfigAPI = {
   async listConferenceRuns(params = {}) {
     return apiClient.get('/admin/scopus/conference/runs', params);
   },
+  async getAuthorRoleStatus() {
+    return apiClient.get('/admin/scopus/author-roles/status');
+  },
+  async startAuthorRoleRun(runType, confirmRefresh = false) {
+    return apiClient.post('/admin/scopus/author-roles/runs', {
+      run_type: runType,
+      confirm_refresh: confirmRefresh,
+    });
+  },
+  async listAuthorRoleRuns(params = {}) {
+    return apiClient.get('/admin/scopus/author-roles/runs', params);
+  },
   // ดึง H-index อาจารย์ทุกคน (อิง users.scopus_id) แบบ async
   async refreshAuthorMetrics({ user_ids, limit } = {}) {
     const qs = new URLSearchParams();
