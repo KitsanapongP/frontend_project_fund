@@ -19,7 +19,7 @@ import {
   UserCog,
   Users,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast, Toaster } from "react-hot-toast";
 
 import PageLayout from "../common/PageLayout";
 import UserManagementPanel from "./UserManagementPanel";
@@ -471,7 +471,7 @@ export default function AdminAccessControlPage() {
       const savedCodes = Array.isArray(response?.permission_codes) ? response.permission_codes.map(normalizePermissionCode).filter(Boolean) : payload;
       setRolePermissionCodes(savedCodes);
       setInitialRolePermissionCodes(savedCodes);
-      toast.success("บันทึกสิทธิ์ของบทบาทแล้ว");
+      toast.success("บันทึกแล้ว");
     } catch (error) {
       console.error("Failed to save role permissions", error);
       toast.error("ไม่สามารถบันทึกสิทธิ์ของบทบาทได้");
@@ -558,7 +558,7 @@ export default function AdminAccessControlPage() {
       setBaselinePermissions(Array.isArray(response?.role_permissions) ? response.role_permissions : baselinePermissions);
       setUserOverrideMap(nextOverrides);
       setInitialUserOverrideMap(nextOverrides);
-      toast.success("บันทึกสิทธิ์เฉพาะบุคคลแล้ว");
+      toast.success("บันทึกแล้ว");
     } catch (error) {
       console.error("Failed to save user overrides", error);
       toast.error("ไม่สามารถบันทึกสิทธิ์เฉพาะบุคคลได้");
@@ -591,6 +591,7 @@ export default function AdminAccessControlPage() {
       )}
       loading={loading}
     >
+      <Toaster position="top-right" />
       {(activeTab === "user-management" ? !canManageUsers : !canManageAccess) ? (
         <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900" role="status">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
@@ -602,23 +603,7 @@ export default function AdminAccessControlPage() {
       ) : null}
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex flex-col gap-4 border-b border-slate-200 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-5">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
-              <KeyRound className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-slate-900">ศูนย์จัดการผู้ใช้และสิทธิ์</h2>
-              <p className="mt-0.5 max-w-2xl text-sm leading-6 text-slate-600">ดูแลบัญชีผู้ใช้งาน บทบาท และสิทธิ์จากจุดเดียว โดยข้อมูลรหัสผ่านจะไม่ถูกแสดงหลังบันทึก</p>
-            </div>
-          </div>
-          <dl className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">
-            <div className="flex items-center gap-1.5"><dt>บทบาท</dt><dd className="font-semibold tabular-nums text-slate-900">{roles.length}</dd></div>
-            <div className="flex items-center gap-1.5"><dt>สิทธิ์ทั้งหมด</dt><dd className="font-semibold tabular-nums text-slate-900">{permissions.length}</dd></div>
-          </dl>
-        </div>
-
-        <div className={`grid border-b border-slate-200 bg-slate-50 ${visibleTabItems.length >= 4 ? "md:grid-cols-4" : visibleTabItems.length === 3 ? "md:grid-cols-3" : visibleTabItems.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1"}`} role="tablist" aria-label="ส่วนจัดการผู้ใช้และสิทธิ์">
+        <div className={`grid gap-2 border-b border-slate-200 bg-slate-100 p-2 ${visibleTabItems.length >= 4 ? "md:grid-cols-4" : visibleTabItems.length === 3 ? "md:grid-cols-3" : visibleTabItems.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1"}`} role="tablist" aria-label="ส่วนจัดการผู้ใช้และสิทธิ์">
           {visibleTabItems.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -643,8 +628,8 @@ export default function AdminAccessControlPage() {
                   }
                 }}
                 className={active
-                ? "flex min-h-20 items-start gap-3 border-b-2 border-blue-600 bg-white px-4 py-4 text-left text-blue-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500/30 md:border-r md:border-r-slate-200"
-                : "flex min-h-20 items-start gap-3 border-b border-slate-200 px-4 py-4 text-left text-slate-700 transition hover:bg-white hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500/30 md:border-b-0 md:border-r"}
+                ? "flex min-h-20 cursor-pointer items-start gap-3 rounded-lg border-2 border-blue-600 bg-white px-4 py-4 text-left text-blue-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                : "flex min-h-20 cursor-pointer items-start gap-3 rounded-lg border-2 border-slate-300 bg-white px-4 py-4 text-left text-slate-700 transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"}
               >
                 <Icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
                 <span>
@@ -704,6 +689,7 @@ export default function AdminAccessControlPage() {
 
               <FilterToolbar search={roleSearch} onSearchChange={setRoleSearch} category={roleCategory} onCategoryChange={setRoleCategory} mode={roleViewMode} onModeChange={setRoleViewMode} modeOptions={FILTER_OPTIONS.role} resultCount={roleFilteredPermissions.length} />
 
+              <div className="max-h-[55vh] min-h-64 overflow-y-auto overscroll-contain" aria-label="รายการสิทธิ์ของบทบาท">
               {loadingRolePermissions ? (
                 <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-slate-600" aria-live="polite"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> กำลังโหลดสิทธิ์ของบทบาท...</div>
               ) : (
@@ -718,6 +704,7 @@ export default function AdminAccessControlPage() {
                   )}
                 />
               )}
+              </div>
 
               <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-slate-300 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <p className="text-sm text-slate-600">สิทธิ์การทำงานระดับสูงจะไม่ถูกเปิดตามสิทธิ์เข้าหน้าโดยอัตโนมัติ</p>
@@ -790,6 +777,7 @@ export default function AdminAccessControlPage() {
 
                 <FilterToolbar search={userPermissionSearch} onSearchChange={setUserPermissionSearch} category={userPermissionCategory} onCategoryChange={setUserPermissionCategory} mode={userViewMode} onModeChange={setUserViewMode} modeOptions={FILTER_OPTIONS.user} resultCount={userFilteredPermissions.length} />
 
+                <div className="max-h-[55vh] min-h-64 overflow-y-auto overscroll-contain" aria-label="รายการสิทธิ์เฉพาะบุคคล">
                 <PermissionGroups
                   groups={groupPermissionViews(userFilteredPermissions)}
                   implications={implications}
@@ -821,6 +809,7 @@ export default function AdminAccessControlPage() {
                     );
                   }}
                 />
+                </div>
 
                 <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-slate-300 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                   <p className="text-sm text-slate-600">บันทึกเฉพาะข้อยกเว้น ค่า “ตามบทบาท” จะไม่สร้างข้อมูลเพิ่มในฐานข้อมูล</p>
@@ -854,6 +843,7 @@ export default function AdminAccessControlPage() {
               </div>
             </div>
             <FilterToolbar search={dictionarySearch} onSearchChange={setDictionarySearch} category={dictionaryCategory} onCategoryChange={setDictionaryCategory} mode={dictionaryViewMode} onModeChange={setDictionaryViewMode} modeOptions={FILTER_OPTIONS.dictionary} resultCount={dictionaryFilteredPermissions.length} />
+            <div className="max-h-[55vh] min-h-64 overflow-y-auto overscroll-contain" aria-label="รายการคำอธิบายสิทธิ์">
             <PermissionGroups
               groups={groupPermissionViews(dictionaryFilteredPermissions)}
               implications={implications}
@@ -865,6 +855,7 @@ export default function AdminAccessControlPage() {
                 </div>
               )}
             />
+            </div>
           </div>
         ) : null}
       </div>

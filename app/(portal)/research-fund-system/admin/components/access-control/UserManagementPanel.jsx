@@ -289,10 +289,10 @@ export default function UserManagementPanel({ canManage, onManagePermissions, re
     try {
       if (drawer.mode === "create") {
         await usersAPI.create(payload);
-        toast.success("เพิ่มผู้ใช้งานแล้ว");
+        toast.success("บันทึกแล้ว");
       } else {
         await usersAPI.update(drawer.user.user_id, payload);
-        toast.success("บันทึกข้อมูลผู้ใช้งานแล้ว");
+        toast.success("บันทึกแล้ว");
       }
       setDrawer(null);
       await loadUsers();

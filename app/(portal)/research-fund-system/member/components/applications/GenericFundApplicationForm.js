@@ -302,10 +302,6 @@ const saveDraftToLocal = (formData) => {
         project_title: formData?.project_title || '',
         project_description: formData?.project_description || '',
         requested_amount: formData?.requested_amount || '',
-        phone: formData?.phone || '',
-        bank_account: formData?.bank_account || '',
-        bank_account_name: formData?.bank_account_name || '',
-        bank_name: formData?.bank_name || '',
       },
       savedAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + DRAFT_TTL_MS).toISOString(),
@@ -2189,7 +2185,8 @@ export default function GenericFundApplicationForm({
       return fundTypes.some((entry) => entry === 'fund_application');
     });
 
-    const finalDocs = activeDocs.length > 0 ? activeDocs : sortedDocTypes.filter((doc) => resolveFundTypeMode(doc) !== 'inactive');
+    const finalDocs = (activeDocs.length > 0 ? activeDocs : sortedDocTypes.filter((doc) => resolveFundTypeMode(doc) !== 'inactive'))
+      .filter((doc) => !/สำเนาบัญชีธนาคาร|bank account copy/i.test(doc.document_type_name || ''));
 
     setDocumentRequirements(finalDocs);
     return finalDocs;
@@ -2630,7 +2627,6 @@ export default function GenericFundApplicationForm({
       <div class="bg-slate-50 p-4 rounded-lg space-y-2">
         <h4 class="font-semibold text-slate-700">ข้อมูลผู้ยื่นขอ</h4>
         <p class="text-sm"><span class="font-medium">ชื่อผู้ยื่น:</span> ${formData.name || '-'}</p>
-        <p class="text-sm"><span class="font-medium">เบอร์โทรศัพท์:</span> ${formData.phone || '-'}</p>
       </div>
     `;
 
@@ -2787,32 +2783,6 @@ export default function GenericFundApplicationForm({
   const validateForm = () => {
     const newErrors = {};
 
-    // Validate phone format when provided (XXX-XXX-XXXX)
-    if (formData.phone.trim()) {
-      const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
-      if (!phoneRegex.test(formData.phone)) {
-        newErrors.phone = 'รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง (XXX-XXX-XXXX)';
-      }
-    }
-
-    const cleanedBankAccount = formData.bank_account.replace(/\s+/g, '');
-    if (!cleanedBankAccount) {
-      newErrors.bank_account = 'กรุณากรอกเลขบัญชีธนาคาร';
-    } else {
-      const bankAccountRegex = /^\d{10,15}$/;
-      if (!bankAccountRegex.test(cleanedBankAccount)) {
-        newErrors.bank_account = 'เลขบัญชีธนาคารต้องเป็นตัวเลข 10-15 หลัก';
-      }
-    }
-
-    if (!formData.bank_account_name.trim()) {
-      newErrors.bank_account_name = 'กรุณาระบุชื่อบัญชีธนาคาร';
-    }
-
-    if (!formData.bank_name.trim()) {
-      newErrors.bank_name = 'กรุณาระบุชื่อธนาคาร';
-    }
-
     if (!formData.requested_amount || isNaN(parseFloat(formData.requested_amount)) || parseFloat(formData.requested_amount) <= 0) {
       newErrors.requested_amount = 'กรุณาระบุจำนวนเงินที่ขอ';
     }
@@ -2923,10 +2893,10 @@ export default function GenericFundApplicationForm({
           category_id: contextCategoryId,
           subcategory_id: contextSubcategoryId,
           subcategory_budget_id: contextBudgetId,
-          contact_phone: formData.phone || '',
-          bank_account: formData.bank_account || '',
-          bank_account_name: formData.bank_account_name || '',
-          bank_name: formData.bank_name || '',
+          contact_phone: null,
+          bank_account: null,
+          bank_account_name: null,
+          bank_name: null,
         };
 
         const submissionRes = await submissionAPI.createSubmission(payload);
@@ -2941,10 +2911,10 @@ export default function GenericFundApplicationForm({
             category_id: contextCategoryId,
             subcategory_id: contextSubcategoryId,
             subcategory_budget_id: contextBudgetId,
-            contact_phone: formData.phone || '',
-            bank_account: formData.bank_account || '',
-            bank_account_name: formData.bank_account_name || '',
-            bank_name: formData.bank_name || '',
+            contact_phone: '',
+            bank_account: '',
+            bank_account_name: '',
+            bank_name: '',
           });
         } catch (updateError) {
           console.warn('Failed to update submission metadata for draft:', updateError);
@@ -3133,10 +3103,10 @@ export default function GenericFundApplicationForm({
           category_id: contextCategoryId,
           subcategory_id: contextSubcategoryId,
           subcategory_budget_id: contextBudgetId,
-          contact_phone: formData.phone || '',
-          bank_account: formData.bank_account || '',
-          bank_account_name: formData.bank_account_name || '',
-          bank_name: formData.bank_name || '',
+          contact_phone: null,
+          bank_account: null,
+          bank_account_name: null,
+          bank_name: null,
         };
         if (statusForSubmission?.id) {
           submissionPayload.status_id = statusForSubmission.id;
@@ -3153,10 +3123,10 @@ export default function GenericFundApplicationForm({
             category_id: contextCategoryId,
             subcategory_id: contextSubcategoryId,
             subcategory_budget_id: contextBudgetId,
-            contact_phone: formData.phone || '',
-            bank_account: formData.bank_account || '',
-            bank_account_name: formData.bank_account_name || '',
-            bank_name: formData.bank_name || '',
+            contact_phone: '',
+            bank_account: '',
+            bank_account_name: '',
+            bank_name: '',
           });
         } catch (updateError) {
           console.warn('Failed to update submission metadata before submit:', updateError);
@@ -3625,108 +3595,6 @@ export default function GenericFundApplicationForm({
                     placeholder="ชื่อ-นามสกุล"
                   />
                   <p className="text-xs text-slate-500">ระบบจะแสดงคำนำหน้าและชื่อ-นามสกุลจากข้อมูลผู้ใช้โดยอัตโนมัติ</p>
-                </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700" htmlFor="applicant-phone">
-                  เบอร์โทรศัพท์
-                </label>
-                <input
-                    id="applicant-phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', formatPhoneNumber(e.target.value))}
-                    placeholder="081-234-5678"
-                    maxLength={12}
-                    disabled={!canEdit}
-                    className={`w-full rounded-lg border px-4 py-2.5 text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
-                      errors.phone ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300'
-                    }`}
-                  />
-                  {errors.phone ? (
-                    <p className="flex items-center gap-1 text-sm text-red-500">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.phone}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-slate-500">รูปแบบที่แนะนำ: XXX-XXX-XXXX (ข้อมูลนี้ใช้สำหรับติดต่อกลับเท่านั้น)</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700" htmlFor="bank-account">
-                  เลขบัญชีธนาคาร <span className="text-red-500">*</span>
-                </label>
-                  <input
-                    id="bank-account"
-                    type="text"
-                    value={formData.bank_account}
-                    onChange={(e) => handleInputChange('bank_account', e.target.value.replace(/\D/g, '').slice(0, 15))}
-                    placeholder="กรอกเลขบัญชี 10-15 หลัก"
-                    maxLength={15}
-                    disabled={!canEdit}
-                    className={`w-full rounded-lg border px-4 py-2.5 text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
-                      errors.bank_account ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300'
-                    }`}
-                  />
-                  {errors.bank_account ? (
-                    <p className="flex items-center gap-1 text-sm text-red-500">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.bank_account}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-slate-500">กรอกเฉพาะตัวเลข</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700" htmlFor="bank-account-name">
-                  ชื่อบัญชีธนาคาร <span className="text-red-500">*</span>
-                </label>
-                  <input
-                    id="bank-account-name"
-                    type="text"
-                    value={formData.bank_account_name}
-                    onChange={(e) => handleInputChange('bank_account_name', e.target.value)}
-                    placeholder="ชื่อ-นามสกุลเจ้าของบัญชี"
-                    disabled={!canEdit}
-                    className={`w-full rounded-lg border px-4 py-2.5 text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
-                      errors.bank_account_name ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300'
-                    }`}
-                  />
-                  {errors.bank_account_name ? (
-                    <p className="flex items-center gap-1 text-sm text-red-500">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.bank_account_name}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-slate-500">กรอกชื่อ-นามสกุลตามหน้าสมุดบัญชี</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700" htmlFor="bank-name">
-                  ชื่อธนาคาร <span className="text-red-500">*</span>
-                </label>
-                  <input
-                    id="bank-name"
-                    type="text"
-                    value={formData.bank_name}
-                    onChange={(e) => handleInputChange('bank_name', e.target.value)}
-                    placeholder="เช่น ธนาคารกรุงเทพ"
-                    disabled={!canEdit}
-                    className={`w-full rounded-lg border px-4 py-2.5 text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
-                      errors.bank_name ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300'
-                    }`}
-                  />
-                  {errors.bank_name ? (
-                    <p className="flex items-center gap-1 text-sm text-red-500">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.bank_name}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-slate-500">ระบุชื่อธนาคารที่ต้องการรับเงิน</p>
-                  )}
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
