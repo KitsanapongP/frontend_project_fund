@@ -33,6 +33,21 @@ function RunBadge({ status }) {
   return <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${style}`}>{statusNames[status] || status || "–"}</span>;
 }
 
+function MetricHint({ label, hint, id }) {
+  return (
+    <span className="group relative inline-flex">
+      <button type="button" aria-label={`คำอธิบาย ${label}`} aria-describedby={id}
+        className="inline-flex size-4 items-center justify-center rounded-full border border-slate-400 text-[10px] font-bold leading-none text-slate-600 hover:border-blue-600 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+        !
+      </button>
+      <span id={id} role="tooltip"
+        className="pointer-events-none invisible absolute bottom-full left-1/2 z-20 mb-2 w-60 -translate-x-1/2 rounded-lg bg-slate-900 px-3 py-2 text-left text-xs font-normal leading-5 text-white opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+        {hint}
+      </span>
+    </span>
+  );
+}
+
 export default function AdminScopusAuthorRoles() {
   const [coverage, setCoverage] = useState(null);
   const [activeRun, setActiveRun] = useState(null);
@@ -106,8 +121,8 @@ export default function AdminScopusAuthorRoles() {
   const latest = activeRun || latestRun;
   const disabled = busy || !!activeRun || !coverage;
   const cards = [
-    { label: "ผลงานอาจารย์", value: coverage?.eligible, hint: "ผลงานไม่ซ้ำที่มีอาจารย์ในระบบเป็นผู้เขียน รวมทุกสถานะ" },
-    { label: "ตรวจครบ", value: coverage?.complete, hint: "อ่าน XML และจับคู่ผู้เขียนได้ครบ พร้อมระบุ corresponding author" },
+    { label: "ผลงานอาจารย์", value: coverage?.eligible, hint: `ผลงานไม่ซ้ำที่มีอาจารย์ในระบบเป็นผู้เขียน รวมทุกสถานะ: ตรวจครบ ${count(coverage?.complete)} + XML ไม่ระบุ corresponding ${count(coverage?.no_correspondence)} + สถานะอื่น ${count((coverage?.needs_review || 0) + (coverage?.fetch_error || 0) + (coverage?.pending || 0))}` },
+    { label: "ตรวจครบ", value: coverage?.complete, hint: "อ่าน XML และจับคู่ผู้เขียนได้ครบ พร้อมระบุ corresponding author จึงไม่รวมผลงานที่ XML ไม่ส่งข้อมูล corresponding" },
     { label: "XML ไม่ระบุ corresponding", value: coverage?.no_correspondence, hint: "จับคู่ผู้เขียนได้ แต่ XML ไม่ส่งชื่อ corresponding author" },
     { label: "รอตรวจสอบ", value: coverage?.needs_review, hint: "ได้ XML แล้ว แต่ยังจับคู่ผู้เขียนหรือบทบาทได้ไม่แน่ชัด" },
     { label: "ขอ XML ไม่สำเร็จ", value: coverage?.fetch_error, hint: "เรียก Scopus XML ไม่สำเร็จ สามารถลองเติมใหม่ได้" },
@@ -139,17 +154,16 @@ export default function AdminScopusAuthorRoles() {
           <div>
             <h3 className="text-sm font-semibold text-slate-900">สถานะข้อมูลบทบาท</h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {cards.map(({ label, value, hint }) => (
+              {cards.map(({ label, value, hint }, index) => (
                 <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                  <div className="text-xs font-medium text-slate-600">{label}</div>
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                    <span>{label}</span>
+                    <MetricHint label={label} hint={hint} id={`scopus-author-role-hint-${index}`} />
+                  </div>
                   <div className="mt-1 text-xl font-semibold tabular-nums text-slate-900">{coverage ? count(value) : "–"}</div>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">{hint}</p>
                 </div>
               ))}
             </div>
-            {coverage && <p className="mt-2 text-xs leading-5 text-slate-600">
-              ผลงานอาจารย์ {count(coverage.eligible)} = ตรวจครบ {count(coverage.complete)} + XML ไม่ระบุ corresponding {count(coverage.no_correspondence)} + สถานะอื่น {count((coverage.needs_review || 0) + (coverage.fetch_error || 0) + (coverage.pending || 0))}
-            </p>}
           </div>
 
           <div className="rounded-xl border border-slate-200 p-4">

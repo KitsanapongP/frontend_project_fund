@@ -8,32 +8,32 @@ import AdminThaiJOImport from "./AdminThaiJOImport";
 
 const TAB_CONFIG = [
   {
-    id: "scholar",
-    label: "Google Scholar",
-    description: "นำเข้าผลงานวิชาการและตั้งค่า Google Scholar Author ID",
-  },
-  {
     id: "scopus",
     label: "Scopus",
     description: "จัดการ Scopus Author ID, API Key และกระบวนการนำเข้าข้อมูลงานวิจัย",
-  },
-  {
-    id: "kku-profile",
-    label: "KKU Profile",
-    description: "ดึงข้อมูลโปรไฟล์บุคลากรจากระบบมหาวิทยาลัย",
   },
   {
     id: "thaijo",
     label: "ThaiJO",
     description: "นำเข้าบทความจาก ThaiJO พร้อมกรองผลด้วย author-search และจัดการ tier",
   },
+  {
+    id: "scholar",
+    label: "Google Scholar",
+    description: "นำเข้าผลงานวิชาการและตั้งค่า Google Scholar Author ID",
+  },
+  {
+    id: "kku-profile",
+    label: "KKU Profile",
+    description: "ดึงข้อมูลโปรไฟล์บุคลากรจากระบบมหาวิทยาลัย",
+  },
 ];
 
 function getValidTab(tabId) {
-  return TAB_CONFIG.some((tab) => tab.id === tabId) ? tabId : "scholar";
+  return TAB_CONFIG.some((tab) => tab.id === tabId) ? tabId : "scopus";
 }
 
-export default function AdminAcademicImports({ initialTab = "scholar" }) {
+export default function AdminAcademicImports({ initialTab = "scopus" }) {
   const [activeTab, setActiveTab] = useState(getValidTab(initialTab));
 
   useEffect(() => {

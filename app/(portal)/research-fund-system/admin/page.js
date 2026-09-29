@@ -60,7 +60,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
   const [isOpen, setIsOpen] = useState(false);
   const [submenuOpen, setSubmenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const [importTab, setImportTab] = useState('scholar');
+  const [importTab, setImportTab] = useState('scopus');
   const [selectedFundData, setSelectedFundData] = useState(null);
   const [currentMode, setCurrentMode] = useState(null);
   const pathname = usePathname();
