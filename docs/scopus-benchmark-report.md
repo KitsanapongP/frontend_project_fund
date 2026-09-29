@@ -1,5 +1,7 @@
 # Scopus Benchmark — Executive report (คู่มืออ้างอิงฟีเจอร์)
 
+อัปเดต 2026-09-30: รายงานนี้เปลี่ยนชื่อแท็บเป็น **ผลเปรียบเทียบเชิงวิเคราะห์** และย้ายไปแท็บที่สอง รายงานสรุปใหม่อยู่หน้าสุด ดู [scopus-benchmark-summary.md](./scopus-benchmark-summary.md) ทั้งสองรายงาน mount เมื่อเคยเปิดและเก็บ cache แต่ effects โหลดข้อมูลเฉพาะ active tab ไม่โหลดแท็บซ่อนเมื่อเปิดหน้า และกลับแท็บไม่ fetch ซ้ำ Print listeners/@page ใช้เฉพาะตอนแท็บวิเคราะห์ active
+
 เอกสารอ้างอิงหลักสำหรับดูแลระบบ "รายงานเปรียบเทียบผลงาน Scopus (Computer Science)" ระดับผู้บริหาร
 ที่หน้า `admin/scopus-benchmark` แท็บ **ผลเปรียบเทียบ**. สัญญา request/response ดูที่
 [scopus-benchmark-report-contract.md](./scopus-benchmark-report-contract.md).

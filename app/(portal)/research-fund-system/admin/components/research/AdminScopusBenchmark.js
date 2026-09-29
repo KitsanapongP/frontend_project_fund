@@ -7,6 +7,7 @@ import { scopusBenchmarkAPI } from "@/app/lib/api";
 import { normalizeYearRange } from "@/app/lib/scopus_benchmark_helpers.mjs";
 import PageLayout from "../common/PageLayout";
 import ScopusBenchmarkDashboard from "./ScopusBenchmarkDashboard";
+import ScopusBenchmarkSummary from "./ScopusBenchmarkSummary";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -187,8 +188,11 @@ function Step({ n, title, desc, state, children }) {
   );
 }
 
-export default function AdminScopusBenchmark() {
-  const [tab, setTab] = useState("results");
+export default function AdminScopusBenchmark({ api = scopusBenchmarkAPI }) {
+  const [tab, setTab] = useState("summary");
+  const [visited, setVisited] = useState({ summary: true });
+  const [summaryStale, setSummaryStale] = useState(false);
+  const setupLoaded = useRef(false);
   const [msg, setMsg] = useState(null);
 
   const [scopes, setScopes] = useState([]);
@@ -214,7 +218,10 @@ export default function AdminScopusBenchmark() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const comparisonRequestId = useRef(0);
-  const rangeEffectMounted = useRef(false);
+  const comparisonAbort = useRef(null);
+  const setupComparisonKey = useRef(null);
+  const setupActive = useRef(false);
+  setupActive.current = tab === "setup";
   const skipAutoReloadRange = useRef(null);
 
   // §6: the report stays mounted across tab switches. It is marked stale (not
@@ -232,17 +239,17 @@ export default function AdminScopusBenchmark() {
   const activeRun = useMemo(() => runs.find((r) => isRunning(r.status)) || null, [runs]);
 
   useEffect(() => {
+    setVisited((v) => ({ ...v, [tab]: true }));
+    if (tab !== "setup") { comparisonAbort.current?.abort(); comparisonRequestId.current += 1; }
+    if (tab !== "setup" || setupLoaded.current) return;
+    setupLoaded.current = true;
     loadScopes();
-    loadComparison();
     loadRuns();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tab]);
 
   useEffect(() => {
-    if (!rangeEffectMounted.current) {
-      rangeEffectMounted.current = true;
-      return undefined;
-    }
+    if (tab !== "setup") return undefined;
 
     const rangeKey = `${yearFrom}:${yearTo}`;
     if (skipAutoReloadRange.current === rangeKey) {
@@ -251,12 +258,13 @@ export default function AdminScopusBenchmark() {
     }
     skipAutoReloadRange.current = null;
 
+    if (setupComparisonKey.current === rangeKey) return undefined;
     const t = setTimeout(() => {
       loadComparison({ year_from: yearFrom, year_to: yearTo });
     }, 500);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); comparisonAbort.current?.abort(); comparisonRequestId.current += 1; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yearFrom, yearTo]);
+  }, [yearFrom, yearTo, tab]);
 
   useEffect(() => {
     if (!activeRun) return undefined;
@@ -270,25 +278,29 @@ export default function AdminScopusBenchmark() {
   useEffect(() => {
     const prev = prevActiveRunId.current;
     const curr = activeRun?.id ?? null;
-    if (prev && !curr) setReportStale(true);
+    if (prev && !curr) { setReportStale(true); setSummaryStale(true); }
     prevActiveRunId.current = curr;
   }, [activeRun?.id]);
 
   async function loadScopes() {
     try {
-      const res = await scopusBenchmarkAPI.listScopes();
+      const res = await api.listScopes();
       setScopes(Array.isArray(res?.data) ? res.data : []);
     } catch (e) {
       notify(e?.message || "โหลด scope ไม่สำเร็จ", "error");
     }
   }
   async function loadComparison(params = yearParams()) {
+    if (!setupActive.current) { setupComparisonKey.current = null; return; }
+    comparisonAbort.current?.abort();
+    const controller = new AbortController(); comparisonAbort.current = controller;
     const requestId = comparisonRequestId.current + 1;
     comparisonRequestId.current = requestId;
     setComparisonLoading(true);
     try {
-      const res = await scopusBenchmarkAPI.comparison(params);
+      const res = await api.comparison(params, { signal: controller.signal });
       if (comparisonRequestId.current !== requestId) return;
+      setupComparisonKey.current = `${params.year_from}:${params.year_to}`;
       setComparison(Array.isArray(res?.data?.years) ? res.data.years : []);
       setFacultyMetric(res?.data?.faculty_metric || null);
     } catch (e) {
@@ -300,7 +312,7 @@ export default function AdminScopusBenchmark() {
   }
   async function loadRuns() {
     try {
-      const res = await scopusBenchmarkAPI.listRuns({ page: 1 });
+      const res = await api.listRuns({ page: 1 });
       setRuns(Array.isArray(res?.data) ? res.data : []);
     } catch {
       setRuns([]);
@@ -312,7 +324,7 @@ export default function AdminScopusBenchmark() {
     if (!uni.af_id) { notify("กรุณาตั้งค่า AF-ID ของ KKU ก่อน (ขั้นที่ 1)", "error"); return; }
     setDetecting(true);
     try {
-      const res = await scopusBenchmarkAPI.detectYearRange(uni.id);
+      const res = await api.detectYearRange(uni.id);
       const first = res?.data?.first_year;
       const last = res?.data?.last_year;
       if (first) {
@@ -335,8 +347,9 @@ export default function AdminScopusBenchmark() {
     setCountsRunning(true);
     notify("");
     try {
-      const res = await scopusBenchmarkAPI.refreshCounts(yearParams());
+      const res = await api.refreshCounts(yearParams());
       setReportStale(true);
+      setSummaryStale(true);
       await loadComparison();
       const results = Array.isArray(res?.data) ? res.data : [];
       const failed = results.filter((item) => item?.error);
@@ -363,7 +376,7 @@ export default function AdminScopusBenchmark() {
     setHarvesting(true);
     notify("");
     try {
-      await scopusBenchmarkAPI.harvest({ scope_id: Number(scopeId), ...yearParams() });
+      await api.harvest({ scope_id: Number(scopeId), ...yearParams() });
       notify("เริ่มดึงข้อมูลแล้ว", "success");
       loadRuns();
     } catch (e) {
@@ -376,7 +389,7 @@ export default function AdminScopusBenchmark() {
   async function cancelRun(id) {
     setCancellingId(id);
     try {
-      await scopusBenchmarkAPI.cancelRun(id);
+      await api.cancelRun(id);
       notify("กำลังยกเลิกงาน", "info");
       loadRuns();
     } catch (e) {
@@ -390,7 +403,7 @@ export default function AdminScopusBenchmark() {
     setLookupLoading(true);
     setLookupHits([]);
     try {
-      const res = await scopusBenchmarkAPI.resolveAffiliation(lookupName.trim());
+      const res = await api.resolveAffiliation(lookupName.trim());
       setLookupHits(Array.isArray(res?.data) ? res.data : []);
     } catch (e) {
       notify(e?.message || "ค้นหา affiliation ไม่สำเร็จ", "error");
@@ -401,8 +414,9 @@ export default function AdminScopusBenchmark() {
   async function setAfId(afId) {
     if (!uni) return;
     try {
-      await scopusBenchmarkAPI.updateScope(uni.id, { af_id: afId });
+      await api.updateScope(uni.id, { af_id: afId });
       setReportStale(true);
+      setSummaryStale(true);
       notify("บันทึก AF-ID แล้ว", "success");
       setLookupHits([]);
       setLookupOpen(false);
@@ -602,8 +616,8 @@ export default function AdminScopusBenchmark() {
       breadcrumbs={[{ label: "หน้าแรก", href: "/research-fund-system/admin" }, { label: "เทียบผลงาน Scopus (CS)" }]}
     >
       <div className="space-y-5">
-        <div className="flex gap-6 border-b border-slate-200">
-          {[["results", "ผลเปรียบเทียบ"], ["setup", "ตั้งค่า & ดึงข้อมูล"]].map(([k, lbl]) => (
+        <div className="flex gap-6 overflow-x-auto whitespace-nowrap border-b border-slate-200">
+          {[["summary", "สรุปผลงานและบทบาทอาจารย์"], ["results", "ผลเปรียบเทียบเชิงวิเคราะห์"], ["setup", "ตั้งค่า & ดึงข้อมูล"]].map(([k, lbl]) => (
             <button key={k} type="button" onClick={() => setTab(k)}
               className={`-mb-px border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
                 tab === k ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
@@ -633,18 +647,21 @@ export default function AdminScopusBenchmark() {
           </div>
         )}
 
-        {/* Both panels stay mounted; only the inactive one is hidden (§6), so
-            switching tabs never re-fetches the report or drops its applied range. */}
+        {/* Report panels mount on first visit; inactive panels retain their cache. */}
+        <div className={tab === "summary" ? "" : "hidden"} aria-hidden={tab !== "summary"}>
+          <ScopusBenchmarkSummary api={api} isActive={tab === "summary"} stale={summaryStale} onRefreshed={() => setSummaryStale(false)} />
+        </div>
         <div className={tab === "results" ? "" : "hidden"} aria-hidden={tab !== "results"}>
-          <ScopusBenchmarkDashboard
+          {visited.results && <ScopusBenchmarkDashboard
+            api={api}
             onGoSetup={() => setTab("setup")}
             isActive={tab === "results"}
             stale={reportStale}
             onRefreshed={() => setReportStale(false)}
-          />
+          />}
         </div>
         <div className={tab === "setup" ? "" : "hidden"} aria-hidden={tab !== "setup"}>
-          {renderSetup()}
+          {visited.setup && renderSetup()}
         </div>
       </div>
 

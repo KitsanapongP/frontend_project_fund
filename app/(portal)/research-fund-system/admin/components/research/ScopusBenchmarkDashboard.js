@@ -30,6 +30,7 @@ import {
   HINT_T1Q2,
   HINT_INTL,
 } from "@/app/lib/scopus_benchmark_report.mjs";
+import { createSummaryLoader } from "@/app/lib/scopus_benchmark_summary.mjs";
 import ReportHeader from "./report/ReportHeader";
 import KpiStrip from "./report/KpiStrip";
 import KeyFindings from "./report/KeyFindings";
@@ -110,7 +111,10 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState("");
   const [insightsReload, setInsightsReload] = useState(0);
-  const insightRequest = useRef(0);
+  const comparisonLoader = useRef(null);
+  const insightsLoader = useRef(null);
+  if (!comparisonLoader.current) comparisonLoader.current = createSummaryLoader();
+  if (!insightsLoader.current) insightsLoader.current = createSummaryLoader();
 
   // Refresh coordination (§6/R1, R1.1): a รีเฟรช arms a pending refresh bound to the
   // applied range; stale is cleared ONLY after BOTH the comparison and insights reads
@@ -161,28 +165,16 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     };
   }, [isActive]);
 
-  // Comparison read (report context) — kept separate from the setup tab's counts.
+  // Load only while active; successes are reused on a mere tab switch.
   useEffect(() => {
-    let cancelled = false;
-    setDataLoading(true);
-    setDataError("");
-    api
-      .comparison({ year_from: windowFrom, year_to: CURRENT_YEAR })
-      .then((response) => {
-        if (cancelled) return;
-        setData(response?.data || null);
-        markRefreshLoaded("comparison"); // a superseded (cancelled) read never clears stale
-      })
-      .catch((error) => {
-        if (!cancelled) setDataError(error?.message || "โหลดข้อมูลรายงานไม่สำเร็จ");
-      })
-      .finally(() => {
-        if (!cancelled) setDataLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reload, windowFrom, api, markRefreshLoaded]);
+    if (!isActive) return undefined;
+    const loader = comparisonLoader.current;
+    setDataLoading(true); setDataError("");
+    loader.load(`${windowFrom}:${reload}`, signal => api.comparison({ year_from: windowFrom, year_to: CURRENT_YEAR }, { signal }),
+      response => { setData(response?.data || null); setDataLoading(false); markRefreshLoaded("comparison"); },
+      error => { setDataError(error?.message || "โหลดข้อมูลรายงานไม่สำเร็จ"); setDataLoading(false); });
+    return () => loader.stop();
+  }, [isActive, reload, windowFrom, api, markRefreshLoaded]);
 
   const yearMeta = data?.year_meta || {};
   // Scope consistency drives EVERY comparison surface (findings, table, KPI share,
@@ -224,7 +216,7 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   // real readiness (R4-1). We load down to the lowest of: the applied range start, the
   // single-year trend window start, and (for a default) the earliest ended snapshot.
   useEffect(() => {
-    if (!yearOptions.length) return;
+    if (!isActive || !yearOptions.length) return;
     const earliest = yearOptions[yearOptions.length - 1];
     const candidates = [];
     if (appliedFrom != null) candidates.push(appliedFrom);
@@ -236,58 +228,29 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     if (!candidates.length) return;
     const needed = Math.max(earliest, Math.min(...candidates));
     if (needed < windowFrom) setWindowFrom(needed);
-  }, [appliedFrom, isRange, reportYear, trendRange, yearOptions, data, windowFrom]);
+  }, [isActive, appliedFrom, isRange, reportYear, trendRange, yearOptions, data, windowFrom]);
 
-  // Insights read for the applied context. Range mode issues ONE range request (no
-  // per-year fan-out); single-year mode keeps the year + prior-year reads. A request
-  // id guards against a stale response overwriting a newer range (§6).
+  // Insights share the same activation/cache/cancellation rules as comparison.
   useEffect(() => {
-    if (appliedFrom === null || appliedTo === null) return;
-    const requestId = insightRequest.current + 1;
-    insightRequest.current = requestId;
-    setInsightsLoading(true);
-    setInsightsError("");
-    setInsightsY(null);
-    setInsightsPrev(null);
-    setRangeInsights(null);
-
-    if (isRange) {
-      api
-        .insights({ year_from: appliedFrom, year_to: appliedTo })
-        .then((response) => {
-          if (insightRequest.current !== requestId) return;
-          setRangeInsights(response?.data || null);
-          markRefreshLoaded("insights");
-        })
-        .catch((error) => {
-          if (insightRequest.current !== requestId) return;
-          setInsightsError(error?.message || "โหลดข้อมูลเชิงลึกของช่วงปีไม่สำเร็จ");
-        })
-        .finally(() => {
-          if (insightRequest.current === requestId) setInsightsLoading(false);
-        });
-      return;
-    }
-
-    const requests = [api.insights({ year: reportYear })];
-    // No prior-year insights for a cumulative current year (no YoY) — §9 C.
-    if (!isCurrentYear) requests.push(api.insights({ year: reportYear - 1 }));
-
-    Promise.allSettled(requests)
-      .then(([current, previous]) => {
-        if (insightRequest.current !== requestId) return;
-        if (current.status === "fulfilled") {
-          setInsightsY(current.value?.data || null);
-          // Only the primary year read is required for a refresh; the optional prior-year
-          // read failing must not keep the report stale.
-          markRefreshLoaded("insights");
-        } else setInsightsError(current.reason?.message || "โหลดข้อมูลเชิงลึกไม่สำเร็จ");
-        if (previous && previous.status === "fulfilled") setInsightsPrev(previous.value?.data || null);
-      })
-      .finally(() => {
-        if (insightRequest.current === requestId) setInsightsLoading(false);
-      });
-  }, [appliedFrom, appliedTo, isRange, reportYear, isCurrentYear, insightsReload, api, markRefreshLoaded]);
+    if (!isActive || appliedFrom === null || appliedTo === null) return undefined;
+    const loader = insightsLoader.current;
+    setInsightsLoading(true); setInsightsError("");
+    setInsightsY(null); setInsightsPrev(null); setRangeInsights(null);
+    loader.load(`${appliedFrom}:${appliedTo}:${insightsReload}`, async signal => {
+      if (isRange) return { range: await api.insights({ year_from: appliedFrom, year_to: appliedTo }, { signal }) };
+      const requests = [api.insights({ year: reportYear }, { signal })];
+      if (!isCurrentYear) requests.push(api.insights({ year: reportYear - 1 }, { signal }));
+      const [current, previous] = await Promise.allSettled(requests);
+      if (current.status === "rejected") throw current.reason;
+      return { current: current.value, previous: previous?.status === "fulfilled" ? previous.value : null };
+    }, result => {
+      setRangeInsights(result.range?.data || null);
+      setInsightsY(result.current?.data || null);
+      setInsightsPrev(result.previous?.data || null);
+      setInsightsLoading(false); markRefreshLoaded("insights");
+    }, error => { setInsightsError(error?.message || "โหลดข้อมูลเชิงลึกไม่สำเร็จ"); setInsightsLoading(false); });
+    return () => loader.stop();
+  }, [isActive, appliedFrom, appliedTo, isRange, reportYear, isCurrentYear, insightsReload, api, markRefreshLoaded]);
 
   // When the applied range changes while a refresh is pending, invalidate the range-
   // specific (insights) success so only the NEW range's insights can clear stale — a

@@ -333,11 +333,11 @@ class APIClient {
   // ==================== BASIC HTTP METHODS ====================
   
   // GET request
-  async get(endpoint, params = {}) {
+  async get(endpoint, params = {}, options = {}) {
     const query = new URLSearchParams(params).toString();
     const url = query ? `${this.baseURL}${endpoint}?${query}` : `${this.baseURL}${endpoint}`;
     
-    return this.makeRequestWithRetry(url, { method: 'GET' });
+    return this.makeRequestWithRetry(url, { ...options, method: 'GET' });
   }
 
   // POST request
@@ -1253,6 +1253,21 @@ export const scopusConfigAPI = {
 };
 
 export const scopusBenchmarkAPI = {
+  async summaryOptions(options = {}) { return apiClient.get('/admin/scopus/benchmark/summary/options', {}, options); },
+  async summary(params = {}, options = {}) { return apiClient.get('/admin/scopus/benchmark/summary', cleanParams(params), options); },
+  async summaryFaculty(params = {}, options = {}) { return apiClient.get('/admin/scopus/benchmark/summary/faculty', cleanParams(params), options); },
+  async summaryDocuments(params = {}, options = {}) { return apiClient.get('/admin/scopus/benchmark/summary/documents', cleanParams(params), options); },
+  async summaryExport(params = {}, options = {}) {
+    const token = apiClient.getToken();
+    const response = await fetch(`${apiClient.baseURL}/admin/scopus/benchmark/summary/export${benchmarkQuery(params)}`, {
+      ...options, credentials: 'include', headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new APIError(data.error || 'ส่งออก Excel ไม่สำเร็จ', response.status);
+    }
+    return response.blob();
+  },
   async resolveAffiliation(name) {
     return apiClient.post('/admin/scopus/benchmark/affiliation/lookup', { name });
   },
@@ -1280,11 +1295,11 @@ export const scopusBenchmarkAPI = {
   async listRuns(params = {}) {
     return apiClient.get('/admin/scopus/benchmark/runs', params);
   },
-  async comparison(params = {}) {
-    return apiClient.get('/admin/scopus/benchmark/comparison', cleanParams(params));
+  async comparison(params = {}, options = {}) {
+    return apiClient.get('/admin/scopus/benchmark/comparison', cleanParams(params), options);
   },
-  async insights(params = {}) {
-    return apiClient.get('/admin/scopus/benchmark/insights', cleanParams(params));
+  async insights(params = {}, options = {}) {
+    return apiClient.get('/admin/scopus/benchmark/insights', cleanParams(params), options);
   },
   async topJournals(params = {}) {
     return apiClient.get('/admin/scopus/benchmark/top-journals', cleanParams(params));

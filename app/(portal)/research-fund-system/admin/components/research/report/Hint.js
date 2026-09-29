@@ -40,7 +40,7 @@ export default function Hint({ text, label }) {
         aria-label={`คำอธิบาย: ${label}`}
         aria-expanded={open}
         aria-describedby={open ? panelId : undefined}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => setOpen(true)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         className="no-print inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
