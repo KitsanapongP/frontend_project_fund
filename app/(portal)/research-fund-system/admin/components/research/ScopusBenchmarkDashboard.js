@@ -4,8 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, BarChart3 } from "lucide-react";
 import { scopusBenchmarkAPI } from "@/app/lib/api";
 import {
-  selectReportYear,
-  resolveBootstrapFloor,
   buildFindings,
   buildRangeFindings,
   buildYearlyCsv,
@@ -41,10 +39,8 @@ import QualityTypeDetails from "./report/QualityTypeDetails";
 import SourceNotes from "./report/SourceNotes";
 
 const CURRENT_YEAR = new Date().getFullYear();
-// First read covers ~15 years ending at the current year; older windows are loaded
-// on demand when the user selects an earlier report year/range (§4, R7) — never a
-// year-by-year probe, just one wider GET when needed.
-const DEFAULT_WINDOW_FROM = CURRENT_YEAR - 14;
+// Read the default previous/current-year window first; widen on user selection.
+const DEFAULT_WINDOW_FROM = CURRENT_YEAR - 1;
 
 function formatThaiDate(value) {
   if (!value) return null;
@@ -94,10 +90,9 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   const [reload, setReload] = useState(0);
 
   // Applied range is the atomic report context (§3.1). Draft edits in the header do
-  // not touch this until the user presses "แสดงผล". null until the default resolves.
-  const [appliedFrom, setAppliedFrom] = useState(null);
-  const [appliedTo, setAppliedTo] = useState(null);
-  const userApplied = useRef(false);
+  // not touch this until the user presses "แสดงผล". Defaults to previous/current year.
+  const [appliedFrom, setAppliedFrom] = useState(CURRENT_YEAR - 1);
+  const [appliedTo, setAppliedTo] = useState(CURRENT_YEAR);
 
   const [trendRange, setTrendRange] = useState(5);
   const [windowFrom, setWindowFrom] = useState(DEFAULT_WINDOW_FROM);
@@ -180,31 +175,24 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   // Scope consistency drives EVERY comparison surface (findings, table, KPI share,
   // trend share, CSV). Declared here — before trendPoints/KPIs use it (R3-1).
   const scopeConsistent = data?.report_scope ? data.report_scope.consistent !== false : true;
-  const selection = useMemo(() => selectReportYear(yearMeta, CURRENT_YEAR), [yearMeta]);
 
   // Year choices come from available_years (ALL snapshot years across every level),
   // so years older than the currently loaded window are still selectable (R7).
   const yearOptions = useMemo(() => {
     const available = data?.available_years || {};
     const union = new Set([
+      CURRENT_YEAR - 1, CURRENT_YEAR,
       ...(available.faculty || []),
       ...(available.university || []),
       ...(available.country || []),
     ]);
     const years = [...union].map(Number).filter(Number.isFinite).sort((a, b) => b - a);
     if (years.length) return years;
-    return selection?.year ? [selection.year] : [];
-  }, [data, selection]);
+    return [CURRENT_YEAR, CURRENT_YEAR - 1];
+  }, [data]);
 
-  // Default applied range = the deterministically selected single report year. Once
-  // the user applies their own range we never override it on a data reload (§3.1).
-  useEffect(() => {
-    if (userApplied.current) return;
-    if (selection?.year != null) {
-      setAppliedFrom(selection.year);
-      setAppliedTo(selection.year);
-    }
-  }, [selection]);
+  // Calendar-based default stays on previous/current year even when a snapshot
+  // is missing. Data reloads never replace the applied report range.
 
   const isRange = appliedFrom != null && appliedTo != null && Number(appliedFrom) !== Number(appliedTo);
   const reportYear = appliedTo; // single-year paths read the (single) applied year
@@ -212,19 +200,13 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   const isCurrentYear = !isRange && reportYear !== null && Number(reportYear) === CURRENT_YEAR;
   const facultyReady = yearMeta?.[reportYear]?.faculty?.status === "available";
 
-  // Widen the comparison read so the applied range/default selection is decided from
-  // real readiness (R4-1). We load down to the lowest of: the applied range start, the
-  // single-year trend window start, and (for a default) the earliest ended snapshot.
+  // Widen only for the applied range or a selected single-year trend window.
   useEffect(() => {
     if (!isActive || !yearOptions.length) return;
     const earliest = yearOptions[yearOptions.length - 1];
     const candidates = [];
     if (appliedFrom != null) candidates.push(appliedFrom);
     if (!isRange && reportYear != null) candidates.push(reportYear - trendRange + 1);
-    if (!userApplied.current) {
-      const floor = resolveBootstrapFloor(data?.available_years, CURRENT_YEAR);
-      if (floor != null) candidates.push(floor);
-    }
     if (!candidates.length) return;
     const needed = Math.max(earliest, Math.min(...candidates));
     if (needed < windowFrom) setWindowFrom(needed);
@@ -473,7 +455,6 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
   }, [download, isRange, appliedFrom, appliedTo, rangeCounts, rangeInsights, reportYear, reportRow, reportMeta, insightsY, scope]);
 
   const applyRange = useCallback((from, to) => {
-    userApplied.current = true;
     setAppliedFrom(from);
     setAppliedTo(to);
   }, []);

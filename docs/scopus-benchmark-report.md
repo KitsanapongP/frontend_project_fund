@@ -30,12 +30,14 @@ harness ตรวจ layout (dev-only, 404 ใน production) [`app/dev/scopus-b
 - **รายละเอียดคุณภาพวารสารและประเภทผลงาน** — `<details>` การกระจายกลุ่มวารสาร (เฉพาะที่จัดกลุ่มได้) + ตารางประเภทผลงาน.
 - **นิยามและความพร้อมของข้อมูล** — `<details>` นิยาม + footer (ขอบเขต/ปี/สร้างเมื่อ/วันที่อัปเดต) ที่แสดงเสมอ.
 
-## 3. การเลือกปีรายงาน (default / fallback / YTD)
-ตรรกะอยู่ใน `selectReportYear`, `resolveBootstrapFloor` (lib) และ effect ใน dashboard.
-- **default (ไม่เลือกเอง)** เรียงลำดับความชอบ: ปีจบ (`< ปีปัจจุบัน`) ล่าสุดที่ **faculty = available** → ปีจบล่าสุดที่ **KKU/ประเทศไทย available** (คณะยังไม่พร้อม) → **ปีปัจจุบันแบบสะสม** เมื่อมีระดับใด available → `null` (empty state). ไม่ fallback ไปข้อมูลที่ประดิษฐ์.
-- **แยก "มี snapshot" ออกจาก "พร้อม"**: `available_years` = การมี snapshot (รวมปีที่ faculty `blocked`) ใช้บอกแค่ "ต้องโหลดถึงปีไหน"; ความพร้อมจริงอ่านจาก `year_meta[...].status`. `resolveBootstrapFloor` = ปีจบเก่าสุดที่มี snapshot → ขยาย window ลงไปถึง floor ให้ `year_meta` มีสถานะ faculty จริงของทุกปีจบ แล้วจึงเลือก ทำให้ปีใหม่ที่ `blocked` ไม่บังปีเก่าที่ faculty พร้อม. floor คงที่ → ไม่วนโหลด.
-- **เลือกเอง (manual)**: dropdown มาจาก union ของ `available_years` (เลือกปีเก่านอก window แรกได้ — โหลด window เพิ่มตามช่วงแนวโน้ม). ค่า manual ไม่ถูกแทนที่ด้วย default.
-- **YTD / ปีปัจจุบัน**: เมื่อปีที่เลือก = ปีปัจจุบัน → โหมดสะสม (`isCurrentYear`) ไม่เทียบปีก่อนแบบเต็มปี, KPI subline ระบุ "ข้อมูลสะสม (ยังไม่ครบปี)".
+## 3. ช่วงปีเริ่มต้นและการเลือกปี
+
+- Default UI เป็น **ปีปัจจุบัน−1 ถึงปีปัจจุบัน** ตาม ค.ศ. ไม่ลดเหลือปีเดียวเมื่อ snapshot ล่าสุดยังไม่พร้อม และไม่เปลี่ยนค่าที่ใช้เมื่อ reload ข้อมูล
+- โหลด comparison เริ่มต้นเฉพาะสองปีนี้ ขยาย window เมื่อผู้ใช้เลือกช่วงเก่าหรือ single-year trend ที่ต้องใช้ปีเพิ่ม ไม่โหลดทุกปีเพื่อค้นหาปี fallback
+- ปีที่ไม่มี/ยังไม่พร้อมแสดงสถานะจริงและงดรวมยอดที่ต้องมีข้อมูลครบทั้งช่วง
+- ตัวเลือกปีรวม `available_years` กับสองปี default เสมอ; manual range คงเดิมเมื่อ refresh หรือสลับแท็บ
+- โหมดช่วงที่รวมปีปัจจุบันระบุว่ายังไม่ครบปี; เมื่อเลือกปีเดียวเป็นปีปัจจุบันใช้ YTD ตามกติกาเดิม
+- `selectReportYear` / `resolveBootstrapFloor` ยังคงเป็น helper ของ library แต่ไม่ได้ใช้ตั้ง default ในแท็บวิเคราะห์นี้
 
 ## 4. สูตรและตัวหาร (lib §8)
 - **จำนวนผลงาน (count)** = `years[].faculty|university|country` จาก count snapshot (เฉพาะระดับที่ `status=available`).
@@ -74,7 +76,7 @@ harness ตรวจ layout (dev-only, 404 ใน production) [`app/dev/scopus-b
 ## 10. สรุปการตรวจล่าสุด (รอบ 1–7)
 แยกตามผู้ตรวจ:
 - **Reviewer ตรวจ**: FE `node --test` 51/51; BE `go build ./...` + `go test ./services` ผ่าน; per-metric readiness/observedRate/scope guard/bootstrap (R2–R4); print pagination P1–P4 จาก PDF A4 ที่ render จริง; fixture fidelity (invariant script ผ่านทุก scenario) และรูปสัญญา insights เทียบตัวอย่าง live ปี 2025.
-- **Implementer รายงาน**: smoke หน้า portal จริง (default=ปีจบล่าสุด, เปลี่ยนปี, refresh) เทียบ TEST DB; headless print-to-pdf รวม auto-expand (ยืนยัน event `beforeprint` กาง details ครบ); CSV regenerate ผ่าน lib เดียวกับปุ่มส่งออก; พบกรณีจริง `observed > count` (snapshot mismatch แบบเปิดเผย).
+- **Implementer รายงาน**: smoke หน้า portal จริง (default=ปีปัจจุบัน−1 ถึงปีปัจจุบัน, เปลี่ยนปี, refresh) เทียบ TEST DB; headless print-to-pdf รวม auto-expand (ยืนยัน event `beforeprint` กาง details ครบ); CSV regenerate ผ่าน lib เดียวกับปุ่มส่งออก; พบกรณีจริง `observed > count` (snapshot mismatch แบบเปิดเผย).
 - **ผู้ใช้ยืนยัน**: keyboard navigation ผ่านทุกข้อ; ดาวน์โหลด CSV/PDF ตรวจแล้ว; ผลพิมพ์ยอมรับได้.
 
 > หลักฐานภาพ/PDF/live-sample เก็บไว้นอก repo (ไม่ commit — มีทั้งไฟล์หนักและตัวอย่างจาก TEST DB). ตัวเลขตรวจสอบซ้ำได้จาก harness + `scripts/gen-scopus-benchmark-evidence.mjs`.

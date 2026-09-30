@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createSummaryLoader, defaultSummaryFilters, filterSummaryFaculty } from '../scopus_benchmark_summary.mjs';
 
 test('summary defaults use prior/current CE years, Journal, classified and non-Low',()=>{
-  assert.deepEqual(defaultSummaryFilters(2026),{year_from:2025,year_to:2026,types:'Journal',category:'classified',confidence:'High,Medium,Preface,unknown',quartile_mode:'t1'});
+  assert.deepEqual(defaultSummaryFilters(2026),{year_from:2025,year_to:2026,types:'Journal',category:'classified',confidence:'High,Medium,unknown',quartile_mode:'t1'});
 });
 test('view loads only on activation and reuses successful cached responses',async()=>{
   const overview=createSummaryLoader(),faculty=createSummaryLoader(),legacy=createSummaryLoader();

@@ -1,36 +1,51 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Download, RefreshCw, Search, X, AlertCircle } from 'lucide-react';
+import { Download, RefreshCw, Search, X, SlidersHorizontal, Filter } from 'lucide-react';
 import { scopusBenchmarkAPI } from '@/app/lib/api';
 import { defaultSummaryFilters, createSummaryLoader, filterSummaryFaculty, qualityLabel, confidenceLabel, yearStateLabel, summaryHints } from '@/app/lib/scopus_benchmark_summary.mjs';
 import Hint from './report/Hint';
+import SimpleCard from '../common/SimpleCard';
 
 const count = (n) => n == null ? '—' : Number(n).toLocaleString('th-TH');
 const pct = (n) => n == null ? '—' : `${Number(n).toFixed(1)}%`;
-const button = 'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-400';
-const field = 'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm';
+const button = 'inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-400';
+const field = 'min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm';
 function Label({ children, hint }) { return <span className="inline-flex items-center gap-1">{children}<Hint label={children} text={hint} /></span>; }
 function CountButton({ value, onClick }) { return value == null ? '—' : <button type="button" onClick={onClick} disabled={value === 0} className="rounded px-1 text-blue-700 hover:underline focus:ring-2 focus:ring-blue-300 disabled:text-slate-600 disabled:no-underline">{count(value)}</button>; }
 
-function CountTable({ title, rows, total, onDetail, category = false, quartile = false }) {
+// Operate mode: filters -> paired overview -> yearly categories -> four-column
+// Quartile matrix. Shared edges and compact tables keep comparisons in one scan.
+function ReportPanel({ title, hint, children, compact = false, className = '' }) {
+  return <section className={`min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white ${className}`}>
+    <header className={`flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 ${compact ? 'min-h-24' : 'min-h-14'}`}>
+      <h3 className="min-w-0 text-sm font-semibold leading-5 text-slate-900">{title}</h3>
+      {hint && <Hint label={title} text={hint}/>}
+    </header>
+    {children}
+  </section>;
+}
+function CountTable({ title, rows, total, onDetail, category = false, quartile = false, hint }) {
   const all = total ? [...rows, total] : rows;
-  return <section className="rounded-lg border border-slate-200 bg-white">
-    <div className="flex items-center justify-between gap-2 rounded-t-lg bg-slate-100 px-4 py-3"><h3 className="font-semibold text-slate-800">{title}</h3><Hint label={title} text={quartile ? summaryHints.quartile : summaryHints.zero} /></div>
-    <div className="overflow-x-auto"><table className="w-full text-sm">
-      <thead className="border-b bg-slate-50 text-slate-700"><tr>
-        <th className="p-3 text-left">{quartile ? 'Quartile' : category ? 'Category' : 'ปี ค.ศ.'}</th>
-        <th className="p-3 text-right">Thailand</th><th className="p-3 text-right">KKU</th><th className="p-3 text-right">% KKU</th><th className="p-3 text-right">COC</th><th className="p-3 text-right">% COC</th>
+  const cell = `border-b border-slate-200 ${quartile ? 'px-1.5 py-2 text-xs' : 'px-3 py-2.5 text-sm'}`;
+  const tableHint = [summaryHints.thailand, summaryHints.kku, summaryHints.coc, summaryHints.percentages].join('\n');
+  return <ReportPanel title={title} hint={hint || (quartile ? `${summaryHints.quartile}\nTH = Thailand. ${summaryHints.percentages}` : tableHint)} compact={quartile} className="h-full">
+    <div className="overflow-x-auto"><table className={`w-full table-fixed border-collapse ${quartile ? 'min-w-[280px]' : 'min-w-[480px]'}`}>
+      <thead className="bg-blue-100 text-blue-900"><tr>
+        <th className={`${category ? 'w-[40%]' : quartile ? 'w-[24%]' : 'w-[25%]'} ${cell} text-left`}>{quartile ? 'Quartile' : category ? 'Category' : 'ปี ค.ศ.'}</th>
+        <th className={`${cell} text-right`}>{quartile ? <abbr className="no-underline" title="Thailand">TH</abbr> : 'Thailand'}</th><th className={`${cell} text-right`}>KKU</th><th className={`${cell} text-right`}>%KKU</th><th className={`${cell} text-right`}>COC</th><th className={`${cell} text-right`}>%COC</th>
       </tr></thead>
-      <tbody>{all.map((r,i) => <tr key={`${r.year}:${r.category_id}:${r.quartile}:${i}`} className={`border-b last:border-0 ${r === total ? 'bg-blue-50 font-semibold' : 'hover:bg-slate-50'}`}>
-        <th scope="row" className="max-w-md p-3 text-left font-normal">{r === total ? r.label : quartile ? qualityLabel[r.quartile] : r.label}</th>
-        {['thailand','kku'].map((level) => <td className="p-3 text-right tabular-nums" key={level}><CountButton value={r[level]} onClick={() => onDetail({ level, ...(r.year ? {year:r.year}:{}), ...((category && r !== total) || quartile ? {document_category:r.category_id || 0}:{}), ...(quartile ? {quartile:r.quartile}:{}) }, title)} /></td>)}
-        <td className="p-3 text-right tabular-nums">{pct(r.kku_pct)}</td>
-        <td className="p-3 text-right tabular-nums"><CountButton value={r.coc} onClick={() => onDetail({level:'coc', ...(r.year ? {year:r.year}:{}), ...((category && r !== total) || quartile ? {document_category:r.category_id || 0}:{}), ...(quartile ? {quartile:r.quartile}:{})}, title)} /></td>
-        <td className="p-3 text-right tabular-nums">{pct(r.coc_pct)}</td>
+      <tbody>{all.map((r,i) => <tr key={`${r.year}:${r.category_id}:${r.quartile}:${i}`} className={`border-b last:border-0 ${r === total ? 'bg-blue-50 font-semibold' : `${i % 2 ? 'bg-slate-50' : 'bg-white'} hover:bg-blue-50`}`}>
+        <th scope="row" className={`${cell} text-left font-normal`}>
+          {r === total ? r.label : quartile ? <span title={qualityLabel[r.quartile]}>{r.quartile === 'missing' ? 'ไม่ระบุ' : r.quartile === 'not_applicable' ? 'ไม่ใช้' : qualityLabel[r.quartile]}</span> : r.label}
+        </th>
+        {['thailand','kku'].map((level) => <td className={`${cell} text-right tabular-nums`} key={level}><CountButton value={r[level]} onClick={() => onDetail({ level, ...(r.year ? {year:r.year}:{}), ...((category && r !== total) || quartile ? {document_category:r.category_id || 0}:{}), ...(quartile && r !== total ? {quartile:r.quartile}:{}) }, title)} /></td>)}
+        <td className={`${cell} text-right tabular-nums`}>{quartile ? (r.kku_pct == null ? '—' : Number(r.kku_pct).toFixed(1)) : pct(r.kku_pct)}</td>
+        <td className={`${cell} text-right tabular-nums`}><CountButton value={r.coc} onClick={() => onDetail({level:'coc', ...(r.year ? {year:r.year}:{}), ...((category && r !== total) || quartile ? {document_category:r.category_id || 0}:{}), ...(quartile && r !== total ? {quartile:r.quartile}:{})}, title)} /></td>
+        <td className={`${cell} text-right tabular-nums`}>{quartile ? (r.coc_pct == null ? '—' : Number(r.coc_pct).toFixed(1)) : pct(r.coc_pct)}</td>
       </tr>)}</tbody>
     </table></div>
-  </section>;
+  </ReportPanel>;
 }
 function sumRows(rows,label) {
   const valid = rows.filter((r) => r.thailand != null);
@@ -126,46 +141,96 @@ export default function ScopusBenchmarkSummary({ isActive=true, stale=false, onR
     if(!data)return;setExporting(true);setError('');const controller=new AbortController();exportAbort.current=controller;
     try{const blob=await api.summaryExport({...applied,view,revision:data.revision},{signal:controller.signal});if(controller.signal.aborted)return;const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`scopus-benchmark-${view}-${applied.year_from}-${applied.year_to}.xlsx`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch(e){if(!controller.signal.aborted)setError(e.message)}finally{if(!controller.signal.aborted)setExporting(false)}
   };
-  return <div className="space-y-5">
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">สรุปผลงานและบทบาทอาจารย์</h2><Hint label="หน่วยและขอบเขตการนับ" text={summaryHints.units}/></div>
-      <div className="mt-4 grid gap-4 md:grid-cols-4">
-        <label className="text-sm">ปีเริ่มต้น (ค.ศ.)<input type="number" min="1900" max={new Date().getFullYear()+1} value={draft.year_from} onChange={e=>change('year_from',e.target.value)} className={`mt-1 ${field}`}/></label>
-        <label className="text-sm">ปีสิ้นสุด (ค.ศ.)<input type="number" min="1900" max={new Date().getFullYear()+1} value={draft.year_to} onChange={e=>change('year_to',e.target.value)} className={`mt-1 ${field}`}/></label>
-        <label className="text-sm">Category<select className={`mt-1 ${field}`} value={draft.category} onChange={e=>change('category',e.target.value)}><option value="classified">มี Category</option><option value="all">ทั้งหมด</option><option value="unknown">ไม่มี Category</option>{options?.categories?.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-        <div className="text-sm"><Label hint={summaryHints.quartile}>การแสดง Quartile</Label><div className="mt-1 flex rounded-md border border-slate-300 p-1">{[['t1','แยก T1'],['q','Q1–Q4']].map(([v,label])=><button type="button" key={v} aria-pressed={draft.quartile_mode===v} className={`flex-1 rounded px-3 py-2 ${draft.quartile_mode===v?'bg-blue-600 text-white':'text-slate-600'}`} onClick={()=>{change('quartile_mode',v);setApplied(f=>({...f,quartile_mode:v}));setDetail(null)}}>{label}</button>)}</div></div>
+  return <div className="space-y-4" style={{containerType: 'inline-size', containerName: 'scopus-summary'}}>
+    <SimpleCard title="ตัวกรองข้อมูล" icon={SlidersHorizontal} action={<Hint label="หน่วยและขอบเขตการนับ" text={summaryHints.units}/>} noPadding>
+      <div className="space-y-4 p-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1.3fr_1fr]">
+          <fieldset className="min-w-0">
+            <legend className="mb-2 text-xs font-medium text-slate-600">ช่วงปี (ค.ศ.)</legend>
+            <div className="flex items-center gap-2">
+              <input aria-label="ปีเริ่มต้น (ค.ศ.)" type="number" min="1900" max={new Date().getFullYear()+1} value={draft.year_from} onChange={e=>change('year_from',e.target.value)} className={field}/>
+              <span className="text-slate-400">–</span>
+              <input aria-label="ปีสิ้นสุด (ค.ศ.)" type="number" min="1900" max={new Date().getFullYear()+1} value={draft.year_to} onChange={e=>change('year_to',e.target.value)} className={field}/>
+            </div>
+          </fieldset>
+          <label className="min-w-0 text-xs font-medium text-slate-600">Category<select className={`mt-2 ${field}`} value={draft.category} onChange={e=>change('category',e.target.value)}><option value="classified">มี Category</option><option value="all">ทั้งหมด</option><option value="unknown">ไม่มี Category</option>{options?.categories?.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+          <div className="min-w-0 text-xs font-medium text-slate-600"><Label hint={summaryHints.quartile}>Quartile</Label><div className="mt-2 flex">{[['t1','แยก T1'],['q','Q1–Q4']].map(([v,label])=><button type="button" key={v} aria-pressed={draft.quartile_mode===v} className={`flex-1 border px-3 py-2 text-sm font-medium first:rounded-l-lg last:rounded-r-lg last:border-l-0 focus:ring-2 focus:ring-blue-300 ${draft.quartile_mode===v?'border-blue-500 bg-blue-50 text-blue-700':'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'}`} onClick={()=>{change('quartile_mode',v);setApplied(f=>({...f,quartile_mode:v}));setDetail(null)}}>{label}</button>)}</div></div>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <fieldset className="min-w-0"><legend className="mb-1 text-xs font-medium text-slate-600">ประเภทผลงาน</legend><div className="flex flex-wrap gap-x-4">{(options?.types||['Journal']).map(t=><label className="inline-flex min-h-9 cursor-pointer items-center gap-2 text-sm text-slate-700" key={t}><input className="h-4 w-4 accent-blue-600" type="checkbox" checked={draft.types.split(',').includes(t)} onChange={e=>check('types',t,e.target.checked)}/>{t}</label>)}</div></fieldset>
+          <fieldset className="min-w-0"><legend className="mb-1 text-xs font-medium text-slate-600">Confidence</legend><div className="flex flex-wrap gap-x-4">{Object.entries(confidenceLabel).map(([v,label])=><label className="inline-flex min-h-9 cursor-pointer items-center gap-2 text-sm text-slate-700" key={v}><input className="h-4 w-4 accent-blue-600" type="checkbox" checked={draft.confidence.split(',').includes(v)} onChange={e=>check('confidence',v,e.target.checked)}/>{label}</label>)}</div></fieldset>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-3">
+          <p className="min-w-0 text-xs text-slate-500">ผลที่แสดง: {applied.year_from}–{applied.year_to} · {applied.types} · {applied.category==='classified'?'มี Category':applied.category==='all'?'Category ทั้งหมด':applied.category==='unknown'?'ไม่มี Category':options?.categories?.find(c=>String(c.id)===String(applied.category))?.name} · {applied.confidence.split(',').map(v=>confidenceLabel[v]).join(', ')}</p>
+          <div className="flex shrink-0 gap-2"><button type="button" className={`${button} border-slate-300 text-slate-700 hover:bg-slate-100`} disabled={loading} onClick={()=>{const f=defaultSummaryFilters();setDraft(f);setApplied(f);setDetail(null)}}>ล้างตัวกรอง</button><button type="button" className={`${button} border-blue-600 bg-blue-600 text-white hover:bg-blue-700`} onClick={apply} disabled={loading}><Filter size={14}/>ใช้ตัวกรอง</button></div>
+        </div>
       </div>
-      <div className="mt-4 grid gap-4 md:grid-cols-2"><fieldset><legend className="mb-2 text-sm font-medium">ประเภทผลงาน</legend><div className="flex flex-wrap gap-4">{(options?.types||['Journal']).map(t=><label className="inline-flex items-center gap-2 text-sm" key={t}><input type="checkbox" checked={draft.types.split(',').includes(t)} onChange={e=>check('types',t,e.target.checked)}/>{t}</label>)}</div></fieldset>
-        <fieldset><legend className="mb-2 text-sm font-medium">Confidence</legend><div className="flex flex-wrap gap-4">{Object.entries(confidenceLabel).map(([v,label])=><label className="inline-flex items-center gap-2 text-sm" key={v}><input type="checkbox" checked={draft.confidence.split(',').includes(v)} onChange={e=>check('confidence',v,e.target.checked)}/>{label}</label>)}</div></fieldset>
-      </div>
-      <div className="mt-5 flex flex-wrap gap-2"><button type="button" className={`${button} border-blue-600 bg-blue-600 text-white hover:bg-blue-700`} onClick={apply} disabled={loading}>แสดงผล</button><button type="button" className={`${button} border-slate-300 hover:bg-slate-50`} onClick={()=>{const f=defaultSummaryFilters();setDraft(f);setApplied(f);setDetail(null)}}>ล้างตัวกรอง</button><button type="button" className={`${button} border-slate-300 hover:bg-slate-50`} onClick={refresh} disabled={loading}><RefreshCw size={16}/>อัปเดตข้อมูล</button><button type="button" className={`${button} ml-auto border-emerald-300 text-emerald-800 hover:bg-emerald-50`} onClick={download} disabled={loading||exporting||!data}><Download size={16}/>{exporting?'กำลังส่งออก…':'ส่งออก Excel'}</button></div>
-      <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">{[['overview','ภาพรวมผลงาน'],['faculty','บทบาทอาจารย์']].map(([v,label])=><button type="button" key={v} onClick={()=>{setView(v);setDetail(null)}} aria-pressed={view===v} className={`rounded-full px-4 py-2 text-sm font-medium ${view===v?'bg-slate-800 text-white':'bg-slate-100 text-slate-600'}`}>{label}</button>)}</div>
-    </section>
+    </SimpleCard>
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+      <div className="flex gap-1">{[['overview','ภาพรวมผลงาน'],['faculty','บทบาทอาจารย์']].map(([v,label])=><button type="button" key={v} onClick={()=>{setView(v);setDetail(null)}} aria-pressed={view===v} className={`rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-300 ${view===v?'bg-blue-50 text-blue-700':'text-slate-600 hover:bg-slate-100'}`}>{label}</button>)}</div>
+      <div className="flex gap-2"><button type="button" className={`${button} border-slate-300 bg-white text-slate-700 hover:bg-slate-100`} onClick={refresh} disabled={loading}><RefreshCw size={16}/>อัปเดตข้อมูล</button><button type="button" className={`${button} border-slate-300 bg-white text-slate-700 hover:bg-slate-100`} onClick={download} disabled={loading||exporting||!data}><Download size={16}/>{exporting?'กำลังส่งออก…':'ส่งออก Excel'}</button></div>
+    </div>
     {stale&&<div role="status" className="flex items-center justify-between rounded-lg bg-amber-50 p-3 text-sm text-amber-800"><span>ข้อมูลตั้งค่าหรือ harvest เปลี่ยนแล้ว ผลที่แสดงเป็นข้อมูลเดิม</span><button type="button" className={`${button} border-amber-300`} disabled={loading} onClick={refresh}>อัปเดตรายงาน</button></div>}
     {error&&<p role="alert" className="rounded-lg bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
     {loading&&<div role="status" className="rounded-lg bg-slate-50 p-8 text-center text-slate-600">กำลังคำนวณรายงาน…</div>}
     {data&&!loading&&<>
-      <p className="text-xs text-slate-500">ผลที่แสดง: {applied.year_from}–{applied.year_to} · {applied.types} · Category {applied.category==='classified'?'มีหมวด':applied.category==='all'?'ทั้งหมด':applied.category==='unknown'?'ไม่มีหมวด':options?.categories?.find(c=>String(c.id)===String(applied.category))?.name||applied.category} · Confidence {applied.confidence.split(',').map(v=>confidenceLabel[v]||v).join(', ')}</p>
-      <section className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 text-sm">
-        <div className="flex flex-wrap items-center gap-2"><AlertCircle size={16}/><span className="font-medium">ความครอบคลุมของข้อมูลที่เชื่อมอยู่</span><Hint label="ข้อจำกัดข้อมูล" text={summaryHints.zero}/><span className="ml-auto text-xs text-slate-500">สร้างผล {new Date(data.generated_at).toLocaleString('th-TH')}</span></div>
-        <div className="mt-2 flex flex-wrap gap-2">{data.year_states.map(y=><span key={y.year} className="rounded bg-white px-2 py-1 text-xs">{y.year}: {yearStateLabel[y.status]} · มีในฐาน {count(y.observed)}{y.expected!=null?` / คาดหมาย ${count(y.expected)}`:''}</span>)}</div>
-        <p className="mt-2 text-xs text-slate-600">มี Category {count(data.coverage.classified)} / {count(data.coverage.base_documents)} · ผ่านตัวกรอง {count(data.coverage.selected)} · ตรวจสังกัดผลงานยังไม่ครบ {count(data.coverage.affiliation_incomplete)} · สังกัดผู้เขียนในทะเบียนยังไม่ครบ {count(data.coverage.faculty_affiliation_incomplete)} · บทบาทยังระบุไม่ได้ {count(data.coverage.role_unknown_pairs)} คู่ · metric ปีก่อนหน้า {count(data.coverage.metric_fallback)} · ไม่มี Quartile {count(data.coverage.missing_quartile)}</p>
-      </section>
+      <details className="rounded-lg border border-slate-200 bg-white text-xs text-slate-600">
+        <summary className="cursor-pointer px-4 py-3 focus-visible:ring-2 focus-visible:ring-blue-300">
+          <span className="font-medium text-slate-700">สถานะข้อมูล</span>
+          <span className="ml-3 inline-flex flex-wrap gap-x-3 gap-y-1">{data.year_states.map(y=><span key={y.year} className={y.status==='available'?'text-slate-600':'font-medium text-amber-800'}>{y.year}: {yearStateLabel[y.status]}</span>)}</span>
+        </summary>
+        <div className="border-t border-slate-200 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><span>อัปเดต {new Date(data.generated_at).toLocaleString('th-TH')}</span><Hint label="ข้อจำกัดข้อมูล" text={summaryHints.zero}/></div>
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 xl:grid-cols-4">
+            {data.year_states.map(y=><div key={y.year} className="flex justify-between gap-3"><dt>ชุดข้อมูล {y.year}</dt><dd className="tabular-nums">{count(y.observed)}{y.expected!=null?` / ${count(y.expected)}`:''}</dd></div>)}
+            {[['มี Category',`${count(data.coverage.classified)} / ${count(data.coverage.base_documents)}`],['ผ่านตัวกรอง',count(data.coverage.selected)],['สังกัดผลงานยังไม่ครบ',count(data.coverage.affiliation_incomplete)],['สังกัดอาจารย์ยังไม่ครบ',count(data.coverage.faculty_affiliation_incomplete)],['บทบาทยังไม่ทราบ (คู่)',count(data.coverage.role_unknown_pairs)],['ใช้ metric ปีก่อนหน้า',count(data.coverage.metric_fallback)],['ไม่มี Quartile',count(data.coverage.missing_quartile)]].map(([label,value])=><div key={label} className="flex justify-between gap-3"><dt>{label}</dt><dd className="tabular-nums text-slate-900">{value}</dd></div>)}
+          </dl>
+        </div>
+      </details>
       {data.coverage.selected===0&&<p className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">ไม่พบผลงานผ่านตัวกรองในข้อมูลที่มี{data.coverage.base_documents>0&&data.coverage.classified===0?' — ชุดฐานยังไม่มี Category ที่จัดไว้ สามารถเลือก Category ทั้งหมดเพื่อสำรวจข้อมูลได้':''}</p>}
       {view==='overview'?<>
-        <div className="flex flex-wrap gap-5 text-sm"><Label hint={summaryHints.thailand}>Thailand</Label><Label hint={summaryHints.kku}>KKU</Label><Label hint={summaryHints.coc}>COC</Label><Label hint={summaryHints.percentages}>สูตรเปอร์เซ็นต์</Label></div>
-        <CountTable title="จำนวนผลงานตามปี" rows={data.yearly} total={data.total} onDetail={openDetail}/>
-        <section className="rounded-lg border border-slate-200 bg-white p-4"><h3 className="font-semibold"><Label hint={summaryHints.roles}>บทบาทอาจารย์ในผลงาน COC (ผลงานไม่ซ้ำ)</Label></h3><div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-6">{[['total','ทั้งหมด',summaryHints.units],['first','First',summaryHints.roles],['corresponding','Corresponding',summaryHints.roles],['lead','First หรือ Corresponding',summaryHints.roles],['co','Co-author เท่านั้น',summaryHints.co],['unknown','ยังสรุปไม่ได้',summaryHints.unknown]].map(([role,label,hint])=><div key={role} className="rounded-lg bg-slate-50 p-3"><div className="text-xs"><Label hint={hint}>{label}</Label></div><p className="mt-2 text-xl font-semibold"><CountButton value={data.faculty_roles[role]} onClick={()=>openDetail({level:'coc',...(role!=='total'?{role}:{})},label)}/></p></div>)}</div></section>
-        {data.year_states.map(y=><CountTable key={y.year} title={`Category ปี ${y.year}`} rows={data.categories.filter(r=>r.year===y.year)} total={{...data.yearly.find(r=>r.year===y.year),label:'รวม'}} category onDetail={openDetail}/>)}
-        {categories.map(([id,name])=>{const rows=data.quartiles.filter(r=>(r.category_id||0)===id);return <CountTable key={id} title={`${name} (${count(sumRows(rows,'').thailand)}) · ${applied.year_from}–${applied.year_to}`} rows={rows} total={{...sumRows(rows,'รวม'),category_id:id}} quartile onDetail={openDetail}/>})}
-      </>:<section className="rounded-lg border border-slate-200 bg-white p-4">
-        <div className="mb-3 flex flex-wrap gap-4 text-xs text-slate-500"><Label hint={summaryHints.roles}>การนับบทบาทซ้อนกัน</Label><Label hint={summaryHints.co}>Co-author</Label><Label hint={summaryHints.unknown}>ยังระบุไม่ได้</Label></div>
-        <div className="flex flex-wrap items-center gap-3"><h3 className="font-semibold"><Label hint={summaryHints.units}>บทบาทรายอาจารย์</Label></h3><label className="relative ml-auto"><Search size={15} className="absolute left-2 top-3 text-slate-400"/><input aria-label="ค้นหาอาจารย์" placeholder="ค้นหาชื่อ / Scopus ID" value={search} onChange={e=>setSearch(e.target.value)} className={`${field} pl-8`}/></label><select aria-label="เรียงอาจารย์" value={sort} onChange={e=>setSort(e.target.value)} className="rounded border border-slate-300 p-2 text-sm">{[['total','จำนวนทั้งหมด'],['first','จำนวน First'],['corresponding','จำนวน Corresponding'],['lead','จำนวน First หรือ Corresponding'],['co','จำนวน Co-author'],['unknown','จำนวนยังระบุไม่ได้'],['first_pct','สัดส่วน First'],['corresponding_pct','สัดส่วน Corresponding'],['lead_pct','สัดส่วน First หรือ Corresponding'],['name','ชื่อ']].map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></div>
+        <div className="summary-paired-grid grid gap-4">
+          <CountTable title="จำนวนผลงานตามปี" rows={data.yearly} total={data.total} onDetail={openDetail}/>
+          <ReportPanel title="บทบาทอาจารย์ · COC" hint={`${summaryHints.units}\n${summaryHints.roles}`} className="h-full">
+            <dl className="grid grid-cols-2 px-4 sm:grid-cols-3">
+              {[['total','ทั้งหมด',summaryHints.units],['first','First',summaryHints.roles],['corresponding','Corresponding',summaryHints.roles],['lead','First / Corresponding',summaryHints.roles],['co','Co-author เท่านั้น',summaryHints.co],['unknown','ยังสรุปไม่ได้',summaryHints.unknown]].map(([role,label,hint])=><div key={role} className="border-b border-slate-100 py-4">
+                <dt className="flex items-center gap-1 text-xs text-slate-600">{label}<Hint label={label} text={hint}/></dt>
+                <dd className="mt-1 text-xl font-semibold tabular-nums"><CountButton value={data.faculty_roles[role]} onClick={()=>openDetail({level:'coc',...(role!=='total'?{role}:{})},label)}/></dd>
+              </div>)}
+            </dl>
+          </ReportPanel>
+        </div>
+        <section aria-labelledby="summary-category-heading" className="pt-2">
+          <h2 id="summary-category-heading" className="mb-3 text-base font-semibold text-slate-900">ผลงานตาม Category</h2>
+          <div className="summary-paired-grid grid gap-4">
+            {data.year_states.map(y=><CountTable key={y.year} title={`ปี ${y.year}`} rows={data.categories.filter(r=>r.year===y.year)} total={{...data.yearly.find(r=>r.year===y.year),label:'รวม'}} category onDetail={openDetail}/>)}
+          </div>
+        </section>
+        <section aria-labelledby="summary-quartile-heading" className="pt-2">
+          <div className="mb-3 flex items-center justify-between gap-3"><h2 id="summary-quartile-heading" className="text-base font-semibold text-slate-900">Quartile ตาม Category</h2><span className="text-xs text-slate-500">{applied.year_from}–{applied.year_to} · {applied.quartile_mode==='t1'?'แยก T1':'Q1–Q4'}</span></div>
+          <div className="summary-quartile-grid grid gap-4">
+            {categories.map(([id,name])=>{const rows=data.quartiles.filter(r=>(r.category_id||0)===id);return <CountTable key={id} title={name} rows={rows} total={{...sumRows(rows,'รวม'),category_id:id}} quartile onDetail={openDetail}/>})}
+          </div>
+        </section>
+      </>:<SimpleCard className="w-full" title={<Label hint={`${summaryHints.units}\n${summaryHints.roles}\n${summaryHints.co}\n${summaryHints.unknown}`}>บทบาทรายอาจารย์</Label>}>
+
+        <div className="flex flex-wrap items-center gap-3"><label className="relative"><Search size={15} className="absolute left-2 top-3 text-slate-400"/><input aria-label="ค้นหาอาจารย์" placeholder="ค้นหาชื่อ / Scopus ID" value={search} onChange={e=>setSearch(e.target.value)} className={`${field} pl-8`}/></label><select aria-label="เรียงอาจารย์" value={sort} onChange={e=>setSort(e.target.value)} className="rounded border border-slate-300 p-2 text-sm">{[['total','จำนวนทั้งหมด'],['first','จำนวน First'],['corresponding','จำนวน Corresponding'],['lead','จำนวน First หรือ Corresponding'],['co','จำนวน Co-author'],['unknown','จำนวนยังระบุไม่ได้'],['first_pct','สัดส่วน First'],['corresponding_pct','สัดส่วน Corresponding'],['lead_pct','สัดส่วน First หรือ Corresponding'],['name','ชื่อ']].map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></div>
         <label className="mt-3 inline-flex items-center gap-2 text-sm"><input type="checkbox" checked={hideEmpty} onChange={e=>setHideEmpty(e.target.checked)}/>ซ่อนอาจารย์ที่ไม่มีผลงาน</label>
-        <div className="mt-4 overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-slate-50"><tr><th className="p-3 text-left">อาจารย์</th><th className="p-3 text-right">ทั้งหมด</th>{[['first','First'],['corresponding','Corresponding'],['lead','First หรือ Corresponding'],['co','Co-author'],['unknown','ยังระบุไม่ได้']].map(([v,l])=><th key={v} className="p-3 text-right">{l}<div className="text-xs font-normal">จำนวน / %</div></th>)}</tr></thead><tbody>{visibleFaculty.map(u=><tr key={u.user_id} className="border-b last:border-0"><th scope="row" className="p-3 text-left font-normal"><span className="font-medium">{u.name}</span><p className="mt-1 text-xs text-slate-500">{u.linkable?u.scopus_id:'ไม่มี Scopus ID — เชื่อมข้อมูลไม่ได้'}</p></th><td className="p-3 text-right"><CountButton value={u.linkable?u.total:null} onClick={()=>openDetail({level:'coc',user_id:u.user_id},u.name)}/></td>{['first','corresponding','lead','co','unknown'].map(role=><td key={role} className="p-3 text-right"><CountButton value={u.linkable?u[role]:null} onClick={()=>openDetail({level:'coc',user_id:u.user_id,role},`${u.name} · ${role}`)}/><span className="ml-1 text-xs text-slate-500">/ {u.linkable?pct(u[`${role}_pct`]):'—'}</span></td>)}</tr>)}</tbody></table></div>
+        <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[760px] table-fixed border-collapse text-sm"><thead className="bg-blue-100 text-xs text-blue-900"><tr><th className="w-[26%] border border-slate-200 px-3 py-2 text-left">อาจารย์</th><th className="border border-slate-200 px-3 py-2 text-right">ทั้งหมด</th>{[['first','First'],['corresponding','Corresponding'],['lead','First หรือ Corresponding'],['co','Co-author'],['unknown','ยังระบุไม่ได้']].map(([v,l])=><th key={v} className="border border-slate-200 px-3 py-2 text-right">{l}<div className="text-xs font-normal">จำนวน / %</div></th>)}</tr></thead><tbody>{visibleFaculty.map((u,i)=><tr key={u.user_id} className={`border-b last:border-0 ${i%2 ? "bg-slate-50" : "bg-white"} hover:bg-blue-50`}><th scope="row" className="border border-slate-200 px-3 py-2 text-left font-normal"><span className="font-medium">{u.name}</span><p className="mt-1 text-xs text-slate-500">{u.linkable?u.scopus_id:'ไม่มี Scopus ID — เชื่อมข้อมูลไม่ได้'}</p></th><td className="border border-slate-200 px-3 py-2 text-right"><CountButton value={u.linkable?u.total:null} onClick={()=>openDetail({level:'coc',user_id:u.user_id},u.name)}/></td>{['first','corresponding','lead','co','unknown'].map(role=><td key={role} className="border border-slate-200 px-3 py-2 text-right"><CountButton value={u.linkable?u[role]:null} onClick={()=>openDetail({level:'coc',user_id:u.user_id,role},`${u.name} · ${role}`)}/><span className="mt-1 block text-xs text-slate-500">{u.linkable?pct(u[`${role}_pct`]):'—'}</span></td>)}</tr>)}</tbody></table></div>
         {visibleFaculty.length===0&&<p className="py-8 text-center text-slate-500">ไม่พบอาจารย์ตามตัวกรองการแสดงผล</p>}
-      </section>}
+      </SimpleCard>}
     </>}
+    <style jsx>{`
+      @container scopus-summary (min-width: 1000px) {
+        .summary-paired-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @container scopus-summary (min-width: 640px) {
+        .summary-quartile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @container scopus-summary (min-width: 1160px) {
+        .summary-quartile-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      }
+    `}</style>
     {isActive&&detail&&<DocumentDialog state={detail} data={documents} loading={docLoading} error={docError} onPage={page=>setDetail(d=>({...d,page}))} onClose={closeDetail}/>}
   </div>;
 }

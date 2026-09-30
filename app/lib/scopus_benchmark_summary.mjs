@@ -1,8 +1,8 @@
 export function defaultSummaryFilters(year = new Date().getFullYear()) {
-  return { year_from: year - 1, year_to: year, types: 'Journal', category: 'classified', confidence: 'High,Medium,Preface,unknown', quartile_mode: 't1' };
+  return { year_from: year - 1, year_to: year, types: 'Journal', category: 'classified', confidence: 'High,Medium,unknown', quartile_mode: 't1' };
 }
 export const qualityLabel = { T1: 'T1', Q1: 'Q1', Q2: 'Q2', Q3: 'Q3', Q4: 'Q4', missing: 'ไม่มีข้อมูล Quartile', not_applicable: 'ไม่ใช้ Quartile' };
-export const confidenceLabel = { High: 'High / สูง', Medium: 'Medium / ปานกลาง', Low: 'Low / ต่ำ', Preface: 'Preface', unknown: 'ไม่ระบุ' };
+export const confidenceLabel = { High: 'High / สูง', Medium: 'Medium / ปานกลาง', Low: 'Low / ต่ำ', unknown: 'ไม่ระบุ' };
 export const yearStateLabel = { available: 'มีข้อมูล', partial: 'มีข้อมูลบางส่วน', missing: 'ไม่มีชุดข้อมูล', harvesting: 'กำลังดึงข้อมูล' };
 export const summaryHints = {
   thailand: 'นับ EID ไม่ซ้ำจากชุด Thailand ใน benchmark ตาม membership ปีและตัวกรองเดียวกันทั้งหมด ไม่ใช้ยอด snapshot และไม่รวมผลงานคณะที่อยู่นอกชุดฐาน',
