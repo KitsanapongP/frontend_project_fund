@@ -69,10 +69,13 @@ export default function Hint({ text, label }) {
       className="no-print inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
       <Info size={14} aria-hidden="true" />
     </button>
-    {open && createPortal(<span ref={panelRef} id={panelId} role="tooltip"
-      style={{ left: position?.left ?? 8, top: position?.top ?? 8, visibility: position ? "visible" : "hidden", width: "min(288px, calc(100vw - 16px))", maxHeight: "calc(100dvh - 16px)" }}
-      className="no-print fixed z-[10000] overflow-y-auto rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-[12px] font-normal leading-relaxed text-slate-600 shadow-lg">
-      {text}
-    </span>, document.body)}
+    {open && createPortal(<div ref={panelRef} id={panelId} role="tooltip"
+      style={{ left: position?.left ?? 8, top: position?.top ?? 8, visibility: position ? "visible" : "hidden", width: "min(360px, calc(100vw - 16px))", maxHeight: "min(560px, calc(100dvh - 16px))" }}
+      className="no-print fixed z-[10000] overflow-y-auto rounded-lg border border-slate-200 bg-white p-4 text-left text-xs font-normal leading-relaxed text-slate-700 shadow-lg">
+      {(Array.isArray(text) ? text : [text]).map((section,index)=><div key={index} className="border-b border-slate-200 pb-3 last:border-0 last:pb-0 [&+div]:pt-3">
+        <p className="mb-1.5 font-semibold text-slate-900">{typeof section === 'string' ? label : section.title}</p>
+        {typeof section === 'string' ? <div className="space-y-2">{section.split(/\n+/).filter(Boolean).map((line,i)=><p key={i}>{line}</p>)}</div> : <ul className="list-disc space-y-1.5 pl-4">{section.lines.map((line,i)=><li key={i}>{line}</li>)}</ul>}
+      </div>)}
+    </div>, document.body)}
   </span>;
 }

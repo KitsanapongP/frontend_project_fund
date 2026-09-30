@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSummaryLoader, defaultSummaryFilters, filterSummaryFaculty } from '../scopus_benchmark_summary.mjs';
+import { createSummaryLoader, defaultSummaryFilters, filterSummaryFaculty, sortSummaryRows, nextSummarySort, hasNonJournalTypes } from '../scopus_benchmark_summary.mjs';
+
+test('unranked rows default to shown for mixed or exclusively non-Journal types',()=>{
+  for(const types of ['Journal,Book','Conference Proceeding','Trade Journal',' Book Series , Journal ','Journal,New Type'])assert.equal(hasNonJournalTypes(types),true,types);
+  for(const types of ['Journal',' Journal ,', '',null])assert.equal(hasNonJournalTypes(types),false,types);
+});
 
 test('summary defaults use prior/current CE years, Journal, classified and non-Low',()=>{
   assert.deepEqual(defaultSummaryFilters(2026),{year_from:2025,year_to:2026,types:'Journal',category:'classified',confidence:'High,Medium,unknown',quartile_mode:'t1'});
@@ -32,4 +37,23 @@ test('faculty roster search, hide-empty and ratio ordering do not mutate the ful
   const rows=[{name:'A',scopus_id:'1',total:10,first_pct:10},{name:'B',scopus_id:'2',total:2,first_pct:100},{name:'C',scopus_id:'',total:0}];
   assert.deepEqual(filterSummaryFaculty(rows,'',false,'first_pct').map(r=>r.name),['B','A','C']);
   assert.equal(filterSummaryFaculty(rows,'',true,'total').length,2);assert.equal(filterSummaryFaculty(rows,'2',false,'total')[0].name,'B');assert.equal(rows.length,3);
+});
+
+test('table sorting compares numbers and keeps unavailable values last in either direction',()=>{
+  const rows=[{label:'ten',thailand:10,kku_pct:20},{label:'missing',thailand:null,kku_pct:null},{label:'two',thailand:2,kku_pct:90},{label:'zero',thailand:0,kku_pct:0}];
+  assert.deepEqual(sortSummaryRows(rows,{key:'thailand',direction:'asc'}).map(r=>r.label),['zero','two','ten','missing']);
+  assert.deepEqual(sortSummaryRows(rows,{key:'thailand',direction:'desc'}).map(r=>r.label),['ten','two','zero','missing']);
+  assert.deepEqual(sortSummaryRows(rows,{key:'kku_pct',direction:'desc'}).map(r=>r.label),['two','ten','zero','missing']);
+  assert.equal(rows[0].label,'ten');
+});
+test('header clicks toggle direction, Quartile uses quality order and unlinked faculty stay last',()=>{
+  const initial=nextSummarySort(null,'thailand');
+  assert.deepEqual(initial,{key:'thailand',direction:'desc'});
+  assert.deepEqual(nextSummarySort(initial,'thailand'),{key:'thailand',direction:'asc'});
+  assert.deepEqual(nextSummarySort(initial,'label'),{key:'label',direction:'asc'});
+  const quartiles=['missing','Q4','T1','not_applicable','Q1'].map(quartile=>({quartile}));
+  assert.deepEqual(sortSummaryRows(quartiles,{key:'quartile',direction:'asc'}).map(r=>r.quartile),['T1','Q1','Q4','missing','not_applicable']);
+  const faculty=[{name:'A',scopus_id:'10',total:0,linkable:false},{name:'B',scopus_id:'2',total:0,linkable:true},{name:'C',scopus_id:'11',total:2,linkable:true}];
+  assert.deepEqual(filterSummaryFaculty(faculty,'',false,{key:'total',direction:'asc'}).map(r=>r.name),['B','C','A']);
+  assert.deepEqual(filterSummaryFaculty(faculty,'',false,{key:'scopus_id',direction:'asc'}).map(r=>r.scopus_id),['2','10','11']);
 });
