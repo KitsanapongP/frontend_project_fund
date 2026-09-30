@@ -4,9 +4,21 @@
 
 ## ตำแหน่งและไฟล์
 
-`/admin/scopus-benchmark` ใน portal `/research-fund-system/admin/scopus-benchmark` เรียง: **สรุปผลงานและบทบาทอาจารย์** → **ผลเปรียบเทียบเชิงวิเคราะห์** เดิม → **ตั้งค่า & ดึงข้อมูล**
+`/admin/scopus-benchmark` ใน portal `/research-fund-system/admin/scopus-benchmark` เรียง: **สรุปผลงานและบทบาทอาจารย์** → **สรุปเปรียบเทียบ Thailand / KKU / COC** → **ผลเปรียบเทียบเชิงวิเคราะห์** เดิม → **ตั้งค่า & ดึงข้อมูล**
 
-ไฟล์หลัก AdminScopusBenchmark.js, ScopusBenchmarkSummary.js, ScopusBenchmarkDashboard.js, app/lib/scopus_benchmark_summary.mjs, app/lib/api.js คู่มือ DB/migration/backfill/API หลักใน backend `docs/SCOPUS_BENCHMARK_SUMMARY.md`
+ไฟล์หลัก AdminScopusBenchmark.js, ScopusBenchmarkSummary.js, ScopusBenchmarkPresentation.js, ScopusBenchmarkDashboard.js, app/lib/scopus_benchmark_summary.mjs, app/lib/api.js คู่มือ DB/migration/backfill/API หลักใน backend `docs/SCOPUS_BENCHMARK_SUMMARY.md`
+
+## แท็บสรุปเปรียบเทียบ
+
+- ใช้ `ScopusBenchmarkSummary presentation` อีก instance เพื่อแชร์ UI/validation/loader ของตัวกรอง แต่ draft/applied/results/revision แยกจากแท็บผลงานและบทบาท ค่าเริ่มต้นปีปัจจุบัน+ก่อนหน้า, Journal, มี Category, High/Medium/unknown, แยก T1 เช่นเดิม
+- ปี ประเภท Category และ Confidence เปลี่ยนผลเมื่อกดใช้ตัวกรอง; toggle T1/Q1–Q4 เปลี่ยนทันทีเช่นแท็บเดิม ไม่ใช้การ toggle ประเภทแบบ instant ตามข้อสรุปล่าสุด
+- ส่ง `report_view=presentation` ไป summary endpoint เพื่อขอ aggregates เพิ่มเท่านั้น ไม่ส่งเอกสารทั้งหมดเข้า browser และไม่ยิง Scopus หน้าแสดงยอดสรุป, ผลกระทบการกรองคู่กับรายปี, Category รวมช่วงปีคู่กับ Quartile รวมช่วงปี
+- ก่อนกรองหมายถึงผลงานในฐาน Thailand ภายในช่วงปีที่เลือก; ใช้ตัวกรองสะสม ประเภท → Category → Confidence ตาม applied filters `% คงเหลือ` หารด้วยยอดก่อนกรองของระดับนั้น ไม่ใช่ขั้นก่อนหน้า ปุ่มตัวเลขในแต่ละขั้น override filters ตามขั้นนั้นเพื่อให้ drilldown ตรงกับจำนวน
+- สัดส่วนแสดงชื่อเต็ม KKU / Thailand, COC / Thailand และ COC / KKU ตัวหาร 0/ข้อมูลขาดเป็นขีด ยอดรวมคำนวณจากจำนวนรวม ไม่เฉลี่ยเปอร์เซ็นต์; ปีขาดแสดงขีดและคงสถานะข้อมูล
+- ตารางรายปี/Category/Quartile เรียงจากหัวคอลัมน์ได้ ยอดรวมอยู่ท้าย ขั้นตอนการกรองคงลำดับ; ผลงานประเภทอื่นแสดงแถวไม่ถูกนำมาจัดอันดับอัตโนมัติเมื่ออยู่ใน applied types ไม่ปนกับ Journal ไม่มี metric
+- Mount เมื่อเปิดแท็บครั้งแรก; cache/filter คงอยู่เมื่อสลับออกและไม่โหลดใหม่เมื่อกลับมา Abort/generation ของ loader ป้องกัน response เก่าทับค่าใหม่ งานตั้งค่าทำให้ cache ของรายงานแต่ละแท็บเป็น stale แยกกัน
+- Excel ส่ง `view=presentation`, `report_view=presentation`, revision เดียวกับผลที่เห็น มีชีตผลกระทบการกรอง รายปี Category รวมช่วงปี Quartile รวมช่วงปี และคำอธิบาย ถ้าข้อมูลเปลี่ยนต้องอัปเดตรายงานก่อนส่งออก
+- ใช้ฐานเดียวและ AF-ID 5/2 ตามคู่มือ backend; ไม่ใช้ชีต COC แยกใน Excel เดิม และไม่ใช้ยอด snapshot เป็นตัวเลขรายงาน จึงไม่บังคับ dev ให้ตรงยอด production ใน workbook อ้างอิง
 
 ## ตัวกรอง ตาราง และนิยาม
 
@@ -127,3 +139,15 @@ Responsive อิง container ของรายงาน: พื้นที�
 - สรุป applied filters ใช้รูปแบบ “ตัวกรองปัจจุบัน:” และป้ายชื่อ/ค่าตาม research-dashboard แสดงปี ประเภท Category Confidence และโหมด Quartile จาก applied state เท่านั้น ไม่แสดงค่าที่แก้ใน draft ก่อนกดใช้ตัวกรอง ข้อความยาว wrap บนจอแคบ
 - ตรวจ dev: ค่าเริ่มต้นไม่มีแถว not_applicable ในทั้ง 7 ตาราง; ปุ่มแสดงเพิ่มแถวครบทั้ง 7 และซ่อนกลับได้โดยยอดรวมเดิม ตรวจลำดับ Journal/Conference และเลือก Conference ใน draft แล้วยืนยันว่าป้ายประเภทปัจจุบันยังเป็น Journal จนกดใช้ตัวกรอง
 - ตรวจคำเตือนใน browser: Journal + Book แสดงแถวทั้ง 7 อัตโนมัติหลังใช้ตัวกรอง; “แสดงต่อ” คงแถวไว้; “ยืนยันซ่อนแถว” ซ่อนครบโดยตัวเลขรวมเดิมทุกตาราง; ใช้ตัวกรองเดิมซ้ำกลับมาแสดง; Journal อย่างเดียวซ่อนโดยไม่มีคำเตือน การสลับ 2/4 ตารางไม่ล้างค่าที่เลือก และ tooltip แสดงกติกาใหม่ ทดสอบ helpers 8 กรณีผ่าน รวมประเภทผสม ประเภทอื่นอย่างเดียว และค่าเผื่อประเภทใหม่
+### ผลตรวจแท็บสรุปเปรียบเทียบ (2026-09-30)
+
+การจัดตาราง: ผลกระทบการกรองและรายปียังเป็นคู่บนจอกว้าง ส่วน Category รวมช่วงปีและ Quartile รวมช่วงปีแสดงเต็มความกว้างคนละแถวทุกขนาดหน้าจอ เพื่อให้ชื่อหมวดและสัดส่วนอ่านได้สะดวกขึ้น
+
+- Frontend helper tests ผ่าน 65 กรณี (`node --test app/lib/__tests__/*.test.mjs`); backend packages `services` และ `controllers` ผ่าน รวม regression ของขั้นการกรอง, stage drilldown, revision และอ่าน XLSX กลับมาเทียบค่าตัวเลข
+- ตรวจ dev ค่าเริ่มต้นปี 2025–2026: ก่อนกรอง Thailand 9,296 / KKU 559 / COC 126; หลังกรอง Journal + มี Category + High/Medium/ไม่ระบุ ได้ 1,835 / 155 / 48 ตรงกับแท็บรายงานเดิม สัดส่วน KKU/Thailand 8.4%, COC/Thailand 2.6%, COC/KKU 31.0%
+- กดยอด COC ก่อนกรองเปิดรายการได้ 126 ผลงาน; draft ประเภทไม่เปลี่ยนยอดจนกดใช้ตัวกรอง; Journal + Book ได้ 1,905 / 164 / 49 และแถวไม่ถูกนำมาจัดอันดับ 70 / 9 / 1; เปลี่ยน Q1–Q4 แล้วยอดรวมคงเดิม; ล้างตัวกรองคืน Journal และแยก T1
+- Harness ตรวจ lazy loading: เปิดแท็บเดิม options/summary อย่างละ 1 request; เปิดแท็บใหม่เพิ่มเป็นอย่างละ 2; สลับออก/กลับไม่เพิ่ม request; อัปเดตเพิ่มเป็นอย่างละ 3 ไม่มี request ของ analysis, setup, faculty หรือ documents จนร้องขอมุมมองนั้น ตรวจปีที่ไม่มีข้อมูลเป็นขีดและ API error state ด้วย
+- ตัวกรองและผลของสองแท็บเก็บแยกกัน; ตรวจเรียง Thailand ในตาราง Category ทั้งมากไปน้อยและน้อยไปมาก โดยยอดรวมอยู่ท้ายตาราง; Hint แสดงคำอธิบายเป็นหัวข้อและรายการ
+- ตรวจ responsive: viewport กว้าง 1,712px ได้ตารางคู่สองคอลัมน์; viewport 390px ได้คอลัมน์เดียวและตารางเลื่อนภายใน ไม่มี horizontal overflow ของหน้า คืนขนาด browser ปกติหลังตรวจ
+- กดส่งออกจริงเรียก export พร้อม `report_view=presentation`, `view=presentation` และ revision ได้ HTTP 200; in-app browser ไม่ส่ง download event ของไฟล์ Blob ให้ตัวทดสอบ จึงยืนยันเนื้อหาไฟล์จาก backend XLSX readback tests ไม่อ้างว่าได้ตรวจไฟล์ดาวน์โหลดจริงผ่าน browser ไม่มี console error หลังการส่งออก
+- เปิด frontend port 3000 และ backend port 8080 ทิ้งไว้สำหรับตรวจต่อ การตรวจรอบนี้ใช้ dev server ไม่ได้รัน frontend production build

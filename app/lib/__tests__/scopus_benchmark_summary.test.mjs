@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSummaryLoader, defaultSummaryFilters, filterSummaryFaculty, sortSummaryRows, nextSummarySort, hasNonJournalTypes } from '../scopus_benchmark_summary.mjs';
+import { createSummaryLoader, defaultSummaryFilters, filterSummaryFaculty, sortSummaryRows, nextSummarySort, hasNonJournalTypes, presentationRows } from '../scopus_benchmark_summary.mjs';
+
+test('presentation ratios distinguish COC/Thailand from COC/KKU and preserve missing/zero',()=>{
+  const source=[{thailand:100,kku:20,coc:5},{thailand:0,kku:0,coc:0},{thailand:null,kku:null,coc:null}];
+  const result=presentationRows(source);
+  assert.equal(result[0].kku_pct,20);assert.equal(result[0].coc_thailand_pct,5);assert.equal(result[0].coc_pct,25);
+  for(const row of result.slice(1)){assert.equal(row.kku_pct,null);assert.equal(row.coc_thailand_pct,null);assert.equal(row.coc_pct,null);}
+  assert.equal(source[0].coc_thailand_pct,undefined);
+});
 
 test('unranked rows default to shown for mixed or exclusively non-Journal types',()=>{
   for(const types of ['Journal,Book','Conference Proceeding','Trade Journal',' Book Series , Journal ','Journal,New Type'])assert.equal(hasNonJournalTypes(types),true,types);

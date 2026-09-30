@@ -24,6 +24,12 @@ export function hasNonJournalTypes(types) {
   return String(types || '').split(',').some(type => type.trim() && type.trim() !== 'Journal');
 }
 
+// Derive all three ratios from the same row; null remains unavailable, not zero.
+export function presentationRows(rows) {
+  const ratio=(n,d)=>n==null||d==null||d===0?null:n/d*100;
+  return rows.map(row=>({...row,kku_pct:ratio(row.kku,row.thailand),coc_thailand_pct:ratio(row.coc,row.thailand),coc_pct:ratio(row.coc,row.kku)}));
+}
+
 export function nextSummarySort(current, key) {
   return { key, direction: current?.key === key ? current.direction === 'asc' ? 'desc' : 'asc' : ['label', 'name', 'scopus_id', 'year', 'quartile'].includes(key) ? 'asc' : 'desc' };
 }

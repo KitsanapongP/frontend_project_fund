@@ -192,6 +192,7 @@ export default function AdminScopusBenchmark({ api = scopusBenchmarkAPI }) {
   const [tab, setTab] = useState("summary");
   const [visited, setVisited] = useState({ summary: true });
   const [summaryStale, setSummaryStale] = useState(false);
+  const [presentationStale, setPresentationStale] = useState(false);
   const setupLoaded = useRef(false);
   const [msg, setMsg] = useState(null);
 
@@ -278,7 +279,7 @@ export default function AdminScopusBenchmark({ api = scopusBenchmarkAPI }) {
   useEffect(() => {
     const prev = prevActiveRunId.current;
     const curr = activeRun?.id ?? null;
-    if (prev && !curr) { setReportStale(true); setSummaryStale(true); }
+    if (prev && !curr) { setReportStale(true); setSummaryStale(true); setPresentationStale(true); }
     prevActiveRunId.current = curr;
   }, [activeRun?.id]);
 
@@ -349,7 +350,7 @@ export default function AdminScopusBenchmark({ api = scopusBenchmarkAPI }) {
     try {
       const res = await api.refreshCounts(yearParams());
       setReportStale(true);
-      setSummaryStale(true);
+      setSummaryStale(true); setPresentationStale(true);
       await loadComparison();
       const results = Array.isArray(res?.data) ? res.data : [];
       const failed = results.filter((item) => item?.error);
@@ -416,7 +417,7 @@ export default function AdminScopusBenchmark({ api = scopusBenchmarkAPI }) {
     try {
       await api.updateScope(uni.id, { af_id: afId });
       setReportStale(true);
-      setSummaryStale(true);
+      setSummaryStale(true); setPresentationStale(true);
       notify("บันทึก AF-ID แล้ว", "success");
       setLookupHits([]);
       setLookupOpen(false);
@@ -617,7 +618,7 @@ export default function AdminScopusBenchmark({ api = scopusBenchmarkAPI }) {
     >
       <div className="space-y-5">
         <div className="flex gap-6 overflow-x-auto whitespace-nowrap border-b border-slate-200">
-          {[["summary", "สรุปผลงานและบทบาทอาจารย์"], ["results", "ผลเปรียบเทียบเชิงวิเคราะห์"], ["setup", "ตั้งค่า & ดึงข้อมูล"]].map(([k, lbl]) => (
+          {[["summary", "สรุปผลงานและบทบาทอาจารย์"], ["presentation", "สรุปเปรียบเทียบ Thailand / KKU / COC"], ["results", "ผลเปรียบเทียบเชิงวิเคราะห์"], ["setup", "ตั้งค่า & ดึงข้อมูล"]].map(([k, lbl]) => (
             <button key={k} type="button" onClick={() => setTab(k)}
               className={`-mb-px border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
                 tab === k ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
@@ -650,6 +651,9 @@ export default function AdminScopusBenchmark({ api = scopusBenchmarkAPI }) {
         {/* Report panels mount on first visit; inactive panels retain their cache. */}
         <div className={tab === "summary" ? "" : "hidden"} aria-hidden={tab !== "summary"}>
           <ScopusBenchmarkSummary api={api} isActive={tab === "summary"} stale={summaryStale} onRefreshed={() => setSummaryStale(false)} />
+        </div>
+        <div className={tab === "presentation" ? "" : "hidden"} aria-hidden={tab !== "presentation"}>
+          {visited.presentation && <ScopusBenchmarkSummary presentation api={api} isActive={tab === "presentation"} stale={presentationStale} onRefreshed={() => setPresentationStale(false)} />}
         </div>
         <div className={tab === "results" ? "" : "hidden"} aria-hidden={tab !== "results"}>
           {visited.results && <ScopusBenchmarkDashboard

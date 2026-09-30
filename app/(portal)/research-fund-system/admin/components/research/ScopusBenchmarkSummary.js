@@ -9,25 +9,14 @@ import Hint from './report/Hint';
 import SimpleCard from '../common/SimpleCard';
 import DocumentDialog from './ScopusBenchmarkDocumentDialog';
 import SummarySortHeader from './report/SummarySortHeader';
+import { CountButton, ReportPanel } from './report/SummaryReportPrimitives';
+import ScopusBenchmarkPresentation from './ScopusBenchmarkPresentation';
 
 const count = (n) => n == null ? '—' : Number(n).toLocaleString('th-TH');
 const pct = (n) => n == null ? '—' : `${Number(n).toFixed(1)}%`;
 const button = 'inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-400';
 const field = 'min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm';
 function Label({ children, hint }) { return <span className="inline-flex items-center gap-1">{children}<Hint label={children} text={hint} /></span>; }
-function CountButton({ value, onClick }) { return value == null ? '—' : <button type="button" onClick={onClick} disabled={value === 0} className="rounded px-1 text-blue-700 hover:underline focus:ring-2 focus:ring-blue-300 disabled:text-slate-600 disabled:no-underline">{count(value)}</button>; }
-
-// Operate mode: filters -> paired overview -> yearly categories -> adjustable
-// Quartile matrix. Shared edges and compact tables keep comparisons in one scan.
-function ReportPanel({ title, hint, children, compact = false, className = '' }) {
-  return <section className={`min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white ${className}`}>
-    <header className={`flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 ${compact ? 'min-h-16' : 'min-h-14'}`}>
-      <h3 className="min-w-0 text-sm font-semibold leading-5 text-slate-900">{title}</h3>
-      {hint && <Hint label={title} text={hint}/>}
-    </header>
-    {children}
-  </section>;
-}
 function CountTable({ title, rows, total, onDetail, category = false, quartile = false, compactQuartile = true, hint }) {
   const [sort,setSort]=useState(null);
   const sorted=sortSummaryRows(rows,sort);
@@ -62,7 +51,7 @@ function sumRows(rows,label) {
   const thailand=valid.reduce((s,r)=>s+r.thailand,0),kku=valid.reduce((s,r)=>s+r.kku,0),coc=valid.reduce((s,r)=>s+r.coc,0);
   return { label,thailand,kku,coc,kku_pct:thailand?kku/thailand*100:null,coc_pct:kku?coc/kku*100:null };
 }
-export default function ScopusBenchmarkSummary({ isActive=true, stale=false, onRefreshed, api=scopusBenchmarkAPI }) {
+export default function ScopusBenchmarkSummary({ isActive=true, stale=false, onRefreshed, api=scopusBenchmarkAPI, presentation=false }) {
   const [view,setView]=useState('overview');const [draft,setDraft]=useState(defaultSummaryFilters);const [applied,setApplied]=useState(defaultSummaryFilters);
   const [quartileColumns,setQuartileColumns]=useState(2);
   const [showUnranked,setShowUnranked]=useState(false);
@@ -78,7 +67,8 @@ export default function ScopusBenchmarkSummary({ isActive=true, stale=false, onR
   const refreshPending=useRef(false);
   const closeDetail=useCallback(()=>setDetail(null),[]);
   const exportAbort=useRef(null);
-  const filterKey=JSON.stringify(applied);const key=`${filterKey}:${version}`;
+  const requestFilters={...applied,...(presentation?{report_view:'presentation'}:{})};
+  const filterKey=JSON.stringify(requestFilters);const key=`${filterKey}:${version}`;
   useEffect(()=>{
     if(!isActive)return undefined;
     const loader=loaders.current.options;
@@ -88,7 +78,7 @@ export default function ScopusBenchmarkSummary({ isActive=true, stale=false, onR
   useEffect(()=>{
     if(!isActive)return undefined;
     const loader=loaders.current[view];setLoading(true);setError('');
-    loader.load(key,signal=>view==='overview'?api.summary(applied,{signal}):api.summaryFaculty(applied,{signal}),r=>{
+    loader.load(key,signal=>view==='overview'?api.summary(requestFilters,{signal}):api.summaryFaculty(requestFilters,{signal}),r=>{
       const result={key,data:r.data};if(view==='overview')setReport(result);else setFaculty(result);setLoading(false);
       if(refreshPending.current){refreshPending.current=false;refreshRef.current?.()}
     },e=>{setError(e.message||'โหลดรายงานไม่สำเร็จ');setLoading(false)});
@@ -142,7 +132,7 @@ export default function ScopusBenchmarkSummary({ isActive=true, stale=false, onR
   const refresh=()=>{refreshPending.current=true;Object.values(loaders.current).forEach(l=>{l.stop();l.clear()});setVersion(v=>v+1);setDetail(null);};
   const download=async()=>{
     if(!data)return;setExporting(true);setError('');const controller=new AbortController();exportAbort.current=controller;
-    try{const blob=await api.summaryExport({...applied,view,revision:data.revision},{signal:controller.signal});if(controller.signal.aborted)return;const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`scopus-benchmark-${view}-${applied.year_from}-${applied.year_to}.xlsx`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch(e){if(!controller.signal.aborted)setError(e.message)}finally{if(!controller.signal.aborted)setExporting(false)}
+    try{const exportView=presentation?'presentation':view;const blob=await api.summaryExport({...requestFilters,view:exportView,revision:data.revision},{signal:controller.signal});if(controller.signal.aborted)return;const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`scopus-benchmark-${exportView}-${applied.year_from}-${applied.year_to}.xlsx`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch(e){if(!controller.signal.aborted)setError(e.message)}finally{if(!controller.signal.aborted)setExporting(false)}
   };
   return <div className="space-y-4" style={{containerType: 'inline-size', containerName: 'scopus-summary'}}>
     <SimpleCard title="ตัวกรองข้อมูล" icon={SlidersHorizontal} action={<Hint label="หน่วยและขอบเขตการนับ" text={summaryHints.units}/>} noPadding>
@@ -170,7 +160,7 @@ export default function ScopusBenchmarkSummary({ isActive=true, stale=false, onR
       </div>
     </SimpleCard>
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-      <div className="flex gap-1">{[['overview','ภาพรวมผลงาน'],['faculty','บทบาทอาจารย์']].map(([v,label])=><button type="button" key={v} onClick={()=>{setView(v);setDetail(null)}} aria-pressed={view===v} className={`rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-300 ${view===v?'bg-blue-50 text-blue-700':'text-slate-600 hover:bg-slate-100'}`}>{label}</button>)}</div>
+      {presentation?<p className="text-sm font-medium text-slate-700">ผลสรุป {applied.year_from}–{applied.year_to}</p>:<div className="flex gap-1">{[['overview','ภาพรวมผลงาน'],['faculty','บทบาทอาจารย์']].map(([v,label])=><button type="button" key={v} onClick={()=>{setView(v);setDetail(null)}} aria-pressed={view===v} className={`rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-300 ${view===v?'bg-blue-50 text-blue-700':'text-slate-600 hover:bg-slate-100'}`}>{label}</button>)}</div>}
       <div className="flex gap-2"><button type="button" className={`${button} border-slate-300 bg-white text-slate-700 hover:bg-slate-100`} onClick={refresh} disabled={loading}><RefreshCw size={16}/>อัปเดตข้อมูล</button><button type="button" className={`${button} border-slate-300 bg-white text-slate-700 hover:bg-slate-100`} onClick={download} disabled={loading||exporting||!data}><Download size={16}/>{exporting?'กำลังส่งออก…':'ส่งออก Excel'}</button></div>
     </div>
     {stale&&<div role="status" className="flex items-center justify-between rounded-lg bg-amber-50 p-3 text-sm text-amber-800"><span>ข้อมูลตั้งค่าหรือ harvest เปลี่ยนแล้ว ผลที่แสดงเป็นข้อมูลเดิม</span><button type="button" className={`${button} border-amber-300`} disabled={loading} onClick={refresh}>อัปเดตรายงาน</button></div>}
@@ -191,7 +181,7 @@ export default function ScopusBenchmarkSummary({ isActive=true, stale=false, onR
         </div>
       </details>
       {data.coverage.selected===0&&<p className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">ไม่พบผลงานผ่านตัวกรองในข้อมูลที่มี{data.coverage.base_documents>0&&data.coverage.classified===0?' — ชุดฐานยังไม่มี Category ที่จัดไว้ สามารถเลือก Category ทั้งหมดเพื่อสำรวจข้อมูลได้':''}</p>}
-      {view==='overview'?<>
+      {presentation?<ScopusBenchmarkPresentation data={data} onDetail={openDetail}/>:view==='overview'?<>
         <div className="summary-paired-grid grid gap-4">
           <CountTable title="จำนวนผลงานตามปี" rows={data.yearly} total={data.total} onDetail={openDetail}/>
           <ReportPanel title="บทบาทอาจารย์ · COC" hint={[summaryHints.units,summaryHints.roles]} className="h-full">
