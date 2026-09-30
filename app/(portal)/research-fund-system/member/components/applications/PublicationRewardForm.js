@@ -1726,6 +1726,7 @@ export default function PublicationRewardForm({
     scopus_benchmark_document_id: null,
   });
   const [selectedSDGIds, setSelectedSDGIds] = useState([]);
+  const [paperAISDGSuggestion, setPaperAISDGSuggestion] = useState(null);
 
   // Co-authors and files
   const [coauthors, setCoauthors] = useState([]);
@@ -4924,6 +4925,21 @@ export default function PublicationRewardForm({
       } catch (error) {
         warnings.push(`สรุปบทคัดย่อไม่ได้: ${error?.message || 'เกิดข้อผิดพลาด'}`);
       }
+
+      try {
+        const suggestion = await paperAIAPI.suggestSDG({
+          title,
+          ...(abstract ? { abstract } : { content: content.slice(0, 500000) }),
+        });
+        const sdgId = Number(suggestion?.sdg_id);
+        if (!Number.isInteger(sdgId) || sdgId <= 0 || !suggestion?.reason_th) {
+          throw new Error('ผลการวิเคราะห์ SDG ไม่สมบูรณ์');
+        }
+        setSelectedSDGIds([sdgId]);
+        setPaperAISDGSuggestion(suggestion);
+      } catch (error) {
+        warnings.push(`ไม่สามารถระบุ SDG อัตโนมัติได้ กรุณาเลือกเอง: ${error?.message || 'เกิดข้อผิดพลาด'}`);
+      }
     }
     setPaperAIWarnings(warnings);
       Toast.fire({ icon: 'success', title: 'นำเข้าข้อมูลบทความเรียบร้อยแล้ว โปรดตรวจสอบข้อมูลก่อนบันทึก' });
@@ -4938,6 +4954,7 @@ export default function PublicationRewardForm({
     setPaperAIError('');
     setPaperAIWarnings([]);
     setPaperAIMatchStatus(null);
+    setPaperAISDGSuggestion(null);
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       setPaperAIError('กรุณาเลือกไฟล์ PDF');
       Toast.fire({ icon: 'error', title: 'กรุณาเลือกไฟล์ PDF' });
@@ -7392,7 +7409,7 @@ const showSubmissionConfirmation = async () => {
           <div className="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-blue-600" aria-hidden="true" />
               <p id="paper-ai-loading-title" className="mt-4 text-lg font-semibold text-slate-900">กำลังประมวลผลข้อมูลบทความ</p>
-              <p id="paper-ai-loading-description" className="mt-2 text-sm text-slate-600">ระบบกำลังอ่านไฟล์ PDF และจัดทำสรุปบทคัดย่อภาษาไทย โปรดรอจนกว่าการประมวลผลจะเสร็จสิ้น</p>
+              <p id="paper-ai-loading-description" className="mt-2 text-sm text-slate-600">ระบบกำลังอ่านไฟล์ PDF จัดทำสรุปบทคัดย่อภาษาไทย และวิเคราะห์ SDG โปรดรอจนกว่าการประมวลผลจะเสร็จสิ้น</p>
           </div>
         </div>
       )}
@@ -8740,9 +8757,14 @@ const showSubmissionConfirmation = async () => {
         // ================================================================= */}
         <SDGSelector
           value={selectedSDGIds}
-          onChange={setSelectedSDGIds}
+          onChange={(ids) => { setSelectedSDGIds(ids); setPaperAISDGSuggestion(null); }}
           disabled={isReadOnly || saving || isSubmitting}
         />
+        {paperAISDGSuggestion && (
+          <div className="-mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-relaxed text-emerald-950" role="status">
+            <p><strong>หมายเหตุ:</strong> เป้าหมาย SDG นี้เสนอโดย AI จากการวิเคราะห์เนื้อหาบทความ โดยเลือกเป้าหมายที่ใกล้เคียงที่สุด โปรดตรวจสอบก่อนบันทึก</p>
+          </div>
+        )}
         <SimpleCard title={isFundDetailsView ? "เอกสารที่ใช้ประกอบการยื่นคำร้อง" : "เอกสารแนบ (File Attachments)"} icon={isFundDetailsView ? FileText : Upload} id="file-attachments-section">
           {isFundDetailsView ? (
             documentTypes.length > 0 ? (

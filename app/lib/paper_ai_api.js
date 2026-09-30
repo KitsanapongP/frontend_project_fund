@@ -15,6 +15,10 @@ export const paperAIAPI = {
     return apiClient.post('/paper-ai/summarize', payload);
   },
 
+  suggestSDG(payload) {
+    return apiClient.post('/paper-ai/suggest-sdg', payload);
+  },
+
   classify(payload) {
     return apiClient.post('/paper-ai/classify', payload);
   },
