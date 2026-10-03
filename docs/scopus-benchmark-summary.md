@@ -1,5 +1,11 @@
 # UI: สรุปผลงานและบทบาทอาจารย์
 
+## ตรวจเตรียม deploy 2026-10-04
+
+Frontend tests รวม PublicationRewardForm helpers ผ่าน 71 กรณี และ production `next build` ผ่าน ไม่มี dependency/config/env ใหม่ backend `go test ./...` ผ่าน Checklist ก่อน–หลัง deploy และ rollback อยู่ใน `fund-management-api/docs/SCOPUS_BENCHMARK_DEPLOY.md`: ลง migration 049 ก่อน backend ใหม่, affiliation backfill/audit, แล้ว deploy frontend โดยใช้ main ทั้งสอง repo production schema/ข้อมูลต้องตรวจบน server จริง ไม่ใช้ผล dev แทน
+
+ส่วนที่ใช้ร่วม: APIClient.get เพิ่ม options argument แบบ optional ผู้เรียกเดิมยังใช้ได้ Hint ที่แก้ใช้เฉพาะ benchmark รวมแท็บวิเคราะห์เดิม component ใหม่เพิ่ม code ใน admin bundle ที่ import อยู่แล้ว ยังไม่ได้วัด performance ของ production หรือทดสอบทุก flow ด้วย production accounts
+
 2026-09-30 — branch `feat/scopus-benchmark-summary`
 
 ## ตำแหน่งและไฟล์
