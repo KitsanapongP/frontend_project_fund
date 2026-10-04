@@ -4,6 +4,7 @@
 import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { TrendingUp, FileText, Search, Download, X, Info, Clock, AlertTriangle, Calendar } from "lucide-react";
 import PageLayout from "../common/PageLayout";
 import { teacherAPI } from '../../../../../lib/member_api';
@@ -936,6 +937,19 @@ export default function PromotionFundContent({ onNavigate }) {
           </label>
         </div>
       </div>
+
+      <figure className="mx-auto mb-6 w-full overflow-hidden rounded-xl border border-slate-200 bg-white md:w-1/2">
+        <a href="/publication-reward-rates.png" target="_blank" rel="noopener noreferrer" aria-label="เปิดตารางอัตราสนับสนุนการตีพิมพ์ขนาดเต็ม">
+          <Image
+            src="/publication-reward-rates.png"
+            alt="ตารางอัตราสนับสนุนการตีพิมพ์ผลงานวิจัยตามระดับวารสาร"
+            width={1672}
+            height={941}
+            className="h-auto w-full"
+            priority
+          />
+        </a>
+      </figure>
 
       {/* Funds Table */}
       {filteredFunds.length === 0 ? (
