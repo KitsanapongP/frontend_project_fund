@@ -19,6 +19,7 @@ import {
 import PageLayout from "../common/PageLayout";
 import SimpleCard from "../common/SimpleCard";
 import AdminScopusFacultyHIndex from "./AdminScopusFacultyHIndex";
+import AdminScopusFacultyInsights from "./AdminScopusFacultyInsights";
 import adminAPI from "@/app/lib/admin_api";
 import { formatNumber } from "@/app/utils/format";
 
@@ -390,6 +391,7 @@ export default function AdminScopusResearchDashboard() {
   const [options, setOptions] = useState(null);
   const [draftFilters, setDraftFilters] = useState(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
+  const facultyInsightQuery = useMemo(() => filterToQueryParams(appliedFilters), [appliedFilters]);
   const [summary, setSummary] = useState(null);
   const [summaryFilterSignature, setSummaryFilterSignature] = useState("");
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -3835,6 +3837,7 @@ export default function AdminScopusResearchDashboard() {
               </div>
             )}
           </SimpleCard>
+          <AdminScopusFacultyInsights appliedQuery={facultyInsightQuery} enabled={Boolean(summaryFilterSignature)} refreshToken={summary} />
           </>
         )}
 

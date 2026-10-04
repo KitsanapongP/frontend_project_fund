@@ -747,6 +747,14 @@ export const adminAPI = {
     }
   },
 
+  getScopusFacultyInsights(params = {}, options = {}) {
+    return apiClient.get('/admin/scopus/dashboard/faculty-insights', params, options);
+  },
+
+  getScopusFacultyInsightsDrilldown(params = {}, options = {}) {
+    return apiClient.get('/admin/scopus/dashboard/faculty-insights/drilldown', params, options);
+  },
+
   // Get budget overview
   async getBudgetOverview(yearId) {
     try {
