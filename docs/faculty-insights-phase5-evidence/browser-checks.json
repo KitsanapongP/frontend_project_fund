@@ -1,0 +1,119 @@
+{
+  "passed": true,
+  "fixture_only": true,
+  "native_mariadb": true,
+  "authenticated_real_api": true,
+  "checks": [
+    {
+      "name": "real authenticated summary and explicit synthetic label",
+      "passed": true
+    },
+    {
+      "name": "real server pagination reaches document 246 beyond 200",
+      "passed": true
+    },
+    {
+      "name": "country partner uses matching real international membership",
+      "passed": true
+    },
+    {
+      "name": "real unknown evidence remains separate; links use safe protocols",
+      "passed": true
+    },
+    {
+      "name": "real 409 refreshes summary and restarts page one",
+      "passed": true
+    },
+    {
+      "name": "draft year sends no request; applied BE year reaches real API",
+      "passed": true
+    },
+    {
+      "name": "real API empty year renders zero without invented percentages",
+      "passed": true
+    },
+    {
+      "name": "real API mobile cards fit viewport",
+      "passed": true
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/v1/profile",
+      "query": "",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights",
+      "query": "?open_access_mode=all&scope=faculty",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights/drilldown",
+      "query": "?open_access_mode=all&scope=faculty&revision=54ee0195100dd125dc59a73aeee8529fa49d76795b83a8ce0227282df88495c1&page=1&page_size=25",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights/drilldown",
+      "query": "?open_access_mode=all&scope=faculty&revision=54ee0195100dd125dc59a73aeee8529fa49d76795b83a8ce0227282df88495c1&page=1&page_size=200",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights/drilldown",
+      "query": "?open_access_mode=all&scope=faculty&revision=54ee0195100dd125dc59a73aeee8529fa49d76795b83a8ce0227282df88495c1&page=2&page_size=200",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights/drilldown",
+      "query": "?open_access_mode=all&scope=faculty&country_key=japan&international_status=yes&revision=54ee0195100dd125dc59a73aeee8529fa49d76795b83a8ce0227282df88495c1&page=1&page_size=25",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights/drilldown",
+      "query": "?open_access_mode=all&scope=faculty&international_status=unknown&revision=54ee0195100dd125dc59a73aeee8529fa49d76795b83a8ce0227282df88495c1&page=1&page_size=25",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights/drilldown",
+      "query": "?open_access_mode=all&scope=faculty&revision=54ee0195100dd125dc59a73aeee8529fa49d76795b83a8ce0227282df88495c1&page=1&page_size=25",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights/drilldown",
+      "query": "?open_access_mode=all&scope=faculty&revision=54ee0195100dd125dc59a73aeee8529fa49d76795b83a8ce0227282df88495c1&page=2&page_size=25",
+      "status": 409
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights",
+      "query": "?open_access_mode=all&scope=faculty",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights/drilldown",
+      "query": "?open_access_mode=all&scope=faculty&revision=f32bece995f574b015c0b6311497951ddb91e4f128eb918df43b3d5596c10efe&page=1&page_size=25",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights",
+      "query": "?open_access_mode=all&scope=faculty&year_end_be=2569&year_start_be=2569",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights",
+      "query": "?open_access_mode=all&scope=faculty&year_end_be=2566&year_start_be=2566",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights/drilldown",
+      "query": "?open_access_mode=all&scope=faculty&year_end_be=2566&year_start_be=2566&revision=004991f49b1864df235016362a47f0e1d6a25a4f720b30ed1e55198b54ff1070&page=1&page_size=25",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/admin/scopus/dashboard/faculty-insights",
+      "query": "?open_access_mode=all&scope=faculty",
+      "status": 200
+    }
+  ],
+  "page_errors": [],
+  "blocked_external_origins": []
+}
