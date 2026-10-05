@@ -6,7 +6,7 @@ export function facultyFixtureDocuments() {
     const role = id % 11 === 0 ? 'unknown' : id % 5 === 0 ? 'first' : id % 4 === 0 ? 'corresponding' : 'coauthor';
     const year = id % 67 === 0 ? null : 2024 + id % 3;
     const countries = international === 'unknown' ? [] : [{ country_key: 'thailand', country_name: 'Thailand', provenance: 'fixture' }, ...(international === 'yes' ? [{ country_key: 'japan', country_name: 'Japan', provenance: 'fixture' }, ...(id % 3 === 0 ? [{ country_key: 'china', country_name: 'China', provenance: 'fixture' }] : [])] : [])];
-    return { document_id: id, eid: `fixture-${id}`, title: `ข้อมูลสมมติ ${id}: ระบบวิเคราะห์งานวิจัยและความร่วมมือของคณะ`, doi: id === 1 ? 'javascript:alert(1)' : `10.1234/fixture.${id}`, scopus_link: id === 1 ? 'javascript:alert(1)' : 'https://www.scopus.com', publication_name: 'วารสารสมมติสำหรับตรวจ UI', year_ce: year, year_be: year == null ? null : year + 543, citations: id % 40, international_status: international, faculty_role: role, countries, country_evidence_current: international !== 'unknown', author_role_status: role === 'unknown' ? 'needs_review' : 'complete', eligible_authors: [{ link_id: id, author_id: 1, scopus_author_id: 'fixture-author', full_name: 'อาจารย์สมมติ ก', author_seq: 1, is_first_author: role === 'unknown' ? null : role === 'first', is_corresponding_author: role === 'unknown' ? null : role === 'corresponding' }], country_metadata: { status: international === 'unknown' ? 'dirty_catalogue' : 'complete', normalizer_version: 'core-countries-v2' } };
+    return { document_id: id, eid: `fixture-${id}`, scopus_id: `fixture-scopus-${id}`, title: `ข้อมูลสมมติ ${id}: ระบบวิเคราะห์งานวิจัยและความร่วมมือของคณะ`, doi: id === 1 ? 'javascript:alert(1)' : `10.1234/fixture.${id}`, scopus_link: id === 1 ? 'javascript:alert(1)' : 'https://www.scopus.com', publication_name: 'วารสารสมมติสำหรับตรวจ UI', year_ce: year, year_be: year == null ? null : year + 543, citations: id % 40, international_status: international, faculty_role: role, countries, country_evidence_current: international !== 'unknown', author_role_status: role === 'unknown' ? 'needs_review' : 'complete', eligible_authors: [{ link_id: id, author_id: 1, scopus_author_id: 'fixture-author', full_name: 'อาจารย์สมมติ ก', author_seq: 1, is_first_author: role === 'unknown' ? null : role === 'first', is_corresponding_author: role === 'unknown' ? null : role === 'corresponding' }], country_metadata: { status: international === 'unknown' ? 'dirty_catalogue' : 'complete', normalizer_version: 'core-countries-v2' } };
   });
 }
 
@@ -52,11 +52,13 @@ export function makeFacultyFixtureAPI(scenario, onCall = () => {}) {
     },
     async drilldown(query, options) {
       onCall('drilldown', query); await wait(query); if (scenario === 'error' || (scenario === 'page_error' && query.page > 1)) unavailable();
-      const { revision, page, page_size, year_be, international_status, faculty_role, country_key, ...filters } = query;
+      const { revision, page, page_size, year_be, international_status, faculty_role, country_key, drilldown_search, ...filters } = query;
       if (scenario === 'revision' && version === 0) version++;
       if (revision !== revisionFor(filters)) { const e = new Error('Fixture revision changed'); e.status = 409; throw e; }
-      const documents = filteredFixture(filters, scenario).filter(d => (!year_be || (year_be === 'undated' ? d.year_ce == null : d.year_be === Number(year_be))) && (!international_status || d.international_status === international_status) && (!faculty_role || d.faculty_role === faculty_role) && (!country_key || d.countries.some(c => c.country_key === country_key)));
-      return { success: true, contract_version: 'faculty-insights-v1', source: 'scopus_core', scope: 'faculty', revision, total: documents.length, page, page_size, total_pages: Math.ceil(documents.length / page_size), sort: 'document_id_asc', documents: documents.slice((page - 1) * page_size, page * page_size) };
+      const selected = filteredFixture(filters, scenario).filter(d => (!year_be || (year_be === 'undated' ? d.year_ce == null : d.year_be === Number(year_be))) && (!international_status || d.international_status === international_status) && (!faculty_role || d.faculty_role === faculty_role) && (!country_key || d.countries.some(c => c.country_key === country_key)));
+      const search = (drilldown_search || '').trim();
+      const documents = selected.filter(d => !search || [d.title, d.doi, d.eid, d.scopus_id, d.publication_name, ...d.eligible_authors.map(a => a.full_name)].some(v => v?.toLowerCase().includes(search.toLowerCase())));
+      return { success: true, scope_total: selected.length, search, contract_version: 'faculty-insights-v1', source: 'scopus_core', scope: 'faculty', revision, total: documents.length, page, page_size, total_pages: Math.ceil(documents.length / page_size), sort: 'document_id_asc', documents: documents.slice((page - 1) * page_size, page * page_size) };
     },
   };
 }

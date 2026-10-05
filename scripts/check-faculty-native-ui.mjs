@@ -47,7 +47,9 @@ try {
   await check('real authenticated summary and explicit synthetic label', async () => {
     await page.getByRole('heading', { name: /MariaDB/ }).waitFor();
     assert.ok(requests.some(request => request.path.endsWith('/faculty-insights') && request.status === 200));
-    await page.getByText('ลำดับนี้ใช้ป้องกันการนับซ้ำ ไม่ใช่การจัดอันดับความสำคัญ', { exact: false }).waitFor();
+    await page.getByRole('button', { name: 'คำอธิบาย: การจัดกลุ่มบทบาทคณะ', exact: true }).focus();
+    await page.getByRole('tooltip').getByText('ลำดับนี้ป้องกันการนับซ้ำ ไม่จัดอันดับความสำคัญ', { exact: false }).waitFor();
+    await page.keyboard.press('Escape');
   });
   await page.screenshot({ path: resolve(directory, 'native-desktop.png'), fullPage: true });
   await check('real server pagination reaches document 246 beyond 200', async () => {
@@ -57,19 +59,19 @@ try {
     await dialog.getByText('แสดง 1–200', { exact: false }).waitFor();
     await dialog.getByRole('button', { name: 'ถัดไป', exact: true }).click();
     await dialog.getByText('แสดง 201–246', { exact: false }).waitFor();
-    assert.equal(await dialog.locator('article').count(), 46);
+    assert.equal(await dialog.locator('tr[data-document-row]').count(), 46);
     await page.screenshot({ path: resolve(directory, 'native-page-two.png') });
     await close();
   });
   await check('country partner uses matching real international membership', async () => {
     await page.getByRole('button', { name: /^ดู Japan 3 ผลงาน$/ }).click();
     await page.getByRole('dialog').getByText('พบทั้งหมด', { exact: false }).waitFor();
-    assert.equal(await page.getByRole('dialog').locator('article').count(), 3); await close();
+    assert.equal(await page.getByRole('dialog').locator('tr[data-document-row]').count(), 3); await close();
   });
   await check('real unknown evidence remains separate; links use safe protocols', async () => {
     await page.getByRole('region', { name: 'ตารางไขว้ประเทศและบทบาท' }).getByRole('button', { name: 'ดูผลงาน ยังระบุประเทศไม่ได้ 4 รายการ', exact: true }).click();
     await page.getByRole('dialog').getByText('พบทั้งหมด', { exact: false }).waitFor();
-    assert.equal(await page.getByRole('dialog').locator('article').count(), 4);
+    assert.equal(await page.getByRole('dialog').locator('tr[data-document-row]').count(), 4);
     assert.equal(await page.getByRole('dialog').getByText('ยังระบุประเทศไม่ได้', { exact: true }).count(), 4);
     assert.equal(await page.getByRole('dialog').getByText('ยังไม่สามารถยืนยันข้อมูลประเทศปัจจุบันได้', { exact: false }).count(), 3);
     for (const href of await page.getByRole('dialog').locator('a').evaluateAll(links => links.map(link => link.href))) assert.match(href, /^https?:\/\//);
@@ -82,7 +84,7 @@ try {
     await dialog.getByRole('button', { name: 'ถัดไป', exact: true }).click();
     await dialog.getByText('ข้อมูลเปลี่ยนแปลงแล้ว อัปเดตสรุปและเริ่มรายการใหม่จากหน้า 1', { exact: true }).waitFor();
     await dialog.getByText('แสดง 1–25', { exact: false }).waitFor();
-    assert.equal(await dialog.locator('article').count(), 25);
+    assert.equal(await dialog.locator('tr[data-document-row]').count(), 25);
     assert.ok(requests.some(request => request.status === 409));
     await page.screenshot({ path: resolve(directory, 'native-revision-recovery.png') });
     await close(); await mutate('restore');

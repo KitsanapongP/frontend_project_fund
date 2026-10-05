@@ -122,3 +122,54 @@ test('development fixture has coherent paged data and never truncates its matchi
   assert.equal(ids.size, 512);
   for (const partner of s.totals.partners) { const d = await api.drilldown({ scope: 'faculty', revision: s.revision, country_key: partner.country_key, international_status: 'yes', page: 1, page_size: 200 }); assert.equal(d.total, partner.documents); }
 });
+
+
+test('search covers all 512 papers, preserves clicked dimensions/revision and clears to page one', async () => {
+  const params = [], api = makeFacultyFixtureAPI('normal', (type, p) => params.push({ type, p })), store = createFacultyInsightStore(api);
+  await store.setFilters({}); const original = store.getSnapshot().summary;
+  await store.open({}, 'All', 2, 200);
+  await store.search(' FIXTURE-401 ');
+  let d = store.getSnapshot().drilldown;
+  assert.equal(d.page, 1); assert.equal(d.response.scope_total, 512); assert.equal(d.response.total, 1); assert.equal(d.response.documents[0].document_id, 401);
+  assert.equal(store.getSnapshot().summary, original); assert.equal(d.response.revision, original.revision);
+  await store.page(1, 10); assert.equal(params.at(-1).p.drilldown_search, 'FIXTURE-401');
+  await store.search(''); d = store.getSnapshot().drilldown; assert.equal(d.page, 1); assert.equal(d.response.total, 512); assert.equal(params.at(-1).p.drilldown_search, undefined);
+  const dimensions = { year_be: '2569', international_status: 'yes', faculty_role: 'coauthor', country_key: 'japan' };
+  await store.open(dimensions, 'Cell'); const scopeTotal = store.getSnapshot().drilldown.response.total;
+  await store.search('fixture-scopus-401'); d = store.getSnapshot().drilldown;
+  assert.deepEqual(d.dimensions, dimensions); assert.equal(d.response.total, 1); assert.equal(d.response.scope_total, scopeTotal);
+  await store.search('fixture-402'); assert.equal(store.getSnapshot().drilldown.response.total, 0);
+  await store.search(''); assert.equal(store.getSnapshot().drilldown.response.total, scopeTotal);
+  assert.equal(params.filter(r => r.type === 'summary').length, 1); store.dispose();
+});
+
+test('search 409 retains local text and dimensions while summary keeps only applied filters', async () => {
+  const requests = []; let n = 0;
+  const store = createFacultyInsightStore({ summary: async p => { requests.push({ type: 'summary', p }); return summary((++n === 1 ? 'a' : 'b').repeat(64)); }, drilldown: async p => {
+    requests.push({ type: 'page', p });
+    if (p.drilldown_search && p.revision === 'a'.repeat(64)) { const e = new Error(); e.status = 409; throw e; }
+    return page(p, { scope_total: 100, search: p.drilldown_search || '' });
+  } });
+  const filters = { year_start_be: '2567', search_title: 'Applied' }, dims = { faculty_role: 'first', year_be: '2568' };
+  await store.setFilters(filters); await store.open(dims, 'First', 4, 50); await store.search('local DOI');
+  const d = store.getSnapshot().drilldown;
+  assert.equal(d.search, 'local DOI'); assert.equal(d.page, 1); assert.deepEqual(d.dimensions, dims);
+  assert.equal(d.response.revision, 'b'.repeat(64)); assert.match(d.notice, /หน้า 1/);
+  requests.filter(r => r.type === 'summary').forEach(r => assert.deepEqual(r.p, { ...filters, scope: 'faculty' }));
+  assert.equal(requests.at(-1).p.drilldown_search, 'local DOI'); store.dispose();
+});
+
+test('obsolete search results cannot replace newer search or clear and close aborts pending search', async () => {
+  const requests = [];
+  const store = createFacultyInsightStore({ summary: async () => summary(), drilldown: (p, o) => { const d = deferred(); requests.push({ p, o, d }); return d.promise; } });
+  await store.setFilters({}); const initial = store.open({}, 'All'); requests[0].d.resolve(page(requests[0].p)); await initial;
+  const old = store.search('old'), latest = store.search('new');
+  requests[2].d.resolve(page(requests[2].p, { scope_total: 512, search: 'new' })); await latest;
+  requests[1].d.resolve(page(requests[1].p, { scope_total: 512, search: 'old' })); await old;
+  assert.equal(requests[1].o.signal.aborted, true); assert.equal(store.getSnapshot().drilldown.search, 'new');
+  const pending = store.search('later'), clear = store.search(''); requests[4].d.resolve(page(requests[4].p)); await clear;
+  requests[3].d.resolve(page(requests[3].p, { scope_total: 512, search: 'later' })); await pending;
+  assert.equal(store.getSnapshot().drilldown.search, '');
+  const closing = store.search('close'); store.close(); requests[5].d.resolve(page(requests[5].p, { scope_total: 512, search: 'close' })); await closing;
+  assert.equal(store.getSnapshot().drilldown, null); assert.equal(requests[5].o.signal.aborted, true); store.dispose();
+});

@@ -75,23 +75,25 @@ export function createFacultyInsightStore(api) {
         if (controller.signal.aborted || generation !== summaryGeneration) return;
         const summary = validateInsightSummary(response);
         publish({ summary, loading: false });
-        if (resume && state.drilldown) await store.open(resume.dimensions, resume.label, 1, resume.pageSize, false, reason === 'revision' ? 'ข้อมูลเปลี่ยนแปลงแล้ว อัปเดตสรุปและเริ่มรายการใหม่จากหน้า 1' : 'โหลดข้อมูลใหม่และเริ่มรายการจากหน้า 1');
+        if (resume && state.drilldown) await store.open(resume.dimensions, resume.label, 1, resume.pageSize, false, reason === 'revision' ? 'ข้อมูลเปลี่ยนแปลงแล้ว อัปเดตสรุปและเริ่มรายการใหม่จากหน้า 1' : 'โหลดข้อมูลใหม่และเริ่มรายการจากหน้า 1', resume.search);
       } catch (error) {
         if (controller.signal.aborted || generation !== summaryGeneration) return;
         publish({ loading: false, error: insightErrorMessage(error), drilldown: resume && state.drilldown ? { ...resume, response: null, loading: false, error: insightErrorMessage(error) } : null });
       }
     },
-    async open(dimensions, label, page = 1, pageSize = 25, allowRecovery = true, notice = '') {
+    async open(dimensions, label, page = 1, pageSize = 25, allowRecovery = true, notice = '', search = '') {
       if (!state.summary || state.loading) return;
       pageController?.abort(); const controller = new AbortController(); pageController = controller;
       const generation = ++pageGeneration, summaryRun = summaryGeneration, revision = state.summary.revision;
-      const selection = { dimensions: { ...dimensions }, label, page, pageSize, notice };
+      search = search.trim();
+      const selection = { dimensions: { ...dimensions }, label, page, pageSize, notice, search };
       publish({ drilldown: { ...selection, response: null, error: null, loading: true } });
       try {
-        const response = await api.drilldown({ ...query, ...dimensions, revision, page, page_size: pageSize }, { signal: controller.signal });
+        const response = await api.drilldown({ ...query, ...dimensions, revision, page, page_size: pageSize, ...(search ? { drilldown_search: search } : {}) }, { signal: controller.signal });
         if (controller.signal.aborted || generation !== pageGeneration || summaryRun !== summaryGeneration) return;
         if (response?.revision !== revision) { const error = new Error('Revision changed'); error.status = 409; throw error; }
         if (response.success !== true || response.source !== 'scopus_core' || response.scope !== 'faculty' || !count(response.total) || response.page !== page || response.page_size !== pageSize || response.total_pages !== Math.ceil(response.total / pageSize) || !Array.isArray(response.documents) || response.documents.length > pageSize) throw new Error('Invalid insight page');
+        if ((search || response.scope_total != null) && (!count(response.scope_total) || response.scope_total < response.total || response.search !== search)) throw new Error('Invalid insight search scope');
         publish({ drilldown: { ...selection, response, loading: false, error: null } });
       } catch (error) {
         if (controller.signal.aborted || generation !== pageGeneration || summaryRun !== summaryGeneration) return;
@@ -99,7 +101,8 @@ export function createFacultyInsightStore(api) {
         publish({ drilldown: { ...selection, response: null, loading: false, error: insightErrorMessage(error) } });
       }
     },
-    page: (page, pageSize = state.drilldown?.pageSize) => { const d = state.drilldown; if (d) return store.open(d.dimensions, d.label, page, pageSize); },
+    page: (page, pageSize = state.drilldown?.pageSize) => { const d = state.drilldown; if (d) return store.open(d.dimensions, d.label, page, pageSize, true, '', d.search); },
+    search: (search) => { const d = state.drilldown; if (d) return store.open(d.dimensions, d.label, 1, d.pageSize, true, '', search); },
     close: () => { pageController?.abort(); pageGeneration++; publish({ drilldown: null }); },
     dispose: () => { summaryController?.abort(); pageController?.abort(); summaryGeneration++; pageGeneration++; listeners.clear(); },
   };
