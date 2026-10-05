@@ -1,8 +1,8 @@
 export const FACULTY_ROLES = [
-  { key: 'first', label: 'First author', color: '#2563eb' },
-  { key: 'corresponding', label: 'Corresponding author', color: '#7c3aed' },
-  { key: 'coauthor', label: 'Co-author', color: '#0d9488' },
-  { key: 'unknown', label: 'ยังระบุบทบาทไม่ได้', color: '#94a3b8' },
+  { key: 'first', label: 'First author', shortLabel: 'First', color: '#245b78' },
+  { key: 'corresponding', label: 'Corresponding author', shortLabel: 'Corresponding', color: '#14857e' },
+  { key: 'coauthor', label: 'Co-author', shortLabel: 'Co-author', color: '#bd6a24' },
+  { key: 'unknown', label: 'ยังระบุบทบาทไม่ได้', shortLabel: 'ยังระบุไม่ได้', color: '#7b8b9b' },
 ];
 export const INTERNATIONAL_STATES = [
   { key: 'yes', label: 'ร่วมกับต่างประเทศ', color: '#2563eb' },

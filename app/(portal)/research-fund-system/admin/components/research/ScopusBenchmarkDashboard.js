@@ -160,7 +160,19 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     };
   }, [isActive]);
 
-  // Load only while active; successes are reused on a mere tab switch.
+  useEffect(() => { [comparisonLoader.current, insightsLoader.current].forEach(loader => { loader.stop(); loader.clear(); }); }, [api]);
+  // Context changes cancel obsolete work, visibility changes keep it running.
+  useEffect(() => { comparisonLoader.current.stop(); }, [windowFrom, reload, api]);
+  useEffect(() => { insightsLoader.current.stop(); }, [appliedFrom, appliedTo, insightsReload, api]);
+  useEffect(() => () => {
+    [comparisonLoader.current, insightsLoader.current].forEach(loader => { loader.stop(); loader.clear(); });
+  }, []);
+  // Update refresh context before a synchronous cache receiver can run.
+  useEffect(() => {
+    refreshTracker.current = invalidateRefreshRange(refreshTracker.current, `${appliedFrom}:${appliedTo}`);
+  }, [appliedFrom, appliedTo]);
+
+  // Start on activation; pending reads and successes are reused on tab return.
   useEffect(() => {
     if (!isActive) return undefined;
     const loader = comparisonLoader.current;
@@ -168,7 +180,6 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     loader.load(`${windowFrom}:${reload}`, signal => api.comparison({ year_from: windowFrom, year_to: CURRENT_YEAR }, { signal }),
       response => { setData(response?.data || null); setDataLoading(false); markRefreshLoaded("comparison"); },
       error => { setDataError(error?.message || "โหลดข้อมูลรายงานไม่สำเร็จ"); setDataLoading(false); });
-    return () => loader.stop();
   }, [isActive, reload, windowFrom, api, markRefreshLoaded]);
 
   const yearMeta = data?.year_meta || {};
@@ -231,15 +242,7 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
       setInsightsPrev(result.previous?.data || null);
       setInsightsLoading(false); markRefreshLoaded("insights");
     }, error => { setInsightsError(error?.message || "โหลดข้อมูลเชิงลึกไม่สำเร็จ"); setInsightsLoading(false); });
-    return () => loader.stop();
   }, [isActive, appliedFrom, appliedTo, isRange, reportYear, isCurrentYear, insightsReload, api, markRefreshLoaded]);
-
-  // When the applied range changes while a refresh is pending, invalidate the range-
-  // specific (insights) success so only the NEW range's insights can clear stale — a
-  // prior range's success must never combine with a later comparison success (R1.1).
-  useEffect(() => {
-    refreshTracker.current = invalidateRefreshRange(refreshTracker.current, `${appliedFrom}:${appliedTo}`);
-  }, [appliedFrom, appliedTo]);
 
   const rows = useMemo(() => (Array.isArray(data?.years) ? [...data.years].sort((a, b) => Number(a.year) - Number(b.year)) : []), [data]);
   const rowByYear = useCallback((year) => rows.find((row) => Number(row.year) === Number(year)) || null, [rows]);
@@ -519,6 +522,7 @@ export default function ScopusBenchmarkDashboard({ onGoSetup, api = scopusBenchm
     // Arm the refresh bound to the current range; stale is cleared later, only once
     // BOTH reads of THIS context succeed (R1/R1.1).
     refreshTracker.current = armRefresh(`${appliedFrom}:${appliedTo}`);
+    [comparisonLoader.current, insightsLoader.current].forEach(loader => { loader.stop(); loader.clear(); });
     setReload((value) => value + 1);
     setInsightsReload((value) => value + 1);
   };

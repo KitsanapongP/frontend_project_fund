@@ -60,7 +60,7 @@ export default function ScopusBenchmarkSummary({ isActive=true, stale=false, onR
   useEffect(()=>{visibilityRevision.current++;setShowUnranked(hasNonJournalTypes(applied.types));},[applied.types]);
   useEffect(()=>()=>{visibilityRevision.current++;},[]);
   const [version,setVersion]=useState(0);const [options,setOptions]=useState(null);const [report,setReport]=useState(null);const [faculty,setFaculty]=useState(null);
-  const [loading,setLoading]=useState(false);const [error,setError]=useState('');const [exporting,setExporting]=useState(false);
+  const [viewStatus,setViewStatus]=useState({});const [generalError,setError]=useState('');const [exporting,setExporting]=useState(false);
   const [search,setSearch]=useState('');const [hideEmpty,setHideEmpty]=useState(false);const [sort,setSort]=useState({key:'total',direction:'desc'});const [detail,setDetail]=useState(null);const [documents,setDocuments]=useState(null);const [docLoading,setDocLoading]=useState(false);const [docError,setDocError]=useState('');
   const loaders=useRef(null);if(!loaders.current)loaders.current={options:createSummaryLoader(),overview:createSummaryLoader(),faculty:createSummaryLoader(),documents:createSummaryLoader()};
   const refreshRef=useRef(onRefreshed);refreshRef.current=onRefreshed;
@@ -69,20 +69,28 @@ export default function ScopusBenchmarkSummary({ isActive=true, stale=false, onR
   const exportAbort=useRef(null);
   const requestFilters={...applied,...(presentation?{report_view:'presentation'}:{})};
   const filterKey=JSON.stringify(requestFilters);const key=`${filterKey}:${version}`;
+  const status=viewStatus[view]?.key===key?viewStatus[view]:null;
+  const loading=Boolean(status?.loading),error=generalError||status?.error||'';
+  useEffect(()=>{Object.values(loaders.current).forEach(loader=>{loader.stop();loader.clear();});},[api]);
+  // Context invalidation is separate from visibility; inactive panels keep running.
+  useEffect(()=>{
+    ['overview','faculty','documents'].forEach(name=>loaders.current[name].stop());
+  },[key,api]);
+  useEffect(()=>{loaders.current.options.stop();},[version,api]);
+  useEffect(()=>()=>Object.values(loaders.current).forEach(loader=>{loader.stop();loader.clear();}),[]);
+  useEffect(()=>{if(!isActive)setDetail(null);},[isActive]);
   useEffect(()=>{
     if(!isActive)return undefined;
     const loader=loaders.current.options;
     loader.load(`options:${version}`,signal=>api.summaryOptions({signal}),r=>setOptions(r.data),e=>setError(e.message));
-    return()=>loader.stop();
   },[isActive,api,version]);
   useEffect(()=>{
     if(!isActive)return undefined;
-    const loader=loaders.current[view];setLoading(true);setError('');
+    const loader=loaders.current[view];setViewStatus(v=>({...v,[view]:{key,loading:true,error:''}}));setError('');
     loader.load(key,signal=>view==='overview'?api.summary(requestFilters,{signal}):api.summaryFaculty(requestFilters,{signal}),r=>{
-      const result={key,data:r.data};if(view==='overview')setReport(result);else setFaculty(result);setLoading(false);
+      const result={key,data:r.data};if(view==='overview')setReport(result);else setFaculty(result);setViewStatus(v=>({...v,[view]:{key,loading:false,error:''}}));
       if(refreshPending.current){refreshPending.current=false;refreshRef.current?.()}
-    },e=>{setError(e.message||'โหลดรายงานไม่สำเร็จ');setLoading(false)});
-    return()=>loader.stop();
+    },e=>{setViewStatus(v=>({...v,[view]:{key,loading:false,error:e.message||'โหลดรายงานไม่สำเร็จ'}}))});
   },[isActive,view,key,api]); // key contains the applied filters, not draft edits
   useEffect(()=>{
     if(!isActive||!detail)return undefined;

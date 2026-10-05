@@ -47,24 +47,36 @@ export function sortSummaryRows(rows, sort) {
   });
 }
 
-// One cache per view. Inactive views abort reads; cached successes survive tab
-// switches. A generation prevents a stale response from overwriting new filters.
+// One cache per mounted view. Visibility never cancels a started read. Rejoining
+// the same pending key updates the receiver without starting another request.
+// Context changes/refresh/unmount explicitly stop obsolete reads.
 export function createSummaryLoader() {
-  const cache = new Map(); let generation = 0; let controller;
-  return {
-    stop() { generation += 1; controller?.abort(); },
+  const cache = new Map(); let generation = 0; let pending;
+  const loader = {
+    stop() { generation += 1; pending?.controller.abort(); pending = null; },
     clear() { cache.clear(); },
-    async load(key, fetcher, receive, fail) {
-      generation += 1; const current = generation; controller?.abort(); controller = new AbortController();
-      if (cache.has(key)) { receive(cache.get(key)); return; }
-      const signal = controller.signal;
-      try {
-        const value = await fetcher(signal);
-        if (signal.aborted || current !== generation) return;
-        cache.set(key, value); receive(value);
-      } catch (error) { if (!signal.aborted && current === generation) fail(error); }
+    load(key, fetcher, receive, fail) {
+      if (pending?.key === key) {
+        pending.receive = receive; pending.fail = fail;
+        return pending.promise;
+      }
+      loader.stop();
+      if (cache.has(key)) { receive(cache.get(key)); return Promise.resolve(); }
+      const request = { key, generation, controller: new AbortController(), receive, fail };
+      pending = request;
+      request.promise = (async () => {
+        try {
+          const value = await fetcher(request.controller.signal);
+          if (request.controller.signal.aborted || request.generation !== generation) return;
+          cache.set(key, value); request.receive(value);
+        } catch (error) {
+          if (!request.controller.signal.aborted && request.generation === generation) request.fail(error);
+        } finally { if (pending === request) pending = null; }
+      })();
+      return request.promise;
     },
   };
+  return loader;
 }
 export function filterSummaryFaculty(rows, search, hideEmpty, sort) {
   const query = search.trim().toLocaleLowerCase();

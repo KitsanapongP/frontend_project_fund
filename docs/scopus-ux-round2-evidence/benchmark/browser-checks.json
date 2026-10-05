@@ -1,0 +1,45 @@
+{
+  "fixture_only": true,
+  "checks": [
+    {
+      "name": "only the default summary is fetched before other tabs are visited",
+      "passed": true
+    },
+    {
+      "name": "pending summary/presentation return reuses requests without aborting",
+      "passed": true
+    },
+    {
+      "name": "legacy comparison and insights continue while hidden and rejoin without duplicates",
+      "passed": true
+    },
+    {
+      "name": "legacy refresh survives tab hiding; changed range/window cancels obsolete reads",
+      "passed": true
+    },
+    {
+      "name": "applied filters cancel hidden obsolete overview/faculty reads and ignore late completion",
+      "passed": true
+    },
+    {
+      "name": "explicit refresh discards completed cache and refetches visited active stream",
+      "passed": true
+    },
+    {
+      "name": "closing detail aborts its pending read and a late result never reopens it",
+      "passed": true
+    },
+    {
+      "name": "page unmount aborts pending work; remount has a fresh local cache",
+      "passed": true
+    },
+    {
+      "name": "summary failure can be refreshed and a failed result is never cached",
+      "passed": true
+    }
+  ],
+  "page_errors": [],
+  "blocked_requests": [
+    "/api/v1/profile"
+  ]
+}

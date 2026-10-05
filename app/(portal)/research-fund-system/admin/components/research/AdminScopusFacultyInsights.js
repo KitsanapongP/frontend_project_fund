@@ -5,6 +5,8 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { ChevronDown, ChevronUp, Globe2, Users, ChartPie, RefreshCw, X, ExternalLink, Search } from 'lucide-react';
 import SimpleCard from '../common/SimpleCard';
 import Hint from './report/Hint';
+import RoleDonut from './FacultyRoleDonut';
+import styles from './FacultyInsights.module.css';
 import { facultyInsightHints as hints } from '@/app/lib/scopus_faculty_insight_hints.mjs';
 import adminAPI from '@/app/lib/admin_api';
 import {
@@ -16,18 +18,18 @@ const liveAPI = {
   summary: (query, options) => adminAPI.getScopusFacultyInsights(query, options),
   drilldown: (query, options) => adminAPI.getScopusFacultyInsightsDrilldown(query, options),
 };
-const cell = 'border border-slate-200 px-3 py-2.5 text-right whitespace-nowrap';
-const head = 'border border-blue-200 bg-blue-50 px-3 py-3 text-right font-semibold text-blue-900 whitespace-nowrap';
+const cell = 'border border-slate-200 px-1.5 py-1 text-right whitespace-nowrap';
+const head = 'border border-blue-200 bg-blue-50 px-1.5 py-2 text-right font-semibold text-blue-900 whitespace-normal';
 const action = 'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40';
 
 function CountButton({ value, label, onClick }) {
-  return <button type="button" onClick={onClick} aria-label={`ดูผลงาน ${label} ${insightNumber(value)} รายการ`} className="min-h-9 min-w-9 rounded px-1 font-semibold text-blue-700 underline decoration-blue-200 underline-offset-4 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">{insightNumber(value)}</button>;
+  return <button type="button" onClick={onClick} aria-label={`ดูผลงาน ${label} ${insightNumber(value)} รายการ`} className="min-h-8 min-w-8 rounded px-1 font-semibold text-blue-700 underline decoration-blue-200 underline-offset-4 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">{insightNumber(value)}</button>;
 }
 
 function InsightCard({ title, icon, hint, children }) {
   const [collapsed, setCollapsed] = useState(false); const id = useId();
-  return <SimpleCard title={title} icon={icon} action={<div className="flex items-center gap-2"><Hint label={title} text={hint} /><button type="button" className="inline-flex items-center gap-1 rounded px-2 text-xs font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600" aria-expanded={!collapsed} aria-controls={id} onClick={() => setCollapsed(v => !v)}><span>{collapsed ? 'แสดง' : 'ซ่อน'}</span>{collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</button></div>}>
-    <div id={id} hidden={collapsed}>{children}</div>
+  return <SimpleCard title={title} icon={icon} noPadding headerClassName="!min-h-12 !px-3 !py-2 sm:!px-4" action={<div className="flex items-center gap-2 [&_button]:!min-h-8 [&_button]:!min-w-8"><Hint label={title} text={hint} /><button type="button" className="inline-flex items-center gap-1 rounded px-2 text-xs font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600" aria-expanded={!collapsed} aria-controls={id} onClick={() => setCollapsed(v => !v)}><span>{collapsed ? 'แสดง' : 'ซ่อน'}</span>{collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</button></div>}>
+    <div id={id} hidden={collapsed} className="p-3 sm:p-4">{children}</div>
   </SimpleCard>;
 }
 
@@ -37,45 +39,27 @@ function ResourceState({ loading, error, retry }) {
   return null;
 }
 
-function RoleDonut({ title, roles, total, onSelect }) {
-  const radius = 70, circumference = 2 * Math.PI * radius; let offset = 0;
-  return <div data-role-donut className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-    <h3 className="text-center font-semibold text-slate-800">{title} <Hint label={`ฐานคำนวณ ${title}`} text={hints.donut} /></h3>
-    <svg viewBox="0 0 220 210" className="mx-auto h-52 w-full max-w-[260px]" role="group" aria-label={`สัดส่วนบทบาท ${title} รวม ${insightNumber(total)} ผลงาน`}>
-      <circle cx="110" cy="102" r={radius} fill="none" stroke="#e2e8f0" strokeWidth="25" />
-      {FACULTY_ROLES.map(role => {
-        const n = roles[role.key], length = total ? n / total * circumference : 0, start = offset; offset += length;
-        if (!n) return null;
-        return <circle key={role.key} cx="110" cy="102" r={radius} fill="none" stroke={role.color} strokeWidth="25" strokeDasharray={`${length} ${circumference - length}`} strokeDashoffset={-start} transform="rotate(-90 110 102)" role="button" tabIndex={0} aria-label={`${title} ${role.label} ${insightNumber(n)} ผลงาน ${insightPercent(insightRatio(n, total))}`} onClick={() => onSelect(role)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(role); } }} className="cursor-pointer hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-800" />;
-      })}
-      <text x="110" y="101" textAnchor="middle" fontSize="27" fontWeight="700" fill="#0f172a">{insightNumber(total)}</text>
-      <text x="110" y="125" textAnchor="middle" fontSize="12" fill="#64748b">ผลงานไม่ซ้ำ</text>
-    </svg>
-    <p className="mb-2 text-center text-xs text-slate-500">ฐานคำนวณ: {insightNumber(total)} ผลงานในกลุ่มนี้</p>
-    <ul className="space-y-1">
-      {FACULTY_ROLES.map(role => <li key={role.key}><button type="button" onClick={() => onSelect(role)} className="flex min-h-10 w-full items-center gap-2 rounded px-2 text-left text-sm hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"><span className="h-3 w-3 shrink-0 rounded-full" style={{ background: role.color }} aria-hidden="true" /><span className="flex-1">{role.label}</span><span className="font-semibold tabular-nums">{insightNumber(roles[role.key])}</span><span className="w-16 text-right text-xs tabular-nums text-slate-500">{insightPercent(insightRatio(roles[role.key], total))}</span></button></li>)}
-    </ul>
-    {total === 0 && <p className="mt-2 text-center text-xs text-slate-500">ไม่พบผลงานในกลุ่มนี้</p>}
-  </div>;
-}
-
 function YearSelect({ years, selected, setSelected, id, roleOnly = false }) {
-  return <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-1 text-sm text-slate-600"><label htmlFor={id}>{roleOnly ? 'ช่วงข้อมูลสำหรับกราฟบทบาท' : 'ช่วงข้อมูลสำหรับกราฟและตารางไขว้'}</label><Hint label={roleOnly ? 'ตัวเลือกปีกราฟบทบาท' : 'ตัวเลือกปีกราฟและตารางไขว้'} text={roleOnly ? hints.roleYear : hints.comparisonYear} /></div><select id={id} value={selected} onChange={e => setSelected(e.target.value)} className="max-w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="all">ทุกปีตามตัวกรอง</option>{years.map(y => <option key={y.bucket} value={y.bucket}>{insightYearLabel(y)}</option>)}</select></div>;
+  return <div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-1 text-sm text-slate-600"><label htmlFor={id}>{roleOnly ? 'ช่วงข้อมูลสำหรับกราฟบทบาท' : 'ช่วงข้อมูลสำหรับกราฟและตารางไขว้'}</label><Hint label={roleOnly ? 'ตัวเลือกปีกราฟบทบาท' : 'ตัวเลือกปีกราฟและตารางไขว้'} text={roleOnly ? hints.roleYear : hints.comparisonYear} /></div><select id={id} value={selected} onChange={e => setSelected(e.target.value)} className="max-w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="all">ทุกปีตามตัวกรอง</option>{years.map(y => <option key={y.bucket} value={y.bucket}>{insightYearLabel(y)}</option>)}</select></div>;
 }
 
 function InternationalCard({ summary, open }) {
   const rows = [...summary.by_year, { ...summary.totals, bucket: 'all', year_be: 'รวมตามตัวกรอง' }];
   const max = Math.max(1, ...summary.totals.partners.map(p => p.documents));
-  return <div className="space-y-5">
-    <p className="text-sm leading-6 text-slate-600">ผลงานไม่ซ้ำตามตัวกรองที่ใช้ · ร้อยละต่อผลงานทั้งหมดในแต่ละแถว <Hint label="ประเทศ จำนวน และร้อยละรายปี" text={hints.international} /></p>
-    <div className="overflow-x-auto rounded-lg" role="region" aria-label="ตารางความร่วมมือรายปี" tabIndex={0}><table className="min-w-full border-collapse text-sm"><caption className="sr-only">ความร่วมมือระหว่างประเทศและร้อยละของผลงานทั้งหมด รายปีและยอดรวม</caption><thead><tr><th scope="col" className={`${head} text-left`}>ปีที่ตีพิมพ์ (พ.ศ.)</th><th scope="col" className={head}>ทั้งหมด</th>{INTERNATIONAL_STATES.map(s => <th key={s.key} scope="col" className={head}>{s.label}<span className="block text-xs font-normal">จำนวน / ร้อยละ</span></th>)}</tr></thead><tbody>{rows.map(y => {
-      const dims = y.bucket === 'all' ? {} : { year_be: y.bucket }; const label = y.bucket === 'all' ? y.year_be : insightYearLabel(y);
-      return <tr key={y.bucket} className={y.bucket === 'all' ? 'bg-blue-50 font-semibold' : 'odd:bg-slate-50/50'}><th scope="row" className={`${cell} text-left font-medium`}>{label}</th><td className={cell}><CountButton value={y.total} label={`ทั้งหมด ${label}`} onClick={() => open(dims, `ทั้งหมด · ${label}`)} /></td>{INTERNATIONAL_STATES.map(s => <td key={s.key} className={cell}><CountButton value={y.international[s.key]} label={`${s.label} ${label}`} onClick={() => open({ ...dims, international_status: s.key }, `${s.label} · ${label}`)} /><span className="ml-2 text-xs text-slate-500">{insightPercent(y.international_percent[s.key])}</span></td>)}</tr>;
-    })}</tbody></table></div>
-    <div><h3 className="mb-1 font-semibold text-slate-800">ประเทศที่ร่วมตีพิมพ์ <Hint label="ประเทศคู่ความร่วมมือ" text={hints.partners} /></h3><p className="mb-4 text-xs leading-5 text-slate-500">เฉพาะผลงานร่วมกับต่างประเทศ ({insightNumber(summary.totals.international.yes)} ผลงาน) หนึ่งผลงานอาจนับในหลายประเทศ จึงไม่ควรรวมแท่งเป็นยอดผลงานทั้งหมด</p>
-      {summary.totals.partners.length === 0 ? <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-500">ไม่พบประเทศคู่ความร่วมมือในช่วงที่เลือก</p> : <ul className="max-h-[430px] space-y-2 overflow-y-auto pr-1">{summary.totals.partners.map(p => <li key={p.country_key}><button type="button" className="grid min-h-12 w-full grid-cols-[minmax(0,1fr)_minmax(60px,2fr)_70px] items-center gap-3 rounded-lg p-2 text-left text-sm hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600" onClick={() => open({ country_key: p.country_key, international_status: 'yes' }, `ร่วมกับต่างประเทศ · ${p.country_name}`)} aria-label={`ดู ${p.country_name} ${p.documents} ผลงาน`}><span className="break-words font-medium text-slate-700">{p.country_name}</span><span className="h-5 overflow-hidden rounded bg-blue-50" aria-hidden="true"><span className="block h-full rounded bg-blue-600" style={{ width: `${p.documents / max * 100}%` }} /></span><span className="text-right"><b className="text-blue-700">{insightNumber(p.documents)}</b><span className="block text-xs text-slate-500">{insightPercent(p.percent_international)}</span></span></button></li>)}</ul>}
+  return <div className="space-y-3">
+    <p className="text-sm leading-5 text-slate-600">ผลงานไม่ซ้ำตามตัวกรองที่ใช้ · ร้อยละต่อผลงานทั้งหมดในแต่ละแถว <Hint label="ประเทศ จำนวน และร้อยละรายปี" text={hints.international} /></p>
+    <div data-international-layout className={styles.internationalLayout}>
+      <div className="overflow-x-auto rounded-lg" role="region" aria-label="ตารางความร่วมมือรายปี" tabIndex={0}><table className="w-full min-w-[500px] table-fixed border-collapse text-[13px]"><caption className="sr-only">ความร่วมมือระหว่างประเทศและร้อยละของผลงานทั้งหมด รายปีและยอดรวม</caption><colgroup><col className="w-[16%]"/><col className="w-[12%]"/>{INTERNATIONAL_STATES.map(state=><col key={state.key} className="w-[24%]"/>)}</colgroup>
+        <thead><tr><th scope="col" className={`${head} text-left`}>ปี (พ.ศ.)</th><th scope="col" className={head}>ทั้งหมด</th>{INTERNATIONAL_STATES.map(state => <th key={state.key} scope="col" className={head}><abbr className="no-underline" title={state.label}>{state.key === 'yes' ? 'ต่างประเทศ' : state.key === 'no' ? 'ภายในประเทศ' : 'ยังระบุไม่ได้'}</abbr><span className="block text-xs font-normal">จำนวน / ร้อยละ</span></th>)}</tr></thead>
+        <tbody>{rows.map(year => {
+          const dims = year.bucket === 'all' ? {} : { year_be: year.bucket }, label = year.bucket === 'all' ? year.year_be : insightYearLabel(year);
+          return <tr key={year.bucket} className={year.bucket === 'all' ? 'bg-blue-50 font-semibold' : 'odd:bg-slate-50/50'}><th scope="row" className={`${cell} text-left font-medium !whitespace-normal`}>{label}</th><td className={cell}><CountButton value={year.total} label={`ทั้งหมด ${label}`} onClick={() => open(dims, `ทั้งหมด · ${label}`)}/></td>{INTERNATIONAL_STATES.map(state=><td key={state.key} className={cell}><CountButton value={year.international[state.key]} label={`${state.label} ${label}`} onClick={() => open({ ...dims, international_status: state.key }, `${state.label} · ${label}`)}/><span className="ml-1 text-xs font-normal text-slate-600">{insightPercent(year.international_percent[state.key])}</span></td>)}</tr>;
+        })}</tbody>
+      </table></div>
+      <div data-partner-countries className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/50 p-3"><h3 className="mb-1 text-sm font-semibold text-slate-800">ประเทศที่ร่วมตีพิมพ์ <Hint label="ประเทศคู่ความร่วมมือ" text={hints.partners}/></h3><p className="mb-2 text-xs leading-5 text-slate-600">ฐาน {insightNumber(summary.totals.international.yes)} ผลงานต่างประเทศ · หนึ่งผลงานอยู่ได้หลายประเทศ</p>
+        {summary.totals.partners.length === 0 ? <p className="py-3 text-sm text-slate-500">ไม่พบประเทศคู่ความร่วมมือในช่วงที่เลือก</p> : <ul className="max-h-[280px] space-y-1 overflow-y-auto">{summary.totals.partners.map(partner=><li key={partner.country_key}><button type="button" className="grid min-h-11 w-full grid-cols-[minmax(65px,1fr)_minmax(50px,1.5fr)_60px] items-center gap-2 rounded-lg px-1.5 py-1 text-left text-sm hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600" onClick={() => open({ country_key: partner.country_key, international_status: 'yes' }, `ร่วมกับต่างประเทศ · ${partner.country_name}`)} aria-label={`ดู ${partner.country_name} ${partner.documents} ผลงาน`}><span className="break-words font-medium text-slate-700">{partner.country_name}</span><span className="h-3 overflow-hidden rounded-full bg-slate-200" aria-hidden="true"><span className="block h-full rounded-full bg-[#245b78]" style={{ width: `${partner.documents / max * 100}%` }}/></span><span className="text-right tabular-nums"><b className="text-slate-800">{insightNumber(partner.documents)}</b><span className="block text-xs text-slate-600">{insightPercent(partner.percent_international)}</span></span></button></li>)}</ul>}
+      </div>
     </div>
-
   </div>;
 }
 
@@ -83,11 +67,11 @@ function RolesCard({ summary, open }) {
   const [selected, setSelected] = useState('all'); const id = useId();
   const aggregate = selected === 'all' ? summary.totals : summary.by_year.find(y => y.bucket === selected) || summary.totals;
   const dims = selected === 'all' || !summary.by_year.some(y => y.bucket === selected) ? {} : { year_be: selected };
-  return <div className="space-y-5"><p className="text-sm leading-6 text-slate-600">หนึ่งผลงานต่อหนึ่งบทบาท: First → Corresponding → Co-author หรือยังระบุไม่ได้ <Hint label="การจัดกลุ่มบทบาทคณะ" text={hints.roles} /></p>
+  return <div className="space-y-3"><p className="text-sm leading-6 text-slate-600">หนึ่งผลงานต่อหนึ่งบทบาท: First → Corresponding → Co-author หรือยังระบุไม่ได้ <Hint label="การจัดกลุ่มบทบาทคณะ" text={hints.roles} /></p>
     <YearSelect roleOnly id={id} years={summary.by_year} selected={selected} setSelected={setSelected} />
-    <div data-role-layout className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]"><div className="overflow-x-auto rounded-lg" role="region" aria-label="ตารางบทบาทผู้เขียนรายปี" tabIndex={0}><table className="min-w-full border-collapse text-sm"><caption className="sr-only">บทบาทผู้เขียนของคณะตามปีที่ตีพิมพ์</caption><thead><tr><th scope="col" className={`${head} text-left`}>ปี (พ.ศ.)</th><th scope="col" className={head}>ทั้งหมด</th>{FACULTY_ROLES.map(r => <th key={r.key} scope="col" className={head}>{r.label}</th>)}</tr></thead><tbody>{[...summary.by_year, { ...summary.totals, bucket: 'all' }].map(y => {
+    <div data-role-layout className={styles.roleLayout}><div className="overflow-x-auto rounded-lg" role="region" aria-label="ตารางบทบาทผู้เขียนรายปี" tabIndex={0}><table className="w-full min-w-[520px] table-fixed border-collapse text-[13px]"><caption className="sr-only">บทบาทผู้เขียนของคณะตามปีที่ตีพิมพ์</caption><thead><tr><th scope="col" className={`${head} text-left`}>ปี (พ.ศ.)</th><th scope="col" className={head}>ทั้งหมด</th>{FACULTY_ROLES.map(r => <th key={r.key} scope="col" className={head}><abbr className="no-underline" title={r.label}>{r.key === 'corresponding' ? 'Corr.' : r.shortLabel}</abbr></th>)}</tr></thead><tbody>{[...summary.by_year, { ...summary.totals, bucket: 'all' }].map(y => {
       const yearDims = y.bucket === 'all' ? {} : { year_be: y.bucket }, label = y.bucket === 'all' ? 'รวมตามตัวกรอง' : insightYearLabel(y);
-      return <tr key={y.bucket} className={y.bucket === 'all' ? 'bg-blue-50 font-semibold' : 'odd:bg-slate-50/50'}><th scope="row" className={`${cell} text-left font-medium`}>{label}</th><td className={cell}><CountButton value={y.total} label={label} onClick={() => open(yearDims, `ทุกบทบาท · ${label}`)} /></td>{FACULTY_ROLES.map(r => <td key={r.key} className={cell}><CountButton value={y.roles[r.key]} label={`${r.label} ${label}`} onClick={() => open({ ...yearDims, faculty_role: r.key }, `${r.label} · ${label}`)} /><span className="block text-xs font-normal text-slate-500">{insightPercent(y.role_percent[r.key])}</span></td>)}</tr>;
+      return <tr key={y.bucket} className={y.bucket === 'all' ? 'bg-blue-50 font-semibold' : 'odd:bg-slate-50/50'}><th scope="row" className={`${cell} text-left font-medium !whitespace-normal`}>{label}</th><td className={cell}><CountButton value={y.total} label={label} onClick={() => open(yearDims, `ทุกบทบาท · ${label}`)} /></td>{FACULTY_ROLES.map(r => <td key={r.key} className={cell}><CountButton value={y.roles[r.key]} label={`${r.label} ${label}`} onClick={() => open({ ...yearDims, faculty_role: r.key }, `${r.label} · ${label}`)} /><span className="block text-xs font-normal text-slate-500">{insightPercent(y.role_percent[r.key])}</span></td>)}</tr>;
     })}</tbody></table></div><div><RoleDonut title={Object.keys(dims).length ? `ปี ${selected === 'undated' ? 'ไม่ระบุ' : selected}` : 'บทบาทคณะตามตัวกรอง'} total={aggregate.total} roles={aggregate.roles} onSelect={r => open({ ...dims, faculty_role: r.key }, `${r.label} · ${selected === 'all' ? 'ทุกปีตามตัวกรอง' : selected}`)} /></div></div>
   </div>;
 }
@@ -95,9 +79,9 @@ function RolesCard({ summary, open }) {
 function ComparisonCard({ summary, open }) {
   const [selected, setSelected] = useState('all'); const id = useId();
   const year = summary.by_year.find(y => y.bucket === selected), aggregate = year || summary.totals, dims = year ? { year_be: year.bucket } : {};
-  return <div className="space-y-5"><YearSelect id={id} years={summary.by_year} selected={selected} setSelected={setSelected} /><p className="text-sm leading-6 text-slate-600">แต่ละกราฟใช้ฐานผลงานของกลุ่มตนเอง · กลุ่มยังระบุประเทศไม่ได้แสดงแยกในตาราง <Hint label="ฐานเปรียบเทียบต่างประเทศและภายในประเทศ" text={hints.donut} /></p>
-    <div className="grid gap-4 md:grid-cols-2">{INTERNATIONAL_STATES.slice(0, 2).map(s => <RoleDonut key={s.key} title={s.label} roles={aggregate.country_role[s.key]} total={aggregate.international[s.key]} onSelect={r => open({ ...dims, international_status: s.key, faculty_role: r.key }, `${s.label} · ${r.label}${year ? ` · ${insightYearLabel(year)}` : ''}`)} />)}</div>
-    <div className="overflow-x-auto rounded-lg" role="region" aria-label="ตารางไขว้ประเทศและบทบาท" tabIndex={0}><table className="min-w-full border-collapse text-sm"><caption className="mb-2 text-left font-semibold text-slate-800">ประเทศ × บทบาทคณะ{year ? ` · ${insightYearLabel(year)}` : ' · รวมตามตัวกรอง'} <Hint label="ตารางไขว้ประเทศและบทบาท" text={hints.cross} /></caption><thead><tr><th scope="col" className={`${head} text-left`}>ความร่วมมือ</th>{FACULTY_ROLES.map(r => <th key={r.key} scope="col" className={head}>{r.label}</th>)}<th scope="col" className={head}>รวม</th></tr></thead><tbody>{INTERNATIONAL_STATES.map(s => <tr key={s.key} className="odd:bg-slate-50/50"><th scope="row" className={`${cell} text-left font-medium`}>{s.label}</th>{FACULTY_ROLES.map(r => <td key={r.key} className={cell}><CountButton value={aggregate.country_role[s.key][r.key]} label={`${s.label} ${r.label}`} onClick={() => open({ ...dims, international_status: s.key, faculty_role: r.key }, `${s.label} · ${r.label}${year ? ` · ${insightYearLabel(year)}` : ''}`)} /></td>)}<td className={cell}><CountButton value={aggregate.international[s.key]} label={s.label} onClick={() => open({ ...dims, international_status: s.key }, `${s.label}${year ? ` · ${insightYearLabel(year)}` : ''}`)} /></td></tr>)}</tbody></table></div>
+  return <div className="space-y-3"><YearSelect id={id} years={summary.by_year} selected={selected} setSelected={setSelected} /><p className="text-sm leading-6 text-slate-600">แต่ละกราฟใช้ฐานผลงานของกลุ่มตนเอง · กลุ่มยังระบุประเทศไม่ได้แสดงแยกในตาราง <Hint label="ฐานเปรียบเทียบต่างประเทศและภายในประเทศ" text={hints.donut} /></p>
+    <div className="grid gap-3 xl:grid-cols-2">{INTERNATIONAL_STATES.slice(0, 2).map(s => <RoleDonut key={s.key} title={s.label} roles={aggregate.country_role[s.key]} total={aggregate.international[s.key]} onSelect={r => open({ ...dims, international_status: s.key, faculty_role: r.key }, `${s.label} · ${r.label}${year ? ` · ${insightYearLabel(year)}` : ''}`)} />)}</div>
+    <div className="overflow-x-auto rounded-lg" role="region" aria-label="ตารางไขว้ประเทศและบทบาท" tabIndex={0}><table className="w-full min-w-[520px] table-fixed border-collapse text-[13px]"><caption className="mb-2 text-left font-semibold text-slate-800">ประเทศ × บทบาทคณะ{year ? ` · ${insightYearLabel(year)}` : ' · รวมตามตัวกรอง'} <Hint label="ตารางไขว้ประเทศและบทบาท" text={hints.cross} /></caption><thead><tr><th scope="col" className={`${head} text-left`}>ความร่วมมือ</th>{FACULTY_ROLES.map(r => <th key={r.key} scope="col" className={head}><abbr className="no-underline" title={r.label}>{r.key === 'corresponding' ? 'Corr.' : r.shortLabel}</abbr></th>)}<th scope="col" className={head}>รวม</th></tr></thead><tbody>{INTERNATIONAL_STATES.map(s => <tr key={s.key} className="odd:bg-slate-50/50"><th scope="row" className={`${cell} text-left font-medium !whitespace-normal`}>{s.label}</th>{FACULTY_ROLES.map(r => <td key={r.key} className={cell}><CountButton value={aggregate.country_role[s.key][r.key]} label={`${s.label} ${r.label}`} onClick={() => open({ ...dims, international_status: s.key, faculty_role: r.key }, `${s.label} · ${r.label}${year ? ` · ${insightYearLabel(year)}` : ''}`)} /></td>)}<td className={cell}><CountButton value={aggregate.international[s.key]} label={s.label} onClick={() => open({ ...dims, international_status: s.key }, `${s.label}${year ? ` · ${insightYearLabel(year)}` : ''}`)} /></td></tr>)}</tbody></table></div>
   </div>;
 }
 
@@ -175,10 +159,10 @@ export default function AdminScopusFacultyInsights({ appliedQuery = {}, enabled 
       target?.focus({ preventScroll: true });
     });
   };
-  return <div ref={rootRef} tabIndex={-1} className="space-y-6" aria-label="ข้อมูลความร่วมมือและบทบาทผู้เขียนของคณะ">
+  return <div ref={rootRef} tabIndex={-1} className="space-y-4" style={{ containerType: 'inline-size', containerName: 'faculty-insights' }} aria-label="ข้อมูลความร่วมมือและบทบาทผู้เขียนของคณะ">
     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500"><span>เฉพาะ Scopus · ตามตัวกรองที่ใช้ · ไม่รวม ThaiJO/TCI <Hint label="ขอบเขตข้อมูลคณะและตัวกรอง" text={hints.scope} /></span><button ref={refreshRef} type="button" className="inline-flex min-h-9 items-center gap-1 rounded px-2 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={loading} onClick={() => store.refresh()}><RefreshCw size={13} />อัปเดตข้อมูลทั้ง 3 ส่วน</button></div>
-    <InsightCard title="ความร่วมมือระหว่างประเทศของคณะ" icon={Globe2} hint={hints.international}>{summary ? <InternationalCard summary={summary} open={open} /> : <ResourceState loading={loading} error={error} retry={() => store.refresh()} />}</InsightCard>
     <InsightCard title="บทบาทผู้เขียนของคณะ" icon={Users} hint={hints.roles}>{summary ? <RolesCard key={summary.revision} summary={summary} open={open} /> : <ResourceState loading={loading} error={error} retry={() => store.refresh()} />}</InsightCard>
+    <InsightCard title="ความร่วมมือระหว่างประเทศของคณะ" icon={Globe2} hint={hints.international}>{summary ? <InternationalCard summary={summary} open={open} /> : <ResourceState loading={loading} error={error} retry={() => store.refresh()} />}</InsightCard>
     <InsightCard title="บทบาทคณะ: ต่างประเทศและภายในประเทศ" icon={ChartPie} hint={hints.cross}>{summary ? <ComparisonCard key={summary.revision} summary={summary} open={open} /> : <ResourceState loading={loading} error={error} retry={() => store.refresh()} />}</InsightCard>
     {current && state.drilldown && <InsightDrilldown store={store} drilldown={state.drilldown} close={close} />}
   </div>;

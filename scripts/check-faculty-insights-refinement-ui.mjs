@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 const { chromium } = createRequire(import.meta.url)(process.env.SCOPUS_UI_PLAYWRIGHT_PATH || 'playwright');
 const origin = process.env.SCOPUS_UI_ORIGIN || 'http://127.0.0.1:3105';
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error('Loopback fixture only');
-const directory = resolve('docs/faculty-insights-ui-refinement-evidence');
+const directory = resolve(process.env.SCOPUS_UI_EVIDENCE_DIR || 'docs/faculty-insights-ui-refinement-evidence');
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, hasTouch: true });
 const checks = [], errors = [], blocked = [];

@@ -29,7 +29,7 @@ test('view loads only on activation and reuses successful cached responses',asyn
   await faculty.load('filter1',fetcher,()=>{},assert.fail);assert.equal(calls,2);
   overview.clear();await overview.load('filter1',fetcher,()=>{},assert.fail);assert.equal(calls,3);
 });
-test('inactive/old filter responses are aborted and cannot overwrite newer results',async()=>{
+test('explicit cancellation/old filter responses are aborted and cannot overwrite newer results',async()=>{
   const loader=createSummaryLoader();let complete;let signal;const results=[];
   const old=loader.load('old',s=>{signal=s;return new Promise(r=>complete=r)},r=>results.push(r),assert.fail);
   loader.stop();assert.equal(signal.aborted,true);
@@ -64,4 +64,53 @@ test('header clicks toggle direction, Quartile uses quality order and unlinked f
   const faculty=[{name:'A',scopus_id:'10',total:0,linkable:false},{name:'B',scopus_id:'2',total:0,linkable:true},{name:'C',scopus_id:'11',total:2,linkable:true}];
   assert.deepEqual(filterSummaryFaculty(faculty,'',false,{key:'total',direction:'asc'}).map(r=>r.name),['B','C','A']);
   assert.deepEqual(filterSummaryFaculty(faculty,'',false,{key:'scopus_id',direction:'asc'}).map(r=>r.scopus_id),['2','10','11']);
+});
+
+
+const pendingResult=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject};};
+test('pending tab return joins the same promise; background completion is cached',async()=>{
+ const loader=createSummaryLoader(),request=pendingResult(),received=[];let calls=0,signal;
+ const fetcher=s=>{calls++;signal=s;return request.promise;};
+ const first=loader.load('applied',fetcher,value=>received.push(['initial',value]),assert.fail);
+ // Visibility changes deliberately do not call stop.
+ const joined=loader.load('applied',fetcher,value=>received.push(['returned',value]),assert.fail);
+ assert.equal(first,joined);assert.equal(calls,1);assert.equal(signal.aborted,false);
+ request.resolve('ready');await first;assert.deepEqual(received,[['returned','ready']]);
+ await loader.load('applied',fetcher,value=>received.push(['cached',value]),assert.fail);
+ assert.equal(calls,1);assert.deepEqual(received.at(-1),['cached','ready']);
+});
+test('visited streams complete independently; unvisited streams are never eagerly fetched',async()=>{
+ const streams={overview:createSummaryLoader(),faculty:createSummaryLoader(),presentation:createSummaryLoader(),comparison:createSummaryLoader(),insights:createSummaryLoader()};
+ const pending=pendingResult();let calls=0;const values=[];
+ const first=streams.overview.load('filters',()=>{calls++;return pending.promise},v=>values.push(v),assert.fail);
+ await streams.presentation.load('presentation',async()=>{calls++;return 'presentation'},v=>values.push(v),assert.fail);
+ assert.equal(calls,2);pending.resolve('overview');await first;assert.deepEqual(values,['presentation','overview']);
+});
+test('changing applied filters aborts old request even when its panel is hidden',async()=>{
+ const loader=createSummaryLoader(),old=pendingResult(),values=[];let signal;
+ const first=loader.load('old',s=>{signal=s;return old.promise},v=>values.push(v),assert.fail);
+ await loader.load('new',async()=> 'current',v=>values.push(v),assert.fail);
+ assert.equal(signal.aborted,true);old.resolve('obsolete');await first;assert.deepEqual(values,['current']);
+});
+test('explicit refresh invalidates completed cache and pending generation',async()=>{
+ const loader=createSummaryLoader(),old=pendingResult(),values=[];let signal,calls=0;
+ await loader.load('cached',async()=>{calls++;return 'before'},v=>values.push(v),assert.fail);
+ const first=loader.load('pending',s=>{signal=s;return old.promise},v=>values.push(v),assert.fail);
+ loader.stop();loader.clear();assert.equal(signal.aborted,true);
+ await loader.load('cached',async()=>{calls++;return 'after'},v=>values.push(v),assert.fail);
+ old.resolve('old');await first;assert.equal(calls,2);assert.deepEqual(values,['before','after']);
+});
+test('joined failure reaches latest receiver and remains retryable',async()=>{
+ const loader=createSummaryLoader(),request=pendingResult();let error,calls=0;
+ const first=loader.load('same',()=>{calls++;return request.promise},assert.fail,assert.fail);
+ const second=loader.load('same',assert.fail,assert.fail,e=>error=e);
+ request.reject(new Error('retry'));await second;await first;assert.equal(error.message,'retry');assert.equal(calls,1);
+ let value;await loader.load('same',async()=>42,v=>value=v,assert.fail);assert.equal(value,42);
+});
+test('unmount cleanup stops pending work and clears completed cache',async()=>{
+ const loader=createSummaryLoader(),request=pendingResult();let signal,calls=0;
+ await loader.load('ready',async()=>{calls++;return 'cached'},()=>{},assert.fail);
+ const first=loader.load('pending',s=>{signal=s;return request.promise},assert.fail,assert.fail);
+ loader.stop();loader.clear();request.resolve('late');await first;assert.equal(signal.aborted,true);
+ await loader.load('ready',async()=>{calls++;return 'new page'},()=>{},assert.fail);assert.equal(calls,2);
 });

@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.SCOPUS_UI_PLAYWRIGHT_PATH || 'playwright');
 const origin = process.env.SCOPUS_UI_ORIGIN || 'http://127.0.0.1:3105';
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error('Fixture QA requires loopback HTTP');
-const directory = resolve('docs/faculty-insights-ui-refinement-evidence/regression');
+const directory = resolve(process.env.SCOPUS_UI_EVIDENCE_DIR || 'docs/faculty-insights-ui-refinement-evidence/regression');
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const errors = [], results = [], blocked = [];

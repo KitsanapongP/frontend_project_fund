@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createFacultyInsightStore, validateInsightSummary, insightPercent, insightRatio, safeInsightURL, insightDOIURL, insightFilterKey } from '../scopus_faculty_insights.mjs';
+import { FACULTY_ROLES, createFacultyInsightStore, validateInsightSummary, insightPercent, insightRatio, safeInsightURL, insightDOIURL, insightFilterKey } from '../scopus_faculty_insights.mjs';
 import { makeFacultyFixtureSummary, makeFacultyFixtureAPI } from '../../dev/scopus-faculty-insights/fixtures.mjs';
 
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
@@ -172,4 +172,10 @@ test('obsolete search results cannot replace newer search or clear and close abo
   assert.equal(store.getSnapshot().drilldown.search, '');
   const closing = store.search('close'); store.close(); requests[5].d.resolve(page(requests[5].p, { scope_total: 512, search: 'close' })); await closing;
   assert.equal(store.getSnapshot().drilldown, null); assert.equal(requests[5].o.signal.aborted, true); store.dispose();
+});
+
+
+test('role marks have at least 3:1 contrast on the light chart surface', () => {
+  const luminance = hex => hex.slice(1).match(/../g).map(v=>parseInt(v,16)/255).map(v=>v<=0.04045?v/12.92:((v+0.055)/1.055)**2.4).reduce((sum,value,i)=>sum+value*[0.2126,0.7152,0.0722][i],0);
+  for(const role of FACULTY_ROLES)assert.ok((luminance('#f8fafc')+0.05)/(luminance(role.color)+0.05)>=3, role.label);
 });

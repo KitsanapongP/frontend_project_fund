@@ -1,0 +1,15 @@
+.roleLayout, .internationalLayout { display: grid; gap: 12px; align-items: start; }
+.donutBody { display: grid; gap: 8px; align-items: center; }
+.legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; order: 2; }
+.chart { min-width: 0; order: 1; }
+.chart svg { display: block; width: 100%; height: auto; max-width: 248px; margin: auto; }
+@container faculty-insights (min-width: 1000px) {
+  .roleLayout { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  .internationalLayout { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+}
+@container faculty-donut (min-width: 440px) {
+  .donutBody { grid-template-columns: minmax(150px, 0.85fr) minmax(230px, 1.2fr); gap: 12px; }
+  .legend { grid-template-columns: minmax(0, 1fr); order: 0; }
+  .chart { order: 0; }
+  .chart svg { max-width: 280px; }
+}

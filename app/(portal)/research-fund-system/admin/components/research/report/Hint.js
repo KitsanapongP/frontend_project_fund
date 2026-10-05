@@ -12,6 +12,7 @@ export default function Hint({ text, label }) {
   const [position, setPosition] = useState(null);
   const buttonRef = useRef(null);
   const panelRef = useRef(null);
+  const pointerTypeRef = useRef(null);
   const panelId = useId();
 
   useLayoutEffect(() => {
@@ -55,17 +56,20 @@ export default function Hint({ text, label }) {
   }, [open, pinned]);
 
   return <span className="inline-flex align-middle"
-    onMouseEnter={() => setOpen(true)}
-    onMouseLeave={() => { if (!pinned) setOpen(false); }}>
+    onPointerEnter={(event) => { if (event.pointerType === "mouse") setOpen(true); }}
+    onPointerLeave={(event) => { if (event.pointerType === "mouse" && !pinned) setOpen(false); }}>
     <button ref={buttonRef} type="button"
       aria-label={`คำอธิบาย: ${label}`} aria-expanded={open}
       aria-describedby={open ? panelId : undefined}
+      onPointerDown={(event) => { pointerTypeRef.current = event.pointerType; }}
       onClick={(event) => {
         event.stopPropagation();
         setPinned(!pinned); setOpen(!pinned);
       }}
-      onFocus={() => setOpen(true)}
-      onBlur={() => { if (!pinned) setOpen(false); }}
+      // Touch focus precedes the synthesized click. Previewing here can place the
+      // panel over the trigger and redirect that click; touch opens on click.
+      onFocus={() => { if (pointerTypeRef.current !== "touch") setOpen(true); }}
+      onBlur={() => { pointerTypeRef.current = null; if (!pinned) setOpen(false); }}
       className="no-print inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
       <Info size={14} aria-hidden="true" />
     </button>
