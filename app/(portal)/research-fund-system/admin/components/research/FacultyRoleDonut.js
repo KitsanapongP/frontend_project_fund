@@ -17,7 +17,7 @@ function arc(start, end) {
   return `M ${from} A 78 78 0 ${end - start > 180 ? 1 : 0} 1 ${to}`;
 }
 
-export default function FacultyRoleDonut({ title, roles, total }) {
+export default function FacultyRoleDonut({ title, roles, total, percentageGroup = '' }) {
   const [hovered, setHovered] = useState(null), [focused, setFocused] = useState(null);
   const [selected, setSelected] = useState(null);
   const denominatorID = useId();
@@ -34,7 +34,7 @@ export default function FacultyRoleDonut({ title, roles, total }) {
     onFocus: () => setFocused(role.key), onBlur: () => setFocused(null),
   });
   return <div data-role-donut data-active-role={activeKey || ''} data-selected-role={selected || ''} style={{ containerType: 'inline-size', containerName: 'faculty-donut' }} className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-    <div className="mb-1 flex items-center justify-center gap-1"><h3 className="text-sm font-semibold text-slate-800">{title}</h3><Hint label={`ฐานคำนวณ ${title}`} text={hints.donut} /></div>
+    <div className="mb-1 flex items-center justify-center gap-1"><h3 className="text-sm font-semibold text-slate-800">{title}</h3><Hint label={`จำนวนและร้อยละ ${title}`} text={hints.donut} /></div>
     <div className={styles.donutBody}>
       <ul className={styles.legend} aria-label={`คำอธิบายสี ${title}`}>
         {FACULTY_ROLES.map(role => <li key={role.key} className="min-w-0"><button type="button" data-role-legend={role.key} {...engage(role)} onClick={() => select(role)} aria-pressed={selected === role.key} aria-describedby={denominatorID} aria-label={`เลือกบทบาท ${title} ${role.label} ${insightNumber(roles[role.key])} ผลงาน ${insightPercent(insightRatio(roles[role.key], total))}`} className={`flex min-h-12 w-full flex-col justify-center rounded-lg border px-2 py-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-700 ${selected === role.key ? 'border-slate-400 bg-white shadow-sm' : activeKey === role.key ? 'border-slate-300 bg-white' : 'border-transparent hover:bg-white'}`}>
@@ -55,12 +55,11 @@ export default function FacultyRoleDonut({ title, roles, total }) {
               <path data-role-segment={role.key} d={path} fill="none" stroke={role.color} strokeWidth={activeKey === role.key ? 36 : 30} opacity={activeKey && activeKey !== role.key ? 0.3 : 1} role="button" tabIndex={0} aria-pressed={selected === role.key} aria-describedby={denominatorID} aria-label={`เลือกบทบาท ${title} ${role.label} ${insightNumber(n)} ผลงาน ${insightPercent(insightRatio(n, total))}`} {...engage(role)} onClick={() => select(role)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(role); } }} className={`${styles.segment} cursor-pointer motion-safe:transition-[opacity,stroke-width] motion-safe:duration-150`} />
             </g>;
           })}
-          <g aria-hidden="true" className="pointer-events-none"><text data-donut-count x="120" y="112" textAnchor="middle" fontSize="32" fontWeight="700" fill="#0f172a">{insightNumber(active ? roles[active.key] : total)}</text><text data-donut-percent x="120" y="137" textAnchor="middle" fontSize="15" fill="#475569">{active ? insightPercent(insightRatio(roles[active.key], total)) : 'ผลงานไม่ซ้ำ'}</text><text x="120" y="158" textAnchor="middle" fontSize="12" fill="#64748b">{active ? `จาก ${insightNumber(total)} ผลงาน` : 'ทุกบทบาทในกลุ่มนี้'}</text></g>
+          <g aria-hidden="true" className="pointer-events-none"><text data-donut-count x="120" y="112" textAnchor="middle" fontSize="32" fontWeight="700" fill="#0f172a">{insightNumber(active ? roles[active.key] : total)}</text><text data-donut-percent x="120" y="137" textAnchor="middle" fontSize="15" fill="#475569">{active ? insightPercent(insightRatio(roles[active.key], total)) : 'ผลงานทั้งหมด'}</text>{active && <text x="120" y="158" textAnchor="middle" fontSize="12" fill="#64748b">จาก {insightNumber(total)} ผลงาน</text>}</g>
         </svg>
       </div>
     </div>
-    <p id={denominatorID} className="mt-1 text-center text-xs text-slate-600">ฐานคำนวณ: {insightNumber(total)} ผลงานในกลุ่มนี้</p>
-    <p className="mt-1 text-center text-xs text-slate-500">คลิกเพื่อเลือกบทบาท · คลิกซ้ำเพื่อแสดงทั้งหมด</p>
+    <p id={denominatorID} className="mt-1 text-center text-xs leading-5 text-slate-600">ร้อยละคิดจากผลงาน{percentageGroup}ทั้งหมด {insightNumber(total)} ผลงาน</p>
     {total === 0 && <p className="mt-1 text-center text-xs text-slate-500">ไม่พบผลงานในกลุ่มนี้</p>}
   </div>;
 }

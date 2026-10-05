@@ -34,7 +34,7 @@ await page.addInitScript(({ token }) => {
   localStorage.setItem('user_data', JSON.stringify({ user_id: 9001, role_id: 3, email: 'admin@fixture.invalid' }));
 }, { token: fixture.access_token });
 const check = async (name, fn) => { await fn(); checks.push({ name, passed: true }); };
-const total = count => page.getByRole('button', { name: `ดูผลงาน ทั้งหมด รวมตามตัวกรอง ${count} รายการ`, exact: true });
+const total = count => page.getByRole('button', { name: `ดูผลงาน ทั้งหมด รวมตามเงื่อนไขที่เลือก ${count} รายการ`, exact: true });
 const close = async () => { await page.getByRole('button', { name: 'ปิดรายการผลงาน', exact: true }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' }); };
 const mutate = async action => {
   const result = await fetch(`${fixture.api_origin}/api/v1/__fixture/mutate`, { method: 'POST', headers: { Authorization: `Bearer ${fixture.access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
@@ -48,7 +48,7 @@ try {
     await page.getByRole('heading', { name: /MariaDB/ }).waitFor();
     assert.ok(requests.some(request => request.path.endsWith('/faculty-insights') && request.status === 200));
     await page.getByRole('button', { name: 'คำอธิบาย: การจัดกลุ่มบทบาทคณะ', exact: true }).focus();
-    await page.getByRole('tooltip').getByText('ลำดับนี้ป้องกันการนับซ้ำ ไม่จัดอันดับความสำคัญ', { exact: false }).waitFor();
+    await page.getByRole('tooltip').getByText('ลำดับนี้ป้องกันการนับซ้ำ', { exact: false }).waitFor();
     await page.keyboard.press('Escape');
   });
   await page.screenshot({ path: resolve(directory, 'native-desktop.png'), fullPage: true });

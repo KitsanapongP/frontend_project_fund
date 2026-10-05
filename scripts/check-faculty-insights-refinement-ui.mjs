@@ -16,8 +16,8 @@ const capture = async (target, options) => { const { path, ...settings } = optio
 page.on('pageerror', e => errors.push(e.message));
 await page.route('**/*', route => { const u = new URL(route.request().url()); if (u.origin !== origin || u.pathname.startsWith('/api/')) { blocked.push(u.pathname); return route.abort(); } return route.continue(); });
 const check = async (name, fn) => { await fn(); checks.push({ name, passed: true }); };
-const ready = () => page.getByRole('button', { name: 'ดูผลงาน ทั้งหมด รวมตามตัวกรอง 512 รายการ', exact: true }).waitFor();
-const openAll = () => page.getByRole('button', { name: 'ดูผลงาน ทั้งหมด รวมตามตัวกรอง 512 รายการ', exact: true }).click();
+const ready = () => page.getByRole('button', { name: 'ดูผลงาน ทั้งหมด รวมตามเงื่อนไขที่เลือก 512 รายการ', exact: true }).waitFor();
+const openAll = () => page.getByRole('button', { name: 'ดูผลงาน ทั้งหมด รวมตามเงื่อนไขที่เลือก 512 รายการ', exact: true }).click();
 const dialog = () => page.getByRole('dialog');
 const search = async text => { await dialog().getByRole('searchbox').fill(text); await dialog().getByRole('button', { name: 'ค้นหา', exact: true }).click(); await dialog().getByText(`ที่ตรงคำค้น “${text.trim()}”`, { exact: false }).waitFor(); };
 const close = async () => { await dialog().getByRole('button', { name: 'ปิดรายการผลงาน' }).click(); await dialog().waitFor({ state: 'hidden' }); };
@@ -38,8 +38,9 @@ try {
   });
   await check('structured Benchmark hints open by keyboard, pin and close with Escape', async () => {
     const hint = page.getByRole('button', { name: 'คำอธิบาย: การจัดกลุ่มบทบาทคณะ', exact: true }); await hint.focus();
-    await page.getByRole('tooltip').getByText('ความเชื่อถือได้และกลุ่มไม่ทราบ', { exact: true }).waitFor();
-    assert.match(await page.getByRole('tooltip').innerText(), /no_correspondence/);
+    await page.getByRole('tooltip').getByText('เมื่อข้อมูลยังไม่ชัดเจน', { exact: true }).waitFor();
+    assert.match(await page.getByRole('tooltip').innerText(), /ไม่จัดเป็น Co-author โดยอัตโนมัติ/);
+    assert.doesNotMatch(await page.getByRole('tooltip').innerText(), /XML|no_correspondence|complete|ธง/);
     await page.keyboard.press('Enter'); await page.mouse.move(0, 0); await shot('desktop-role-tooltip.png');
     await page.keyboard.press('Escape'); await page.getByRole('tooltip').waitFor({ state: 'hidden' });
   });

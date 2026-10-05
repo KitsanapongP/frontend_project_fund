@@ -14,7 +14,7 @@ page.on('pageerror', error => errors.push(error.message));
 await page.route('**/*', route => { const u = new URL(route.request().url()); if (u.origin !== origin || u.pathname.startsWith('/api/')) { blocked.push(u.pathname); return route.abort(); } return route.continue(); });
 const check = async (name, run) => { await run(); checks.push({ name, passed: true }); };
 const capture = async (name, target = page, fullPage = true) => captures.push({ name, data: await target.screenshot({ fullPage: target === page && fullPage, animations: 'disabled' }) });
-const ready = () => page.getByRole('button', { name: 'ดูผลงาน ทั้งหมด รวมตามตัวกรอง 512 รายการ', exact: true }).waitFor();
+const ready = () => page.getByRole('button', { name: 'ดูผลงาน ทั้งหมด รวมตามเงื่อนไขที่เลือก 512 รายการ', exact: true }).waitFor();
 const donuts = () => page.locator('[data-role-donut]');
 const requests = () => page.getByLabel('คำขอทดสอบ').textContent();
 const noRead = async before => { assert.equal(await page.getByRole('dialog').count(), 0); assert.equal(await requests(), before); };
@@ -151,16 +151,16 @@ try {
     await donut.locator('[data-role-legend="first"]').tap(); assert.equal(await donut.locator('[data-donut-count]').textContent(), '512'); await noRead(before);
     await donut.locator('svg[role="group"]').scrollIntoViewIfNeeded(); const point = await arcPoint(donut, 'coauthor'); await page.touchscreen.tap(point.x, point.y); await noRead(before);
     assert.equal(await donut.getAttribute('data-selected-role'), 'coauthor'); await capture('mobile-selected-role.png', donut);
-    await page.getByRole('region', { name: 'ตารางบทบาทผู้เขียนรายปี' }).getByRole('button', { name: 'ดูผลงาน First author รวมตามตัวกรอง 93 รายการ', exact: true }).tap();
+    await page.getByRole('region', { name: 'ตารางบทบาทผู้เขียนรายปี' }).getByRole('button', { name: 'ดูผลงาน First author รวมตามเงื่อนไขที่เลือก 93 รายการ', exact: true }).tap();
     await page.getByRole('dialog').getByText('พบทั้งหมด 93', { exact: false }).waitFor(); await capture('mobile-drilldown.png', page, false); await close();
     await page.getByRole('button', { name: /^ดู China / }).tap(); await page.getByRole('dialog').getByText('พบทั้งหมด 78', { exact: false }).waitFor(); await close();
     await capture('mobile-country-rows.png', page.locator('[data-partner-countries]'));
     await page.getByRole('button', { name: 'คำอธิบาย: การจัดกลุ่มบทบาทคณะ', exact: true }).tap();
-    await page.getByRole('tooltip').getByText('ความเชื่อถือได้และกลุ่มไม่ทราบ', { exact: true }).waitFor(); await capture('mobile-hint.png', page, false); await page.keyboard.press('Escape');
+    await page.getByRole('tooltip').getByText('เมื่อข้อมูลยังไม่ชัดเจน', { exact: true }).waitFor(); await capture('mobile-hint.png', page, false); await page.keyboard.press('Escape');
   });
   await check('empty groups keep unknown neutral, zero denominator and usable legend selection', async () => {
     await page.getByRole('button', { name: 'ว่าง', exact: true }).click();
-    await page.getByRole('button', { name: 'ดูผลงาน ทั้งหมด รวมตามตัวกรอง 0 รายการ', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'ดูผลงาน ทั้งหมด รวมตามเงื่อนไขที่เลือก 0 รายการ', exact: true }).waitFor();
     await donuts().first().locator('[data-role-legend="unknown"]').focus();
     assert.equal(await donuts().first().locator('[data-donut-percent]').textContent(), '—');
     assert.equal(await page.locator('[data-role-segment]').count(), 0);

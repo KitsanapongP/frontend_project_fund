@@ -4,6 +4,15 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Info } from "lucide-react";
 
+// Structured inline text adds narrow emphasis without interpreting HTML.
+function InlineHintText({ text }) {
+  if (typeof text === 'string') return text;
+  if (!Array.isArray(text)) return null;
+  return text.map((part, index) => part.strong
+    ? <strong key={index} className="font-semibold">{part.text}</strong>
+    : <span key={index}>{part.text}</span>);
+}
+
 // Hover/focus previews; clicking pins the explanation until another click or Escape.
 // A body portal avoids clipping by table overflow and fixed positioning stays in view.
 export default function Hint({ text, label }) {
@@ -78,7 +87,7 @@ export default function Hint({ text, label }) {
       className="no-print fixed z-[10000] overflow-y-auto rounded-lg border border-slate-200 bg-white p-4 text-left text-xs font-normal leading-relaxed text-slate-700 shadow-lg">
       {(Array.isArray(text) ? text : [text]).map((section,index)=><div key={index} className="border-b border-slate-200 pb-3 last:border-0 last:pb-0 [&+div]:pt-3">
         <p className="mb-1.5 font-semibold text-slate-900">{typeof section === 'string' ? label : section.title}</p>
-        {typeof section === 'string' ? <div className="space-y-2">{section.split(/\n+/).filter(Boolean).map((line,i)=><p key={i}>{line}</p>)}</div> : <ul className="list-disc space-y-1.5 pl-4">{section.lines.map((line,i)=><li key={i}>{line}</li>)}</ul>}
+        {typeof section === 'string' ? <div className="space-y-2">{section.split(/\n+/).filter(Boolean).map((line,i)=><p key={i}>{line}</p>)}</div> : <ul className="list-disc space-y-1.5 pl-4">{section.lines.map((line,i)=><li key={i}><InlineHintText text={line} /></li>)}</ul>}
       </div>)}
     </div>, document.body)}
   </span>;
