@@ -1,4 +1,4 @@
-export const FUND_210_HINT = '* ผู้ขอทุนสามารถยื่นขอทุนนี้ได้ ที่รายการทุนที่ 2.2 หรือ 2.3';
+export const FUND_210_HINT = '* ผู้ขอทุนสามารถยื่นขอทุนนี้ได้ที่รายการทุน 2.2 - 2.3';
 
 export function normalizeFundStatus(value) {
   return String(value ?? '').trim().toLowerCase();

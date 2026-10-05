@@ -13,6 +13,7 @@ import { FORM_TYPE_CONFIG } from '../../../../../lib/form_type_config';
 import systemConfigAPI from '../../../../../lib/system_config_api';
 import { systemAPI } from '../../../../../lib/api';
 import { getFundCondition, getFundDisplayHint, isFundOpenForApplications } from '../../../../../lib/fund_availability.mjs';
+import { matchesPromotionFundSearch, mergePublicationRewardRows } from './promotion_fund_display.mjs';
 
 const PROMOTION_CATEGORY_KEYWORDS = [
   'ทุนอุดหนุนกิจกรรม'
@@ -522,18 +523,7 @@ export default function PromotionFundContent({ onNavigate }) {
         PROMOTION_CATEGORY_KEYWORDS
       );
 
-      // รวมทุน publication_reward ให้เป็น 1 แถว (คงพฤติกรรมเดิม)
-      const mergedPromotionFunds = promotionFunds.map((category) => {
-        if (!Array.isArray(category.subcategories)) return category;
-
-        const publicationSubs = category.subcategories.filter(
-          (sub) => sub.form_type === "publication_reward"
-        );
-
-        return category;
-      });
-
-      setFundCategories(mergedPromotionFunds);
+      setFundCategories(mergePublicationRewardRows(promotionFunds));
     } catch (err) {
       console.error("Error loading fund data:", err);
       setError(err.message || "เกิดข้อผิดพลาดในการโหลดข้อมูลทุน");
@@ -550,12 +540,7 @@ export default function PromotionFundContent({ onNavigate }) {
     if (searchTerm) {
       filtered = filtered.map(category => ({
         ...category,
-        subcategories: category.subcategories?.filter(sub => {
-          const subName = sub.subcategory_name || '';
-          const condition = sub.fund_condition || '';
-          return subName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                 condition.toLowerCase().includes(searchTerm.toLowerCase());
-        }) || []
+        subcategories: category.subcategories?.filter(sub => matchesPromotionFundSearch(sub, searchTerm)) || []
       })).filter(category => category.subcategories && category.subcategories.length > 0);
     }
 
@@ -789,12 +774,17 @@ export default function PromotionFundContent({ onNavigate }) {
     return (
       <tr
         key={fund.subcategory_id || fund.subcategorie_id}
-        className={!canApply ? "bg-slate-50" : ""}
+        className={fund.is_publication_reward_highlight ? "bg-amber-50/80" : !canApply ? "bg-slate-50" : ""}
       >
-        <td className="px-6 py-4 align-top">
+        <td className={`px-6 py-4 align-top ${fund.is_publication_reward_highlight ? 'border-l-4 border-amber-400' : ''}`}>
           <div className="text-sm font-medium text-slate-900 max-w-lg break-words leading-relaxed">
             {fundName}
           </div>
+          {fund.is_publication_reward_highlight && (
+            <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
+              ทุนที่มีผู้ขอจำนวนมาก
+            </span>
+          )}
           {fundHint && (
             <div className="mt-2 max-w-lg rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium leading-relaxed text-red-700">
               {fundHint}
