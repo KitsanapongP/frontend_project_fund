@@ -116,19 +116,19 @@ try {
     await dialog.getByText('ตรวจสอบแล้ว', { exact: true }).waitFor(); assert.doesNotMatch(await dialog.innerText(), /no_correspondence|complete|XML/);
     await dialog.getByRole('button', { name: 'คำอธิบาย: ค้นหาผลงานภายในกลุ่มทั้งหมด', exact: true }).tap(); await tooltip().waitFor(); await bounded();
     assert.match(await tooltip().innerText(), /ไม่จำกัดเฉพาะหน้าที่เห็นหรือ 200 รายการแรก/); await capture('mobile-search-hint.png', tooltip()); await dismiss();
-    // Escape can also dismiss the containing Headless UI dialog.
-    if (await dialog.isVisible()) await dialog.getByRole('button', { name: 'ปิดรายการผลงาน' }).tap();
+    assert.equal(await dialog.isVisible(), true);
+    await dialog.getByRole('button', { name: 'ปิดรายการผลงาน' }).tap();
     await dialog.waitFor({ state: 'hidden' });
   });
-  await check('Benchmark structured string bullets and legacy plain-string hints preserve rendering/accessibility', async () => {
+  await check('Benchmark summary and analytical hints use safe emphasized bullets and accessible links', async () => {
     await page.setViewportSize({ width: 1440, height: 1000 }); await page.goto(`${origin}/dev/scopus-benchmark-summary`);
     await page.getByRole('heading', { name: 'จำนวนผลงานตามปี', exact: true }).waitFor();
     const structured = page.getByRole('button', { name: 'คำอธิบาย: หน่วยและขอบเขตการนับ', exact: true }); await structured.focus(); await tooltip().waitFor();
-    assert.ok(await tooltip().locator('li').count() > 0); assert.equal(await tooltip().locator('strong').count(), 0); assert.doesNotMatch(await tooltip().innerText(), /\[object Object\]/);
+    assert.ok(await tooltip().locator('li').count() > 0); assert.ok(await tooltip().locator('strong').count() > 0); assert.doesNotMatch(await tooltip().innerText(), /\[object Object\]/);
     await capture('benchmark-structured-hint.png', tooltip()); await dismiss();
     await page.getByRole('button', { name: 'ผลเปรียบเทียบเชิงวิเคราะห์', exact: true }).click(); await page.getByRole('heading', { name: 'ผลการดำเนินงานวิจัย', exact: true }).waitFor();
     const legacy = page.getByRole('button', { name: /^คำอธิบาย:/ }).first(); await legacy.focus(); await tooltip().waitFor(); await page.keyboard.press('Enter');
-    assert.equal(await tooltip().locator('ul').count(), 0); assert.ok((await tooltip().innerText()).length > 30);
+    assert.ok(await tooltip().locator('ul').count() > 0); assert.ok(await tooltip().locator('strong').count() > 0); assert.ok((await tooltip().innerText()).length > 30);
     assert.ok(await legacy.getAttribute('aria-describedby')); await capture('benchmark-plain-string-hint.png', tooltip()); await dismiss();
   });
   assert.deepEqual(errors, []);

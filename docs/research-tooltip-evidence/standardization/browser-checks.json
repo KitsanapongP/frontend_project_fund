@@ -1,0 +1,900 @@
+{
+  "fixture_only": true,
+  "checks": [
+    {
+      "name": "research legacy overview formulas, faculty cards and both H-index explanations share the canonical desktop panel",
+      "passed": true
+    },
+    {
+      "name": "formula help includes the no-tier denominator and does not toggle its table row or fetch data",
+      "passed": true
+    },
+    {
+      "name": "hover preview remains usable when moving into the panel; pin survives panel click and outside click closes",
+      "passed": true
+    },
+    {
+      "name": "keyboard focus preview persists and moving to another explanation leaves one linked panel",
+      "passed": true
+    },
+    {
+      "name": "Escape on a focused donut control still clears selection when unrelated help was pinned",
+      "passed": true
+    },
+    {
+      "name": "faculty modal keeps help in its focus trap; Escape closes only the help before the dialog",
+      "passed": true
+    },
+    {
+      "name": "real chart value tooltip preserves article values and uses matching typography",
+      "passed": true
+    },
+    {
+      "name": "legacy plain-string Hint callers remain compatible and literal HTML stays plain text",
+      "passed": true
+    },
+    {
+      "name": "research person summary and year matrix native help is migrated without changing sort or requests",
+      "passed": true
+    },
+    {
+      "name": "research person tooltips support touch in sticky headers on mobile",
+      "passed": true
+    },
+    {
+      "name": "research faculty legacy and history cards remain usable with bounded mobile help",
+      "passed": true
+    },
+    {
+      "name": "Benchmark summary overview covers units, data limits, role totals and every Category/Quartile card",
+      "passed": true
+    },
+    {
+      "name": "Benchmark faculty role table includes canonical help for missing Scopus IDs",
+      "passed": true
+    },
+    {
+      "name": "Benchmark presentation ratios, stage denominators and all three comparison tables share the canonical panel",
+      "passed": true
+    },
+    {
+      "name": "switching a retained tab dismisses pinned explanatory help",
+      "passed": true
+    },
+    {
+      "name": "Benchmark analytical KPI and comparison table preserve their distinct denominators and matching printed definitions",
+      "passed": true
+    },
+    {
+      "name": "Benchmark setup steps use shared explanatory help without invoking setup writes",
+      "passed": true
+    },
+    {
+      "name": "setup touch help remains inside the mobile viewport",
+      "passed": true
+    },
+    {
+      "name": "benchmark-analytical touch help remains inside the mobile viewport",
+      "passed": true
+    },
+    {
+      "name": "benchmark-presentation touch help remains inside the mobile viewport",
+      "passed": true
+    },
+    {
+      "name": "benchmark-faculty touch help remains inside the mobile viewport",
+      "passed": true
+    },
+    {
+      "name": "Benchmark summary overview touch coverage includes all repeated Category/Quartile cards",
+      "passed": true
+    }
+  ],
+  "coverage": [
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ T1 ต่อ จำนวนผลงาน Q1-Q4",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ Q1 ต่อ จำนวนผลงาน Q1-Q4",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ (T1+Q1) ต่อ จำนวนผลงาน Q1-Q4",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ (T1+Q1) ต่อ จำนวนผลงานทุกประเภท (ไม่รวม TCI)",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ (T1+Q1) ต่อ จำนวนผลงานทุกประเภท (รวม TCI)",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ T1 ต่อ จำนวนผลงานทุกประเภท (ไม่รวม TCI)",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ TCI ต่อ จำนวนผลงานทุกประเภท (รวม TCI)",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของจำนวนผลงาน T1-Q4 ต่อจำนวนอาจารย์",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละผลงานทุกประเภทต่อ จำนวนอาจารย์ (ไม่รวม TCI)",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละผลงานทุกประเภทต่อ จำนวนอาจารย์ (รวม TCI)",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: ขอบเขตข้อมูลและเงื่อนไขที่เลือก",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: บทบาทผู้เขียนของคณะ",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: การจัดกลุ่มบทบาทคณะ",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: ตัวเลือกปีกราฟบทบาท",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: จำนวนและร้อยละ บทบาทผู้เขียนของคณะ",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: ความร่วมมือระหว่างประเทศของคณะ",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: ประเทศ จำนวน และร้อยละรายปี",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: ประเทศคู่ความร่วมมือ",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: บทบาทคณะ: ต่างประเทศและภายในประเทศ",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: ตัวเลือกปีกราฟและตารางไขว้",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: การอ่านกราฟเปรียบเทียบ",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: จำนวนและร้อยละ ร่วมกับต่างประเทศ",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: จำนวนและร้อยละ ภายในประเทศ",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: ตารางไขว้ประเทศและบทบาท",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: H-index ระดับคณะ",
+      "touch": false
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: การอ่านกราฟ H-index ระดับคณะ",
+      "touch": false
+    },
+    {
+      "surface": "research-person",
+      "label": "คำอธิบาย: H-index สรุปรายบุคคล",
+      "touch": false
+    },
+    {
+      "surface": "research-person",
+      "label": "คำอธิบาย: H-index รายบุคคลรายปี",
+      "touch": false
+    },
+    {
+      "surface": "research-person",
+      "label": "คำอธิบาย: H-index ระดับคณะ",
+      "touch": false
+    },
+    {
+      "surface": "research-person",
+      "label": "คำอธิบาย: การอ่านกราฟ H-index ระดับคณะ",
+      "touch": false
+    },
+    {
+      "surface": "research-person",
+      "label": "คำอธิบาย: H-index สรุปรายบุคคล",
+      "touch": true
+    },
+    {
+      "surface": "research-person",
+      "label": "คำอธิบาย: H-index รายบุคคลรายปี",
+      "touch": true
+    },
+    {
+      "surface": "research-person",
+      "label": "คำอธิบาย: H-index ระดับคณะ",
+      "touch": true
+    },
+    {
+      "surface": "research-person",
+      "label": "คำอธิบาย: การอ่านกราฟ H-index ระดับคณะ",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ T1 ต่อ จำนวนผลงาน Q1-Q4",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ Q1 ต่อ จำนวนผลงาน Q1-Q4",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ (T1+Q1) ต่อ จำนวนผลงาน Q1-Q4",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ (T1+Q1) ต่อ จำนวนผลงานทุกประเภท (ไม่รวม TCI)",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ (T1+Q1) ต่อ จำนวนผลงานทุกประเภท (รวม TCI)",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ T1 ต่อ จำนวนผลงานทุกประเภท (ไม่รวม TCI)",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของ TCI ต่อ จำนวนผลงานทุกประเภท (รวม TCI)",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละของจำนวนผลงาน T1-Q4 ต่อจำนวนอาจารย์",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละผลงานทุกประเภทต่อ จำนวนอาจารย์ (ไม่รวม TCI)",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: สูตรคำนวณ ร้อยละผลงานทุกประเภทต่อ จำนวนอาจารย์ (รวม TCI)",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: ขอบเขตข้อมูลและเงื่อนไขที่เลือก",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: บทบาทผู้เขียนของคณะ",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: ความร่วมมือระหว่างประเทศของคณะ",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: บทบาทคณะ: ต่างประเทศและภายในประเทศ",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: H-index ระดับคณะ",
+      "touch": true
+    },
+    {
+      "surface": "research-faculty",
+      "label": "คำอธิบาย: การอ่านกราฟ H-index ระดับคณะ",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: หน่วยและขอบเขตการนับ",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Quartile",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ข้อจำกัดข้อมูล",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: จำนวนผลงานตามปี",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: บทบาทอาจารย์ · COC",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ทั้งหมด",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: First",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Corresponding",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: First / Corresponding",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Co-author เท่านั้น",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ยังสรุปไม่ได้",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ปี 2025",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ปี 2026",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: การแสดงแถวที่ไม่ถูกนำมาจัดอันดับ",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: AI Algorithms and Intelligent Systems",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Educational Technology, Learning Sciences, and Digital Library Systems",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Applied AI, GeoAI and Agentic Applications",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Networks, Security, and Distributed Systems",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Theoretical Computer Science",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Computer Engineering, IoT, and Embedded Systems",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Quantum Information Science",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-faculty",
+      "label": "คำอธิบาย: หน่วยและขอบเขตการนับ",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-faculty",
+      "label": "คำอธิบาย: Quartile",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-faculty",
+      "label": "คำอธิบาย: บทบาทรายอาจารย์",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-faculty",
+      "label": "คำอธิบาย: Scopus ID อาจารย์ไม่มี Scopus ID",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: หน่วยและขอบเขตการนับ",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: Quartile",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: KKU / Thailand",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: COC / Thailand",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: COC / KKU",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: ผลกระทบจากการกรอง",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: จำนวนผลงานตามปี",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: Category รวมช่วงปี",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: Quartile รวมช่วงปี",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-analytical",
+      "label": "คำอธิบาย: ผลงานในวารสารกลุ่ม T1–Q2",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-analytical",
+      "label": "คำอธิบาย: ผลงานร่วมกับต่างประเทศ",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-analytical",
+      "label": "คำอธิบาย: ผลงานในวารสารกลุ่ม T1–Q2",
+      "touch": false
+    },
+    {
+      "surface": "benchmark-analytical",
+      "label": "คำอธิบาย: ผลงานร่วมกับต่างประเทศ",
+      "touch": false
+    },
+    {
+      "surface": "setup",
+      "label": "คำอธิบาย: ตั้งค่าขอบเขต KKU",
+      "touch": false
+    },
+    {
+      "surface": "setup",
+      "label": "คำอธิบาย: อัปเดตตัวเลข → คณะ / KKU / Thailand",
+      "touch": false
+    },
+    {
+      "surface": "setup",
+      "label": "คำอธิบาย: ตั้งค่าขอบเขต KKU",
+      "touch": true
+    },
+    {
+      "surface": "setup",
+      "label": "คำอธิบาย: อัปเดตตัวเลข → คณะ / KKU / Thailand",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-analytical",
+      "label": "คำอธิบาย: ผลงานในวารสารกลุ่ม T1–Q2",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-analytical",
+      "label": "คำอธิบาย: ผลงานร่วมกับต่างประเทศ",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-analytical",
+      "label": "คำอธิบาย: ผลงานในวารสารกลุ่ม T1–Q2",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-analytical",
+      "label": "คำอธิบาย: ผลงานร่วมกับต่างประเทศ",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: หน่วยและขอบเขตการนับ",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: Quartile",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: KKU / Thailand",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: COC / Thailand",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: COC / KKU",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: ผลกระทบจากการกรอง",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: จำนวนผลงานตามปี",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: Category รวมช่วงปี",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-presentation",
+      "label": "คำอธิบาย: Quartile รวมช่วงปี",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-faculty",
+      "label": "คำอธิบาย: หน่วยและขอบเขตการนับ",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-faculty",
+      "label": "คำอธิบาย: Quartile",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-faculty",
+      "label": "คำอธิบาย: บทบาทรายอาจารย์",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-faculty",
+      "label": "คำอธิบาย: Scopus ID อาจารย์ไม่มี Scopus ID",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: หน่วยและขอบเขตการนับ",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Quartile",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: จำนวนผลงานตามปี",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: บทบาทอาจารย์ · COC",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ทั้งหมด",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: First",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Corresponding",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: First / Corresponding",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Co-author เท่านั้น",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ยังสรุปไม่ได้",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ปี 2025",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ปี 2026",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: การแสดงแถวที่ไม่ถูกนำมาจัดอันดับ",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: AI Algorithms and Intelligent Systems",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Educational Technology, Learning Sciences, and Digital Library Systems",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Applied AI, GeoAI and Agentic Applications",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Networks, Security, and Distributed Systems",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Theoretical Computer Science",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Computer Engineering, IoT, and Embedded Systems",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: Quantum Information Science",
+      "touch": true
+    },
+    {
+      "surface": "benchmark-summary",
+      "label": "คำอธิบาย: ไม่มีข้อมูล Quartile",
+      "touch": true
+    }
+  ],
+  "page_errors": [],
+  "blocked_requests": [
+    "/api/v1/profile",
+    "/api/v1/profile"
+  ],
+  "capture_files": [
+    "benchmark-analytical-desktop-full.png",
+    "benchmark-analytical-desktop-viewport-help.png",
+    "benchmark-analytical-mobile-full.png",
+    "benchmark-analytical-mobile-viewport-help.png",
+    "benchmark-faculty-desktop-79.png",
+    "benchmark-faculty-desktop-82.png",
+    "benchmark-faculty-desktop-full.png",
+    "benchmark-faculty-desktop-viewport-help.png",
+    "benchmark-faculty-desktop-viewport-missing-id.png",
+    "benchmark-faculty-mobile-113.png",
+    "benchmark-faculty-mobile-116.png",
+    "benchmark-faculty-mobile-full.png",
+    "benchmark-faculty-mobile-viewport-help.png",
+    "benchmark-faculty-mobile-viewport-missing-id.png",
+    "benchmark-presentation-desktop-83.png",
+    "benchmark-presentation-desktop-88.png",
+    "benchmark-presentation-desktop-full.png",
+    "benchmark-presentation-desktop-viewport-help.png",
+    "benchmark-presentation-mobile-104.png",
+    "benchmark-presentation-mobile-109.png",
+    "benchmark-presentation-mobile-full.png",
+    "benchmark-presentation-mobile-viewport-help.png",
+    "benchmark-setup-desktop-full.png",
+    "benchmark-summary-desktop-51.png",
+    "benchmark-summary-desktop-full.png",
+    "benchmark-summary-desktop-viewport-help.png",
+    "benchmark-summary-mobile-117.png",
+    "benchmark-summary-mobile-full.png",
+    "benchmark-summary-mobile-viewport-help.png",
+    "research-faculty-desktop-1.png",
+    "research-faculty-desktop-10.png",
+    "research-faculty-desktop-2.png",
+    "research-faculty-desktop-25.png",
+    "research-faculty-desktop-26.png",
+    "research-faculty-desktop-3.png",
+    "research-faculty-desktop-4.png",
+    "research-faculty-desktop-5.png",
+    "research-faculty-desktop-6.png",
+    "research-faculty-desktop-7.png",
+    "research-faculty-desktop-8.png",
+    "research-faculty-desktop-9.png",
+    "research-faculty-desktop-full.png",
+    "research-faculty-desktop-viewport-formula.png",
+    "research-faculty-desktop-viewport-help.png",
+    "research-faculty-desktop-viewport-hindex.png",
+    "research-faculty-mobile-35.png",
+    "research-faculty-mobile-36.png",
+    "research-faculty-mobile-37.png",
+    "research-faculty-mobile-38.png",
+    "research-faculty-mobile-39.png",
+    "research-faculty-mobile-40.png",
+    "research-faculty-mobile-41.png",
+    "research-faculty-mobile-42.png",
+    "research-faculty-mobile-43.png",
+    "research-faculty-mobile-44.png",
+    "research-faculty-mobile-49.png",
+    "research-faculty-mobile-50.png",
+    "research-faculty-mobile-full.png",
+    "research-faculty-mobile-viewport-formula.png",
+    "research-faculty-mobile-viewport-help.png",
+    "research-faculty-mobile-viewport-hindex.png",
+    "research-hindex-value-desktop.png",
+    "research-person-desktop-27.png",
+    "research-person-desktop-28.png",
+    "research-person-desktop-29.png",
+    "research-person-desktop-30.png",
+    "research-person-desktop-full.png",
+    "research-person-desktop-viewport-help.png",
+    "research-person-desktop-viewport-hindex.png",
+    "research-person-mobile-31.png",
+    "research-person-mobile-32.png",
+    "research-person-mobile-33.png",
+    "research-person-mobile-34.png",
+    "research-person-mobile-full.png",
+    "research-person-mobile-viewport-help.png",
+    "research-person-mobile-viewport-hindex.png",
+    "setup-desktop-96.png",
+    "setup-desktop-97.png",
+    "setup-desktop-viewport-help.png",
+    "setup-mobile-98.png",
+    "setup-mobile-99.png",
+    "setup-mobile-full.png",
+    "setup-mobile-viewport-help.png"
+  ]
+}

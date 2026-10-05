@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 import { scopusBenchmarkAPI } from '@/app/lib/api';
 import { defaultSummaryFilters, createSummaryLoader, filterSummaryFaculty, sortSummaryRows, nextSummarySort, hasNonJournalTypes, qualityLabel, confidenceLabel, yearStateLabel, summaryHints } from '@/app/lib/scopus_benchmark_summary.mjs';
 import Hint from './report/Hint';
+import { missingScopusIDHint } from '@/app/lib/scopus_explanation_hints.mjs';
 import SimpleCard from '../common/SimpleCard';
 import DocumentDialog from './ScopusBenchmarkDocumentDialog';
 import SummarySortHeader from './report/SummarySortHeader';
@@ -238,7 +239,7 @@ export default function ScopusBenchmarkSummary({ isActive=true, stale=false, onR
           </tr></thead>
           <tbody>{visibleFaculty.map((u,i)=><tr key={u.user_id} className={`border-b last:border-0 ${i%2 ? 'bg-slate-50' : 'bg-white'} hover:bg-blue-50`}>
             <th scope="row" className="border border-slate-200 px-3 py-2 text-left font-medium text-slate-900">{u.name}</th>
-            <td className="border border-slate-200 px-3 py-2 text-left tabular-nums text-slate-600">{u.linkable?u.scopus_id:<span title="ไม่มี Scopus ID จึงเชื่อมข้อมูลผลงานไม่ได้">ไม่ระบุ</span>}</td>
+            <td className="border border-slate-200 px-3 py-2 text-left tabular-nums text-slate-600">{u.linkable?u.scopus_id:<span className="inline-flex items-center gap-1">ไม่ระบุ<Hint label={`Scopus ID ${u.name}`} text={missingScopusIDHint}/></span>}</td>
             <td className="border border-slate-200 px-3 py-2 text-right"><CountButton value={u.linkable?u.total:null} onClick={()=>openDetail({level:'coc',user_id:u.user_id},u.name)}/></td>
             {['first','corresponding','lead','co','unknown'].map(role=><td key={role} className="border border-slate-200 px-3 py-2 text-right"><CountButton value={u.linkable?u[role]:null} onClick={()=>openDetail({level:'coc',user_id:u.user_id,role},`${u.name} · ${role}`)}/><span className="mt-1 block text-xs text-slate-500">{u.linkable?pct(u[`${role}_pct`]):'—'}</span></td>)}
           </tr>)}</tbody>

@@ -25,8 +25,8 @@ import {
   armRefresh,
   invalidateRefreshRange,
   advanceRefresh,
-  HINT_T1Q2,
-  HINT_INTL,
+  HINT_T1Q2_SECTIONS as HINT_T1Q2,
+  HINT_INTL_SECTIONS as HINT_INTL,
 } from "@/app/lib/scopus_benchmark_report.mjs";
 import { createSummaryLoader } from "@/app/lib/scopus_benchmark_summary.mjs";
 import ReportHeader from "./report/ReportHeader";

@@ -5,11 +5,10 @@ import Hint from './report/Hint';
 import SummarySortHeader from './report/SummarySortHeader';
 import { CountButton, ReportPanel } from './report/SummaryReportPrimitives';
 import { nextSummarySort, sortSummaryRows, qualityLabel, summaryHints, presentationRows, hasNonJournalTypes } from '@/app/lib/scopus_benchmark_summary.mjs';
+import { benchmarkRatioHint as ratioHint, benchmarkStageHint as stageHint } from '@/app/lib/scopus_explanation_hints.mjs';
 
 const pct=value=>value==null?'—':`${Number(value).toFixed(1)}%`;
 const cell='border-b border-slate-200 px-3 py-2.5 text-sm';
-const ratioHint={title:'สัดส่วนระหว่างระดับ',lines:['KKU / Thailand = ผลงาน KKU ÷ ผลงาน Thailand × 100','COC / Thailand = ผลงาน COC ÷ ผลงาน Thailand × 100','COC / KKU = ผลงาน COC ÷ ผลงาน KKU × 100','ใช้ยอดหลังกรองเดียวกัน ตัวหารเป็นศูนย์แสดงขีด (—)']};
-const stageHint={title:'ผลกระทบจากการกรอง',lines:['เริ่มจากผลงานไม่ซ้ำในฐาน Thailand ภายในช่วงปีที่เลือก','ใช้ตัวกรองสะสมตามลำดับ: ประเภทผลงาน → Category → Confidence','% คงเหลือ = ยอดในขั้นนั้น ÷ ยอดก่อนกรองของระดับเดียวกัน × 100 ไม่หารด้วยขั้นก่อนหน้า','ยอดสุดท้ายตรงกับตารางรายปี Category และ Quartile; ตัวกรองที่เลือกทั้งหมดอาจทำให้ยอดบางขั้นไม่เปลี่ยน']};
 
 function ComparisonTable({title,rows,total,kind,onDetail}) {
   const [sort,setSort]=useState(null);

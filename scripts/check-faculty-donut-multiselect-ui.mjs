@@ -86,7 +86,7 @@ try {
     const hint=d.getByRole('button',{name:/^คำอธิบาย:/}); await hint.click(); await page.getByRole('tooltip').waitFor();
     assert.match(await page.getByRole('tooltip').innerText(),/เลือกได้หลายบทบาท/);
     await page.getByRole('tooltip').locator('li').first().click(); await verify(d,['first','corresponding']);
-    await hint.focus(); await page.keyboard.press('Enter'); await page.getByRole('tooltip').waitFor(); await page.keyboard.press('Escape'); await verify(d,['first','corresponding']);
+    await page.keyboard.press('Escape'); await hint.focus(); await page.keyboard.press('Enter'); await page.getByRole('tooltip').waitFor(); await page.keyboard.press('Escape'); await verify(d,['first','corresponding']);
     await page.getByRole('heading',{level:1}).click(); for(const item of await donuts().all()) await verify(item,['first','corresponding']);
   });
   await check('blank interior, SVG outer space and frame padding clear only their own chart',async()=>{

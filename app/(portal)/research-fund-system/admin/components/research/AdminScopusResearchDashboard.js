@@ -7,7 +7,6 @@ import dynamic from "next/dynamic";
 import {
   SlidersHorizontal,
   Filter,
-  CircleHelp,
   ChevronDown,
   ChevronUp,
   RefreshCw,
@@ -20,6 +19,9 @@ import PageLayout from "../common/PageLayout";
 import SimpleCard from "../common/SimpleCard";
 import AdminScopusFacultyHIndex from "./AdminScopusFacultyHIndex";
 import AdminScopusFacultyInsights from "./AdminScopusFacultyInsights";
+import Hint from './report/Hint';
+import { personHIndexHint, overviewFormulaHint } from '@/app/lib/scopus_explanation_hints.mjs';
+import tooltipStyles from './ResearchTooltips.module.css';
 import adminAPI from "@/app/lib/admin_api";
 import { formatNumber } from "@/app/utils/format";
 
@@ -68,7 +70,7 @@ const PERSON_BASE_COLUMNS = [
     label: "H-index",
     align: "right",
     group: "base",
-    tooltip: "ค่า H-index อย่างเป็นทางการจาก Scopus (Author API) เป็นค่าสะสมรวมทุกปี ไม่เปลี่ยนตามตัวกรองช่วงปีที่เลือก",
+    tooltip: personHIndexHint,
   },
   { key: "publication_rows", label: "จำนวนแถวผลงาน", align: "right", group: "base" },
   { key: "unique_documents", label: "ผลงานไม่ซ้ำ", align: "right", group: "base" },
@@ -106,7 +108,7 @@ const PERSON_MATRIX_IDENTITY_COLUMNS = [
     key: "h_index",
     label: "H-index",
     align: "right",
-    tooltip: "ค่า H-index อย่างเป็นทางการจาก Scopus (Author API) เป็นค่าสะสมรวมทุกปี ไม่เปลี่ยนตามตัวกรองช่วงปีที่เลือก",
+    tooltip: personHIndexHint,
   },
 ];
 
@@ -387,7 +389,7 @@ function withDefaultYearRange(baseFilters, options) {
   };
 }
 
-export default function AdminScopusResearchDashboard() {
+export default function AdminScopusResearchDashboard({ api = adminAPI, facultyInsightsAPI, hIndexAPI }) {
   const [options, setOptions] = useState(null);
   const [draftFilters, setDraftFilters] = useState(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
@@ -726,7 +728,7 @@ export default function AdminScopusResearchDashboard() {
     setLoadingSummary(true);
     setSummaryError("");
     try {
-      const response = await adminAPI.getScopusDashboardSummary(filterToQueryParams(filters));
+      const response = await api.getScopusDashboardSummary(filterToQueryParams(filters));
       const nextSummary = response?.data || null;
       setSummary(nextSummary);
       setAppliedFilters(filters);
@@ -738,7 +740,7 @@ export default function AdminScopusResearchDashboard() {
     } finally {
       setLoadingSummary(false);
     }
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     let mounted = true;
@@ -747,7 +749,7 @@ export default function AdminScopusResearchDashboard() {
       setLoadingOptions(true);
       setOptionsError("");
       try {
-        const response = await adminAPI.getScopusDashboardFilterOptions();
+        const response = await api.getScopusDashboardFilterOptions();
         if (!mounted) return;
 
         const payload = response?.data || {};
@@ -770,7 +772,7 @@ export default function AdminScopusResearchDashboard() {
     return () => {
       mounted = false;
     };
-  }, [loadSummary]);
+  }, [api, loadSummary]);
 
   const scopeOptions = useMemo(() => (Array.isArray(options?.scopes) ? options.scopes : []), [options]);
   const yearOptions = useMemo(() => (Array.isArray(options?.year_options) ? options.year_options : []), [options]);
@@ -851,7 +853,7 @@ export default function AdminScopusResearchDashboard() {
         page: 1,
         page_size: DRILLDOWN_FETCH_SIZE,
       };
-      const response = await adminAPI.getScopusDashboardDrilldown(payload);
+      const response = await api.getScopusDashboardDrilldown(payload);
       const data = response?.data || {};
       setDrilldownState((prev) => ({
         ...prev,
@@ -871,7 +873,7 @@ export default function AdminScopusResearchDashboard() {
     } finally {
       setDrilldownLoading(false);
     }
-  }, [appliedFilters]);
+  }, [api, appliedFilters]);
 
   const drilldownTotalPages = useMemo(() => {
     const size = drilldownState.pageSize || DRILLDOWN_PAGE_SIZE;
@@ -1613,19 +1615,19 @@ export default function AdminScopusResearchDashboard() {
     },
     q1_per_all: {
       description: "สัดส่วน (T1+Q1) เทียบกับผลงานทุกประเภท (ไม่รวม TCI)",
-      formula: "(T1+Q1) / (T1+Q1+Q2+Q3+Q4+Conference)",
+      formula: "(T1+Q1) / (T1+Q1+Q2+Q3+Q4+N/A+Conference)",
     },
     q1_per_all_with_tci: {
       description: "สัดส่วน (T1+Q1) เทียบกับผลงานทุกประเภท (รวม TCI)",
-      formula: "(T1+Q1) / (T1+Q1+Q2+Q3+Q4+Conference+TCI)",
+      formula: "(T1+Q1) / (T1+Q1+Q2+Q3+Q4+N/A+Conference+TCI)",
     },
     t1_per_all_no_tci: {
       description: "สัดส่วน T1 เทียบกับผลงานทุกประเภท (ไม่รวม TCI)",
-      formula: "T1 / (T1+Q1+Q2+Q3+Q4+Conference)",
+      formula: "T1 / (T1+Q1+Q2+Q3+Q4+N/A+Conference)",
     },
     tci_per_all_with_tci: {
       description: "สัดส่วน TCI เทียบกับผลงานทุกประเภท (รวม TCI)",
-      formula: "TCI / (T1+Q1+Q2+Q3+Q4+Conference+TCI)",
+      formula: "TCI / (T1+Q1+Q2+Q3+Q4+N/A+Conference+TCI)",
     },
     works_q_per_teacher: {
       description: "ผลงานกลุ่ม T1-Q4 ต่อจำนวนอาจารย์",
@@ -1633,11 +1635,11 @@ export default function AdminScopusResearchDashboard() {
     },
     all_per_teacher: {
       description: "ผลงานทุกประเภทต่อจำนวนอาจารย์ (ไม่รวม TCI)",
-      formula: "(T1+Q1+Q2+Q3+Q4+Conference) / จำนวนอาจารย์",
+      formula: "(T1+Q1+Q2+Q3+Q4+N/A+Conference) / จำนวนอาจารย์",
     },
     all_with_tci_per_teacher: {
       description: "ผลงานทุกประเภทต่อจำนวนอาจารย์ (รวม TCI)",
-      formula: "(T1+Q1+Q2+Q3+Q4+Conference+TCI) / จำนวนอาจารย์",
+      formula: "(T1+Q1+Q2+Q3+Q4+N/A+Conference+TCI) / จำนวนอาจารย์",
     },
   }), []);
 
@@ -1646,24 +1648,9 @@ export default function AdminScopusResearchDashboard() {
     if (!tip) return label;
 
     return (
-      <span className="group relative inline-flex items-center gap-1.5">
-        <span>{label}</span>
-        <button
-          type="button"
-          aria-label={`ดูสูตรคำนวณของ ${label}`}
-          onClick={(event) => event.stopPropagation()}
-          className="inline-flex h-4 w-4 items-center justify-center rounded-full text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70"
-        >
-          <CircleHelp size={14} />
-        </button>
-        <div className="pointer-events-none absolute left-full top-1/2 z-[120] ml-2 w-[320px] max-w-[360px] -translate-y-1/2 rounded-lg border border-slate-200 bg-white p-3 text-left text-xs text-slate-700 shadow-xl opacity-0 transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
-          <p className="font-semibold text-slate-800">ความหมาย</p>
-          <p className="mt-0.5 leading-relaxed">{tip.description}</p>
-          <p className="mt-2 font-semibold text-slate-800">สูตรคำนวณ</p>
-          <p className="mt-0.5 rounded-md bg-slate-50 px-2 py-1 font-mono text-xs leading-relaxed text-slate-900">
-            {tip.formula}
-          </p>
-        </div>
+      <span className="inline-flex max-w-full items-start gap-1.5 whitespace-normal">
+        <span className="min-w-0 break-words">{label}</span>
+        <Hint label={`สูตรคำนวณ ${label}`} text={overviewFormulaHint(tip)} />
       </span>
     );
   }, [overviewMetricFormulaByKey]);
@@ -1951,7 +1938,7 @@ export default function AdminScopusResearchDashboard() {
         { label: "แดชบอร์ดงานวิจัย" },
       ]}
     >
-      <div className="space-y-6">
+      <div data-research-dashboard className={`space-y-6 ${tooltipStyles.dataCharts}`}>
         <SimpleCard
           title="ตัวกรองข้อมูล"
           icon={SlidersHorizontal}
@@ -2346,12 +2333,11 @@ export default function AdminScopusResearchDashboard() {
                             key={col.key}
                             rowSpan={hasGroupedPersonColumns ? 2 : 1}
                             onClick={() => handlePersonSort(col.key)}
-                            title={col.tooltip || undefined}
                             className={`cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 font-semibold text-blue-900 ${col.align === "right" ? "text-right" : "text-left"}`}
                           >
                             <span className={`inline-flex items-center gap-1 ${col.align === "right" ? "justify-end" : ""}`}>
                               {col.label}
-                              {col.tooltip && <CircleHelp size={12} className="text-blue-400" aria-label={col.tooltip} />}
+                              {col.tooltip && <Hint label="H-index สรุปรายบุคคล" text={col.tooltip} />}
                               <span className="text-xs text-blue-700">{personSortIndicator(col.key)}</span>
                             </span>
                           </th>
@@ -2566,7 +2552,6 @@ export default function AdminScopusResearchDashboard() {
                           <th
                             key={col.key}
                             onClick={() => handlePersonMatrixSort(col.key)}
-                            title={col.tooltip || undefined}
                             className={`cursor-pointer border border-blue-200 bg-blue-100 px-3 py-2 font-semibold text-blue-900 ${col.align === "right" ? "text-right" : "text-left"}`}
                             style={{
                               minWidth: `${personMatrixStickyWidths[col.key] || 180}px`,
@@ -2577,7 +2562,7 @@ export default function AdminScopusResearchDashboard() {
                           >
                             <span className={`inline-flex items-center gap-1 ${col.align === "right" ? "justify-end" : ""}`}>
                               {col.label}
-                              {col.tooltip && <CircleHelp size={12} className="text-blue-400" aria-label={col.tooltip} />}
+                              {col.tooltip && <Hint label="H-index รายบุคคลรายปี" text={col.tooltip} />}
                               <span className="text-xs text-blue-700">{personMatrixSortIndicator(col.key)}</span>
                             </span>
                           </th>
@@ -3837,11 +3822,11 @@ export default function AdminScopusResearchDashboard() {
               </div>
             )}
           </SimpleCard>
-          <AdminScopusFacultyInsights appliedQuery={facultyInsightQuery} enabled={Boolean(summaryFilterSignature)} refreshToken={summary} />
+          <AdminScopusFacultyInsights api={facultyInsightsAPI} appliedQuery={facultyInsightQuery} enabled={Boolean(summaryFilterSignature)} refreshToken={summary} />
           </>
         )}
 
-        <AdminScopusFacultyHIndex />
+        <AdminScopusFacultyHIndex api={hIndexAPI} />
       </div>
 
       {exportDialogOpen && (
