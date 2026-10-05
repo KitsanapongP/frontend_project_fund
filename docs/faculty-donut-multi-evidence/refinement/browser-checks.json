@@ -1,0 +1,42 @@
+{
+  "fixture_only": true,
+  "origin": "http://127.0.0.1:3118",
+  "checks": [
+    {
+      "name": "desktop role table and donut share the same top edge; selector is above both",
+      "passed": true
+    },
+    {
+      "name": "role year selector changes chart while yearly table stays intact",
+      "passed": true
+    },
+    {
+      "name": "structured Benchmark hints open by keyboard, pin and close with Escape",
+      "passed": true
+    },
+    {
+      "name": "Benchmark-style table has expandable metadata and eligible-author details",
+      "passed": true
+    },
+    {
+      "name": "EID search finds paper 401 outside first 200 without changing summary",
+      "passed": true
+    },
+    {
+      "name": "cross-tab search retains year, international and role dimensions",
+      "passed": true
+    },
+    {
+      "name": "partner-country search stays in selected country",
+      "passed": true
+    },
+    {
+      "name": "mobile cards/modal fit viewport; table scroll is contained; touch hints stay bounded",
+      "passed": true
+    }
+  ],
+  "page_errors": [],
+  "blocked_requests": [
+    "/api/v1/profile"
+  ]
+}

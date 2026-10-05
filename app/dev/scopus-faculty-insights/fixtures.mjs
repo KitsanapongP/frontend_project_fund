@@ -25,7 +25,14 @@ function aggregate(documents) {
 }
 function filteredFixture(query, scenario) {
   if (scenario === 'empty') return [];
-  return facultyFixtureDocuments().filter(d => {
+  let documents = facultyFixtureDocuments();
+  if (scenario === 'role_example' || scenario === 'full_circle') {
+    documents = documents.slice(0, scenario === 'role_example' ? 226 : 512).map((document, index) => {
+      const role = scenario === 'full_circle' ? 'coauthor' : index < 20 ? 'first' : index < 102 ? 'corresponding' : 'coauthor';
+      return { ...document, faculty_role: role, author_role_status: 'complete', eligible_authors: document.eligible_authors.map(author => ({ ...author, is_first_author: role === 'first', is_corresponding_author: role === 'corresponding' })) };
+    });
+  }
+  return documents.filter(d => {
     const start = Number(query.year_start_be), end = Number(query.year_end_be);
     if (start && (!d.year_be || d.year_be < start)) return false;
     if (end && (!d.year_be || d.year_be > end)) return false;

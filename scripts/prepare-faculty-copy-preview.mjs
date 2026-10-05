@@ -2,7 +2,9 @@
 import { cp, mkdir, readFile, readdir, realpath, symlink, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 const source = resolve('.');
-const target = resolve(source, '..', '.scopus-thai-copy-preview-e04b29f');
+const snapshotName = process.env.SCOPUS_PREVIEW_NAME || '.scopus-thai-copy-preview-e04b29f';
+if (!/^\.[a-z0-9][a-z0-9-]+$/.test(snapshotName)) throw new Error('Snapshot name must be one hidden directory name');
+const target = resolve(source, '..', snapshotName);
 const marker = resolve(target, 'source-snapshot.json');
 try {
   const previous = JSON.parse(await readFile(marker, 'utf8'));
@@ -13,7 +15,7 @@ try {
   catch (directoryError) { if (directoryError.code !== 'ENOENT') throw directoryError; }
 }
 await mkdir(target, { recursive: true });
-await writeFile(marker, JSON.stringify({ source, purpose: 'Isolated faculty Thai copy verification' }, null, 2));
+await writeFile(marker, JSON.stringify({ source, purpose: 'Isolated faculty insights verification' }, null, 2));
 for (const name of ['app', 'public', 'middleware.js', 'jsconfig.json', 'package.json', 'next.config.mjs', 'postcss.config.mjs']) {
   await cp(resolve(source, name), resolve(target, name), { recursive: true, force: true });
 }

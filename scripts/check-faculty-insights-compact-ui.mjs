@@ -47,19 +47,19 @@ try {
       for (const role of FACULTY_ROLES) { const segment=donut.locator(`[data-role-segment="${role.key}"]`); if(await segment.count()) assert.equal(await segment.getAttribute('stroke'), role.color); assert.equal(await donut.locator(`[data-role-legend="${role.key}"]`).count(), 1); }
     }
   });
-  await check('legend hover highlights matching segment and shows count/percentage/denominator', async () => {
+  await check('legend hover cues a role while no selection keeps the full total', async () => {
     const donut = donuts().first(); await donut.locator('[data-role-legend="first"]').hover();
-    assert.equal(await donut.getAttribute('data-active-role'), 'first'); assert.equal(await donut.locator('[data-donut-count]').textContent(), '93');
-    assert.equal(await donut.locator('[data-donut-percent]').textContent(), '18.2%'); assert.match(await donut.innerText(), /จาก 512 ผลงาน/);
+    assert.equal(await donut.getAttribute('data-active-roles'), 'first'); assert.equal(await donut.locator('[data-donut-count]').textContent(), '512');
+    assert.equal(await donut.locator('[data-donut-percent]').textContent(), 'ผลงานทั้งหมด');
     assert.equal(await donut.locator('[data-role-segment="first"]').getAttribute('stroke-width'), '36');
-    assert.equal(await donut.locator('[data-role-segment="coauthor"]').getAttribute('opacity'), '0.3');
+    assert.equal(await donut.locator('[data-role-segment="coauthor"]').getAttribute('opacity'), '1');
     await donut.locator('[data-role-legend="first"]').focus(); await capture('desktop-linked-focus.png', donut); await donut.locator('[data-role-legend="first"]').evaluate(element=>element.blur()); await page.mouse.move(0, 0);
-    assert.equal(await donut.getAttribute('data-active-role'), '');
+    assert.equal(await donut.getAttribute('data-active-roles'), '');
   });
   await check('keyboard selects/toggles without a read; focus halo follows the arc without a rectangle', async () => {
     const donut = donuts().first(), segment = donut.locator('[data-role-segment="corresponding"]'); await segment.focus();
-    assert.equal(await donut.getAttribute('data-active-role'), 'corresponding');
-    assert.equal(await donut.locator('[data-donut-count]').textContent(), '94');
+    assert.equal(await donut.getAttribute('data-active-roles'), 'corresponding');
+    assert.equal(await donut.locator('[data-donut-count]').textContent(), '512');
     const halo = donut.locator('[data-role-halo="corresponding"]');
     assert.equal(await segment.evaluate(element=>getComputedStyle(element).outlineStyle), 'none');
     assert.equal(await halo.evaluate(element=>getComputedStyle(element).opacity), '1');
@@ -70,8 +70,8 @@ try {
     assert.equal(await donut.locator('[data-role-legend="corresponding"]').getAttribute('aria-pressed'), 'true');
     await segment.evaluate(element=>element.blur()); await page.mouse.move(0,0);
     assert.equal(await donut.locator('[data-donut-count]').textContent(), '94');
-    await donut.locator('[data-role-legend="first"]').hover(); assert.equal(await donut.locator('[data-donut-count]').textContent(), '93');
-    assert.equal(await donut.getAttribute('data-selected-role'), 'corresponding'); await page.mouse.move(0,0);
+    await donut.locator('[data-role-legend="first"]').hover(); assert.equal(await donut.locator('[data-donut-count]').textContent(), '94');
+    assert.equal(await donut.getAttribute('data-selected-roles'), 'corresponding'); await page.mouse.move(0,0);
     assert.equal(await donut.locator('[data-donut-count]').textContent(), '94');
     await segment.focus(); await page.keyboard.press('Space'); await noRead(before);
     assert.equal(await segment.getAttribute('aria-pressed'), 'false'); assert.equal(await donut.locator('[data-donut-count]').textContent(), '512');
@@ -82,11 +82,11 @@ try {
     for (const role of FACULTY_ROLES) {
       const segment = donut.locator(`[data-role-segment="${role.key}"]`), point = await arcPoint(donut, role.key);
       await page.mouse.click(point.x, point.y); await noRead(before);
-      assert.equal(await donut.getAttribute('data-selected-role'), role.key); assert.equal(await segment.getAttribute('aria-pressed'), 'true');
+      assert.equal(await donut.getAttribute('data-selected-roles'), role.key); assert.equal(await segment.getAttribute('aria-pressed'), 'true');
       await segment.evaluate(element=>element.blur()); await page.mouse.move(0,0);
       assert.equal(await donut.locator('[data-donut-count]').textContent(), await donut.locator(`[data-role-legend="${role.key}"] b`).textContent());
       if(role.key === 'coauthor') await capture('desktop-selected-role.png', donut);
-      await page.mouse.click(point.x, point.y); assert.equal(await donut.getAttribute('data-selected-role'), '');
+      await page.mouse.click(point.x, point.y); assert.equal(await donut.getAttribute('data-selected-roles'), '');
       assert.equal(await donut.locator('[data-donut-count]').textContent(), '512'); await noRead(before);
     }
   });
@@ -96,12 +96,12 @@ try {
     await donuts().first().locator('[data-role-legend="first"]').click();
     await page.getByRole('combobox', { name: 'ช่วงข้อมูลสำหรับกราฟบทบาท', exact: true }).selectOption('2569');
     assert.equal(await table.innerText(), before); await page.getByRole('heading', { name: 'ปี 2569', exact: true }).waitFor();
-    assert.equal(await donuts().first().getAttribute('data-selected-role'), '');
+    assert.equal(await donuts().first().getAttribute('data-selected-roles'), '');
     await page.getByRole('combobox', { name: 'ช่วงข้อมูลสำหรับกราฟและตารางไขว้', exact: true }).selectOption('2569');
     await donuts().nth(1).locator('[data-role-legend="coauthor"]').click();
     await donuts().nth(2).locator('[data-role-legend="corresponding"]').click(); await noRead(beforeReads);
-    assert.equal(await donuts().nth(1).getAttribute('data-selected-role'), 'coauthor');
-    assert.equal(await donuts().nth(2).getAttribute('data-selected-role'), 'corresponding');
+    assert.equal(await donuts().nth(1).getAttribute('data-selected-roles'), 'coauthor');
+    assert.equal(await donuts().nth(2).getAttribute('data-selected-roles'), 'corresponding');
     for (const donut of [donuts().nth(1), donuts().nth(2)]) {
       const role = await donut.locator('[data-role-segment][aria-pressed="false"]').first().getAttribute('data-role-segment');
       const segment = donut.locator(`[data-role-segment="${role}"]`);
@@ -147,10 +147,10 @@ try {
     }
     const donut = donuts().first(), before = await requests();
     await donut.locator('[data-role-legend="first"]').tap(); await noRead(before);
-    assert.equal(await donut.getAttribute('data-selected-role'), 'first'); assert.equal(await donut.locator('[data-donut-count]').textContent(), '93');
+    assert.equal(await donut.getAttribute('data-selected-roles'), 'first'); assert.equal(await donut.locator('[data-donut-count]').textContent(), '93');
     await donut.locator('[data-role-legend="first"]').tap(); assert.equal(await donut.locator('[data-donut-count]').textContent(), '512'); await noRead(before);
     await donut.locator('svg[role="group"]').scrollIntoViewIfNeeded(); const point = await arcPoint(donut, 'coauthor'); await page.touchscreen.tap(point.x, point.y); await noRead(before);
-    assert.equal(await donut.getAttribute('data-selected-role'), 'coauthor'); await capture('mobile-selected-role.png', donut);
+    assert.equal(await donut.getAttribute('data-selected-roles'), 'coauthor'); await capture('mobile-selected-role.png', donut);
     await page.getByRole('region', { name: 'ตารางบทบาทผู้เขียนรายปี' }).getByRole('button', { name: 'ดูผลงาน First author รวมตามเงื่อนไขที่เลือก 93 รายการ', exact: true }).tap();
     await page.getByRole('dialog').getByText('พบทั้งหมด 93', { exact: false }).waitFor(); await capture('mobile-drilldown.png', page, false); await close();
     await page.getByRole('button', { name: /^ดู China / }).tap(); await page.getByRole('dialog').getByText('พบทั้งหมด 78', { exact: false }).waitFor(); await close();
@@ -161,7 +161,7 @@ try {
   await check('empty groups keep unknown neutral, zero denominator and usable legend selection', async () => {
     await page.getByRole('button', { name: 'ว่าง', exact: true }).click();
     await page.getByRole('button', { name: 'ดูผลงาน ทั้งหมด รวมตามเงื่อนไขที่เลือก 0 รายการ', exact: true }).waitFor();
-    await donuts().first().locator('[data-role-legend="unknown"]').focus();
+    await donuts().first().locator('[data-role-legend="unknown"]').click();
     assert.equal(await donuts().first().locator('[data-donut-percent]').textContent(), '—');
     assert.equal(await page.locator('[data-role-segment]').count(), 0);
     await capture('mobile-empty.png');

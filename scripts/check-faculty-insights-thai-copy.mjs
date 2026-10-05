@@ -94,7 +94,7 @@ try {
     for (const donut of await donuts().all()) {
       const text = await donut.locator('[data-donut-percent]').evaluate(element => { const box = element.getBBox(); return { x: box.x, right: box.x + box.width }; });
       assert.ok(text.x >= 55 && text.right <= 185);
-      assert.ok(await donut.locator('p').last().evaluate(element => element.scrollWidth <= element.clientWidth));
+      assert.ok(await donut.locator('p[id]').first().evaluate(element => element.scrollWidth <= element.clientWidth));
     }
     await capture('mobile-role-chart.png', donuts().first()); await capture('mobile-international-chart.png', donuts().nth(1)); await capture('mobile-domestic-chart.png', donuts().nth(2));
   });

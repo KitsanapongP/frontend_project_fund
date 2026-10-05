@@ -1,0 +1,67 @@
+{
+  "fixture_only": true,
+  "backend_requests_blocked": 1,
+  "checks": [
+    {
+      "name": "desktop cards and explicit mock label",
+      "passed": true
+    },
+    {
+      "name": "collapse and expand",
+      "passed": true
+    },
+    {
+      "name": "server paging passes 200 without truncating full total",
+      "passed": true
+    },
+    {
+      "name": "partner click uses international yes and count parity",
+      "passed": true
+    },
+    {
+      "name": "unknown country remains separate in cross-tab",
+      "passed": true
+    },
+    {
+      "name": "keyboard selects donut without drilldown and retains focus",
+      "passed": true
+    },
+    {
+      "name": "revision 409 refreshes and restarts page one",
+      "passed": true
+    },
+    {
+      "name": "draft filter changes do not reload; applied filter clears old summary",
+      "passed": true
+    },
+    {
+      "name": "empty has no invented percentages",
+      "passed": true
+    },
+    {
+      "name": "unavailable 503 displays retry and no totals",
+      "passed": true
+    },
+    {
+      "name": "page error discards previous page",
+      "passed": true
+    },
+    {
+      "name": "mobile layout fits viewport and charts/tables remain usable",
+      "passed": true
+    },
+    {
+      "name": "zero international denominator retains unknown separately",
+      "passed": true
+    },
+    {
+      "name": "unknown-only countries never become domestic",
+      "passed": true
+    },
+    {
+      "name": "slow obsolete filter response cannot overwrite newer applied year",
+      "passed": true
+    }
+  ],
+  "page_errors": []
+}
