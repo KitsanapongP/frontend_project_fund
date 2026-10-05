@@ -3,6 +3,9 @@
 .legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; order: 2; }
 .chart { min-width: 0; order: 1; }
 .chart svg { display: block; width: 100%; height: auto; max-width: 248px; margin: auto; }
+.segment:focus { outline: none; }
+.segmentHalo { opacity: 0; pointer-events: none; }
+.segmentGroup:has(.segment:focus-visible) .segmentHalo { opacity: 1; }
 @container faculty-insights (min-width: 1000px) {
   .roleLayout { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
   .internationalLayout { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }

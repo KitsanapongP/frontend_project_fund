@@ -6,16 +6,23 @@ import { FACULTY_ROLES } from '../app/lib/scopus_faculty_insights.mjs';
 const { chromium } = createRequire(import.meta.url)(process.env.SCOPUS_UI_PLAYWRIGHT_PATH || 'playwright');
 const origin = process.env.SCOPUS_UI_ORIGIN || 'http://127.0.0.1:3105';
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error('Loopback fixtures only');
-const directory = resolve('docs/scopus-ux-round2-evidence/faculty');
+const directory = resolve(process.env.SCOPUS_UI_EVIDENCE_DIR || 'docs/scopus-donut-polish-evidence/faculty');
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, hasTouch: true });
 const checks = [], errors = [], captures = [], blocked = [];
 page.on('pageerror', error => errors.push(error.message));
 await page.route('**/*', route => { const u = new URL(route.request().url()); if (u.origin !== origin || u.pathname.startsWith('/api/')) { blocked.push(u.pathname); return route.abort(); } return route.continue(); });
 const check = async (name, run) => { await run(); checks.push({ name, passed: true }); };
-const capture = async (name, target = page, fullPage = true) => captures.push({ name, data: await target.screenshot({ fullPage: target === page && fullPage }) });
+const capture = async (name, target = page, fullPage = true) => captures.push({ name, data: await target.screenshot({ fullPage: target === page && fullPage, animations: 'disabled' }) });
 const ready = () => page.getByRole('button', { name: 'ดูผลงาน ทั้งหมด รวมตามตัวกรอง 512 รายการ', exact: true }).waitFor();
 const donuts = () => page.locator('[data-role-donut]');
+const requests = () => page.getByLabel('คำขอทดสอบ').textContent();
+const noRead = async before => { assert.equal(await page.getByRole('dialog').count(), 0); assert.equal(await requests(), before); };
+const arcPoint = async (donut, role) => {
+  const svg = await donut.locator('svg[role="group"]').boundingBox();
+  const point = await donut.locator(`[data-role-segment="${role}"]`).evaluate(element => { const p = element.getPointAtLength(element.getTotalLength() / 2); return { x: p.x, y: p.y }; });
+  return { x: svg.x + point.x * svg.width / 240, y: svg.y + point.y * svg.height / 240 };
+};
 const close = async () => { await page.getByRole('button', { name: 'ปิดรายการผลงาน' }).click(); await page.getByRole('dialog').waitFor({ state: 'hidden' }); };
 try {
   await page.goto(`${origin}/dev/scopus-faculty-insights`); await ready();
@@ -24,7 +31,7 @@ try {
     assert.deepEqual(headers.slice(1, 4), ['บทบาทผู้เขียนของคณะ','ความร่วมมือระหว่างประเทศของคณะ','บทบาทคณะ: ต่างประเทศและภายในประเทศ']);
     const table = await page.getByRole('region', { name: 'ตารางบทบาทผู้เขียนรายปี' }).boundingBox(), chart = await donuts().first().boundingBox();
     assert.ok(Math.abs(table.y - chart.y) < 2); assert.ok(chart.x > table.x);
-    assert.ok(table.height < 360); assert.ok(chart.height < 370);
+    assert.ok(table.height < 360); assert.ok(chart.height < 395);
     await capture('desktop.png'); await capture('desktop-roles.png', page.locator('[data-role-layout]'));
   });
   await check('international table and partners are side by side at sufficient container width', async () => {
@@ -49,32 +56,76 @@ try {
     await donut.locator('[data-role-legend="first"]').focus(); await capture('desktop-linked-focus.png', donut); await donut.locator('[data-role-legend="first"]').evaluate(element=>element.blur()); await page.mouse.move(0, 0);
     assert.equal(await donut.getAttribute('data-active-role'), '');
   });
-  await check('segment focus highlights matching legend; keyboard drilldown restores focus', async () => {
+  await check('keyboard selects/toggles without a read; focus halo follows the arc without a rectangle', async () => {
     const donut = donuts().first(), segment = donut.locator('[data-role-segment="corresponding"]'); await segment.focus();
     assert.equal(await donut.getAttribute('data-active-role'), 'corresponding');
     assert.equal(await donut.locator('[data-donut-count]').textContent(), '94');
-    await page.keyboard.press('Enter'); await page.getByRole('dialog').getByText('พบทั้งหมด 94', { exact: false }).waitFor();
-    await page.keyboard.press('Escape'); await page.getByRole('dialog').waitFor({ state: 'hidden' });
-    assert.ok(await segment.evaluate(element => element === document.activeElement)); await segment.evaluate(element => element.blur());
+    const halo = donut.locator('[data-role-halo="corresponding"]');
+    assert.equal(await segment.evaluate(element=>getComputedStyle(element).outlineStyle), 'none');
+    assert.equal(await halo.evaluate(element=>getComputedStyle(element).opacity), '1');
+    assert.equal(await halo.getAttribute('d'), await segment.getAttribute('d'));
+    await capture('desktop-keyboard-arc-focus.png', donut);
+    const before = await requests(); await page.keyboard.press('Enter'); await noRead(before);
+    assert.equal(await segment.getAttribute('aria-pressed'), 'true');
+    assert.equal(await donut.locator('[data-role-legend="corresponding"]').getAttribute('aria-pressed'), 'true');
+    await segment.evaluate(element=>element.blur()); await page.mouse.move(0,0);
+    assert.equal(await donut.locator('[data-donut-count]').textContent(), '94');
+    await donut.locator('[data-role-legend="first"]').hover(); assert.equal(await donut.locator('[data-donut-count]').textContent(), '93');
+    assert.equal(await donut.getAttribute('data-selected-role'), 'corresponding'); await page.mouse.move(0,0);
+    assert.equal(await donut.locator('[data-donut-count]').textContent(), '94');
+    await segment.focus(); await page.keyboard.press('Space'); await noRead(before);
+    assert.equal(await segment.getAttribute('aria-pressed'), 'false'); assert.equal(await donut.locator('[data-donut-count]').textContent(), '512');
+    await segment.evaluate(element=>element.blur());
   });
-  await check('pointer at each actual arc opens its own role, rather than an overlapping circle', async () => {
-    const donut = donuts().first();
+  await check('pointer at every actual arc selects its own role, persists and toggles back to total', async () => {
+    const donut = donuts().first(), before = await requests();
     for (const role of FACULTY_ROLES) {
-      const segment = donut.locator(`[data-role-segment="${role.key}"]`), svg = await donut.locator('svg[role="group"]').boundingBox();
-      const point = await segment.evaluate(element => { const p = element.getPointAtLength(element.getTotalLength() / 2); return { x: p.x, y: p.y }; });
-      await page.mouse.click(svg.x + point.x * svg.width / 240, svg.y + point.y * svg.height / 240);
-      await page.getByRole('dialog').getByRole('heading', { name: new RegExp(role.label) }).waitFor(); await close();
+      const segment = donut.locator(`[data-role-segment="${role.key}"]`), point = await arcPoint(donut, role.key);
+      await page.mouse.click(point.x, point.y); await noRead(before);
+      assert.equal(await donut.getAttribute('data-selected-role'), role.key); assert.equal(await segment.getAttribute('aria-pressed'), 'true');
+      await segment.evaluate(element=>element.blur()); await page.mouse.move(0,0);
+      assert.equal(await donut.locator('[data-donut-count]').textContent(), await donut.locator(`[data-role-legend="${role.key}"] b`).textContent());
+      if(role.key === 'coauthor') await capture('desktop-selected-role.png', donut);
+      await page.mouse.click(point.x, point.y); assert.equal(await donut.getAttribute('data-selected-role'), '');
+      assert.equal(await donut.locator('[data-donut-count]').textContent(), '512'); await noRead(before);
     }
   });
-  await check('year selector changes only the role donut; cross-tab legends retain country/year dimensions', async () => {
+  await check('all three legends select independently; year resets charts while table drilldown keeps dimensions', async () => {
     const table = page.getByRole('region', { name: 'ตารางบทบาทผู้เขียนรายปี' }), before = await table.innerText();
+    const beforeReads = await requests();
+    await donuts().first().locator('[data-role-legend="first"]').click();
     await page.getByRole('combobox', { name: 'ช่วงข้อมูลสำหรับกราฟบทบาท', exact: true }).selectOption('2569');
     assert.equal(await table.innerText(), before); await page.getByRole('heading', { name: 'ปี 2569', exact: true }).waitFor();
+    assert.equal(await donuts().first().getAttribute('data-selected-role'), '');
     await page.getByRole('combobox', { name: 'ช่วงข้อมูลสำหรับกราฟและตารางไขว้', exact: true }).selectOption('2569');
     await donuts().nth(1).locator('[data-role-legend="coauthor"]').click();
+    await donuts().nth(2).locator('[data-role-legend="corresponding"]').click(); await noRead(beforeReads);
+    assert.equal(await donuts().nth(1).getAttribute('data-selected-role'), 'coauthor');
+    assert.equal(await donuts().nth(2).getAttribute('data-selected-role'), 'corresponding');
+    for (const donut of [donuts().nth(1), donuts().nth(2)]) {
+      const role = await donut.locator('[data-role-segment][aria-pressed="false"]').first().getAttribute('data-role-segment');
+      const segment = donut.locator(`[data-role-segment="${role}"]`);
+      await donut.locator('svg[role="group"]').scrollIntoViewIfNeeded(); const point = await arcPoint(donut, role);
+      await page.mouse.click(point.x, point.y); assert.equal(await segment.getAttribute('aria-pressed'), 'true'); await noRead(beforeReads);
+    }
+    const cross = page.getByRole('region', { name: 'ตารางไขว้ประเทศและบทบาท' });
+    const crossCount = cross.getByRole('button', { name: /^ดูผลงาน ร่วมกับต่างประเทศ Co-author / }); await crossCount.click();
     await page.getByRole('dialog').getByRole('heading', { name: /ร่วมกับต่างประเทศ · Co-author · 2569/ }).waitFor(); await close();
+    assert.equal(await crossCount.evaluate(element=>document.activeElement === element), true);
     await page.getByRole('combobox', { name: 'ช่วงข้อมูลสำหรับกราฟบทบาท', exact: true }).selectOption('all');
     await page.getByRole('combobox', { name: 'ช่วงข้อมูลสำหรับกราฟและตารางไขว้', exact: true }).selectOption('all');
+  });
+  await check('partner rows have visible hover/keyboard feedback and still open the country drilldown', async () => {
+    const country = page.getByRole('button', { name: /^ดู Japan / });
+    const baseline = await country.evaluate(element=>getComputedStyle(element).backgroundColor);
+    await country.hover(); assert.notEqual(await country.evaluate(element=>getComputedStyle(element).backgroundColor), baseline);
+    assert.equal(await country.locator('svg').count(), 1);
+    await page.keyboard.press('Tab'); await country.focus(); await page.mouse.move(0,0);
+    assert.equal(await country.evaluate(element=>element.matches(':focus-visible')), true);
+    assert.notEqual(await country.evaluate(element=>getComputedStyle(element).backgroundColor), baseline);
+    assert.ok((await country.boundingBox()).height >= 44); await capture('desktop-country-focus.png', page.locator('[data-partner-countries]'));
+    await page.keyboard.press('Enter'); await page.getByRole('dialog').getByText('พบทั้งหมด 236', { exact: false }).waitFor(); await close();
+    assert.equal(await country.evaluate(element=>document.activeElement === element), true); await country.evaluate(element=>element.blur());
   });
   await check('reduced motion disables segment transitions', async () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -87,19 +138,27 @@ try {
     assert.ok(partner.y >= table.y + table.height); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await capture('tablet.png');
   });
-  await check('mobile stacks charts and compact legends, supports touch and detailed hints', async () => {
+  await check('mobile touch selects/toggles chart; table and country still drill down; hints remain detailed', async () => {
     await page.setViewportSize({ width: 390, height: 844 }); await capture('mobile.png');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     for (const donut of await donuts().all()) {
       const legend = await donut.locator('ul').boundingBox(), svg = await donut.locator('svg[role="group"]').boundingBox();
       assert.ok(legend.y >= svg.y + svg.height); assert.ok(svg.width >= 240); assert.ok(legend.height < 120);
     }
-    await donuts().first().locator('[data-role-legend="first"]').tap();
+    const donut = donuts().first(), before = await requests();
+    await donut.locator('[data-role-legend="first"]').tap(); await noRead(before);
+    assert.equal(await donut.getAttribute('data-selected-role'), 'first'); assert.equal(await donut.locator('[data-donut-count]').textContent(), '93');
+    await donut.locator('[data-role-legend="first"]').tap(); assert.equal(await donut.locator('[data-donut-count]').textContent(), '512'); await noRead(before);
+    await donut.locator('svg[role="group"]').scrollIntoViewIfNeeded(); const point = await arcPoint(donut, 'coauthor'); await page.touchscreen.tap(point.x, point.y); await noRead(before);
+    assert.equal(await donut.getAttribute('data-selected-role'), 'coauthor'); await capture('mobile-selected-role.png', donut);
+    await page.getByRole('region', { name: 'ตารางบทบาทผู้เขียนรายปี' }).getByRole('button', { name: 'ดูผลงาน First author รวมตามตัวกรอง 93 รายการ', exact: true }).tap();
     await page.getByRole('dialog').getByText('พบทั้งหมด 93', { exact: false }).waitFor(); await capture('mobile-drilldown.png', page, false); await close();
+    await page.getByRole('button', { name: /^ดู China / }).tap(); await page.getByRole('dialog').getByText('พบทั้งหมด 78', { exact: false }).waitFor(); await close();
+    await capture('mobile-country-rows.png', page.locator('[data-partner-countries]'));
     await page.getByRole('button', { name: 'คำอธิบาย: การจัดกลุ่มบทบาทคณะ', exact: true }).tap();
     await page.getByRole('tooltip').getByText('ความเชื่อถือได้และกลุ่มไม่ทราบ', { exact: true }).waitFor(); await capture('mobile-hint.png', page, false); await page.keyboard.press('Escape');
   });
-  await check('empty groups keep unknown neutral, zero denominator and usable legend drilldown', async () => {
+  await check('empty groups keep unknown neutral, zero denominator and usable legend selection', async () => {
     await page.getByRole('button', { name: 'ว่าง', exact: true }).click();
     await page.getByRole('button', { name: 'ดูผลงาน ทั้งหมด รวมตามตัวกรอง 0 รายการ', exact: true }).waitFor();
     await donuts().first().locator('[data-role-legend="unknown"]').focus();
