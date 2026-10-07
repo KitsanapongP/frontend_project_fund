@@ -9,6 +9,7 @@ import { targetRolesUtils, filterFundsByRole } from "../../../../../lib/target_r
 import systemConfigAPI from "../../../../../lib/system_config_api";
 import { FORM_TYPE_CONFIG } from "../../../../../lib/form_type_config";
 import { systemAPI } from "../../../../../lib/api";
+import { matchesPromotionFundSearch, mergePublicationRewardRows } from "../../../../../lib/promotion_fund_display.mjs";
 import FundCatalogView, {
   FundCatalogErrorState,
   FundCatalogLoadingState,
@@ -425,15 +426,7 @@ export default function PromotionFundContent({ onNavigate }) {
         subcategories: category.subcategories?.map(normalizeSubcategoryBudgets) || [],
       }));
 
-      const mergedPromotionFunds = promotionFunds.map((category) => {
-        if (!Array.isArray(category.subcategories)) return category;
-
-        const publicationSubs = category.subcategories.filter(
-          (sub) => sub.form_type === "publication_reward"
-        );
-
-        return category;
-      });
+      const mergedPromotionFunds = mergePublicationRewardRows(promotionFunds);
 
       const adjusted = mergedPromotionFunds.map((category) => {
         const newSubs = (category.subcategories || []).map((sub) => {
@@ -466,14 +459,7 @@ export default function PromotionFundContent({ onNavigate }) {
       filtered = filtered
         .map((category) => ({
           ...category,
-          subcategories: category.subcategories?.filter((sub) => {
-            const subName = sub.subcategory_name || "";
-            const condition = sub.fund_condition || "";
-            return (
-              subName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              condition.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-          }) || [],
+          subcategories: category.subcategories?.filter((sub) => matchesPromotionFundSearch(sub, searchTerm)) || [],
         }))
         .filter((category) => category.subcategories && category.subcategories.length > 0);
     }

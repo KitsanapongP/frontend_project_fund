@@ -1,4 +1,4 @@
-import { getFundCode, getFundCondition, isFundOpenForApplications } from '../../../../../lib/fund_availability.mjs';
+import { getFundCode, getFundCondition, isFundOpenForApplications } from './fund_availability.mjs';
 
 export const PUBLICATION_REWARD_DISPLAY_NAME = '2.2 - 2.3 เงินรางวัลการตีพิมพ์และเงินสมทบค่าธรรมเนียม (APC)';
 

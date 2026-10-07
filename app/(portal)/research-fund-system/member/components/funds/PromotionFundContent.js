@@ -13,7 +13,7 @@ import { FORM_TYPE_CONFIG } from '../../../../../lib/form_type_config';
 import systemConfigAPI from '../../../../../lib/system_config_api';
 import { systemAPI } from '../../../../../lib/api';
 import { getFundCondition, getFundDisplayHint, isFundOpenForApplications } from '../../../../../lib/fund_availability.mjs';
-import { matchesPromotionFundSearch, mergePublicationRewardRows } from './promotion_fund_display.mjs';
+import { matchesPromotionFundSearch, mergePublicationRewardRows } from '../../../../../lib/promotion_fund_display.mjs';
 
 const PROMOTION_CATEGORY_KEYWORDS = [
   'ทุนอุดหนุนกิจกรรม'

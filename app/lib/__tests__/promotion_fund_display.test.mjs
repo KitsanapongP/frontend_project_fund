@@ -4,7 +4,7 @@ import {
   matchesPromotionFundSearch,
   mergePublicationRewardRows,
   PUBLICATION_REWARD_DISPLAY_NAME,
-} from './promotion_fund_display.mjs';
+} from '../promotion_fund_display.mjs';
 
 const first = {
   subcategory_id: 52,
