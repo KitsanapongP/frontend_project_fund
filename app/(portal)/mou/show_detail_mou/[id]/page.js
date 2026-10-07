@@ -14,6 +14,7 @@ import {
 import MouLayout from "../../components/MouLayout";
 import { mouAPI } from "../../../../lib/mou_api";
 import apiClient from "../../../../lib/api";
+import { useAuth } from "../../../../contexts/AuthContext";
 
 const statusDot = (name) => {
   const v = (name || "").toLowerCase();
@@ -178,6 +179,9 @@ function FacultyItem({ fac }) {
 
 export default function ShowDetailMouPage({ params: paramsPromise }) {
   const router = useRouter();
+  const { hasPermission, hasRole } = useAuth();
+  const canManage = hasPermission("mou.manage");
+  const canAdminister = hasRole("admin");
   const params = use(paramsPromise);
   const [mou, setMou] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -309,7 +313,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
             <ChevronLeft size={15} />
             กลับ
           </button>
-          <button
+          {canManage && <button
             type="button"
             onClick={handleToggleLock}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition shadow-sm ${
@@ -319,15 +323,15 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
             }`}
           >
             {mou.lock_mou ? <><Unlock size={15} />ปลดล็อก</> : <><Lock size={15} />ล็อก MOU</>}
-          </button>
-          <Link
+          </button>}
+          {canAdminister && <Link
             href={`/mou/admin_notification_settings?mou_id=${params.id}`}
             className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-700 hover:to-indigo-700 transition shadow-sm"
             style={{ color: "#fff" }}
           >
             <Bell size={15} style={{ color: "#fff" }} />
             ตั้งค่าการแจ้งเตือน
-          </Link>
+          </Link>}
         </div>
       </div>
 
@@ -566,7 +570,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
               {activities.length > 0 && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">{activities.length} รายการ</span>
               )}
-              {mou.lock_mou ? (
+              {canManage && (mou.lock_mou ? (
                 <span className="btn primary inline-flex items-center gap-2 ml-auto opacity-50 cursor-not-allowed" title="MOU ถูกล็อก ไม่สามารถเพิ่มกิจกรรมได้" onClick={() => Swal.fire({ icon: "warning", title: "MOU ถูกล็อก", text: "ไม่สามารถเพิ่มกิจกรรมได้เนื่องจาก MOU นี้ถูกล็อกอยู่" })}>
                   <Plus size={16} />
                   เพิ่มกิจกรรม
@@ -579,7 +583,7 @@ export default function ShowDetailMouPage({ params: paramsPromise }) {
                 <Plus size={16} />
                 เพิ่มกิจกรรม
               </Link>
-            )}
+            ))}
           </div>
           {activities.length > 0 ? (
             <div style={{ overflowX: "auto", maxHeight: activities.length > 5 ? "320px" : "none", overflowY: activities.length > 5 ? "auto" : "visible" }}>

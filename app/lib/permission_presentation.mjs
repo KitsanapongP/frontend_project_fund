@@ -1,6 +1,17 @@
 const normalizeKey = (value) => String(value || "").trim().toLowerCase();
 
+export const PERMISSION_MODULES = [
+  { key: "research", labelTh: "ระบบวิจัย" },
+  { key: "mou", labelTh: "ระบบ MOU" },
+  { key: "portal", labelTh: "หน้า Portal" },
+];
+
 export const PERMISSION_CATEGORIES = [
+  {
+    key: "mou_access",
+    labelTh: "ข้อมูล MOU",
+    descriptionTh: "การดูและจัดการข้อมูล MOU และกิจกรรม",
+  },
   {
     key: "portal_access",
     labelTh: "การเข้าถึงระบบ",
@@ -68,6 +79,44 @@ export const ROLE_PRESENTATION = {
 };
 
 export const PERMISSION_PRESENTATION = {
+  "mou.read": {
+    titleTh: "ดูข้อมูล MOU",
+    descriptionTh: "ดูรายการ รายละเอียด กิจกรรม แดชบอร์ด และส่งออกข้อมูล MOU",
+    category: "mou_access",
+    kind: "view",
+  },
+  "mou.manage": {
+    titleTh: "จัดการข้อมูล MOU",
+    descriptionTh: "เพิ่ม แก้ไข ลบ และต่ออายุ MOU รวมถึงกิจกรรมและไฟล์แนบ",
+    category: "mou_access",
+    kind: "manage",
+    risk: "high",
+  },
+  "portal.card.research_fund.access": {
+    titleTh: "เปิดระบบกองทุนวิจัยจาก Portal",
+    descriptionTh: "เปิดการ์ดกองทุนวิจัยจากหน้า Portal",
+    category: "portal_access",
+    kind: "access",
+  },
+  "portal.card.external_fund.access": {
+    titleTh: "เปิดทุนภายนอกจาก Portal",
+    descriptionTh: "เปิดการ์ดทุนภายนอกจากหน้า Portal",
+    category: "portal_access",
+    kind: "access",
+  },
+  "portal.card.links.access": {
+    titleTh: "เปิด Links จาก Portal",
+    descriptionTh: "เปิดการ์ด Links จากหน้า Portal",
+    category: "portal_access",
+    kind: "access",
+  },
+  "portal.card.researcher_management.access": {
+    titleTh: "จัดการบุคลากร",
+    descriptionTh: "เข้าและจัดการข้อมูลบุคลากร หลักสูตร และการตั้งค่าในระบบจัดการบุคลากร",
+    category: "portal_access",
+    kind: "access",
+    risk: "high",
+  },
   "portal.member.access": {
     titleTh: "เข้าสู่ระบบสำหรับบุคลากร",
     descriptionTh: "เปิดพื้นที่ใช้งานสำหรับอาจารย์ นักวิจัย และผู้พิจารณาระดับภาควิชา",
@@ -424,7 +473,7 @@ export const PERMISSION_PRESENTATION = {
   },
   "api.clients.manage": {
     titleTh: "จัดการบัญชีเชื่อมต่อ API",
-    descriptionTh: "สร้าง เปลี่ยนแปลง หรือยกเลิกสิทธิ์ของระบบภายนอกที่เชื่อมต่อผ่าน API",
+    descriptionTh: "สร้างและยกเลิกบัญชีเชื่อมต่อ API รวมถึงดูและเปลี่ยน Scopus API Key",
     category: "system_integrations",
     kind: "manage",
     risk: "critical",
@@ -453,6 +502,7 @@ export const getPermissionPresentation = (permissionOrCode) => {
   return {
     ...permission,
     code,
+    module: normalizeKey(permission.module) || (code.startsWith("mou.") ? "mou" : code.startsWith("portal.card.") ? "portal" : "research"),
     titleTh: known?.titleTh || permission.description || code || "ไม่ทราบชื่อสิทธิ์",
     descriptionTh: known?.descriptionTh || "สิทธิ์นี้ยังไม่มีคำอธิบายภาษาไทย กรุณาตรวจสอบรหัสทางเทคนิคก่อนเปลี่ยนแปลง",
     category: known?.category || "other",
@@ -480,15 +530,21 @@ export const getCategoryPresentation = (categoryKey) => {
     || PERMISSION_CATEGORIES[PERMISSION_CATEGORIES.length - 1];
 };
 
+export const getModulePresentation = (moduleKey) =>
+  PERMISSION_MODULES.find((item) => item.key === moduleKey)
+  || { key: moduleKey, labelTh: moduleKey || "ระบบวิจัย" };
+
 export const groupPermissionViews = (permissions = []) => {
   const views = permissions.map(getPermissionPresentation);
-  return PERMISSION_CATEGORIES
-    .map((category) => ({
+  const modules = [...new Set(views.map((permission) => permission.module))];
+  return modules.flatMap((module) => PERMISSION_CATEGORIES.map((category) => ({
       ...category,
+      key: `${module}:${category.key}`,
+      labelTh: `${getModulePresentation(module).labelTh} · ${category.labelTh}`,
       permissions: views
-        .filter((permission) => permission.category === category.key)
+        .filter((permission) => permission.module === module && permission.category === category.key)
         .sort((a, b) => a.titleTh.localeCompare(b.titleTh, "th")),
-    }))
+    })))
     .filter((category) => category.permissions.length > 0);
 };
 
@@ -501,6 +557,7 @@ export const getPermissionSearchText = (permission) => {
     view.englishDescription,
     view.kindLabelTh,
     getCategoryPresentation(view.category).labelTh,
+    getModulePresentation(view.module).labelTh,
   ].join(" "));
 };
 

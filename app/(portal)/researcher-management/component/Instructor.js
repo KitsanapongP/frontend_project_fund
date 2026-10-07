@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { User, GraduationCap, Save, Loader2, BookOpen, Award, ArrowLeft, ExternalLink, Mail } from "lucide-react";
 
 import { useAuth } from "../../../contexts/AuthContext";
-import { normalizeRoleName } from "../../../lib/access_routing";
 import ResearcherExpertise from "./ResearcherExpertise";
 import ResearcherProject from "./ResearcherProject";
 import ResearcherResearch from "./ResearcherResearch";
@@ -40,8 +39,7 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
     { id: "3", label: "ปริญญาเอก" },
   ];
 
-  const { user } = useAuth();
-  const normalizedRole = normalizeRoleName(user?.role ?? user?.role_id);
+  const { user, hasPermission } = useAuth();
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -130,8 +128,7 @@ export default function Instructor({ currentPage, setCurrentPage, targetUserId }
   };
 
   const handleSave = async () => {
-    //ตรวจสอบสิทธิ์ผู้ดูแลระบบ
-    if (normalizedRole !== "admin" && normalizedRole !== "academic_designer"){
+    if (!hasPermission("portal.card.researcher_management.access")) {
       return Swal.fire({
         title: "สิทธิ์ไม่ถูกต้อง!",
         text: "คุณไม่มีสิทธิ์แก้ไขข้อมูลระบบนี้",

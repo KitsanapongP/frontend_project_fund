@@ -25,7 +25,13 @@ const CURRENT_PERMISSION_CODES = [
   "fund.request.create",
   "fund.request.delete",
   "fund.request.update",
+  "mou.manage",
+  "mou.read",
   "portal.admin.access",
+  "portal.card.external_fund.access",
+  "portal.card.links.access",
+  "portal.card.research_fund.access",
+  "portal.card.researcher_management.access",
   "portal.executive.access",
   "portal.member.access",
   "publication.reward.approve",
@@ -82,6 +88,12 @@ test("permission catalog has Thai presentation metadata for every current permis
   });
 });
 
+test("researcher management grant is presented as a high-risk management permission", () => {
+  const permission = getPermissionPresentation("portal.card.researcher_management.access");
+  assert.equal(permission.risk, "high");
+  assert.match(permission.descriptionTh, /จัดการข้อมูลบุคลากร/);
+});
+
 test("unknown permissions remain visible with a safe fallback", () => {
   const item = getPermissionPresentation({
     code: "future.permission.read",
@@ -99,6 +111,17 @@ test("permission groups preserve every input permission", () => {
     .reduce((total, group) => total + group.permissions.length, 0);
 
   assert.equal(groupedCount, permissions.length);
+});
+
+test("permission groups separate modules", () => {
+  const groups = groupPermissionViews([
+    { code: "mou.read", module: "mou" },
+    { code: "portal.card.links.access", module: "portal" },
+    { code: "dashboard.view.self", module: "research" },
+  ]);
+  assert.equal(groups.length, 3);
+  assert.ok(groups.some((group) => group.labelTh.includes("MOU")));
+  assert.ok(groups.some((group) => group.labelTh.includes("Portal")));
 });
 
 test("role labels use Thai first and preserve unknown roles", () => {

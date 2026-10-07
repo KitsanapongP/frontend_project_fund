@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
-  LayoutDashboard,
   User,
   Search,
   ShieldCheck,
@@ -10,15 +9,9 @@ import {
   BookOpen,
   ClipboardCheck,
   LogOut,
-  HandHelping,
-  DollarSign,
-  FileText,
-  Gift,
-  ArrowLeftRight,
 } from "lucide-react";
-import { useAuth } from "../../../../contexts/AuthContext"; 
+import { useAuth } from "../../../../contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
-import { normalizeRoleName } from "@/app/lib/access_routing";
 import { PortalBackLink, PortalNavIcon } from "@/app/components/portal/PortalChrome";
 
 export default function Navigation({ 
@@ -29,15 +22,10 @@ export default function Navigation({
   setSubmenuOpen,
   isExecutive = false
 }) {
-  const ADMIN_BASE_PATH = "/research-fund-system/admin";
-  const MEMBER_BASE_PATH = "/research-fund-system/member";
-  const { logout, hasPermission, user } = useAuth();
-  const normalizedRole = normalizeRoleName(user?.role ?? user?.role_id);
+  const { logout, hasPermission } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [pendingRoute, setPendingRoute] = useState("");
-
-  const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
 
   // แก้ไขรายการเมนูให้ตรงตามรูปภาพ 6 รายการ
   const menuItems = [
@@ -46,7 +34,6 @@ export default function Navigation({
     label: 'แก้ไขข้อมูลอาจารย์',
     icon: User,
     tone: 'indigo',
-    route: '/researcher-management', // เส้นทางหลัก
     hasSubmenu: false
   },
   {
@@ -54,7 +41,6 @@ export default function Navigation({
     label: 'เว็บไซต์ที่เกี่ยวข้อง',
     icon: Search,
     tone: 'sky',
-    route: '/researcher-management/related-websites', // ตัวอย่าง URL ใหม่
     hasSubmenu: false
   },
   {
@@ -91,95 +77,9 @@ export default function Navigation({
   }
 ];
 
-  const menuItemsWithPermissions = menuItems.map((item) => {
-    if (item.requiredPermission) {
-      return item;
-    }
-
-    // กำหนด Permission Key ให้สอดคล้องกับ ID ใหม่
-    const permissionByPage = {
-      'edit-instructor-info': 'ui.page.researcher.edit_info.view',
-      'related-websites': 'ui.page.researcher.links.view',
-      'expertise': 'ui.page.researcher.expertise.view',
-      'research-projects': 'ui.page.researcher.projects.view',
-      'academic-performance': 'ui.page.researcher.academic.view',
-      'verify-instructor-info': 'ui.page.researcher.verify.view',
-    };
-
-    return {
-      ...item,
-      requiredPermission: permissionByPage[item.id] || null,
-    };
-  });
-
-  const canViewMenu = (item) => {
-    if (!item.requiredPermission) {
-      return true;
-    }
-    if (!hasPermissionSnapshot) {
-      return true;
-    }
-    return hasPermission(item.requiredPermission);
-  };
-
-  // Navigation.js
-const visibleMenuItems = isExecutive
-    ? menuItemsWithPermissions.filter((item) => item.id === "dashboard")
-    : menuItemsWithPermissions.filter((item) => {
-        // 1. ตรวจสอบ Permission พื้นฐาน (canViewMenu)
-        const hasBasePermission = canViewMenu(item);
-        
-        // 2. ถ้าเป็นเมนูในกลุ่ม researcher-management (ที่คุณสร้างใหม่ 6 รายการ)
-        // ต้องตรวจสอบเพิ่มว่าเป็น Role นักออกแบบวิชาการจริงๆ
-        const researcherMenuIds = [
-          'edit-instructor-info', 'related-websites', 'expertise', 
-          'research-projects', 'academic-performance', 'verify-instructor-info'
-        ];
-        
-        if (researcherMenuIds.includes(item.id)) {
-            return hasBasePermission && normalizedRole === "academic_designer";
-        }
-
-        return hasBasePermission;
-    });
-
-    // Navigation.js
-  
-
-  const canAccessMemberPortal = ["academic_designer"].includes(normalizedRole);
-  const memberShortcutItems = canAccessMemberPortal
-    ? [
-          { id: 'edit-instructor-info', label: 'แก้ไขข้อมูลอาจารย์', icon: User, tone: 'indigo', route: '/researcher-management' },
-      { id: 'related-websites', label: 'เว็บไซต์ที่เกี่ยวข้อง', icon: Search, tone: 'sky', route: '/researcher-management/related-websites' },
-      { id: 'expertise', label: 'ความเชี่ยวชาญ', icon: ShieldCheck, tone: 'violet', /*route: '/researcher-management/expertise' */ },
-      { id: 'research-projects', label: 'โครงการวิจัย', icon: Briefcase, tone: 'teal', /* route: '/researcher-management/projects' */ },
-      { id: 'academic-performance', label: 'ผลงานทางวิชาการ', icon: BookOpen, tone: 'amber', /* route: '/researcher-management/academic' */ },
-      { id: 'verify-instructor-info', label: 'ตรวจสอบข้อมูลอาจารย์', icon: ClipboardCheck, tone: 'emerald', /* route: '/researcher-management/verify' */ },
-        ...(normalizedRole === "dept_head"
-          ? [
-              {
-                id: "member-dept-review",
-                label: "พิจารณาคำร้องของหัวหน้าสาขา",
-                icon: ArrowLeftRight,
-                tone: "rose",
-                route: `${MEMBER_BASE_PATH}/dept-review`,
-              },
-            ]
-          : []),
-      ]
+  const visibleMenuItems = !isExecutive && hasPermission("portal.card.researcher_management.access")
+    ? menuItems
     : [];
-
-  useEffect(() => {
-    const adminRoutes = visibleMenuItems.map((item) => `${ADMIN_BASE_PATH}/${item.id}`);
-    const memberRoutes = memberShortcutItems.map((item) => item.route);
-    [...adminRoutes, ...memberRoutes]
-  .filter(Boolean) // ✅ ตัด undefined ออก
-  .forEach((route) => {
-    if (typeof router.prefetch === "function") {
-      router.prefetch(route);
-    }
-  });
-  }, [memberShortcutItems, router, visibleMenuItems]);
 
   const navigateToRoute = (route) => {
     if (!route || pendingRoute === route) {
@@ -245,12 +145,12 @@ const visibleMenuItems = isExecutive
         <div key={item.id}>
           <button
             onClick={() => handleMenuClick(item)}
-            disabled={pendingRoute === `${ADMIN_BASE_PATH}/${item.id}`}
+            disabled={Boolean(item.route) && pendingRoute === item.route}
             className={`portal-nav-item group disabled:cursor-wait disabled:opacity-60 ${isActive(item.id) ? "portal-nav-item--active" : ""}`}
           >
             <PortalNavIcon icon={item.icon} tone={item.tone} />
             <div className="flex-1 text-left">
-              <span>{pendingRoute === `${ADMIN_BASE_PATH}/${item.id}` ? "กำลังเปิด..." : item.label}</span>
+              <span>{item.route && pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
               {item.description && (
                 <span className="block text-xs text-slate-500">{item.description}</span>
               )}
@@ -258,28 +158,6 @@ const visibleMenuItems = isExecutive
           </button>
         </div>
       ))}
-
-      {memberShortcutItems.length > 0 && (
-        <>
-          <div className="mt-5 border-t border-slate-200 pt-4">
-            <p className="portal-nav-section-label">เมนูบุคลากร</p>
-          </div>
-          {memberShortcutItems.map((item) => (
-            <div key={item.id}>
-              <button
-                onClick={() => handleMenuClick(item)}
-                disabled={pendingRoute === item.route}
-                className="portal-nav-item group disabled:cursor-wait disabled:opacity-60"
-              >
-                <PortalNavIcon icon={item.icon} tone={item.tone} />
-                <div className="flex-1 text-left">
-                  <span>{pendingRoute === item.route ? "กำลังเปิด..." : item.label}</span>
-                </div>
-              </button>
-            </div>
-          ))}
-        </>
-      )}
 
       {/* Logout Button */}
       <div className="mt-5 border-t border-slate-200 pt-4">

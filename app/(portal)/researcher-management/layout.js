@@ -3,5 +3,5 @@
 import AuthGuard from "../../components/AuthGuard";
 
 export default function ResearcherManagementLayout({ children }) {
-  return <AuthGuard allowedRoles={["academic_designer","admin"]}>{children}</AuthGuard>;
+  return <AuthGuard allowedPermissions={["portal.card.researcher_management.access"]}>{children}</AuthGuard>;
 }

@@ -1,33 +1,21 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { normalizeRoleName } from "@/app/lib/access_routing";
 import Header from "./component/layout/Header";
 import Navigation from "./component/layout/Navigation";
 import ResearcherExpertise from "./component/ResearcherExpertise";
 import SearchInstructor from "./component/SearchInstructor";
 import Instructor from "./component/Instructor";
 
-const ALLOWED_ROLES = ["admin", "academic_designer"];
-
 export default function ResearcherManagementPage() {
-  const router = useRouter();
-  const { user, isLoading } = useAuth();
-  const normalizedRole = normalizeRoleName(user?.role ?? user?.role_id);
+  const { isLoading, hasPermission } = useAuth();
+  const canAccess = hasPermission("portal.card.researcher_management.access");
 
   const [isOpen, setIsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState("search-instructor");
   const [selectedInstructorId, setSelectedInstructorId] = useState(null);
 
-  useEffect(() => {
-    if (isLoading) return;
-    if (!ALLOWED_ROLES.includes(normalizedRole)) {
-      router.replace("/");
-    }
-  }, [normalizedRole, isLoading, router]);
-
-  if (isLoading || !ALLOWED_ROLES.includes(normalizedRole)) {
+  if (isLoading || !canAccess) {
     return null;
   }
 

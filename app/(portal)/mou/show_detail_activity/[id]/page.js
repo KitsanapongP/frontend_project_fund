@@ -62,7 +62,8 @@ const fmtInputDate = (d) => {
 export default function ShowDetailActivityPage({ params: paramsPromise }) {
   const params = use(paramsPromise);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
+  const canManage = hasPermission("mou.manage");
   const [activity, setActivity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -501,7 +502,7 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
               กลับ
             </button>
           )}
-          {!editing && (
+          {!editing && canManage && (
             <button
               onClick={handleDelete}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 border border-red-200 transition"
@@ -510,7 +511,7 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
               ลบ
             </button>
           )}
-          {!editing && (
+          {!editing && canManage && (
             <button
               onClick={() => { setEditing(true); }}
               className="btn primary inline-flex items-center gap-2"
@@ -868,7 +869,7 @@ export default function ShowDetailActivityPage({ params: paramsPromise }) {
                             <div className="flex gap-1 shrink-0">
                               <button type="button" onClick={() => handleViewFile(att.id)} className="text-blue-600 hover:text-blue-800 text-xs p-1" title="เปิดดู"><ExternalLink size={11} /></button>
                               <button type="button" onClick={() => handleDownloadFile(att.id, att.file_name || att.filename)} className="text-blue-600 hover:text-blue-800 text-xs p-1" title="ดาวน์โหลด"><Download size={11} /></button>
-                              {editing && (
+                              {editing && canManage && (
                                 <button type="button" onClick={() => handleDeleteAttachment(att.id)} className="text-red-500 hover:text-red-700 text-xs p-1" title="ลบ"><Trash2 size={11} /></button>
                               )}
                             </div>

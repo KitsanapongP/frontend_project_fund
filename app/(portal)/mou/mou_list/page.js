@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { mouAPI } from "../../../lib/mou_api";
 import MouLayout from "../components/MouLayout";
+import { useAuth } from "../../../contexts/AuthContext";
 
 function statusClass(name) {
   const value = (name || "").toLowerCase();
@@ -211,6 +212,11 @@ function Select({ value, onChange, options, placeholder = "เลือก", nam
 
 export default function MouListPage() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
+  const canManage = hasPermission("mou.manage");
+  const tableColumns = canManage
+    ? "120px 1fr 110px 115px 115px 130px 160px"
+    : "120px 1fr 110px 115px 115px 130px";
 
   const [mous, setMous] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -550,10 +556,10 @@ export default function MouListPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link className="btn primary inline-flex items-center gap-2" href="/mou/add_mou">
+          {canManage && <Link className="btn primary inline-flex items-center gap-2" href="/mou/add_mou">
             <Plus size={18} />
             เพิ่ม MOU ใหม่
-          </Link>
+          </Link>}
           <button
             className="btn secondary inline-flex items-center gap-2"
             onClick={() => setShowExportModal(true)}
@@ -701,10 +707,10 @@ export default function MouListPage() {
           <div className="flex flex-col items-center py-16 text-gray-400">
             <p className="text-lg font-medium text-gray-500 mb-1">ไม่มีข้อมูล MOU</p>
             <p className="text-sm text-gray-400 mb-5">ยังไม่มีบันทึกข้อตกลงความร่วมมือในระบบ</p>
-            <Link className="btn primary inline-flex items-center gap-2" href="/mou/add_mou">
+            {canManage && <Link className="btn primary inline-flex items-center gap-2" href="/mou/add_mou">
               <Plus size={18} />
               เพิ่ม MOU
-            </Link>
+            </Link>}
           </div>
         </div>
       ) : (
@@ -715,18 +721,18 @@ export default function MouListPage() {
               <RefreshCw size={12} />รีเฟรช
             </button>
           </div>
-          <div className="colHeaders" style={{ display: "grid", gridTemplateColumns: "120px 1fr 110px 115px 115px 130px 160px", gap: 8, padding: "8px 24px", background: "#f9fafb", borderBottom: "1px solid var(--mou-line)", fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <div className="colHeaders" style={{ display: "grid", gridTemplateColumns: tableColumns, gap: 8, padding: "8px 24px", background: "#f9fafb", borderBottom: "1px solid var(--mou-line)", fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
             <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Key size={11} />รหัส MOU</span>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, paddingRight: 12 }}><FileText size={11} />ชื่อ MOU / หน่วยงาน</span>
             <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Layers size={11} />ระดับ</span>
             <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Calendar size={11} />วันเริ่มต้น</span>
             <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Calendar size={11} />วันสิ้นสุด</span>
             <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Bookmark size={11} />สถานะ</span>
-            <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Settings size={11} />จัดการ</span>
+            {canManage && <span style={{ textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Settings size={11} />จัดการ</span>}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 24, padding: "24px 16px" }}>
             {mous.map((mou, idx) => (
-              <div key={mou.id} className="mouRow" style={{ display: "grid", gridTemplateColumns: "120px 1fr 110px 115px 115px 130px 160px", gap: 8, alignItems: "center", padding: "24px 8px", border: "1px solid var(--mou-line)", borderRadius: 8, background: "var(--mou-surface)", boxShadow: "0 2px 6px rgba(0,0,0,0.06)", cursor: "pointer", animation: `fadeInUp 0.3s ease-out ${idx * 0.04}s both`, transition: "box-shadow 0.15s ease, background 0.15s ease" }} onClick={(e) => handleRowClick(mou.id, e)} onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"; e.currentTarget.style.background = "#eff6ff"; }} onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.06)"; e.currentTarget.style.background = "var(--mou-surface)"; }}>
+              <div key={mou.id} className="mouRow" style={{ display: "grid", gridTemplateColumns: tableColumns, gap: 8, alignItems: "center", padding: "24px 8px", border: "1px solid var(--mou-line)", borderRadius: 8, background: "var(--mou-surface)", boxShadow: "0 2px 6px rgba(0,0,0,0.06)", cursor: "pointer", animation: `fadeInUp 0.3s ease-out ${idx * 0.04}s both`, transition: "box-shadow 0.15s ease, background 0.15s ease" }} onClick={(e) => handleRowClick(mou.id, e)} onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"; e.currentTarget.style.background = "#eff6ff"; }} onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.06)"; e.currentTarget.style.background = "var(--mou-surface)"; }}>
                 <span style={{ textAlign: "center", padding: "2px 10px", borderRadius: 5, background: mou.lock_mou ? "#fef3c7" : "var(--mou-primary-soft)", color: mou.lock_mou ? "#92400e" : "var(--mou-primary)", fontSize: 12, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4, justifyContent: "center" }}>{mou.lock_mou && <Lock size={11} />}{mou.mou_code}</span>
                 <div style={{ minWidth: 0, paddingRight: 12 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "#111827", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mou.title}</div>
@@ -738,7 +744,7 @@ export default function MouListPage() {
                 <span style={{ fontSize: 12, color: "#6b7280", textAlign: "center" }}>{formatDate(mou.start_date)}</span>
                 <span style={{ fontSize: 12, color: "#6b7280", textAlign: "center" }}>{mou.end_date ? formatDate(mou.end_date) : "-"}</span>
                 <span style={{ textAlign: "center" }}><span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass(mou.status?.name)}`}>{mou.status?.name || "-"}</span></span>
-                <div className="rowActions" style={{ textAlign: "center", display: "flex", gap: 4, justifyContent: "center" }} onClick={(e) => e.stopPropagation()}>
+                {canManage && <div className="rowActions" style={{ textAlign: "center", display: "flex", gap: 4, justifyContent: "center" }} onClick={(e) => e.stopPropagation()}>
                   {mou.lock_mou ? (
                     <span className="btn small" style={{ fontSize: 12, padding: "4px 8px", opacity: 0.5, cursor: "not-allowed", pointerEvents: "auto" }} onClick={() => Swal.fire({ icon: "warning", title: "MOU ถูกล็อก", text: "ไม่สามารถเพิ่มกิจกรรมได้เนื่องจาก MOU นี้ถูกล็อกอยู่" })}>
                       <Activity size={13} /> เพิ่มกิจกรรม
@@ -757,7 +763,7 @@ export default function MouListPage() {
                       <Edit3 size={13} />
                     </Link>
                   )}
-                </div>
+                </div>}
               </div>
             ))}
           </div>

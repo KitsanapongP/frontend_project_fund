@@ -27,6 +27,7 @@ import { accessControlAPI, usersAPI } from "../../../../../lib/api";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
   PERMISSION_CATEGORIES,
+  PERMISSION_MODULES,
   getPermissionPresentation,
   getPermissionSearchText,
   getRolePresentation,
@@ -145,10 +146,10 @@ function PermissionIdentity({ permission, implications = {} }) {
   );
 }
 
-function FilterToolbar({ search, onSearchChange, category, onCategoryChange, mode, onModeChange, modeOptions, resultCount }) {
+function FilterToolbar({ search, onSearchChange, module, onModuleChange, category, onCategoryChange, mode, onModeChange, modeOptions, resultCount }) {
   return (
     <div className="border-b border-slate-200 bg-slate-50 p-4">
-      <div className="grid gap-3 lg:grid-cols-[minmax(16rem,1fr)_minmax(13rem,0.55fr)]">
+      <div className="grid gap-3 lg:grid-cols-[minmax(16rem,1fr)_minmax(10rem,0.45fr)_minmax(13rem,0.55fr)]">
         <label className="relative block">
           <span className="sr-only">ค้นหาสิทธิ์</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
@@ -159,6 +160,13 @@ function FilterToolbar({ search, onSearchChange, category, onCategoryChange, mod
             placeholder="ค้นหาด้วยชื่อภาษาไทย หน้า ฟังก์ชัน หรือรหัส..."
             className="min-h-11 w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
           />
+        </label>
+        <label className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3">
+          <span className="shrink-0 text-sm font-medium text-slate-600">ระบบ</span>
+          <select value={module} onChange={(event) => onModuleChange(event.target.value)} className="min-h-9 min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-900 outline-none">
+            <option value="all">ทุกระบบ</option>
+            {PERMISSION_MODULES.map((item) => <option key={item.key} value={item.key}>{item.labelTh}</option>)}
+          </select>
         </label>
         <label className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3">
           <span className="shrink-0 text-sm font-medium text-slate-600">หมวด</span>
@@ -271,6 +279,7 @@ export default function AdminAccessControlPage() {
   const [managementRefreshKey, setManagementRefreshKey] = useState(0);
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
+  const [moduleFilter, setModuleFilter] = useState("all");
   const [implications, setImplications] = useState({});
 
   const [selectedRoleId, setSelectedRoleId] = useState("");
@@ -321,6 +330,7 @@ export default function AdminAccessControlPage() {
   const filterPermissions = useCallback(({ search, category, mode, context }) => {
     const keyword = normalizePermissionCode(search);
     return permissionViews.filter((permission) => {
+      if (moduleFilter !== "all" && permission.module !== moduleFilter) return false;
       if (category !== "all" && permission.category !== category) return false;
       if (keyword && !getPermissionSearchText(permission).includes(keyword)) return false;
       if (context === "role") {
@@ -340,7 +350,7 @@ export default function AdminAccessControlPage() {
       if (mode === "high_risk" && permission.risk !== "high" && permission.risk !== "critical") return false;
       return true;
     });
-  }, [permissionViews, previewPermissionSet, rolePermissionSet, userOverrideMap]);
+  }, [moduleFilter, permissionViews, previewPermissionSet, rolePermissionSet, userOverrideMap]);
 
   const roleFilteredPermissions = useMemo(() => filterPermissions({ search: roleSearch, category: roleCategory, mode: roleViewMode, context: "role" }), [filterPermissions, roleCategory, roleSearch, roleViewMode]);
   const userFilteredPermissions = useMemo(() => filterPermissions({ search: userPermissionSearch, category: userPermissionCategory, mode: userViewMode, context: "user" }), [filterPermissions, userPermissionCategory, userPermissionSearch, userViewMode]);
@@ -687,7 +697,7 @@ export default function AdminAccessControlPage() {
                 </div>
               </div>
 
-              <FilterToolbar search={roleSearch} onSearchChange={setRoleSearch} category={roleCategory} onCategoryChange={setRoleCategory} mode={roleViewMode} onModeChange={setRoleViewMode} modeOptions={FILTER_OPTIONS.role} resultCount={roleFilteredPermissions.length} />
+              <FilterToolbar search={roleSearch} onSearchChange={setRoleSearch} module={moduleFilter} onModuleChange={setModuleFilter} category={roleCategory} onCategoryChange={setRoleCategory} mode={roleViewMode} onModeChange={setRoleViewMode} modeOptions={FILTER_OPTIONS.role} resultCount={roleFilteredPermissions.length} />
 
               <div className="max-h-[55vh] min-h-64 overflow-y-auto overscroll-contain" aria-label="รายการสิทธิ์ของบทบาท">
               {loadingRolePermissions ? (
@@ -775,7 +785,7 @@ export default function AdminAccessControlPage() {
                   <div className="mt-4 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm leading-6 text-blue-800"><SlidersHorizontal className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />ใช้ “ตามบทบาท” เป็นค่าเริ่มต้น เลือกอนุญาตหรือปฏิเสธเฉพาะกรณีที่ผู้ใช้นี้ต้องแตกต่างจากคนอื่นใน Role เดียวกัน</div>
                 </section>
 
-                <FilterToolbar search={userPermissionSearch} onSearchChange={setUserPermissionSearch} category={userPermissionCategory} onCategoryChange={setUserPermissionCategory} mode={userViewMode} onModeChange={setUserViewMode} modeOptions={FILTER_OPTIONS.user} resultCount={userFilteredPermissions.length} />
+                <FilterToolbar search={userPermissionSearch} onSearchChange={setUserPermissionSearch} module={moduleFilter} onModuleChange={setModuleFilter} category={userPermissionCategory} onCategoryChange={setUserPermissionCategory} mode={userViewMode} onModeChange={setUserViewMode} modeOptions={FILTER_OPTIONS.user} resultCount={userFilteredPermissions.length} />
 
                 <div className="max-h-[55vh] min-h-64 overflow-y-auto overscroll-contain" aria-label="รายการสิทธิ์เฉพาะบุคคล">
                 <PermissionGroups
@@ -842,7 +852,7 @@ export default function AdminAccessControlPage() {
                 </div>
               </div>
             </div>
-            <FilterToolbar search={dictionarySearch} onSearchChange={setDictionarySearch} category={dictionaryCategory} onCategoryChange={setDictionaryCategory} mode={dictionaryViewMode} onModeChange={setDictionaryViewMode} modeOptions={FILTER_OPTIONS.dictionary} resultCount={dictionaryFilteredPermissions.length} />
+            <FilterToolbar search={dictionarySearch} onSearchChange={setDictionarySearch} module={moduleFilter} onModuleChange={setModuleFilter} category={dictionaryCategory} onCategoryChange={setDictionaryCategory} mode={dictionaryViewMode} onModeChange={setDictionaryViewMode} modeOptions={FILTER_OPTIONS.dictionary} resultCount={dictionaryFilteredPermissions.length} />
             <div className="max-h-[55vh] min-h-64 overflow-y-auto overscroll-contain" aria-label="รายการคำอธิบายสิทธิ์">
             <PermissionGroups
               groups={groupPermissionViews(dictionaryFilteredPermissions)}

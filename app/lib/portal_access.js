@@ -7,19 +7,22 @@ const DEFAULT_PORTAL_RULE = {
 export const PORTAL_ITEM_ACCESS = {
   researchFund: {
     ...DEFAULT_PORTAL_RULE,
+    allowedPermissions: ["portal.card.research_fund.access"],
   },
   externalFund: {
     ...DEFAULT_PORTAL_RULE,
+    allowedPermissions: ["portal.card.external_fund.access"],
   },
   publicationSearch: {
     requireAuth: false,
   },
   mou: {
     ...DEFAULT_PORTAL_RULE,
-    allowedRoles: ["admin"],
+    allowedPermissions: ["mou.read"],
   },
   links: {
     ...DEFAULT_PORTAL_RULE,
+    allowedPermissions: ["portal.card.links.access"],
   },
   researcherMatching: {
     ...DEFAULT_PORTAL_RULE,
@@ -27,8 +30,7 @@ export const PORTAL_ITEM_ACCESS = {
   },
   researcherManagement: {
     ...DEFAULT_PORTAL_RULE,
-    allowedRoles: ["academic_designer","admin"],
-    allowedPermissions: [],
+    allowedPermissions: ["portal.card.researcher_management.access"],
   },
 };
 
@@ -60,7 +62,8 @@ export function canAccessPortalRule(rule, { isAuthenticated, hasAnyRole, hasAnyP
   const permissionMatched =
     typeof hasAnyPermission === "function" ? hasAnyPermission(requiredPermissions) : false;
 
-  return roleMatched || permissionMatched;
+  return (requiredRoles.length === 0 || roleMatched) &&
+    (requiredPermissions.length === 0 || permissionMatched);
 }
 
 export function sanitizeNextPath(value) {

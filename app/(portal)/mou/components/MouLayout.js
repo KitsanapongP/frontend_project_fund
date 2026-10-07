@@ -70,7 +70,7 @@ function resolveRoleLabel(user) {
 }
 
 export default function MouLayout({ children, title, subtitle }) {
-  const { user, logout, hasRole, isAuthenticated, isLoading } = useAuth();
+  const { user, logout, hasPermission, hasRole, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -82,14 +82,17 @@ export default function MouLayout({ children, title, subtitle }) {
   const displayName = getDisplayName(user);
   const roleLabel = resolveRoleLabel(user);
   const initials = getInitials(displayName);
+  const canRead = hasPermission("mou.read");
+  const canAdminister = hasRole("admin");
+  const visibleMenuItems = mouMenuItems.filter((item) => item.id !== "manage" || canAdminister);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace("/login");
-    } else if (!isLoading && isAuthenticated && !hasRole(3) && !hasRole("admin")) {
+    } else if (!isLoading && isAuthenticated && !canRead) {
       router.replace("/unauthorized");
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isLoading, isAuthenticated, canRead, router]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -125,7 +128,7 @@ export default function MouLayout({ children, title, subtitle }) {
     );
   }
 
-  if (!isAuthenticated || (!hasRole(3) && !hasRole("admin"))) return null;
+  if (!isAuthenticated || !canRead) return null;
 
   const isActive = (href) => {
     if (href === "/mou/mou_list") {
@@ -329,7 +332,7 @@ export default function MouLayout({ children, title, subtitle }) {
 
             <p className="portal-nav-section-label">เมนู MOU</p>
             <nav className="space-y-1" aria-label="เมนู MOU บนมือถือ">
-              {mouMenuItems.map((item) => (
+              {visibleMenuItems.map((item) => (
                 <div key={item.id}>
                   <Link
                     href={item.href}
@@ -360,7 +363,7 @@ export default function MouLayout({ children, title, subtitle }) {
           <div className="p-5">
             <p className="portal-nav-section-label">เมนู MOU</p>
             <nav className="space-y-1" aria-label="เมนู MOU">
-              {mouMenuItems.map((item) => (
+              {visibleMenuItems.map((item) => (
                 <div key={item.id}>
                   <Link
                     href={item.href}
