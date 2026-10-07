@@ -174,12 +174,9 @@ function FundCatalogTable({ categories, isWithinApplicationPeriod, onShowConditi
           </thead>
           <tbody className="divide-y divide-slate-200">
             {rows.map(({ fund }, index) => (
-              <tr key={getFundKey(fund, index)} className={fund?.is_publication_reward_highlight ? "bg-amber-50/80" : !isWithinApplicationPeriod ? "bg-slate-50" : "hover:bg-slate-50"}>
-                <td className={`px-5 py-4 align-top ${fund?.is_publication_reward_highlight ? 'border-l-4 border-amber-400' : ''}`}>
+              <tr key={getFundKey(fund, index)} className={fund?.is_publication_reward_highlight ? "bg-blue-50/80" : !isWithinApplicationPeriod ? "bg-slate-50" : "hover:bg-slate-50"}>
+                <td className={`px-5 py-4 align-top ${fund?.is_publication_reward_highlight ? 'border-l-4 border-blue-400' : ''}`}>
                   <p className="max-w-xl break-words font-semibold leading-6 text-slate-900">{getFundName(fund)}</p>
-                  {fund?.is_publication_reward_highlight ? (
-                    <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">ทุนที่มีผู้ขอจำนวนมาก</span>
-                  ) : null}
                   {fund?.has_multiple_levels ? (
                     <p className="mt-1 text-xs text-slate-500">มี {fund?.budget_count || fund?.budget_levels?.length || 0} ระดับงบประมาณ</p>
                   ) : null}
@@ -198,11 +195,8 @@ function FundCatalogTable({ categories, isWithinApplicationPeriod, onShowConditi
 
       <div className="divide-y divide-slate-200 md:hidden">
         {rows.map(({ fund }, index) => (
-          <article key={getFundKey(fund, index)} className={`p-4 ${fund?.is_publication_reward_highlight ? "border-l-4 border-amber-400 bg-amber-50/80" : !isWithinApplicationPeriod ? "bg-slate-50" : ""}`}>
+          <article key={getFundKey(fund, index)} className={`p-4 ${fund?.is_publication_reward_highlight ? "border-l-4 border-blue-400 bg-blue-50/80" : !isWithinApplicationPeriod ? "bg-slate-50" : ""}`}>
             <h3 className="break-words font-semibold leading-6 text-slate-900">{getFundName(fund)}</h3>
-            {fund?.is_publication_reward_highlight ? (
-              <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">ทุนที่มีผู้ขอจำนวนมาก</span>
-            ) : null}
             {fund?.has_multiple_levels ? (
               <p className="mt-1 text-xs text-slate-500">มี {fund?.budget_count || fund?.budget_levels?.length || 0} ระดับงบประมาณ</p>
             ) : null}
@@ -279,6 +273,7 @@ export default function FundCatalogView({
   icon,
   breadcrumbLabel,
   applicationPeriodInfo,
+  supplementaryContent,
   years,
   selectedYear,
   yearsLoading,
@@ -344,6 +339,8 @@ export default function FundCatalogView({
           </div>
         </div>
       </section>
+
+      {supplementaryContent}
 
       {visibleFundCount === 0 ? (
         <section className="rounded-xl border border-slate-200 bg-white px-5 py-12 text-center">

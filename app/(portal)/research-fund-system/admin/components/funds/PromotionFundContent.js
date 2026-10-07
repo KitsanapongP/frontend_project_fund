@@ -2,6 +2,7 @@
 "use client";
 
 import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
+import Image from "next/image";
 
 import { useState, useEffect, useRef } from "react";
 import { teacherAPI } from "../../../../../lib/member_api";
@@ -601,6 +602,19 @@ export default function PromotionFundContent({ onNavigate }) {
       icon={RESEARCH_FUND_PAGE_ICONS.promotionFund}
       breadcrumbLabel="ทุนอุดหนุนกิจกรรม"
       applicationPeriodInfo={renderApplicationPeriodInfo()}
+      supplementaryContent={(
+        <figure className="mx-auto mb-6 w-full overflow-hidden rounded-xl border border-slate-200 bg-white md:w-1/2">
+          <a href="/publication-reward-rates.png" target="_blank" rel="noopener noreferrer" aria-label="เปิดตารางอัตราสนับสนุนการตีพิมพ์ขนาดเต็ม">
+            <Image
+              src="/publication-reward-rates.png"
+              alt="ตารางอัตราสนับสนุนการตีพิมพ์ผลงานวิจัยตามระดับวารสาร"
+              width={1672}
+              height={941}
+              className="h-auto w-full"
+            />
+          </a>
+        </figure>
+      )}
       years={years}
       selectedYear={selectedYear}
       yearsLoading={yearsLoading}

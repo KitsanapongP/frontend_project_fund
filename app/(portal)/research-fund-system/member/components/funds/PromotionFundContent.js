@@ -774,17 +774,12 @@ export default function PromotionFundContent({ onNavigate }) {
     return (
       <tr
         key={fund.subcategory_id || fund.subcategorie_id}
-        className={fund.is_publication_reward_highlight ? "bg-amber-50/80" : !canApply ? "bg-slate-50" : ""}
+        className={fund.is_publication_reward_highlight ? "bg-blue-50/80" : !canApply ? "bg-slate-50" : ""}
       >
-        <td className={`px-6 py-4 align-top ${fund.is_publication_reward_highlight ? 'border-l-4 border-amber-400' : ''}`}>
+        <td className={`px-6 py-4 align-top ${fund.is_publication_reward_highlight ? 'border-l-4 border-blue-400' : ''}`}>
           <div className="text-sm font-medium text-slate-900 max-w-lg break-words leading-relaxed">
             {fundName}
           </div>
-          {fund.is_publication_reward_highlight && (
-            <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
-              ทุนที่มีผู้ขอจำนวนมาก
-            </span>
-          )}
           {fundHint && (
             <div className="mt-2 max-w-lg rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium leading-relaxed text-red-700">
               {fundHint}
