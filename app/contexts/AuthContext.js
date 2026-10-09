@@ -458,7 +458,7 @@ export function AuthProvider({ children }) {
     };
 
     const userRole = state.user.role_id || state.user.role;
-    return roleMap[userRole] || state.user.position_name || 'ผู้ใช้';
+    return roleMap[userRole] || state.user.position_title || 'ผู้ใช้';
   };
 
   const value = {

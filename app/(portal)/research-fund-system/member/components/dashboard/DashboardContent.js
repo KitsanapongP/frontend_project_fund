@@ -83,7 +83,7 @@ const normalizeDashboardStats = (apiStats = {}) => {
 function WelcomeBanner({ user, stats }) {
   const firstName = user?.user_fname ?? "";
   const lastName = user?.user_lname ?? "";
-  const position = user?.position ?? "";
+  const position = user?.prefix || user?.position_title || "";
   const totalApplications = formatNumber(stats?.myApplications?.total ?? 0);
   const pending = formatNumber(stats?.myApplications?.pending ?? 0);
   const approvedAmount = formatCurrency(stats?.myApplications?.total_approved ?? 0);

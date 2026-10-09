@@ -113,13 +113,11 @@ const normalizeMemberUser = (user) => {
     user_lname: user.user_lname ?? user.UserLname ?? "",
     email: user.email ?? user.Email ?? "",
     role_id: toNumber(user.role_id ?? user.RoleID),
-    position_id: toNumber(user.position_id ?? user.PositionID),
     manage_position: user.manage_position ?? user.ManagePosition ?? "",
     position_title: user.position_title ?? user.PositionTitle ?? "",
     position_en: user.position_en ?? user.PositionEn ?? "",
     prefix_position_en: user.prefix_position_en ?? user.PrefixPositionEn ?? "",
     role: user.role ?? user.Role ?? null,
-    position: user.position ?? user.Position ?? null,
   };
 };
 

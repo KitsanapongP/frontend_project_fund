@@ -194,11 +194,7 @@ const getUserPositionLabel = (user) => {
 
   return (
     (user.manage_position ?? user.ManagePosition ?? "").toString().trim() ||
-    (user.position_title ?? user.PositionTitle ?? "").toString().trim() ||
-    (user.position?.position_name ??
-      user.Position?.position_name ??
-      user.Position?.PositionName ??
-      "").toString().trim()
+    (user.position_title ?? user.PositionTitle ?? "").toString().trim()
   );
 };
 
@@ -258,11 +254,7 @@ const normalizeProjectMemberCandidate = (user) => {
   const managePosition = (user.manage_position ?? user.ManagePosition ?? "").toString().trim();
   const positionTitle =
     (user.position_title ?? user.PositionTitle ?? "").toString().trim() ||
-    (user.position_en ?? user.PositionEn ?? "").toString().trim() ||
-    (user.position?.position_name ??
-      user.Position?.position_name ??
-      user.Position?.PositionName ??
-      "").toString().trim();
+    (user.position_en ?? user.PositionEn ?? "").toString().trim();
 
   return {
     user_id: parsedId,
@@ -274,7 +266,6 @@ const normalizeProjectMemberCandidate = (user) => {
     manage_position: managePosition,
     position_title: positionTitle,
     role: user.role ?? user.Role ?? null,
-    position: user.position ?? user.Position ?? null,
     display_name: displayName,
   };
 };

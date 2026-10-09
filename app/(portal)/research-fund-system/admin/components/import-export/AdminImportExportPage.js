@@ -212,7 +212,6 @@ export default function AdminImportExportPage() {
       "email",
       "scholar_author_id",
       "role_id",
-      "position_id",
       "date_of_employment",
       "prefix",
       "manage_position",

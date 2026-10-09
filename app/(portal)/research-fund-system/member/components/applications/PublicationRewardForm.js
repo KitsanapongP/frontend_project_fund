@@ -5450,7 +5450,7 @@ export default function PublicationRewardForm({
               '',
             user_fname: currentUser.user_fname || currentUser.first_name || '',
             user_lname: currentUser.user_lname || currentUser.last_name || '',
-            position_name: currentUser.position?.position_name || currentUser.position_name || '',
+            position_name: currentUser.position_title || '',
             date_of_employment: currentUser.date_of_employment || currentUser.start_date || '',
           }
         : {},

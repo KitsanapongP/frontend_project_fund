@@ -878,7 +878,7 @@ export default function ProfileContent() {
         user_fname: profile.user_fname,
         user_lname: profile.user_lname,
         english_name: englishName,
-        position: profile.position_name,
+        position: profile.position_title || profile.position_name || "",
         department: profile.department || "",
         faculty: profile.faculty || "",
         email: profile.email,

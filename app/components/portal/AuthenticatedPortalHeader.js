@@ -16,7 +16,7 @@ import {
 function getDisplayName(user) {
   if (!user) return "กำลังโหลด...";
   const fullName = [
-    user.prefix || user.position,
+    user.prefix || user.position_title,
     user.user_fname || user.first_name,
     user.user_lname || user.last_name,
   ].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();

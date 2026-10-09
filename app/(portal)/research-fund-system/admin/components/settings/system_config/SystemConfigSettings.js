@@ -84,7 +84,6 @@ function collectRoleKeys(user) {
   if (user?.role_id != null) keys.push(norm(user.role_id));
   if (user?.role != null) keys.push(norm(user.role));
   if (user?.user_role != null) keys.push(norm(user.user_role));
-  if (user?.position != null) keys.push(norm(user.position));
   if (Array.isArray(user?.roles)) {
     for (const r of user.roles) {
       if (r == null) continue;

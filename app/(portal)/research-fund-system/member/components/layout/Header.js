@@ -49,7 +49,7 @@ function getDisplayName(user) {
   if (!user) return "Loading...";
 
   const prefix =
-    user.prefix || user.prefix_name || user.title || user.position || "";
+    user.prefix || user.prefix_name || user.title || user.position_title || "";
   const firstName =
     user.user_fname || user.first_name || user.firstname || user.name || "";
   const lastName = user.user_lname || user.last_name || user.lastname || "";
