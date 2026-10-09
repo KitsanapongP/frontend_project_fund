@@ -97,11 +97,23 @@ export function canCompareMetric(faculty, kku, metric) {
 // These strings are the single source of the KPI/table hints and the printed notes,
 // so every surface explains a metric the same way (a tooltip does not print — §5).
 
-export const HINT_T1Q2 =
-  "คำนวณจากจำนวนผลงานในวารสารกลุ่ม T1, Q1 และ Q2 หารด้วยจำนวนผลงานวารสารที่ระบุกลุ่มได้ทั้งหมด (T1, Q1, Q2, Q3 และ Q4) โดย T1 แยกจาก Q1 ไม่นับซ้ำ และไม่นำผลงานวารสารที่ยังระบุกลุ่มไม่ได้มาคิดสัดส่วน";
-
-export const HINT_INTL =
-  "พิจารณาจากประเทศในข้อมูลสังกัดผู้เขียน (affiliation) โดยนับผลงานที่พบสังกัดในประเทศอื่นนอกประเทศไทยอย่างน้อยหนึ่งแห่ง เทียบกับผลงานที่มีข้อมูลประเทศของสังกัดอย่างน้อยหนึ่งรายการ ผลงานที่ไม่มีข้อมูลประเทศไม่นำมาคิดสัดส่วน ทั้งนี้เป็นประเทศของสังกัด ไม่ใช่สัญชาติผู้เขียน";
+const metricLead = (strong, text) => [{ text: strong, strong: true }, { text }];
+export const HINT_T1Q2_SECTIONS = [{ title: 'ผลงานในวารสารกลุ่ม T1–Q2', lines: [
+  metricLead('ตัวเศษ ', 'จำนวนผลงานวารสารในกลุ่ม T1, Q1 และ Q2'),
+  metricLead('ตัวหาร ', 'จำนวนผลงานวารสารที่ระบุกลุ่มได้ทั้งหมด คือ T1, Q1, Q2, Q3 และ Q4'),
+  'T1 แยกจาก Q1 และไม่นับซ้ำ ไม่นำวารสารที่ยังระบุกลุ่มไม่ได้มาคิดสัดส่วน',
+  'สัดส่วน = ตัวเศษ ÷ ตัวหาร × 100 หากไม่มีวารสารที่ระบุกลุ่มได้จะแสดงขีด (—)',
+] }];
+export const HINT_INTL_SECTIONS = [{ title: 'ผลงานร่วมกับต่างประเทศ', lines: [
+  metricLead('นับผลงานที่ร่วมกับต่างประเทศ ', 'เมื่อพบสังกัดผู้เขียนในประเทศอื่นนอกประเทศไทยอย่างน้อยหนึ่งแห่ง'),
+  metricLead('ตัวหาร ', 'ผลงานที่มีข้อมูลประเทศของสังกัดอย่างน้อยหนึ่งรายการ ไม่รวมผลงานที่ไม่มีข้อมูลประเทศ'),
+  'สัดส่วน = ผลงานที่ร่วมกับต่างประเทศ ÷ ผลงานที่ทราบประเทศของสังกัด × 100',
+  metricLead('ประเทศของสังกัด ', 'ไม่ใช่สัญชาติของผู้เขียน'),
+] }];
+// Printable definitions are derived from the exact same safe tooltip fragments.
+const metricHintText = sections => sections.flatMap(section => section.lines).map(line => typeof line === 'string' ? line : line.map(part => part.text).join('')).join(' ');
+export const HINT_T1Q2 = metricHintText(HINT_T1Q2_SECTIONS);
+export const HINT_INTL = metricHintText(HINT_INTL_SECTIONS);
 
 // highTierDenom returns the numerator (T1+Q1+Q2) and denominator (all classified) of
 // the high-tier share, or null when no journal is classified. Never binds a fixed

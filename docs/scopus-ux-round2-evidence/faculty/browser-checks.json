@@ -1,0 +1,53 @@
+{
+  "fixture_only": true,
+  "checks": [
+    {
+      "name": "card order is roles, international, comparison; compact desktop frames align",
+      "passed": true
+    },
+    {
+      "name": "international table and partners are side by side at sufficient container width",
+      "passed": true
+    },
+    {
+      "name": "all three larger donuts have compact legends on the left and the same palette",
+      "passed": true
+    },
+    {
+      "name": "legend hover highlights matching segment and shows count/percentage/denominator",
+      "passed": true
+    },
+    {
+      "name": "segment focus highlights matching legend; keyboard drilldown restores focus",
+      "passed": true
+    },
+    {
+      "name": "pointer at each actual arc opens its own role, rather than an overlapping circle",
+      "passed": true
+    },
+    {
+      "name": "year selector changes only the role donut; cross-tab legends retain country/year dimensions",
+      "passed": true
+    },
+    {
+      "name": "reduced motion disables segment transitions",
+      "passed": true
+    },
+    {
+      "name": "tablet stacks international layout without document overflow",
+      "passed": true
+    },
+    {
+      "name": "mobile stacks charts and compact legends, supports touch and detailed hints",
+      "passed": true
+    },
+    {
+      "name": "empty groups keep unknown neutral, zero denominator and usable legend drilldown",
+      "passed": true
+    }
+  ],
+  "page_errors": [],
+  "blocked_requests": [
+    "/api/v1/profile"
+  ]
+}

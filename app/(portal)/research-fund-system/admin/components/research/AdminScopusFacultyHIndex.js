@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Download, ZoomIn, ZoomOut, Maximize2, Info } from "lucide-react";
+import { Download, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import Hint from './report/Hint';
+import { facultyHIndexHint, facultyHIndexGraphHint } from '@/app/lib/scopus_explanation_hints.mjs';
 import { scopusConfigAPI } from "@/app/lib/api";
 import { formatNumber } from "@/app/utils/format";
 
@@ -33,7 +35,7 @@ function downloadFile(filename, content, mime) {
 
 // Hirsch h-graph ระดับคณะ (เอกสารเรียงตาม citations vs เส้น y=x) จาก scopus_documents
 // นับเฉพาะผลงานที่อาจารย์สังกัด KKU ตอนตีพิมพ์ และ dedupe ต่อ document (paper ที่ร่วมกันหลายคนนับครั้งเดียว)
-export default function AdminScopusFacultyHIndex() {
+export default function AdminScopusFacultyHIndex({ api = scopusConfigAPI }) {
   const [yearFrom, setYearFrom] = useState("");
   const [yearTo, setYearTo] = useState("");
 
@@ -42,8 +44,6 @@ export default function AdminScopusFacultyHIndex() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
-  const [showHint, setShowHint] = useState(false);
-  const [showDesc, setShowDesc] = useState(false);
 
   // ===== Zoom + Pan (ทำเองเพื่อคุม cap/ตำแหน่งการซูม + ให้ smooth) =====
   const chartWrapRef = useRef(null);
@@ -216,7 +216,7 @@ export default function AdminScopusFacultyHIndex() {
     setExporting(true);
     setError("");
     try {
-      await scopusConfigAPI.exportFacultyHIndex({ year_from: yearFrom, year_to: yearTo });
+      await api.exportFacultyHIndex({ year_from: yearFrom, year_to: yearTo });
     } catch (e) {
       setError(e?.message || "ส่งออกไฟล์ Excel ไม่สำเร็จ");
     } finally {
@@ -297,7 +297,7 @@ export default function AdminScopusFacultyHIndex() {
       const params = {};
       if (yf) params.year_from = yf;
       if (yt) params.year_to = yt;
-      const res = await scopusConfigAPI.getFacultyHIndexGraph(params);
+      const res = await api.getFacultyHIndexGraph(params);
       const data = res?.data || null;
       setGraph(data);
       // ตอนโหลดช่วงเต็ม (ไม่กรองปี) เก็บรายการปีที่มีเอกสารจริง + ตั้ง default เป็นช่วงเต็ม (H-index เป็นค่าสะสม)
@@ -394,7 +394,7 @@ export default function AdminScopusFacultyHIndex() {
           const p = points[dataPointIndex];
           if (!p) return "";
           const title = htmlEscape(p.title ? p.title : "(ไม่มีชื่อเรื่อง)");
-          return `<div style="padding:6px 8px;font-size:12px;max-width:300px;white-space:normal">
+          return `<div style="padding:12px 16px;font-family:inherit;font-size:12px;line-height:1.625;color:#334155;background:white;max-width:300px;white-space:normal">
             <div style="font-weight:600">บทความอันดับ ${p.rank} · ถูกอ้างอิง ${p.citations} ครั้ง${p.year ? ` · ${p.year + 543}` : ""}</div>
             <div style="color:#475569;margin-top:2px;white-space:normal;word-break:break-word;line-height:1.35">${title}</div>
           </div>`;
@@ -439,27 +439,7 @@ export default function AdminScopusFacultyHIndex() {
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Faculty H-index</div>
           <div className="flex items-center gap-1.5">
             <div className="text-xl font-semibold text-slate-900">H-index ระดับคณะ (Scopus)</div>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowDesc((v) => !v)}
-                aria-label="รายละเอียด"
-                title="รายละเอียด"
-                className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
-                  showDesc ? "border-slate-400 bg-slate-100 text-slate-700" : "border-slate-300 text-slate-400 hover:bg-slate-50"
-                }`}
-              >
-                <Info size={12} />
-              </button>
-              {showDesc && (
-                <div className="absolute left-0 top-7 z-20 w-80 rounded-lg border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-600 shadow-lg">
-                  H-index ของทั้งคณะ รวมผลงานของอาจารย์ทุกคนที่มี Scopus ID โดย
-                  <span className="font-medium text-slate-700"> นับเฉพาะผลงานที่สังกัด KKU ตอนตีพิมพ์</span> และ
-                  นับบทความที่อาจารย์ร่วมมือกันหลายคนเพียงครั้งเดียว ตัวเลขนับจากข้อมูลที่นำเข้าระบบ
-                  อาจน้อยกว่าใน scopus.com หากยังไม่ได้อัปเดตจำนวนการอ้างอิงล่าสุด
-                </div>
-              )}
-            </div>
+            <Hint label="H-index ระดับคณะ" text={facultyHIndexHint} />
           </div>
         </div>
       </div>
@@ -577,29 +557,7 @@ export default function AdminScopusFacultyHIndex() {
                 </button>
               </div>
               {/* ขวาบน: ไอคอนอธิบายกราฟ */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowHint((v) => !v)}
-                  aria-label="คำอธิบายกราฟ"
-                  title="คำอธิบายกราฟ"
-                  className={`flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition ${
-                    showHint ? "border-slate-400 bg-slate-100 text-slate-700" : "border-slate-300 text-slate-500 hover:bg-slate-50"
-                  }`}
-                >
-                  <Info size={15} />
-                </button>
-                {showHint && (
-                  <div className="absolute right-0 top-9 z-20 w-72 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 shadow-lg">
-                    แต่ละจุดคือ 1 บทความของคณะ เรียงจากถูกอ้างอิงมากสุด (ซ้าย) ไปน้อยสุด (ขวา) — ชี้จุดเพื่อดูชื่อบทความ · ซูมด้วยปุ่ม/เลื่อนเมาส์ (โฟกัสที่ H-index) · เมื่อซูมแล้วกดค้างลากเพื่อเลื่อนดูช่วงอื่นได้
-                    {graph?.h_index > 0 && (
-                      <span className="mt-1.5 block text-slate-700">
-                        H-index = {graph.h_index} หมายถึงคณะมี {graph.h_index} บทความที่ถูกอ้างอิงอย่างน้อยบทความละ {graph.h_index} ครั้ง (บทความทางซ้ายของเส้นประ)
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
+              <Hint label="การอ่านกราฟ H-index ระดับคณะ" text={facultyHIndexGraphHint(graph?.h_index)} />
             </div>
           )}
           <div ref={chartWrapRef} className="hidx-chart min-h-[360px] rounded-xl border border-slate-200 p-2">

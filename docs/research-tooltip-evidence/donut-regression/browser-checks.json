@@ -1,0 +1,53 @@
+{
+  "fixture_only": true,
+  "checks": [
+    {
+      "name": "all three asymmetric distributions rotate the proportional First + Corresponding pair to twelve",
+      "passed": true
+    },
+    {
+      "name": "20 + 82 of 226 equals 102 and 45.1 percent with two pressed roles and combined accessible summary",
+      "passed": true
+    },
+    {
+      "name": "hover and keyboard focus on an unselected arc preserve the aggregate and selected highlights",
+      "passed": true
+    },
+    {
+      "name": "toggle removes only that role and the last removal restores total despite hover",
+      "passed": true
+    },
+    {
+      "name": "actual rotated arc targets independently toggle two roles in every donut",
+      "passed": true
+    },
+    {
+      "name": "text, Hint trigger, portal clicks and Hint Escape preserve selections; page background is isolated",
+      "passed": true
+    },
+    {
+      "name": "blank interior, SVG outer space and frame padding clear only their own chart",
+      "passed": true
+    },
+    {
+      "name": "Enter and Space independently toggle arc/legend roles and Escape clears on focused controls in all charts",
+      "passed": true
+    },
+    {
+      "name": "local year resets its own chart and recomputes rotation; new summary resets all",
+      "passed": true
+    },
+    {
+      "name": "mobile touch selects two rotated arcs and legends in every chart; blank tap clears locally",
+      "passed": true
+    },
+    {
+      "name": "full-circle coauthor has a stable zero start and an actual touch target; zeros remain selectable",
+      "passed": true
+    }
+  ],
+  "page_errors": [],
+  "blocked_requests": [
+    "/api/v1/profile"
+  ]
+}

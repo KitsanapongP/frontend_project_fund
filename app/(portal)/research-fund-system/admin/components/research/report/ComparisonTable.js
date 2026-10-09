@@ -1,6 +1,6 @@
 "use client";
 
-import { formatCount, formatPct, formatPoints, highTierShare, shareOf, isUsable, observedRate, canCompareMetric, HINT_T1Q2, HINT_INTL } from "@/app/lib/scopus_benchmark_report.mjs";
+import { formatCount, formatPct, formatPoints, highTierShare, shareOf, isUsable, observedRate, canCompareMetric, HINT_T1Q2_SECTIONS as HINT_T1Q2, HINT_INTL_SECTIONS as HINT_INTL } from "@/app/lib/scopus_benchmark_report.mjs";
 import Hint from "./Hint";
 
 const LEVELS = ["faculty", "kku", "thailand"];

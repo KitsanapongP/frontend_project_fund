@@ -1,0 +1,57 @@
+{
+  "fixture_only": true,
+  "checks": [
+    {
+      "name": "card order is roles, international, comparison; compact desktop frames align",
+      "passed": true
+    },
+    {
+      "name": "international table and partners are side by side at sufficient container width",
+      "passed": true
+    },
+    {
+      "name": "all three larger donuts have compact legends on the left and the same palette",
+      "passed": true
+    },
+    {
+      "name": "legend hover cues a role while no selection keeps the full total",
+      "passed": true
+    },
+    {
+      "name": "keyboard selects/toggles without a read; focus halo follows the arc without a rectangle",
+      "passed": true
+    },
+    {
+      "name": "pointer at every actual arc selects its own role, persists and toggles back to total",
+      "passed": true
+    },
+    {
+      "name": "all three legends select independently; year resets charts while table drilldown keeps dimensions",
+      "passed": true
+    },
+    {
+      "name": "partner rows have visible hover/keyboard feedback and still open the country drilldown",
+      "passed": true
+    },
+    {
+      "name": "reduced motion disables segment transitions",
+      "passed": true
+    },
+    {
+      "name": "tablet stacks international layout without document overflow",
+      "passed": true
+    },
+    {
+      "name": "mobile touch selects/toggles chart; table and country still drill down; hints remain detailed",
+      "passed": true
+    },
+    {
+      "name": "empty groups keep unknown neutral, zero denominator and usable legend selection",
+      "passed": true
+    }
+  ],
+  "page_errors": [],
+  "blocked_requests": [
+    "/api/v1/profile"
+  ]
+}

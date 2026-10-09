@@ -8,6 +8,8 @@ import { normalizeYearRange } from "@/app/lib/scopus_benchmark_helpers.mjs";
 import PageLayout from "../common/PageLayout";
 import ScopusBenchmarkDashboard from "./ScopusBenchmarkDashboard";
 import ScopusBenchmarkSummary from "./ScopusBenchmarkSummary";
+import Hint from './report/Hint';
+import { benchmarkSetupHint } from '@/app/lib/scopus_explanation_hints.mjs';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -177,7 +179,7 @@ function Step({ n, title, desc, state, children }) {
         <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">{n}</span>
         <div className="flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="font-medium text-slate-900">{title}</div>
+            <div className="inline-flex items-center gap-1 font-medium text-slate-900">{title}<Hint label={title} text={benchmarkSetupHint}/></div>
             <StatusDot state={state} />
           </div>
           <p className="mt-0.5 text-xs text-slate-500">{desc}</p>

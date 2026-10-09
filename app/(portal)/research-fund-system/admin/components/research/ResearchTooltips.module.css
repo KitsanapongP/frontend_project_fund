@@ -1,0 +1,24 @@
+/* Value tooltips retain the chart library's positioning and interactions. */
+.dataCharts :global(.apexcharts-tooltip) {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.625;
+  box-shadow: 0 10px 15px -3px rgb(15 23 42 / 0.1);
+}
+.dataCharts :global(.apexcharts-tooltip-title) {
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 8px 16px;
+  color: #0f172a;
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 600;
+}
+.dataCharts :global(.apexcharts-tooltip-text) {
+  font-family: inherit !important;
+  font-size: 12px !important;
+}

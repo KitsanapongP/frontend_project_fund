@@ -1,0 +1,17 @@
+{
+  "production": true,
+  "checks": [
+    {
+      "path": "/dev/scopus-faculty-insights",
+      "status": 404
+    },
+    {
+      "path": "/dev/scopus-faculty-insights-integrated",
+      "status": 404
+    },
+    {
+      "path": "/research-fund-system/admin/research-dashboard",
+      "status": 200
+    }
+  ]
+}

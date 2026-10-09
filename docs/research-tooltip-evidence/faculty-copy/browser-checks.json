@@ -1,0 +1,47 @@
+{
+  "fixture_only": true,
+  "origin": "http://127.0.0.1:3119",
+  "checks": [
+    {
+      "name": "all hint groups use plain Thai, narrow emphasis and complete role/country counting explanations",
+      "passed": true
+    },
+    {
+      "name": "three centers use total label, contextual accessible denominators and no redundant footer",
+      "passed": true
+    },
+    {
+      "name": "every desktop card hint renders safe emphasis and wraps within its bounded portal",
+      "passed": true
+    },
+    {
+      "name": "keyboard role selection and percentages stay unchanged without modal or API request",
+      "passed": true
+    },
+    {
+      "name": "local year selectors retain independent scope and new denominators",
+      "passed": true
+    },
+    {
+      "name": "mobile centers and contextual denominators fit without page overflow",
+      "passed": true
+    },
+    {
+      "name": "every mobile hint opens by touch and keeps Thai bullets/emphasis within the viewport",
+      "passed": true
+    },
+    {
+      "name": "paper/search explanations and role evidence use clear Thai without internal status codes",
+      "passed": true
+    },
+    {
+      "name": "Benchmark summary and analytical hints use safe emphasized bullets and accessible links",
+      "passed": true
+    }
+  ],
+  "page_errors": [],
+  "blocked_requests": [
+    "/api/v1/profile",
+    "/api/v1/profile"
+  ]
+}
