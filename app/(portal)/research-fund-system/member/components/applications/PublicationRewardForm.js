@@ -1751,21 +1751,10 @@ export default function PublicationRewardForm({
   const [paperAIExtractStatus, setPaperAIExtractStatus] = useState('idle');
   const [paperAIExtractElapsedSeconds, setPaperAIExtractElapsedSeconds] = useState(0);
   const paperAIExtractRunRef = useRef(0);
-  const paperAILoadingRef = useRef(null);
+  const paperAIArticleLocked = paperAIProcessing || paperAIExtractStatus === 'processing';
   const [paperAIWarnings, setPaperAIWarnings] = useState([]);
   const [paperAIError, setPaperAIError] = useState('');
   const [paperAIMatchStatus, setPaperAIMatchStatus] = useState(null);
-
-  useEffect(() => {
-    if (!paperAIProcessing) return undefined;
-    const previouslyFocused = document.activeElement;
-    paperAILoadingRef.current?.focus();
-    return () => {
-      if (previouslyFocused?.isConnected && typeof previouslyFocused.focus === 'function') {
-        previouslyFocused.focus();
-      }
-    };
-  }, [paperAIProcessing]);
 
   // External funding sources
   const [externalFundings, setExternalFundings] = useState([])
@@ -7481,29 +7470,8 @@ const showSubmissionConfirmation = async () => {
         { label: "ขอเบิกเงินรางวัลการตีพิมพ์" }
       ]}
     >
-      {paperAIProcessing && (
-        <div
-          ref={paperAILoadingRef}
-          role="alertdialog"
-          aria-modal="true"
-          aria-labelledby="paper-ai-loading-title"
-          aria-describedby="paper-ai-loading-description"
-          tabIndex={-1}
-          onKeyDown={(event) => {
-            if (event.key === 'Tab') event.preventDefault();
-          }}
-          className="fixed inset-0 z-[9999] flex cursor-wait items-center justify-center bg-slate-950/55 p-4"
-        >
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl">
-            <Loader2 className="mx-auto h-10 w-10 animate-spin text-blue-600" aria-hidden="true" />
-              <p id="paper-ai-loading-title" className="mt-4 text-lg font-semibold text-slate-900">กำลังประมวลผลข้อมูลบทความ</p>
-              <p id="paper-ai-loading-description" className="mt-2 text-sm text-slate-600">ระบบกำลังอ่านไฟล์ PDF และกรอกข้อมูลบทความ โปรดรอสักครู่</p>
-          </div>
-        </div>
-      )}
       <form
         ref={formRef}
-        aria-busy={paperAIProcessing}
         className="space-y-6 [&_button]:min-h-11 [&_button]:focus-visible:outline-none [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-blue-500 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:min-h-11 [&_select]:min-h-11 [&_textarea]:min-h-28"
         noValidate
       >
@@ -7565,7 +7533,7 @@ const showSubmissionConfirmation = async () => {
             ขณะนี้เป็นโหมด <strong>อ่านอย่างเดียว</strong> — ไม่สามารถแก้ไขหรือส่งคำร้องได้
           </div>
         )}
-        <fieldset disabled={isReadOnly || paperAIProcessing} aria-disabled={isReadOnly || paperAIProcessing} className="space-y-6">
+        <fieldset disabled={isReadOnly} aria-disabled={isReadOnly} className="space-y-6">
         {/* =================================================================
         // BASIC INFORMATION SECTION
         // ================================================================= */}
@@ -7699,7 +7667,7 @@ const showSubmissionConfirmation = async () => {
         // ARTICLE INFORMATION SECTION
         // ================================================================= */}
         <SimpleCard title="ข้อมูลบทความ (Article Information)" icon={FileText}>
-          <div className="space-y-4">
+          <fieldset disabled={paperAIArticleLocked} aria-disabled={paperAIArticleLocked} aria-label="ข้อมูลบทความ (Article Information)" className="min-w-0 space-y-4 [&_input:disabled]:cursor-not-allowed [&_textarea:disabled]:cursor-not-allowed [&_select:disabled]:cursor-not-allowed [&_input:disabled]:bg-slate-100 [&_textarea:disabled]:bg-slate-100 [&_select:disabled]:bg-slate-100">
             {!isReadOnly && (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -7707,21 +7675,24 @@ const showSubmissionConfirmation = async () => {
                       <h3 className="font-semibold text-slate-900">การนำเข้าข้อมูลบทความจากไฟล์ PDF</h3>
                       <p className="mt-1 text-sm leading-relaxed text-slate-600">ระบบใช้ปัญญาประดิษฐ์ (AI) เพื่ออ่านข้อมูลบทความจากไฟล์ PDF สำหรับประกอบการกรอกข้อมูลคำร้องขอทุน</p>
                   </div>
-                    <label className={`relative inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 ${paperAIProcessing || paperAIExtractStatus === 'processing' ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                    {paperAIProcessing || paperAIExtractStatus === 'processing' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                      {paperAIProcessing || paperAIExtractStatus === 'processing' ? 'กำลังอ่าน PDF...' : 'เลือกไฟล์บทความ (PDF)'}
+                    <label className={`relative inline-flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 ${paperAIArticleLocked ? 'cursor-wait bg-slate-400' : 'cursor-pointer bg-blue-600 hover:bg-blue-700'}`}>
+                    {paperAIArticleLocked ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      {paperAIArticleLocked ? 'กำลังประมวลผล PDF...' : 'เลือกไฟล์บทความ (PDF)'}
                     <input
                       type="file"
                       accept="application/pdf,.pdf"
                         className="sr-only"
                         aria-label="เลือกไฟล์บทความ (PDF)"
-                      disabled={paperAIProcessing || paperAIExtractStatus === 'processing'}
+                      disabled={paperAIArticleLocked}
                       onChange={handlePaperAIFile}
                     />
                   </label>
                 </div>
-                  {paperAIExtractStatus === 'processing' && (
-                    <p className="mt-3 text-sm text-blue-800" role="status">กำลังอ่าน PDF ({Math.floor(paperAIExtractElapsedSeconds / 60)} นาที {paperAIExtractElapsedSeconds % 60} วินาที) คุณกรอกข้อมูลอื่นต่อได้ กรุณาอยู่หน้านี้และรอผลก่อนบันทึกหรือส่งคำร้อง</p>
+                  {paperAIArticleLocked && (
+                    <div className="mt-3 text-sm leading-relaxed text-blue-800" role="status">
+                      <p>ขณะนี้ AI กำลังประมวลผลข้อมูลจากไฟล์ PDF จึงปิดการแก้ไขส่วนข้อมูลบทความชั่วคราว ท่านสามารถกรอกข้อมูลในส่วนอื่น เช่น ผู้ร่วมวิจัยและการคำนวณเงินรางวัล ระหว่างรอการประมวลผลได้</p>
+                      <p className="mt-1 text-xs text-blue-700">ระยะเวลาที่ใช้: {Math.floor(paperAIExtractElapsedSeconds / 60)} นาที {paperAIExtractElapsedSeconds % 60} วินาที กรุณารอให้การประมวลผลเสร็จสิ้นก่อนบันทึกหรือส่งคำร้อง</p>
+                    </div>
                   )}
                   <div className="mt-4 border-t border-blue-200 pt-3 text-sm leading-relaxed text-slate-600">
                     <p className="mt-1 font-medium text-red-700">โปรดตรวจสอบความครบถ้วนและความถูกต้องของข้อมูลก่อนบันทึกหรือส่งคำร้อง</p>
@@ -8075,7 +8046,7 @@ const showSubmissionConfirmation = async () => {
                 </label>
               </div>
             </div>
-          </div>
+          </fieldset>
         </SimpleCard>
 
         {/* =================================================================
