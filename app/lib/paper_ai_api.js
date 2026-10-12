@@ -7,6 +7,12 @@ export const paperAIAPI = {
     return apiClient.postFormData('/paper-ai/extract', formData);
   },
 
+  startExtractJob(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.postFormData('/paper-ai/extract/jobs', formData);
+  },
+
   match(payload) {
     return apiClient.post('/paper-ai/match', payload);
   },

@@ -4,6 +4,7 @@ import {
   shouldDisableSubmitButton,
   buildExtractedPaperFormData,
   getExactBenchmarkDOIMatches,
+  readCompletedPaperExtractJob,
   getPaperMatchStatusMessage,
   getAuthorSubmissionFields,
   calculatePublicationRequestAmounts,
@@ -75,6 +76,27 @@ test('PDF metadata without DOI keeps the DOI already entered in the form', () =>
   assert.equal(result.author_name_list, 'Entered Author');
   assert.equal(result.journal_year, '2022');
   assert.equal(result.scopus_benchmark_document_id, null);
+});
+
+test('background PDF result fills metadata without requiring stored full text', () => {
+  const metadata = readCompletedPaperExtractJob({
+    status: 'completed',
+    result_json: JSON.stringify({ title: 'Example paper', abstract: 'Study abstract', text_omitted_from_job_log: true }),
+  });
+  assert.equal(metadata.title, 'Example paper');
+  assert.equal(metadata.abstract, 'Study abstract');
+  assert.equal(metadata.text, undefined);
+});
+
+test('background PDF validation error is readable and internal errors stay hidden', () => {
+  assert.throws(
+    () => readCompletedPaperExtractJob({ status: 'failed', error_message: '{"detail":"ไฟล์นี้ไม่ใช่บทความวิจัย"}' }),
+    /ไฟล์นี้ไม่ใช่บทความวิจัย/,
+  );
+  assert.throws(
+    () => readCompletedPaperExtractJob({ status: 'failed', error_message: 'Post http://internal:8102: connection refused' }),
+    /ระบบอ่าน PDF ไม่สำเร็จ/,
+  );
 });
 
 test('shouldDisableSubmitButton enforces declarations and required author fields before enabling submit', () => {

@@ -50,6 +50,7 @@ import {
   calculatePublicationRequestAmounts,
   buildExtractedPaperFormData,
   getExactBenchmarkDOIMatches,
+  readCompletedPaperExtractJob,
   getPaperMatchStatusMessage,
   getAuthorSubmissionFields,
   validateAuthorNameList,
@@ -1747,6 +1748,9 @@ export default function PublicationRewardForm({
   const [termsError, setTermsError] = useState('');
   const [paperAIProcessing, setPaperAIProcessing] = useState(false);
   const paperAIProcessingRef = useRef(false);
+  const [paperAIExtractStatus, setPaperAIExtractStatus] = useState('idle');
+  const [paperAIExtractElapsedSeconds, setPaperAIExtractElapsedSeconds] = useState(0);
+  const paperAIExtractRunRef = useRef(0);
   const paperAILoadingRef = useRef(null);
   const [paperAIWarnings, setPaperAIWarnings] = useState([]);
   const [paperAIError, setPaperAIError] = useState('');
@@ -4912,7 +4916,7 @@ export default function PublicationRewardForm({
     }
   }, []);
 
-  useEffect(() => () => { paperAISDGRunRef.current += 1; }, []);
+  useEffect(() => () => { paperAIExtractRunRef.current += 1; paperAISDGRunRef.current += 1; }, []);
 
   const applyPaperAIResult = useCallback(async (metadata, runId) => {
     let title = String(metadata?.title || '').trim();
@@ -4955,7 +4959,7 @@ export default function PublicationRewardForm({
     setPaperAIMatchStatus(matchStatus);
     setPaperAIWarnings(warnings);
 
-    if (abstract || content) {
+    if (paperAISDGRunRef.current === runId && (abstract || content)) {
       try {
         const job = await paperAIAPI.startSDGJob({
           title,
@@ -4969,24 +4973,73 @@ export default function PublicationRewardForm({
         setPaperAISDGStatus('failed');
         warnings.push(`ไม่สามารถระบุ SDG อัตโนมัติได้ กรุณาเลือกเอง: ${error?.message || 'เกิดข้อผิดพลาด'}`);
       }
+    } else if (!abstract && !content) {
+      warnings.push('ไม่พบ Abstract ใน PDF จึงไม่สามารถแนะนำ SDG อัตโนมัติได้ กรุณาเลือกเอง');
     }
     setPaperAIWarnings(warnings);
       Toast.fire({ icon: 'success', title: 'นำเข้าข้อมูลบทความเรียบร้อยแล้ว โปรดตรวจสอบข้อมูลก่อนบันทึก' });
     return true;
   }, [formData.doi, watchPaperSDGJob]);
 
+  const watchPaperExtractJob = useCallback(async (jobId, file, extractRunId, sdgRunId) => {
+    const startedAt = Date.now();
+    let consecutiveErrors = 0;
+    try {
+      for (let attempt = 0; attempt < 210; attempt += 1) {
+        if (paperAIExtractRunRef.current !== extractRunId) return;
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        if (paperAIExtractRunRef.current !== extractRunId) return;
+        setPaperAIExtractElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
+        let job;
+        try {
+          job = await paperAIAPI.getJob(jobId);
+          consecutiveErrors = 0;
+        } catch (error) {
+          consecutiveErrors += 1;
+          if (consecutiveErrors < 3) continue;
+          throw error;
+        }
+        if (job?.status === 'processing' || job?.status === 'pending') continue;
+        const metadata = readCompletedPaperExtractJob(job);
+        if (paperAIExtractRunRef.current !== extractRunId) return;
+        const applied = await applyPaperAIResult(metadata, sdgRunId);
+        if (applied) {
+          setOtherDocuments((previous) => {
+            const items = Array.isArray(previous) ? previous : [];
+            const signature = getFileSignature(file);
+            return signature && !items.some((item) => getFileSignature(item) === signature)
+              ? [...items, file]
+              : items;
+          });
+        }
+        setPaperAIExtractStatus('completed');
+        return;
+      }
+      throw new Error('อ่าน PDF ใช้เวลานานเกินไป กรุณาลองใหม่');
+    } catch (error) {
+      if (paperAIExtractRunRef.current !== extractRunId) return;
+      const message = error?.message || 'เกิดข้อผิดพลาด';
+      setPaperAIExtractStatus('failed');
+      setPaperAIError(`ไม่สามารถอ่านบทความได้: ${message}`);
+      Toast.fire({ icon: 'error', title: 'ไม่สามารถอ่านบทความได้', text: message });
+    }
+  }, [applyPaperAIResult, getFileSignature]);
+
   const handlePaperAIFile = useCallback(async (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    if (paperAIProcessingRef.current) return;
-    const runId = ++paperAISDGRunRef.current;
+    if (paperAIProcessingRef.current || paperAIExtractStatus === 'processing') return;
+    const extractRunId = ++paperAIExtractRunRef.current;
+    const sdgRunId = ++paperAISDGRunRef.current;
     setPaperAIError('');
     setPaperAIWarnings([]);
     setPaperAIMatchStatus(null);
     setPaperAISDGSuggestion(null);
     setPaperAISDGStatus('idle');
     setPaperAISDGElapsedSeconds(0);
+    setPaperAIExtractStatus('idle');
+    setPaperAIExtractElapsedSeconds(0);
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       setPaperAIError('กรุณาเลือกไฟล์ PDF');
       Toast.fire({ icon: 'error', title: 'กรุณาเลือกไฟล์ PDF' });
@@ -4995,17 +5048,10 @@ export default function PublicationRewardForm({
     paperAIProcessingRef.current = true;
     setPaperAIProcessing(true);
     try {
-      const metadata = await paperAIAPI.extract(file);
-      const applied = await applyPaperAIResult(metadata, runId);
-      if (applied) {
-        setOtherDocuments((previous) => {
-          const items = Array.isArray(previous) ? previous : [];
-          const signature = getFileSignature(file);
-          return signature && !items.some((item) => getFileSignature(item) === signature)
-            ? [...items, file]
-            : items;
-        });
-      }
+      const job = await paperAIAPI.startExtractJob(file);
+      if (!job?.job_id) throw new Error('เริ่มงานอ่าน PDF ไม่สำเร็จ');
+      setPaperAIExtractStatus('processing');
+      void watchPaperExtractJob(job.job_id, file, extractRunId, sdgRunId);
     } catch (error) {
       const message = error?.message || 'เกิดข้อผิดพลาด';
       setPaperAIError(`ไม่สามารถอ่านบทความได้: ${message}`);
@@ -5014,7 +5060,7 @@ export default function PublicationRewardForm({
       paperAIProcessingRef.current = false;
       setPaperAIProcessing(false);
     }
-  }, [applyPaperAIResult, getFileSignature]);
+  }, [paperAIExtractStatus, watchPaperExtractJob]);
 
   // Handle file uploads
   const handleFileUpload = (documentTypeId, files) => {
@@ -6142,6 +6188,10 @@ export default function PublicationRewardForm({
 
   // Save draft
   const saveDraft = async () => {
+    if (paperAIProcessing || paperAIExtractStatus === 'processing') {
+      Toast.fire({ icon: 'warning', title: 'กรุณารอให้อ่าน PDF เสร็จก่อนบันทึก' });
+      return;
+    }
     if (saving) {
       return;
     }
@@ -6815,6 +6865,11 @@ const showSubmissionConfirmation = async () => {
       event.preventDefault();
     }
 
+    if (paperAIProcessing || paperAIExtractStatus === 'processing') {
+      Toast.fire({ icon: 'warning', title: 'กรุณารอให้อ่าน PDF เสร็จก่อนส่งคำร้อง' });
+      return;
+    }
+
     if (isSubmitting) {
       return;
     }
@@ -7414,7 +7469,7 @@ const showSubmissionConfirmation = async () => {
         <button
           type="button"
           onClick={handleGoBack}
-          disabled={paperAIProcessing}
+          disabled={paperAIProcessing || paperAIExtractStatus === 'processing'}
           className="inline-flex min-h-11 items-center gap-2 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -7652,19 +7707,22 @@ const showSubmissionConfirmation = async () => {
                       <h3 className="font-semibold text-slate-900">การนำเข้าข้อมูลบทความจากไฟล์ PDF</h3>
                       <p className="mt-1 text-sm leading-relaxed text-slate-600">ระบบใช้ปัญญาประดิษฐ์ (AI) เพื่ออ่านข้อมูลบทความจากไฟล์ PDF สำหรับประกอบการกรอกข้อมูลคำร้องขอทุน</p>
                   </div>
-                    <label className={`relative inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 ${paperAIProcessing ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                    {paperAIProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                      {paperAIProcessing ? 'กำลังประมวลผล...' : 'เลือกไฟล์บทความ (PDF)'}
+                    <label className={`relative inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 ${paperAIProcessing || paperAIExtractStatus === 'processing' ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                    {paperAIProcessing || paperAIExtractStatus === 'processing' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      {paperAIProcessing || paperAIExtractStatus === 'processing' ? 'กำลังอ่าน PDF...' : 'เลือกไฟล์บทความ (PDF)'}
                     <input
                       type="file"
                       accept="application/pdf,.pdf"
                         className="sr-only"
                         aria-label="เลือกไฟล์บทความ (PDF)"
-                      disabled={paperAIProcessing}
+                      disabled={paperAIProcessing || paperAIExtractStatus === 'processing'}
                       onChange={handlePaperAIFile}
                     />
                   </label>
                 </div>
+                  {paperAIExtractStatus === 'processing' && (
+                    <p className="mt-3 text-sm text-blue-800" role="status">กำลังอ่าน PDF ({Math.floor(paperAIExtractElapsedSeconds / 60)} นาที {paperAIExtractElapsedSeconds % 60} วินาที) คุณกรอกข้อมูลอื่นต่อได้ กรุณาอยู่หน้านี้และรอผลก่อนบันทึกหรือส่งคำร้อง</p>
+                  )}
                   <div className="mt-4 border-t border-blue-200 pt-3 text-sm leading-relaxed text-slate-600">
                     <p className="mt-1 font-medium text-red-700">โปรดตรวจสอบความครบถ้วนและความถูกต้องของข้อมูลก่อนบันทึกหรือส่งคำร้อง</p>
                   </div>
@@ -9394,7 +9452,7 @@ const showSubmissionConfirmation = async () => {
             <button
               type="button"
               onClick={saveDraft}
-              disabled={saving || loading}
+              disabled={saving || loading || paperAIProcessing || paperAIExtractStatus === 'processing'}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-blue-300 bg-white px-6 py-3 font-medium text-blue-700 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? (
@@ -9413,7 +9471,7 @@ const showSubmissionConfirmation = async () => {
           <button
             type="button"
             onClick={submitApplication}
-            disabled={isSubmitting}
+            disabled={isSubmitting || paperAIProcessing || paperAIExtractStatus === 'processing'}
             className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? (

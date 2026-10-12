@@ -70,6 +70,27 @@ export const getExactBenchmarkDOIMatches = (candidates = []) => (
     : []
 );
 
+export const readCompletedPaperExtractJob = (job) => {
+  if (job?.status !== 'completed') {
+    let message = 'ระบบอ่าน PDF ไม่สำเร็จ กรุณาลองใหม่';
+    try {
+      const detail = JSON.parse(job?.error_message || '{}');
+      if (typeof detail.detail === 'string') message = detail.detail;
+    } catch { /* Do not show internal service errors to applicants. */ }
+    throw new Error(message);
+  }
+  let metadata;
+  try {
+    metadata = JSON.parse(job.result_json || '{}');
+  } catch {
+    throw new Error('ผลการอ่าน PDF ไม่สมบูรณ์ กรุณาลองใหม่');
+  }
+  if (!metadata?.title && !metadata?.doi) {
+    throw new Error('ผลการอ่าน PDF ไม่สมบูรณ์ กรุณาลองใหม่');
+  }
+  return metadata;
+};
+
 export const getPaperMatchStatusMessage = ({ kind, doi, ocrUsed } = {}) => {
   const pdfSource = ocrUsed ? 'ระบบ OCR' : 'การอ่านข้อความใน PDF';
   switch (kind) {
