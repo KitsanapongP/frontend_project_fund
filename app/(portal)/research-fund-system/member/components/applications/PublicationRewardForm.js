@@ -7894,6 +7894,21 @@ const showSubmissionConfirmation = async () => {
                 />
               </div>
 
+              {/* DOI */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  DOI (Digital Object Identifier)
+                </label>
+                <input
+                  type="text"
+                  name="doi"
+                  value={formData.doi}
+                  onChange={handleInputChange}
+                  placeholder="เช่น (e.g.) 10.1016/j.example.2023.01.001"
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
               {/* Publication Month */}
               <div id="field-journal_month">
                 <label htmlFor="journal_month" className="block text-sm font-medium text-slate-700 mb-2">
@@ -7961,21 +7976,6 @@ const showSubmissionConfirmation = async () => {
                   <p id="error-journal_year" className="text-red-500 text-sm mt-1">{errors.journal_year}</p>
                 )}
               </div>
-            </div>
-
-            {/* DOI */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                DOI (Digital Object Identifier)
-              </label>
-              <input
-                type="text"
-                name="doi"
-                value={formData.doi}
-                onChange={handleInputChange}
-                placeholder="เช่น (e.g.) 10.1016/j.example.2023.01.001"
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
-              />
             </div>
 
             {formData.abstract && (
