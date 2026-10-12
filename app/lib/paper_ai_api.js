@@ -19,6 +19,14 @@ export const paperAIAPI = {
     return apiClient.post('/paper-ai/suggest-sdg', payload);
   },
 
+  startSDGJob(payload) {
+    return apiClient.post('/paper-ai/suggest-sdg/jobs', payload);
+  },
+
+  getJob(jobId) {
+    return apiClient.get(`/paper-ai/jobs/${encodeURIComponent(jobId)}`);
+  },
+
   classify(payload) {
     return apiClient.post('/paper-ai/classify', payload);
   },

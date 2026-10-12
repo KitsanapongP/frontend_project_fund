@@ -1727,6 +1727,9 @@ export default function PublicationRewardForm({
   });
   const [selectedSDGIds, setSelectedSDGIds] = useState([]);
   const [paperAISDGSuggestion, setPaperAISDGSuggestion] = useState(null);
+  const [paperAISDGStatus, setPaperAISDGStatus] = useState('idle');
+  const [paperAISDGElapsedSeconds, setPaperAISDGElapsedSeconds] = useState(0);
+  const paperAISDGRunRef = useRef(0);
 
   // Co-authors and files
   const [coauthors, setCoauthors] = useState([]);
@@ -4879,7 +4882,39 @@ export default function PublicationRewardForm({
     return [name, size, lastModified || '', type].join('::');
   }, []);
 
-  const applyPaperAIResult = useCallback(async (metadata) => {
+  const watchPaperSDGJob = useCallback(async (jobId, runId) => {
+    const startedAt = Date.now();
+    try {
+      for (let attempt = 0; attempt < 210; attempt += 1) {
+        if (paperAISDGRunRef.current !== runId) return;
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        if (paperAISDGRunRef.current !== runId) return;
+        setPaperAISDGElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
+        const job = await paperAIAPI.getJob(jobId);
+        if (job?.status === 'processing' || job?.status === 'pending') continue;
+        if (job?.status !== 'completed') throw new Error('SDG suggestion failed');
+        const suggestion = JSON.parse(job.result_json || '{}');
+        const sdgId = Number(suggestion?.sdg_id);
+        if (!Number.isInteger(sdgId) || sdgId <= 0 || !suggestion?.reason_th) {
+          throw new Error('Incomplete SDG suggestion');
+        }
+        if (paperAISDGRunRef.current !== runId) return;
+        setSelectedSDGIds([sdgId]);
+        setPaperAISDGSuggestion(suggestion);
+        setPaperAISDGStatus('completed');
+        return;
+      }
+      throw new Error('SDG suggestion timed out');
+    } catch {
+      if (paperAISDGRunRef.current !== runId) return;
+      setPaperAISDGStatus('failed');
+      setPaperAIWarnings((previous) => [...previous, 'ไม่สามารถระบุ SDG อัตโนมัติได้ กรุณาเลือก SDG เอง']);
+    }
+  }, []);
+
+  useEffect(() => () => { paperAISDGRunRef.current += 1; }, []);
+
+  const applyPaperAIResult = useCallback(async (metadata, runId) => {
     let title = String(metadata?.title || '').trim();
     const doi = String(metadata?.doi || formData.doi || '').trim();
     const abstract = String(metadata?.abstract || '').trim();
@@ -4922,43 +4957,36 @@ export default function PublicationRewardForm({
 
     if (abstract || content) {
       try {
-        const summary = await paperAIAPI.summarize(
-          abstract ? { abstract } : { content: content.slice(0, 500000) }
-        );
-        setFormData((previous) => ({ ...previous, abstract_summary_th: summary?.summary_th || '' }));
-      } catch (error) {
-        warnings.push(`สรุปบทคัดย่อไม่ได้: ${error?.message || 'เกิดข้อผิดพลาด'}`);
-      }
-
-      try {
-        const suggestion = await paperAIAPI.suggestSDG({
+        const job = await paperAIAPI.startSDGJob({
           title,
           ...(abstract ? { abstract } : { content: content.slice(0, 500000) }),
         });
-        const sdgId = Number(suggestion?.sdg_id);
-        if (!Number.isInteger(sdgId) || sdgId <= 0 || !suggestion?.reason_th) {
-          throw new Error('ผลการวิเคราะห์ SDG ไม่สมบูรณ์');
-        }
-        setSelectedSDGIds([sdgId]);
-        setPaperAISDGSuggestion(suggestion);
+        if (!job?.job_id) throw new Error('เริ่มงานวิเคราะห์ SDG ไม่สำเร็จ');
+        setPaperAISDGStatus('processing');
+        setPaperAISDGElapsedSeconds(0);
+        void watchPaperSDGJob(job.job_id, runId);
       } catch (error) {
+        setPaperAISDGStatus('failed');
         warnings.push(`ไม่สามารถระบุ SDG อัตโนมัติได้ กรุณาเลือกเอง: ${error?.message || 'เกิดข้อผิดพลาด'}`);
       }
     }
     setPaperAIWarnings(warnings);
       Toast.fire({ icon: 'success', title: 'นำเข้าข้อมูลบทความเรียบร้อยแล้ว โปรดตรวจสอบข้อมูลก่อนบันทึก' });
     return true;
-  }, [formData.doi]);
+  }, [formData.doi, watchPaperSDGJob]);
 
   const handlePaperAIFile = useCallback(async (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
     if (paperAIProcessingRef.current) return;
+    const runId = ++paperAISDGRunRef.current;
     setPaperAIError('');
     setPaperAIWarnings([]);
     setPaperAIMatchStatus(null);
     setPaperAISDGSuggestion(null);
+    setPaperAISDGStatus('idle');
+    setPaperAISDGElapsedSeconds(0);
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       setPaperAIError('กรุณาเลือกไฟล์ PDF');
       Toast.fire({ icon: 'error', title: 'กรุณาเลือกไฟล์ PDF' });
@@ -4968,7 +4996,7 @@ export default function PublicationRewardForm({
     setPaperAIProcessing(true);
     try {
       const metadata = await paperAIAPI.extract(file);
-      const applied = await applyPaperAIResult(metadata);
+      const applied = await applyPaperAIResult(metadata, runId);
       if (applied) {
         setOtherDocuments((previous) => {
           const items = Array.isArray(previous) ? previous : [];
@@ -7414,7 +7442,7 @@ const showSubmissionConfirmation = async () => {
           <div className="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-blue-600" aria-hidden="true" />
               <p id="paper-ai-loading-title" className="mt-4 text-lg font-semibold text-slate-900">กำลังประมวลผลข้อมูลบทความ</p>
-              <p id="paper-ai-loading-description" className="mt-2 text-sm text-slate-600">ระบบกำลังอ่านไฟล์ PDF จัดทำสรุปบทคัดย่อภาษาไทย และวิเคราะห์ SDG โปรดรอจนกว่าการประมวลผลจะเสร็จสิ้น</p>
+              <p id="paper-ai-loading-description" className="mt-2 text-sm text-slate-600">ระบบกำลังอ่านไฟล์ PDF และกรอกข้อมูลบทความ โปรดรอสักครู่</p>
           </div>
         </div>
       )}
@@ -8732,9 +8760,12 @@ const showSubmissionConfirmation = async () => {
         // ================================================================= */}
         <SDGSelector
           value={selectedSDGIds}
-          onChange={(ids) => { setSelectedSDGIds(ids); setPaperAISDGSuggestion(null); }}
+          onChange={(ids) => { paperAISDGRunRef.current += 1; setSelectedSDGIds(ids); setPaperAISDGSuggestion(null); setPaperAISDGStatus('idle'); }}
           disabled={isReadOnly || saving || isSubmitting}
         />
+        {paperAISDGStatus === 'processing' && (
+          <p className="-mt-4 text-sm text-emerald-800" role="status">กำลังวิเคราะห์ SDG ({Math.floor(paperAISDGElapsedSeconds / 60)} นาที {paperAISDGElapsedSeconds % 60} วินาที) คุณกรอกข้อมูลอื่นต่อได้ หรือเลือก SDG เองก่อนบันทึก</p>
+        )}
         {paperAISDGSuggestion && (
           <div className="-mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-relaxed text-emerald-950" role="status">
             <p><strong>หมายเหตุ:</strong> เป้าหมาย SDG นี้เสนอโดย AI จากการวิเคราะห์เนื้อหาบทความ โดยเลือกเป้าหมายที่ใกล้เคียงที่สุด โปรดตรวจสอบก่อนบันทึก</p>
