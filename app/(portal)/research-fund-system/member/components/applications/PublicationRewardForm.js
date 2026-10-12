@@ -7449,6 +7449,63 @@ const showSubmissionConfirmation = async () => {
   const adminCommentDisplay = formatReviewerComment(reviewComments.admin);
   const headCommentDisplay = formatReviewerComment(reviewComments.head);
 
+  const quartileField = (
+    <div id="field-journal_quartile">
+      <label htmlFor="journal_quartile" className="block text-sm font-medium text-slate-700 mb-2">
+        ควอร์ไทล์ (Quartile) <span className="text-red-500">*</span>
+      </label>
+      <select
+        id="journal_quartile"
+        name="journal_quartile"
+        value={formData.journal_quartile}
+        onChange={handleInputChange}
+        disabled={disableQuartileSelect}
+        required={!selectionLocked}
+        aria-required="true"
+        aria-invalid={errors.journal_quartile ? 'true' : 'false'}
+        aria-describedby={[
+          errors.journal_quartile ? 'error-journal_quartile' : null,
+          displayResolutionError ? 'resolution-journal_quartile' : null,
+          !formData.author_status && !isFundDetailsView && !selectionLocked ? 'quartile-author-hint' : null
+        ].filter(Boolean).join(' ') || undefined}
+        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+          errors.journal_quartile ? 'border-red-500' : 'border-slate-300'
+        } ${disableQuartileSelect ? 'bg-slate-100 cursor-not-allowed' : ''}`}
+      >
+        <option value="" disabled={formData.journal_quartile !== ''} hidden={formData.journal_quartile !== ''}>
+          เลือกควอร์ไทล์ (Select Quartile)
+        </option>
+        {availableQuartiles.map(quartile => {
+          // Check if this quartile allows fees from config
+          const hasConfig = quartileConfigs[quartile];
+          const allowsFees = hasConfig && hasConfig.isActive;
+
+          return (
+            <option key={quartile} value={quartile}>
+              {quartile === 'T5' ? 'Top 5%' :
+              quartile === 'T10' ? 'Top 10%' :
+              quartile === 'Q1' ? 'Quartile 1' :
+              quartile === 'Q2' ? 'Quartile 2' :
+              quartile === 'Q3' ? 'Quartile 3' :
+              quartile === 'Q4' ? 'Quartile 4' :
+              quartile === 'TCI' ? 'TCI กลุ่มที่ 1 (TCI Group 1)' : quartile}
+              {!allowsFees && ' (ไม่สามารถเบิกค่าใช้จ่าย)'}
+            </option>
+          );
+        })}
+      </select>
+      {!formData.author_status && !isFundDetailsView && !selectionLocked && (
+        <p id="quartile-author-hint" className="mt-2 text-sm text-slate-500">กรุณาเลือกประเภทผู้ประพันธ์ก่อน เพื่อแสดงตัวเลือกควอร์ไทล์ที่สามารถยื่นขอทุนได้</p>
+      )}
+      {errors.journal_quartile && (
+        <p id="error-journal_quartile" className="text-red-500 text-sm mt-1">{errors.journal_quartile}</p>
+      )}
+      {displayResolutionError && (
+        <p id="resolution-journal_quartile" className="text-red-500 text-sm mt-1">{displayResolutionError}</p>
+      )}
+    </div>
+  );
+
   return (
     <PageLayout
       title="แบบฟอร์มขอเบิกเงินรางวัลการตีพิมพ์เผยแพร่ผลงานวิจัยที่ได้รับการตีพิมพ์ในสาขาวิทยาศาสตร์และเทคโนโลยี"
@@ -7551,7 +7608,7 @@ const showSubmissionConfirmation = async () => {
             </div>
 
             {/* Budget Year */}
-            <div id="field-year_id">
+            <div id="field-year_id" className="md:col-span-2">
               <label
                 htmlFor={enforceBudgetYearReadOnly ? 'year_id_display' : 'year_id'}
                 className="block text-sm font-medium text-slate-700 mb-2"
@@ -7658,6 +7715,8 @@ const showSubmissionConfirmation = async () => {
                 <p id="error-author_status" className="text-red-500 text-sm mt-1">{errors.author_status}</p>
               )}
             </div>
+
+            {quartileField}
 
           </div>
         </SimpleCard>
@@ -7803,57 +7862,7 @@ const showSubmissionConfirmation = async () => {
                 )}
               </div>
 
-              {/* Quartile */}
-              <div id="field-journal_quartile">
-                <label htmlFor="journal_quartile" className="block text-sm font-medium text-slate-700 mb-2">
-                  ควอร์ไทล์ (Quartile) <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="journal_quartile"
-                  name="journal_quartile"
-                  value={formData.journal_quartile}
-                  onChange={handleInputChange}
-                  disabled={disableQuartileSelect}
-                  required={!selectionLocked}
-                  aria-required="true"
-                  aria-invalid={errors.journal_quartile ? 'true' : 'false'}
-                  aria-describedby={[
-                    errors.journal_quartile ? 'error-journal_quartile' : null,
-                    displayResolutionError ? 'resolution-journal_quartile' : null
-                  ].filter(Boolean).join(' ') || undefined}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                    errors.journal_quartile ? 'border-red-500' : 'border-slate-300'
-                  } ${disableQuartileSelect ? 'bg-slate-100 cursor-not-allowed' : ''}`}
-                >
-                  <option value="" disabled={formData.journal_quartile !== ''} hidden={formData.journal_quartile !== ''}>
-                    เลือกควอร์ไทล์ (Select Quartile)
-                  </option>
-                  {availableQuartiles.map(quartile => {
-                    // Check if this quartile allows fees from config
-                    const hasConfig = quartileConfigs[quartile];
-                    const allowsFees = hasConfig && hasConfig.isActive;
-                    
-                    return (
-                      <option key={quartile} value={quartile}>
-                        {quartile === 'T5' ? 'Top 5%' :
-                        quartile === 'T10' ? 'Top 10%' :
-                        quartile === 'Q1' ? 'Quartile 1' :
-                        quartile === 'Q2' ? 'Quartile 2' :
-                        quartile === 'Q3' ? 'Quartile 3' :
-                        quartile === 'Q4' ? 'Quartile 4' :
-                        quartile === 'TCI' ? 'TCI กลุ่มที่ 1 (TCI Group 1)' : quartile}
-                        {!allowsFees && ' (ไม่สามารถเบิกค่าใช้จ่าย)'}
-                      </option>
-                    );
-                  })}
-                </select>
-                {errors.journal_quartile && (
-                  <p id="error-journal_quartile" className="text-red-500 text-sm mt-1">{errors.journal_quartile}</p>
-                )}
-                {displayResolutionError && (
-                  <p id="resolution-journal_quartile" className="text-red-500 text-sm mt-1">{displayResolutionError}</p>
-                )}
-              </div>
+              {isFundDetailsView && quartileField}
 
               {/* Volume/Issue */}
               <div>
