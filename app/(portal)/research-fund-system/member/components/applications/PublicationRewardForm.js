@@ -7690,7 +7690,7 @@ const showSubmissionConfirmation = async () => {
                 </div>
                   {paperAIArticleLocked && (
                     <div className="mt-3 text-sm leading-relaxed text-blue-800" role="status">
-                      <p>ขณะนี้ AI กำลังประมวลผลข้อมูลจากไฟล์ PDF จึงปิดการแก้ไขส่วนข้อมูลบทความชั่วคราว ท่านสามารถกรอกข้อมูลในส่วนอื่น เช่น ผู้ร่วมวิจัยและการคำนวณเงินรางวัล ระหว่างรอการประมวลผลได้</p>
+                      <p>ขณะนี้ AI กำลังประมวลผลข้อมูลจากไฟล์ PDF จึงปิดการแก้ไขส่วนข้อมูลบทความชั่วคราว ท่านสามารถกรอกข้อมูลในส่วนอื่นระหว่างรอการประมวลผลได้</p>
                       <p className="mt-1 text-xs text-blue-700">ระยะเวลาที่ใช้: {Math.floor(paperAIExtractElapsedSeconds / 60)} นาที {paperAIExtractElapsedSeconds % 60} วินาที กรุณารอให้การประมวลผลเสร็จสิ้นก่อนบันทึกหรือส่งคำร้อง</p>
                     </div>
                   )}
