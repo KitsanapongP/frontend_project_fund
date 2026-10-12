@@ -30,9 +30,9 @@ const calls=async()=>JSON.parse(await page.getByLabel('คำขอทดสอ�
 const expected=async(field,direction,extra={})=>{const api=makeFacultyFixtureAPI('sort_normal'),s=await api.summary({scope:'faculty',open_access_mode:'all'});return api.drilldown({scope:'faculty',open_access_mode:'all',revision:s.revision,page:1,page_size:25,...extra,sort_field:field,sort_direction:direction});};
 try{
  await page.goto(`${origin}/dev/scopus-faculty-insights`);await ready();await scenario('ทดสอบเรียงข้อมูล');
- await check('default preserves ID ascending and all four headers expose sort buttons; details has no sort',async()=>{
-  await openAll();assert.deepEqual(await ids(),Array.from({length:25},(_,i)=>i+1));
-  assert.equal(await dialog().locator('th[aria-sort="none"]').count(),4);assert.equal(await dialog().getByRole('columnheader',{name:'รายละเอียด',exact:true}).getByRole('button').count(),0);await shot('desktop-default.png');
+ await check('default newest year first has an active descending year header and stable ID ties; details has no sort',async()=>{
+  await openAll();assert.deepEqual(await ids(),(await expected('year','desc')).documents.map(d=>d.document_id));
+  assert.equal(await header('year').getAttribute('aria-sort'),'descending');assert.equal(await dialog().locator('th[aria-sort="none"]').count(),3);assert.equal(await dialog().getByRole('columnheader',{name:'รายละเอียด',exact:true}).getByRole('button').count(),0);await shot('desktop-default.png');
  });
  await check('title ascending sorts beyond first 200, resets page and keeps missing titles last in both directions',async()=>{
   await dialog().getByRole('combobox',{name:'จำนวนผลงานต่อหน้า'}).selectOption('200');await loaded();

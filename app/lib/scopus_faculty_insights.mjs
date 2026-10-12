@@ -15,6 +15,7 @@ export const FACULTY_DRILLDOWN_COLUMNS = [
   { key: 'collaboration', label: 'ความร่วมมือ / ประเทศ' },
   { key: 'faculty_role', label: 'บทบาทคณะ' },
 ];
+export const DEFAULT_FACULTY_DRILLDOWN_SORT = { field: 'year', direction: 'desc' };
 export const insightNumber = (value) => Number(value).toLocaleString('th-TH');
 export const insightPercent = (value) => value == null || !Number.isFinite(Number(value)) ? '—' : `${Number(value).toFixed(1)}%`;
 export const insightRatio = (count, total) => total > 0 ? count * 100 / total : null;
@@ -92,7 +93,7 @@ export function createFacultyInsightStore(api) {
       pageController?.abort(); const controller = new AbortController(); pageController = controller;
       const generation = ++pageGeneration, summaryRun = summaryGeneration, revision = state.summary.revision;
       search = search.trim();
-      sort = sort ? { ...sort } : null;
+      sort = { ...(sort || DEFAULT_FACULTY_DRILLDOWN_SORT) };
       const selection = { dimensions: { ...dimensions }, label, page, pageSize, notice, search, sort };
       publish({ drilldown: { ...selection, response: null, error: null, loading: true } });
       try {

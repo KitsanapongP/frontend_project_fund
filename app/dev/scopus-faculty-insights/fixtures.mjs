@@ -63,15 +63,16 @@ export function makeFacultyFixtureAPI(scenario, onCall = () => {}) {
     async drilldown(query, options) {
       onCall('drilldown', query); await wait(query); if (scenario === 'error' || (scenario === 'page_error' && query.page > 1)) unavailable();
       const { revision, page, page_size, year_be, international_status, faculty_role, country_key, drilldown_search, sort_field, sort_direction, ...filters } = query;
-      if (scenario === 'sort_error' && sort_field && !sortFailed) { sortFailed = true; unavailable(); }
-      if (scenario === 'sort_recovery' && sort_field && version === 0) version++;
+      const changedSort = sort_field && (sort_field !== 'year' || sort_direction !== 'desc');
+      if (scenario === 'sort_error' && changedSort && !sortFailed) { sortFailed = true; unavailable(); }
+      if (scenario === 'sort_recovery' && changedSort && version === 0) version++;
       if (scenario === 'revision' && version === 0) version++;
       if (revision !== revisionFor(filters)) { const e = new Error('Fixture revision changed'); e.status = 409; throw e; }
       const selected = filteredFixture(filters, scenario).filter(d => (!year_be || (year_be === 'undated' ? d.year_ce == null : d.year_be === Number(year_be))) && (!international_status || d.international_status === international_status) && (!faculty_role || d.faculty_role === faculty_role) && (!country_key || d.countries.some(c => c.country_key === country_key)));
       const search = (drilldown_search || '').trim();
       const documents = selected.filter(d => !search || [d.title, d.doi, d.eid, d.scopus_id, d.publication_name, ...d.eligible_authors.map(a => a.full_name)].some(v => v?.toLowerCase().includes(search.toLowerCase())));
       sortFacultyFixtureDocuments(documents, sort_field, sort_direction);
-      return { success: true, scope_total: selected.length, search, contract_version: 'faculty-insights-v1', source: 'scopus_core', scope: 'faculty', revision, total: documents.length, page, page_size, total_pages: Math.ceil(documents.length / page_size), sort: sort_field ? `${sort_field}_${sort_direction}` : 'document_id_asc', sort_field: sort_field || '', sort_direction: sort_direction || '', documents: documents.slice((page - 1) * page_size, page * page_size) };
+      return { success: true, scope_total: selected.length, search, contract_version: 'faculty-insights-v1', source: 'scopus_core', scope: 'faculty', revision, total: documents.length, page, page_size, total_pages: Math.ceil(documents.length / page_size), sort: sort_field ? `${sort_field}_${sort_direction}` : 'year_desc', sort_field: sort_field || 'year', sort_direction: sort_direction || 'desc', documents: documents.slice((page - 1) * page_size, page * page_size) };
     },
   };
 }
@@ -87,7 +88,7 @@ const lexical = (a, b) => {
   return Math.sign(left.length - right.length);
 };
 export function sortFacultyFixtureDocuments(documents, field, direction) {
-  if (!field) return documents;
+  if (!field) { field = 'year'; direction = 'desc'; }
   const text = v => (v || '').trim().toLowerCase();
   const key = d => {
     if (field === 'title') return { missing: !text(d.title), value: text(d.title) };

@@ -6,7 +6,7 @@ Branch in both repositories: `codex/faculty-drilldown-sorting`. Frontend base: `
 
 The faculty insights document dialog now has clickable sort buttons for **ชื่อผลงาน**, **ปี พ.ศ.**, **ความร่วมมือ / ประเทศ**, and **บทบาทคณะ**. The details column remains an expansion action. Clicking a new column starts ascending; clicking it again toggles descending. Direction arrows and `aria-sort` reflect the selection, and Thai accessible button names describe the next action. Headers remain available during a page request so a newer click immediately supersedes an older request. A visible note explains that sorting covers all matching documents before pagination and that unavailable values remain last.
 
-Sorting is performed by the backend over the entire selected and searched population before slicing a page. The browser only sends the requested field and direction; it never sorts the current page. Default requests omit both sort parameters and retain the existing document ID ascending order. Opening a new drilldown starts with that default.
+Sorting is performed by the backend over the entire selected and searched population before slicing a page. The browser only sends the requested field and direction; it never sorts the current page. Opening a new drilldown defaults to **year descending (newest first)** with an active descending year header. Frontend requests send `year`/`desc`, and backend requests omitting both parameters use the same default. Unknown years remain last and equal years tie by document ID ascending. Clicking the initially active year header switches to ascending; a different column starts ascending.
 
 ## Exact ordering semantics
 
@@ -19,7 +19,7 @@ All text keys are trimmed and lowercased with Go's Unicode lowercase conversion,
 | `collaboration` | First the displayed Thai status, then the displayed country list joined with comma and space. Ascending known statuses are `ภายในประเทศ` then `ร่วมกับต่างประเทศ`; descending reverses that order. Country names use the existing returned/displayed list order, including `Thailand` displayed as `ประเทศไทย`. Unknown status, non-current country evidence or an empty country list makes the whole composite unavailable and puts it last. Countries are not rearranged and stale evidence is not used for sorting. |
 | `faculty_role` | Displayed English labels: `Co-author`, `Corresponding author`, `First author` in ascending order; reverse in descending. `ยังระบุบทบาทไม่ได้` and unrecognized roles are unavailable and remain last. |
 
-The API accepts the pair `sort_field=title|year|collaboration|faculty_role` and `sort_direction=asc|desc`. Either parameter alone, empty supplied values, unknown fields, non-lowercase directions and injection-shaped values return HTTP 400 with the existing `invalid_insight_dimension` error code. Omitting both retains backward-compatible defaults. Responses retain the existing `sort` string (`document_id_asc` by default) and add `sort_field`/`sort_direction` echoes. The frontend rejects a requested sorted response that silently reports the default order.
+The API accepts the pair `sort_field=title|year|collaboration|faculty_role` and `sort_direction=asc|desc`. Either parameter alone, empty supplied values, unknown fields, non-lowercase directions and injection-shaped values return HTTP 400 with the existing `invalid_insight_dimension` error code. Omitting both remains accepted and now selects `year_desc`, with `sort_field=year` and `sort_direction=desc` echoes. The frontend rejects a requested sorted response that reports a different order.
 
 The existing read-only snapshot is still loaded and hashed in document ID order. Only a separate matching slice is reordered after revision validation, dimensions and local search. No SQL sort expressions use request input. There are no added database queries, migrations, permission changes, counting changes or summary filter changes. Sorting adds O(n log n) comparison work and O(n) precomputed keys over the already-loaded matching population.
 
@@ -35,6 +35,12 @@ The existing read-only snapshot is still loaded and hashed in document ID order.
 The permissions merge was inspected. The old integration guard fixture assumed admin role alone was enough; it now supplies effective permissions and verifies both teacher/admin roles with and without the required dashboard grant. Only that test changed, not middleware or routes.
 
 ## Verification and evidence
+
+The newest-first follow-up is based on accepted frontend `12b3aa6` and backend `2daaf96`. Its separate evidence is under `faculty-drilldown-sort-evidence/newest-year-default`; the original feature evidence below is preserved. Default behavior is covered by an additional frontend state test, updated backend omitted-parameter and missing-year/tie assertions, and the updated browser default/header check.
+
+Follow-up verification: [full frontend suite, 121 passed](faculty-drilldown-sort-evidence/newest-year-default/unit-tests.txt), [desktop/mobile sorting tour, 8 passed and no page errors](faculty-drilldown-sort-evidence/newest-year-default/browser-checks.json), and [full isolated backend integration suite, controllers/services/routes passed](../../fund-management-api/docs/faculty-drilldown-sort-evidence/newest-year-default/backend-integration.txt). The [new initial desktop view](faculty-drilldown-sort-evidence/newest-year-default/desktop-default.png) shows newest-year results with the descending year indicator. Production build evidence below belongs to the original accepted feature; the small default follow-up was verified by the full unit/integration suites and compiled browser preview.
+
+### Original accepted feature verification
 
 Browser checks use the development-only faculty fixture page with 512 synthetic records and blocked API requests. Backend integration tests use isolated SQLite fixtures with 246 eligible records. Their title examples deliberately place first sorted records beyond default page 200, include case-insensitive ties and null/blank titles, and check coverage across pages without duplicates. These tests do not claim live Scopus totals or MariaDB performance measurements.
 

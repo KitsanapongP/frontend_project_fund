@@ -1,0 +1,55 @@
+{
+  "fixture_only": true,
+  "origin": "http://127.0.0.1:3122",
+  "checks": [
+    {
+      "name": "default newest year first has an active descending year header and stable ID ties; details has no sort",
+      "passed": true
+    },
+    {
+      "name": "title ascending sorts beyond first 200, resets page and keeps missing titles last in both directions",
+      "passed": true
+    },
+    {
+      "name": "numeric year, visible country/status and role labels sort in both directions before paging",
+      "passed": true
+    },
+    {
+      "name": "sort is preserved by search, clear, page and page size without changing summary or dimensions",
+      "passed": true
+    },
+    {
+      "name": "rapid repeated header clicks keep newest direction even after older transport finishes",
+      "passed": true
+    },
+    {
+      "name": "revision recovery retains chosen sort, search, dimensions and page size and resumes page one",
+      "passed": true
+    },
+    {
+      "name": "retry keeps sort and request selection after sorted page error",
+      "passed": true
+    },
+    {
+      "name": "keyboard and mobile touch sort headers have visible indicators and stay inside modal scroll area",
+      "passed": true
+    }
+  ],
+  "page_errors": [],
+  "blocked_requests": [
+    "/api/v1/profile"
+  ],
+  "captures": [
+    "desktop-default.png",
+    "desktop-title-ascending.png",
+    "desktop-title-descending-last-page.png",
+    "desktop-role-descending.png",
+    "desktop-search-dimensions.png",
+    "desktop-rapid-sort.png",
+    "desktop-revision-recovery.png",
+    "desktop-sort-retry.png",
+    "mobile-full-page.png",
+    "mobile-title-ascending.png",
+    "mobile-role-ascending.png"
+  ]
+}

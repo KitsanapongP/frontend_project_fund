@@ -5,7 +5,7 @@ import { makeFacultyFixtureSummary, makeFacultyFixtureAPI } from '../../dev/scop
 
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 const summary = (revision = 'a'.repeat(64)) => makeFacultyFixtureSummary({}, 'normal', revision);
-const page = (params, extra = {}) => ({ success: true, source: 'scopus_core', scope: 'faculty', contract_version: 'faculty-insights-v1', revision: params.revision, page: params.page, page_size: params.page_size, total: 0, total_pages: 0, documents: [], ...extra });
+const page = (params, extra = {}) => ({ success: true, source: 'scopus_core', scope: 'faculty', contract_version: 'faculty-insights-v1', revision: params.revision, page: params.page, page_size: params.page_size, total: 0, total_pages: 0, documents: [], sort: params.sort_field ? `${params.sort_field}_${params.sort_direction}` : 'year_desc', ...extra });
 
 test('country/role totals and partner overlap remain valid, zero percentages are em dash', () => {
   const s = validateInsightSummary(summary());
@@ -60,7 +60,7 @@ test('paging sends complete filters/dimensions/revision and preserves full total
   const filters = { year_start_be: '2567', year_end_be: '2569', quality_buckets: 'Q2', search_author: 'Alice', citation_min: '4', open_access_mode: 'oa' };
   await store.setFilters(filters); const dims = { faculty_role: 'coauthor', international_status: 'yes', country_key: 'japan', year_be: '2569' };
   await store.open(dims, 'Selection'); await store.page(9);
-  assert.deepEqual(params.at(-1), { ...filters, scope: 'faculty', ...dims, revision: 'a'.repeat(64), page: 9, page_size: 25 });
+  assert.deepEqual(params.at(-1), { ...filters, scope: 'faculty', ...dims, revision: 'a'.repeat(64), page: 9, page_size: 25, sort_field: 'year', sort_direction: 'desc' });
   assert.equal(store.getSnapshot().drilldown.response.total, 512);
   await store.page(1, 200); assert.equal(params.at(-1).page_size, 200); store.dispose();
 });
