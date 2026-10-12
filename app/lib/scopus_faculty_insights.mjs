@@ -9,6 +9,12 @@ export const INTERNATIONAL_STATES = [
   { key: 'no', label: 'ภายในประเทศ', color: '#0d9488' },
   { key: 'unknown', label: 'ยังระบุประเทศไม่ได้', color: '#94a3b8' },
 ];
+export const FACULTY_DRILLDOWN_COLUMNS = [
+  { key: 'title', label: 'ชื่อผลงาน' },
+  { key: 'year', label: 'ปี พ.ศ.' },
+  { key: 'collaboration', label: 'ความร่วมมือ / ประเทศ' },
+  { key: 'faculty_role', label: 'บทบาทคณะ' },
+];
 export const insightNumber = (value) => Number(value).toLocaleString('th-TH');
 export const insightPercent = (value) => value == null || !Number.isFinite(Number(value)) ? '—' : `${Number(value).toFixed(1)}%`;
 export const insightRatio = (count, total) => total > 0 ? count * 100 / total : null;
@@ -75,25 +81,27 @@ export function createFacultyInsightStore(api) {
         if (controller.signal.aborted || generation !== summaryGeneration) return;
         const summary = validateInsightSummary(response);
         publish({ summary, loading: false });
-        if (resume && state.drilldown) await store.open(resume.dimensions, resume.label, 1, resume.pageSize, false, reason === 'revision' ? 'ข้อมูลเปลี่ยนแปลงแล้ว อัปเดตสรุปและเริ่มรายการใหม่จากหน้า 1' : 'โหลดข้อมูลใหม่และเริ่มรายการจากหน้า 1', resume.search);
+        if (resume && state.drilldown) await store.open(resume.dimensions, resume.label, 1, resume.pageSize, false, reason === 'revision' ? 'ข้อมูลเปลี่ยนแปลงแล้ว อัปเดตสรุปและเริ่มรายการใหม่จากหน้า 1' : 'โหลดข้อมูลใหม่และเริ่มรายการจากหน้า 1', resume.search, resume.sort);
       } catch (error) {
         if (controller.signal.aborted || generation !== summaryGeneration) return;
         publish({ loading: false, error: insightErrorMessage(error), drilldown: resume && state.drilldown ? { ...resume, response: null, loading: false, error: insightErrorMessage(error) } : null });
       }
     },
-    async open(dimensions, label, page = 1, pageSize = 25, allowRecovery = true, notice = '', search = '') {
+    async open(dimensions, label, page = 1, pageSize = 25, allowRecovery = true, notice = '', search = '', sort = null) {
       if (!state.summary || state.loading) return;
       pageController?.abort(); const controller = new AbortController(); pageController = controller;
       const generation = ++pageGeneration, summaryRun = summaryGeneration, revision = state.summary.revision;
       search = search.trim();
-      const selection = { dimensions: { ...dimensions }, label, page, pageSize, notice, search };
+      sort = sort ? { ...sort } : null;
+      const selection = { dimensions: { ...dimensions }, label, page, pageSize, notice, search, sort };
       publish({ drilldown: { ...selection, response: null, error: null, loading: true } });
       try {
-        const response = await api.drilldown({ ...query, ...dimensions, revision, page, page_size: pageSize, ...(search ? { drilldown_search: search } : {}) }, { signal: controller.signal });
+        const response = await api.drilldown({ ...query, ...dimensions, revision, page, page_size: pageSize, ...(search ? { drilldown_search: search } : {}), ...(sort ? { sort_field: sort.field, sort_direction: sort.direction } : {}) }, { signal: controller.signal });
         if (controller.signal.aborted || generation !== pageGeneration || summaryRun !== summaryGeneration) return;
         if (response?.revision !== revision) { const error = new Error('Revision changed'); error.status = 409; throw error; }
         if (response.success !== true || response.source !== 'scopus_core' || response.scope !== 'faculty' || !count(response.total) || response.page !== page || response.page_size !== pageSize || response.total_pages !== Math.ceil(response.total / pageSize) || !Array.isArray(response.documents) || response.documents.length > pageSize) throw new Error('Invalid insight page');
         if ((search || response.scope_total != null) && (!count(response.scope_total) || response.scope_total < response.total || response.search !== search)) throw new Error('Invalid insight search scope');
+        if (sort && response.sort !== `${sort.field}_${sort.direction}`) throw new Error('Invalid insight sort');
         publish({ drilldown: { ...selection, response, loading: false, error: null } });
       } catch (error) {
         if (controller.signal.aborted || generation !== pageGeneration || summaryRun !== summaryGeneration) return;
@@ -101,8 +109,15 @@ export function createFacultyInsightStore(api) {
         publish({ drilldown: { ...selection, response: null, loading: false, error: insightErrorMessage(error) } });
       }
     },
-    page: (page, pageSize = state.drilldown?.pageSize) => { const d = state.drilldown; if (d) return store.open(d.dimensions, d.label, page, pageSize, true, '', d.search); },
-    search: (search) => { const d = state.drilldown; if (d) return store.open(d.dimensions, d.label, 1, d.pageSize, true, '', search); },
+    page: (page, pageSize = state.drilldown?.pageSize) => { const d = state.drilldown; if (d) return store.open(d.dimensions, d.label, page, pageSize, true, '', d.search, d.sort); },
+    search: (search) => { const d = state.drilldown; if (d) return store.open(d.dimensions, d.label, 1, d.pageSize, true, '', search, d.sort); },
+    sort: (field) => {
+      const d = state.drilldown;
+      if (d && FACULTY_DRILLDOWN_COLUMNS.some(c => c.key === field)) {
+        const direction = d.sort?.field === field && d.sort.direction === 'asc' ? 'desc' : 'asc';
+        return store.open(d.dimensions, d.label, 1, d.pageSize, true, '', d.search, { field, direction });
+      }
+    },
     close: () => { pageController?.abort(); pageGeneration++; publish({ drilldown: null }); },
     dispose: () => { summaryController?.abort(); pageController?.abort(); summaryGeneration++; pageGeneration++; listeners.clear(); },
   };

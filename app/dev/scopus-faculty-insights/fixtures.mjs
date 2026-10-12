@@ -26,6 +26,9 @@ function aggregate(documents) {
 function filteredFixture(query, scenario) {
   if (scenario === 'empty') return [];
   let documents = facultyFixtureDocuments();
+  if (scenario.startsWith('sort_')) {
+    documents = documents.map(d => ({ ...d, title: d.document_id === 1 ? 'Zulu sort example' : d.document_id === 501 ? 'Alpha sort example' : d.document_id === 502 ? 'alpha sort example' : d.document_id === 503 ? null : d.document_id === 504 ? '' : d.title }));
+  }
   if (scenario === 'role_example' || scenario === 'full_circle') {
     documents = documents.slice(0, scenario === 'role_example' ? 226 : 512).map((document, index) => {
       const role = scenario === 'full_circle' ? 'coauthor' : index < 20 ? 'first' : index < 102 ? 'corresponding' : 'coauthor';
@@ -47,9 +50,9 @@ export function makeFacultyFixtureSummary(query = {}, scenario = 'normal', revis
   return { success: true, contract_version: 'faculty-insights-v1', source: 'scopus_core', scope: 'faculty', revision, totals: aggregate(documents), by_year: [...years.map(ce => ({ ...aggregate(documents.filter(d => d.year_ce === ce)), bucket: String(ce + 543), year_ce: ce, year_be: ce + 543 })), { ...aggregate(documents.filter(d => d.year_ce == null)), bucket: 'undated', year_ce: null, year_be: null }] };
 }
 export function makeFacultyFixtureAPI(scenario, onCall = () => {}) {
-  let version = 0; const revisions = new Map();
+  let version = 0, sortFailed = false; const revisions = new Map();
   const revisionFor = (p) => { const key = `${insightFilterKey(p)}:${version}`; if (!revisions.has(key)) revisions.set(key, (revisions.size + 1).toString(16).padStart(64, '0')); return revisions.get(key); };
-  const wait = (query) => new Promise(resolve => setTimeout(resolve, scenario === 'slow' ? (query.year_start_be === '2567' ? 1600 : query.year_start_be === '2569' ? 150 : 1200) : 150));
+  const wait = (query) => new Promise(resolve => setTimeout(resolve, scenario === 'sort_race' && query.sort_field ? (query.sort_direction === 'asc' ? 900 : 100) : scenario === 'slow' ? (query.year_start_be === '2567' ? 1600 : query.year_start_be === '2569' ? 150 : 1200) : 150));
   const unavailable = () => { const e = new Error('Fixture unavailable'); e.status = 503; throw e; };
   return {
     async summary(query, options) {
@@ -59,13 +62,47 @@ export function makeFacultyFixtureAPI(scenario, onCall = () => {}) {
     },
     async drilldown(query, options) {
       onCall('drilldown', query); await wait(query); if (scenario === 'error' || (scenario === 'page_error' && query.page > 1)) unavailable();
-      const { revision, page, page_size, year_be, international_status, faculty_role, country_key, drilldown_search, ...filters } = query;
+      const { revision, page, page_size, year_be, international_status, faculty_role, country_key, drilldown_search, sort_field, sort_direction, ...filters } = query;
+      if (scenario === 'sort_error' && sort_field && !sortFailed) { sortFailed = true; unavailable(); }
+      if (scenario === 'sort_recovery' && sort_field && version === 0) version++;
       if (scenario === 'revision' && version === 0) version++;
       if (revision !== revisionFor(filters)) { const e = new Error('Fixture revision changed'); e.status = 409; throw e; }
       const selected = filteredFixture(filters, scenario).filter(d => (!year_be || (year_be === 'undated' ? d.year_ce == null : d.year_be === Number(year_be))) && (!international_status || d.international_status === international_status) && (!faculty_role || d.faculty_role === faculty_role) && (!country_key || d.countries.some(c => c.country_key === country_key)));
       const search = (drilldown_search || '').trim();
       const documents = selected.filter(d => !search || [d.title, d.doi, d.eid, d.scopus_id, d.publication_name, ...d.eligible_authors.map(a => a.full_name)].some(v => v?.toLowerCase().includes(search.toLowerCase())));
-      return { success: true, scope_total: selected.length, search, contract_version: 'faculty-insights-v1', source: 'scopus_core', scope: 'faculty', revision, total: documents.length, page, page_size, total_pages: Math.ceil(documents.length / page_size), sort: 'document_id_asc', documents: documents.slice((page - 1) * page_size, page * page_size) };
+      sortFacultyFixtureDocuments(documents, sort_field, sort_direction);
+      return { success: true, scope_total: selected.length, search, contract_version: 'faculty-insights-v1', source: 'scopus_core', scope: 'faculty', revision, total: documents.length, page, page_size, total_pages: Math.ceil(documents.length / page_size), sort: sort_field ? `${sort_field}_${sort_direction}` : 'document_id_asc', sort_field: sort_field || '', sort_direction: sort_direction || '', documents: documents.slice((page - 1) * page_size, page * page_size) };
     },
   };
+}
+
+// Fixture-only implementation of the server contract, applied before slicing.
+// Compare Unicode code points explicitly so supplementary characters match Go.
+const lexical = (a, b) => {
+  const left = Array.from(a), right = Array.from(b);
+  for (let i = 0; i < Math.min(left.length, right.length); i++) {
+    const delta = left[i].codePointAt(0) - right[i].codePointAt(0);
+    if (delta) return Math.sign(delta);
+  }
+  return Math.sign(left.length - right.length);
+};
+export function sortFacultyFixtureDocuments(documents, field, direction) {
+  if (!field) return documents;
+  const text = v => (v || '').trim().toLowerCase();
+  const key = d => {
+    if (field === 'title') return { missing: !text(d.title), value: text(d.title) };
+    if (field === 'year') return { missing: d.year_ce == null, value: d.year_ce };
+    if (field === 'faculty_role') return { missing: !['first', 'corresponding', 'coauthor'].includes(d.faculty_role), value: text(FACULTY_ROLES.find(r => r.key === d.faculty_role)?.label) };
+    return { missing: !['yes', 'no'].includes(d.international_status) || !d.country_evidence_current || !d.countries?.length, value: text(INTERNATIONAL_STATES.find(s => s.key === d.international_status)?.label), countries: text((d.countries || []).map(c => c.country_name === 'Thailand' ? 'ประเทศไทย' : c.country_name).join(', ')) };
+  };
+  const keys = new Map(documents.map(d => [d.document_id, key(d)]));
+  return documents.sort((left, right) => {
+    const a = keys.get(left.document_id), b = keys.get(right.document_id);
+    if (a.missing !== b.missing) return a.missing ? 1 : -1;
+    let comparison = a.missing ? 0 : field === 'year' ? Math.sign(a.value - b.value) : lexical(a.value, b.value);
+    if (!a.missing && comparison === 0 && field === 'collaboration') {
+      comparison = lexical(a.countries, b.countries);
+    }
+    return comparison ? (direction === 'desc' ? -comparison : comparison) : left.document_id - right.document_id;
+  });
 }
