@@ -8793,7 +8793,10 @@ const showSubmissionConfirmation = async () => {
           disabled={isReadOnly || saving || isSubmitting}
         />
         {paperAISDGStatus === 'processing' && (
-          <p className="-mt-4 text-sm text-emerald-800" role="status">กำลังวิเคราะห์ SDG ({Math.floor(paperAISDGElapsedSeconds / 60)} นาที {paperAISDGElapsedSeconds % 60} วินาที) คุณกรอกข้อมูลอื่นต่อได้ หรือเลือก SDG เองก่อนบันทึก</p>
+          <div className="-mt-4 text-sm leading-relaxed text-emerald-800" role="status">
+            <p>ขณะนี้ AI กำลังวิเคราะห์เนื้อหาบทความเพื่อเสนอเป้าหมาย SDG ที่ใกล้เคียงที่สุด ท่านสามารถกรอกข้อมูลส่วนอื่นต่อได้ระหว่างรอ เมื่อการวิเคราะห์เสร็จสิ้น โปรดตรวจสอบเป้าหมายที่เสนอและปรับแก้ให้เหมาะสมก่อนบันทึก</p>
+            <p className="mt-1 text-xs">ระยะเวลาที่ใช้: {Math.floor(paperAISDGElapsedSeconds / 60)} นาที {paperAISDGElapsedSeconds % 60} วินาที</p>
+          </div>
         )}
         {paperAISDGSuggestion && (
           <div className="-mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-relaxed text-emerald-950" role="status">
