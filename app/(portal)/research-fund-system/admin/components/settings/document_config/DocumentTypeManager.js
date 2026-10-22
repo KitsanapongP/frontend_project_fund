@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 
-import { documentTypesAPI } from "@/app/lib/api";
+import { documentTypesAPI, systemAPI } from "@/app/lib/api";
 import DocumentTypeModal, { FUND_TYPE_OPTIONS } from "./DocumentTypeModal";
 import SettingsSectionCard from "@/app/(portal)/research-fund-system/admin/components/settings/common/SettingsSectionCard";
 
@@ -142,6 +142,7 @@ const formatDocumentType = (item) => {
     multiple: Boolean(item.multiple),
     document_order: item.document_order ?? 0,
     fund_types: fundTypes,
+    subcategory_scope: item.subcategory_scope || { mode: "all", ids: [] },
     fund_type_mode: fundTypeMode,
     update_at: item.update_at || item.updated_at || null,
     is_inactive: fundTypeMode === "inactive",
@@ -150,6 +151,7 @@ const formatDocumentType = (item) => {
 
 const DocumentTypeManager = () => {
   const [documentTypes, setDocumentTypes] = useState([]);
+  const [scopeCatalog, setScopeCatalog] = useState({});
   const [filteredTypes, setFilteredTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -174,7 +176,13 @@ const DocumentTypeManager = () => {
   const loadDocumentTypes = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await documentTypesAPI.getAllDocumentTypes();
+      const [response, funds, yearResponse] = await Promise.all([
+        documentTypesAPI.getAllDocumentTypes(),
+        systemAPI.getSubcategories().catch(() => null),
+        systemAPI.getYears().catch(() => null),
+      ]);
+      const yearNames = new Map((yearResponse?.years || []).map((year) => [Number(year.year_id), year.year]));
+      setScopeCatalog(Object.fromEntries((funds?.subcategories || []).map((fund) => [fund.subcategory_id, `ปี ${yearNames.get(Number(fund.year_id)) || fund.year_id} • ${fund.subcategory_name.trim()}`])));
       const list = normalizeApiList(response, "document_types")
         .map(formatDocumentType)
         .filter(Boolean);
@@ -271,6 +279,7 @@ const DocumentTypeManager = () => {
       required: Boolean(formData.required),
       multiple: Boolean(formData.multiple),
       fund_types: fundTypes,
+      subcategory_scope: formData.subcategory_scope,
     };
 
     const mode = editingDocumentType?.document_type_id ? "update" : "create";
@@ -519,6 +528,13 @@ const DocumentTypeManager = () => {
                       <div className="font-medium text-left text-gray-900">
                         {item.document_type_name || "(ไม่ระบุชื่อ)"}
                       </div>
+                      {item.subcategory_scope.mode !== "all" && (
+                        <div className="mt-2 space-y-1 text-left text-xs leading-relaxed text-slate-500">
+                          <p className="font-medium text-blue-700">{item.subcategory_scope.mode === "include" ? "ใช้เฉพาะ" : "ยกเว้น"}ทุนที่เลือก</p>
+                          {item.subcategory_scope.ids.map((id) => <p key={id}>{scopeCatalog[id] || `ทุนย่อยรหัส ${id}`}</p>)}
+                          {!item.fund_types.includes("fund_application") && <p className="text-amber-700">ขอบเขตนี้ยังไม่มีผล — ต้องเปิดใช้กับทุนทั่วไป</p>}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-3 text-left text-gray-700">{item.code || "-"}</td>
                     <td className="px-3 py-3 text-center">
@@ -532,8 +548,8 @@ const DocumentTypeManager = () => {
 
                           if (inactive) {
                             return (
-                              <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                                ไม่ได้ใช้งาน
+                              <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                                ปิดใช้งาน
                               </span>
                             );
                           }

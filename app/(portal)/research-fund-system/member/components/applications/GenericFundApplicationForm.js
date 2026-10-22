@@ -1690,18 +1690,18 @@ export default function GenericFundApplicationForm({
       setReviewerComments({ admin: '', head: '' });
       serverFileCacheRef.current.clear();
 
-      // Load user data and document requirements in parallel
-      const [userData, docRequirements, statusInfo] = await Promise.all([
+      // Load the checklist after resolving the selected fund, including saved drafts.
+      const [userData, statusInfo] = await Promise.all([
         loadUserData(),
-        loadDocumentRequirements(),
         resolveDeptHeadPendingStatus(),
         fetchSubmissionUsage({ showWarning: true }),
       ]);
 
       await loadSystemAnnouncements();
 
+      let documentContext = subcategoryData;
       if (subcategoryData?.submissionId) {
-        await loadExistingSubmission(subcategoryData.submissionId);
+        documentContext = await loadExistingSubmission(subcategoryData.submissionId);
       } else if (typeof window !== 'undefined') {
         const draft = loadDraftFromLocal();
         if (draft?.formData) {
@@ -1715,6 +1715,7 @@ export default function GenericFundApplicationForm({
         }
       }
 
+      await loadDocumentRequirements(documentContext);
       setPendingStatus(statusInfo);
 
     } catch (error) {
@@ -2112,12 +2113,16 @@ export default function GenericFundApplicationForm({
       resetAttachmentsPreview();
 
       setHasDraft(true);
+      return {
+        subcategory_id: firstValidNumber(submission.subcategory_id, submission.SubcategoryID, detail?.subcategory_id, detail?.SubcategoryID, submission.subcategory?.subcategory_id, submission.Subcategory?.SubcategoryID, resolvedSubcategoryId),
+      };
     } catch (error) {
       console.error('Failed to load submission draft:', error);
       setErrors(prev => ({
         ...prev,
         general: 'ไม่สามารถโหลดร่างคำร้องได้',
       }));
+      throw error;
     }
   };
 
@@ -2151,7 +2156,7 @@ export default function GenericFundApplicationForm({
     throw new Error('ไม่สามารถดึงข้อมูลผู้ใช้ได้');
   };
 
-  const loadDocumentRequirements = async () => {
+  const loadDocumentRequirements = async (context = subcategoryData) => {
     const normalizePayload = (payload) => {
       if (!payload) return [];
       if (Array.isArray(payload)) return payload;
@@ -2159,7 +2164,11 @@ export default function GenericFundApplicationForm({
       return [];
     };
 
-    const response = await documentTypesAPI.getDocumentTypes({ fund_type: 'fund_application' });
+    const { subcategoryId } = resolveFundContextIdentifiers(context);
+    if (!subcategoryId) throw new Error('ไม่พบทุนย่อยสำหรับโหลดรายการเอกสาร');
+    const response = await documentTypesAPI.getDocumentTypes({
+      fund_type: 'fund_application', subcategory_id: subcategoryId,
+    });
     const rawDocTypes = normalizePayload(response);
 
     if (!Array.isArray(rawDocTypes) || rawDocTypes.length === 0) {
