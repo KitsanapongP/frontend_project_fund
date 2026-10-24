@@ -21,6 +21,17 @@ export const insightPercent = (value) => value == null || !Number.isFinite(Numbe
 export const insightRatio = (count, total) => total > 0 ? count * 100 / total : null;
 export const insightYearLabel = (row) => row.bucket === 'undated' ? 'ไม่ระบุปี' : String(row.year_be);
 
+export function insightPeriodLabel(summary, query = {}, selected = 'all') {
+  const year = summary.by_year.find(row => row.bucket === selected);
+  if (year) return year.bucket === 'undated' ? 'ผลงานที่ไม่ระบุปี' : `ปี พ.ศ. ${year.year_be}`;
+  const years = summary.by_year.map(row => Number(row.year_be)).filter(value => Number.isInteger(value) && value > 0);
+  const start = query.year_start_be || (years.length ? Math.min(...years) : null);
+  const end = query.year_end_be || (years.length ? Math.max(...years) : null);
+  const range = start && end ? String(start) === String(end) ? `ปี พ.ศ. ${start}` : `ปี พ.ศ. ${start}–${end}`
+    : start ? `ตั้งแต่ปี พ.ศ. ${start}` : end ? `ถึงปี พ.ศ. ${end}` : 'ทุกปี';
+  return `${range}${summary.by_year.some(row => row.bucket === 'undated' && row.total > 0) ? ' · รวมผลงานที่ไม่ระบุปี' : ''}`;
+}
+
 export function insightFilterKey(query) {
   return JSON.stringify(Object.entries({ ...query, scope: 'faculty' }).filter(([, value]) => value != null).sort(([a], [b]) => a.localeCompare(b)));
 }

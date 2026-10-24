@@ -18,7 +18,7 @@ function arc(start, end) {
   return `M ${from} A 78 78 0 ${end - start > 180 ? 1 : 0} 1 ${to}`;
 }
 
-export default function FacultyRoleDonut({ title, roles, total, percentageGroup = '' }) {
+export default function FacultyRoleDonut({ title, roles, total, percentageGroup = '', periodLabel = '' }) {
   const [hovered, setHovered] = useState(null), [focused, setFocused] = useState(null);
   const [selected, setSelected] = useState([]);
   const denominatorID = useId(), selectionID = useId();
@@ -43,11 +43,12 @@ export default function FacultyRoleDonut({ title, roles, total, percentageGroup 
   return <div data-role-donut data-active-roles={activeKeys.join(',')} data-selected-roles={summary.keys.join(',')} onClick={clearBlank} onKeyDown={event => {
     if (event.key === 'Escape' && event.target.closest('[data-role-segment], [data-role-legend]')) { event.preventDefault(); event.stopPropagation(); clear(); }
   }} style={{ containerType: 'inline-size', containerName: 'faculty-donut' }} className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-    <div className="mb-1 flex items-center justify-center gap-1"><h3 data-donut-text className="text-sm font-semibold text-slate-800">{title}</h3><Hint label={`จำนวนและร้อยละ ${title}`} text={hints.donut} /></div>
+    <div className="mb-1 px-8 text-center"><div className="relative inline-block max-w-full align-middle"><h3 data-donut-text className="text-sm font-semibold text-slate-800">{title}</h3><span className="absolute left-full top-1/2 ml-1 -translate-y-1/2"><Hint label={`จำนวนและร้อยละ ${title}`} text={hints.donut} /></span></div></div>
+    {periodLabel && <p data-donut-text className="mb-2 text-center text-xs leading-5 text-slate-600">{periodLabel}</p>}
     <div className={styles.donutBody}>
       <ul className={styles.legend} aria-label={`คำอธิบายสี ${title}`}>
         {FACULTY_ROLES.map(role => <li key={role.key} className="min-w-0"><button type="button" data-role-legend={role.key} {...engage(role)} onClick={() => select(role)} aria-pressed={selected.includes(role.key)} aria-describedby={denominatorID} aria-label={`เลือกบทบาท ${title} ${role.label} ${insightNumber(roles[role.key])} ผลงาน ${insightPercent(insightRatio(roles[role.key], total))}`} className={`flex min-h-12 w-full flex-col justify-center rounded-lg border px-2 py-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-700 ${selected.includes(role.key) ? 'border-slate-400 bg-white shadow-sm' : active(role.key) ? 'border-slate-300 bg-white' : 'border-transparent hover:bg-white'}`}>
-          <span className="flex min-w-0 items-center gap-1.5 text-[13px] leading-4 text-slate-700"><span className="h-3 w-3 shrink-0 rounded-full" style={{ background: role.color }} aria-hidden="true" /><span title={role.label}>{role.shortLabel}</span></span>
+          <span className="flex min-w-0 items-center gap-1.5 text-[13px] leading-4 text-slate-700"><span className="h-3 w-3 shrink-0 rounded-full" style={{ background: role.color }} aria-hidden="true" /><span title={role.label}>{role.label}</span></span>
           <span className="mt-1 flex w-full items-center justify-between gap-2 pl-[18px] tabular-nums"><b className="text-sm text-slate-900">{insightNumber(roles[role.key])}</b><span className="text-xs text-slate-600">{insightPercent(insightRatio(roles[role.key], total))}</span></span>
         </button></li>)}
       </ul>

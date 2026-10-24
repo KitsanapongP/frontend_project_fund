@@ -2,7 +2,9 @@
 
 import { Fragment, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
-import { ChevronDown, ChevronUp, ChevronRight, ArrowUpDown, Globe2, Users, ChartPie, RefreshCw, X, ExternalLink, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronRight, ArrowUpDown, Globe2, Users, ChartPie, RefreshCw, X, ExternalLink, Search, Download } from 'lucide-react';
+import { downloadXlsx } from '../../utils/xlsxExporter';
+import { buildFacultyInsightSheets } from '@/app/lib/scopus_faculty_insights_export.mjs';
 import SimpleCard from '../common/SimpleCard';
 import Hint from './report/Hint';
 import RoleDonut from './FacultyRoleDonut';
@@ -11,7 +13,7 @@ import { facultyInsightHints as hints } from '@/app/lib/scopus_faculty_insight_h
 import adminAPI from '@/app/lib/admin_api';
 import {
   FACULTY_ROLES, INTERNATIONAL_STATES, FACULTY_DRILLDOWN_COLUMNS, createFacultyInsightStore, insightFilterKey,
-  insightNumber, insightPercent, insightRatio, insightYearLabel, safeInsightURL, insightDOIURL,
+  insightNumber, insightPercent, insightRatio, insightYearLabel, insightPeriodLabel, safeInsightURL, insightDOIURL,
 } from '@/app/lib/scopus_faculty_insights.mjs';
 
 const liveAPI = {
@@ -64,25 +66,25 @@ function InternationalCard({ summary, open }) {
   </div>;
 }
 
-function RolesCard({ summary, open }) {
-  const [selected, setSelected] = useState('all'); const id = useId();
+function RolesCard({ summary, open, selected, setSelected }) {
+  const id = useId();
   const aggregate = selected === 'all' ? summary.totals : summary.by_year.find(y => y.bucket === selected) || summary.totals;
   const dims = selected === 'all' || !summary.by_year.some(y => y.bucket === selected) ? {} : { year_be: selected };
   return <div className="space-y-3"><p className="text-sm leading-6 text-slate-600">หนึ่งผลงานนับครั้งเดียว แม้มีผู้เขียนคณะหลายคน <Hint label="การจัดกลุ่มบทบาทคณะ" text={hints.roles} /></p>
     <YearSelect roleOnly id={id} years={summary.by_year} selected={selected} setSelected={setSelected} />
-    <div data-role-layout className={styles.roleLayout}><div className="overflow-x-auto rounded-lg" role="region" aria-label="ตารางบทบาทผู้เขียนรายปี" tabIndex={0}><table className="w-full min-w-[520px] table-fixed border-collapse text-[13px]"><caption className="sr-only">บทบาทผู้เขียนของคณะตามปีที่ตีพิมพ์</caption><thead><tr><th scope="col" className={`${head} text-left`}>ปี (พ.ศ.)</th><th scope="col" className={head}>ทั้งหมด</th>{FACULTY_ROLES.map(r => <th key={r.key} scope="col" className={head}><abbr className="no-underline" title={r.label}>{r.key === 'corresponding' ? 'Corr.' : r.shortLabel}</abbr></th>)}</tr></thead><tbody>{[...summary.by_year, { ...summary.totals, bucket: 'all' }].map(y => {
+    <div data-role-layout className={styles.roleLayout}><div className="overflow-x-auto rounded-lg" role="region" aria-label="ตารางบทบาทผู้เขียนรายปี" tabIndex={0}><table className="w-full min-w-[520px] table-auto border-collapse text-[13px]"><caption className="sr-only">บทบาทผู้เขียนของคณะตามปีที่ตีพิมพ์</caption><thead><tr><th scope="col" className={`${head} text-left`}>ปี (พ.ศ.)</th><th scope="col" className={head}>ทั้งหมด</th>{FACULTY_ROLES.map(r => <th key={r.key} scope="col" className={head}>{r.label}</th>)}</tr></thead><tbody>{[...summary.by_year, { ...summary.totals, bucket: 'all' }].map(y => {
       const yearDims = y.bucket === 'all' ? {} : { year_be: y.bucket }, label = y.bucket === 'all' ? 'รวมตามเงื่อนไขที่เลือก' : insightYearLabel(y);
       return <tr key={y.bucket} className={y.bucket === 'all' ? 'bg-blue-50 font-semibold' : 'odd:bg-slate-50/50'}><th scope="row" className={`${cell} text-left font-medium !whitespace-normal`}>{label}</th><td className={cell}><CountButton value={y.total} label={label} onClick={() => open(yearDims, `ทุกบทบาท · ${label}`)} /></td>{FACULTY_ROLES.map(r => <td key={r.key} className={cell}><CountButton value={y.roles[r.key]} label={`${r.label} ${label}`} onClick={() => open({ ...yearDims, faculty_role: r.key }, `${r.label} · ${label}`)} /><span className="block text-xs font-normal text-slate-500">{insightPercent(y.role_percent[r.key])}</span></td>)}</tr>;
     })}</tbody></table></div><div><RoleDonut key={selected} title={Object.keys(dims).length ? (selected === 'undated' ? 'ผลงานที่ไม่ระบุปี' : `ปี ${selected}`) : 'บทบาทผู้เขียนของคณะ'} total={aggregate.total} roles={aggregate.roles} /></div></div>
   </div>;
 }
 
-function ComparisonCard({ summary, open }) {
-  const [selected, setSelected] = useState('all'); const id = useId();
+function ComparisonCard({ summary, open, selected, setSelected, query }) {
+  const id = useId();
   const year = summary.by_year.find(y => y.bucket === selected), aggregate = year || summary.totals, dims = year ? { year_be: year.bucket } : {};
   return <div className="space-y-3"><YearSelect id={id} years={summary.by_year} selected={selected} setSelected={setSelected} /><p className="text-sm leading-6 text-slate-600">ร้อยละของแต่ละกราฟคิดจากผลงานทั้งหมดในกลุ่มนั้น ส่วนผลงานที่ยังระบุประเทศไม่ได้แสดงแยกในตาราง <Hint label="การอ่านกราฟเปรียบเทียบ" text={hints.donut} /></p>
-    <div className="grid gap-3 xl:grid-cols-2">{INTERNATIONAL_STATES.slice(0, 2).map(s => <RoleDonut key={`${s.key}:${selected}`} title={s.label} roles={aggregate.country_role[s.key]} total={aggregate.international[s.key]} percentageGroup={s.key === 'yes' ? 'ที่ร่วมกับต่างประเทศ' : 'ภายในประเทศ'} />)}</div>
-    <div className="overflow-x-auto rounded-lg" role="region" aria-label="ตารางไขว้ประเทศและบทบาท" tabIndex={0}><table className="w-full min-w-[520px] table-fixed border-collapse text-[13px]"><caption className="mb-2 text-left font-semibold text-slate-800">ประเทศ × บทบาทคณะ{year ? ` · ${insightYearLabel(year)}` : ' · รวมตามเงื่อนไขที่เลือก'} <Hint label="ตารางไขว้ประเทศและบทบาท" text={hints.cross} /></caption><thead><tr><th scope="col" className={`${head} text-left`}>ความร่วมมือ</th>{FACULTY_ROLES.map(r => <th key={r.key} scope="col" className={head}><abbr className="no-underline" title={r.label}>{r.key === 'corresponding' ? 'Corr.' : r.shortLabel}</abbr></th>)}<th scope="col" className={head}>รวม</th></tr></thead><tbody>{INTERNATIONAL_STATES.map(s => <tr key={s.key} className="odd:bg-slate-50/50"><th scope="row" className={`${cell} text-left font-medium !whitespace-normal`}>{s.label}</th>{FACULTY_ROLES.map(r => <td key={r.key} className={cell}><CountButton value={aggregate.country_role[s.key][r.key]} label={`${s.label} ${r.label}`} onClick={() => open({ ...dims, international_status: s.key, faculty_role: r.key }, `${s.label} · ${r.label}${year ? ` · ${insightYearLabel(year)}` : ''}`)} /></td>)}<td className={cell}><CountButton value={aggregate.international[s.key]} label={s.label} onClick={() => open({ ...dims, international_status: s.key }, `${s.label}${year ? ` · ${insightYearLabel(year)}` : ''}`)} /></td></tr>)}</tbody></table></div>
+    <div className="grid gap-3 xl:grid-cols-2">{INTERNATIONAL_STATES.slice(0, 2).map(s => <RoleDonut key={`${s.key}:${selected}`} title={s.label} periodLabel={insightPeriodLabel(summary, query, selected)} roles={aggregate.country_role[s.key]} total={aggregate.international[s.key]} percentageGroup={s.key === 'yes' ? 'ที่ร่วมกับต่างประเทศ' : 'ภายในประเทศ'} />)}</div>
+    <div className="overflow-x-auto rounded-lg" role="region" aria-label="ตารางไขว้ประเทศและบทบาท" tabIndex={0}><table className="w-full min-w-[520px] table-auto border-collapse text-[13px]"><caption className="mb-2 text-left font-semibold text-slate-800">ประเทศ × บทบาทคณะ{year ? ` · ${insightYearLabel(year)}` : ' · รวมตามเงื่อนไขที่เลือก'} <Hint label="ตารางไขว้ประเทศและบทบาท" text={hints.cross} /></caption><thead><tr><th scope="col" className={`${head} text-left`}>ความร่วมมือ</th>{FACULTY_ROLES.map(r => <th key={r.key} scope="col" className={head}>{r.label}</th>)}<th scope="col" className={head}>รวม</th></tr></thead><tbody>{INTERNATIONAL_STATES.map(s => <tr key={s.key} className="odd:bg-slate-50/50"><th scope="row" className={`${cell} text-left font-medium !whitespace-normal`}>{s.label}</th>{FACULTY_ROLES.map(r => <td key={r.key} className={cell}><CountButton value={aggregate.country_role[s.key][r.key]} label={`${s.label} ${r.label}`} onClick={() => open({ ...dims, international_status: s.key, faculty_role: r.key }, `${s.label} · ${r.label}${year ? ` · ${insightYearLabel(year)}` : ''}`)} /></td>)}<td className={cell}><CountButton value={aggregate.international[s.key]} label={s.label} onClick={() => open({ ...dims, international_status: s.key }, `${s.label}${year ? ` · ${insightYearLabel(year)}` : ''}`)} /></td></tr>)}</tbody></table></div>
   </div>;
 }
 
@@ -102,7 +104,7 @@ function DocumentEvidence({ document: d }) {
     <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">{metadata.map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-xs text-slate-600">{label}</dt><dd className="mt-0.5 break-words text-sm text-slate-900">{value}</dd></div>)}</dl>
     {(link || doi) && <div className="flex flex-wrap gap-4 text-sm font-medium text-blue-700">{link && <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:underline">เปิดใน Scopus <ExternalLink size={14} /></a>}{doi && <a href={doi} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:underline">เปิด DOI <ExternalLink size={14} /></a>}</div>}
     <div><h3 className="mb-2 text-sm font-semibold text-slate-900">ผู้เขียนคณะที่เข้าเกณฑ์ ({insightNumber(d.eligible_authors?.length || 0)} ลิงก์) <Hint label="บทบาทและหลักฐานผู้เขียน" text={hints.roles} /></h3>
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white"><table className="w-full min-w-[600px] text-left text-sm"><thead className="bg-slate-100 text-xs text-slate-700"><tr>{['ผู้เขียน / ลำดับ', 'First', 'Corresponding', 'Scopus Author ID'].map(label => <th key={label} className="px-3 py-2 font-medium">{label}</th>)}</tr></thead><tbody>{(d.eligible_authors || []).map(a => <tr key={a.link_id} className="border-t border-slate-200 align-top"><td className="px-3 py-2"><span className="mr-2 text-slate-500">{a.author_seq || '—'}.</span>{a.full_name || a.scopus_author_id || 'ไม่ระบุชื่อผู้เขียน'}</td><td className="px-3 py-2">{flag(a.is_first_author)}</td><td className="px-3 py-2">{flag(a.is_corresponding_author)}</td><td className="break-words px-3 py-2 text-xs text-slate-600">{a.scopus_author_id || 'ไม่ระบุ'}</td></tr>)}</tbody></table></div>
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white"><table className="w-full min-w-[600px] text-left text-sm"><thead className="bg-slate-100 text-xs text-slate-700"><tr>{['ผู้เขียน / ลำดับ', 'First author', 'Corresponding author', 'Scopus Author ID'].map(label => <th key={label} className="px-3 py-2 font-medium">{label}</th>)}</tr></thead><tbody>{(d.eligible_authors || []).map(a => <tr key={a.link_id} className="border-t border-slate-200 align-top"><td className="px-3 py-2"><span className="mr-2 text-slate-500">{a.author_seq || '—'}.</span>{a.full_name || a.scopus_author_id || 'ไม่ระบุชื่อผู้เขียน'}</td><td className="px-3 py-2">{flag(a.is_first_author)}</td><td className="px-3 py-2">{flag(a.is_corresponding_author)}</td><td className="break-words px-3 py-2 text-xs text-slate-600">{a.scopus_author_id || 'ไม่ระบุ'}</td></tr>)}</tbody></table></div>
       <p className="mt-2 text-xs text-slate-500">ลิงก์ผู้เขียนอาจมีหลายสังกัด แต่จำนวนผลงานและบทบาทของคณะนับผลงานไม่ซ้ำ</p>
     </div>
   </div>;
@@ -157,6 +159,21 @@ export default function AdminScopusFacultyInsights({ appliedQuery = {}, enabled 
   useEffect(() => () => store.dispose(), [store]);
   const current = enabled && state.filterKey === key, summary = current ? state.summary : null;
   const loading = !current || state.loading, error = current ? state.error : null;
+  const [roleYear, setRoleYear] = useState('all'), [comparisonYear, setComparisonYear] = useState('all');
+  const [exportError, setExportError] = useState('');
+  useEffect(() => { setRoleYear('all'); setComparisonYear('all'); setExportError(''); }, [summary?.revision, key]);
+  const exportInsights = () => {
+    if (!summary || loading || error) return;
+    try {
+      setExportError('');
+      const now = new Date();
+      const sheets = buildFacultyInsightSheets(summary, { query, roleYear, comparisonYear, now });
+      const stamp = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+      downloadXlsx([], [], { sheets, filename: `scopus-faculty-insights-${stamp}.xlsx` });
+    } catch {
+      setExportError('ส่งออกไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง');
+    }
+  };
   const open = (dimensions, label) => { triggerRef.current = document.activeElement; return store.open(dimensions, label); };
   const close = () => {
     store.close();
@@ -166,10 +183,11 @@ export default function AdminScopusFacultyInsights({ appliedQuery = {}, enabled 
     });
   };
   return <div ref={rootRef} tabIndex={-1} className="space-y-4" style={{ containerType: 'inline-size', containerName: 'faculty-insights' }} aria-label="ข้อมูลความร่วมมือและบทบาทผู้เขียนของคณะ">
-    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500"><span>เฉพาะ Scopus · ตามเงื่อนไขที่เลือก · ไม่รวม ThaiJO/TCI <Hint label="ขอบเขตข้อมูลและเงื่อนไขที่เลือก" text={hints.scope} /></span><button ref={refreshRef} type="button" className="inline-flex min-h-9 items-center gap-1 rounded px-2 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={loading} onClick={() => store.refresh()}><RefreshCw size={13} />อัปเดตข้อมูลทั้ง 3 ส่วน</button></div>
-    <InsightCard title="บทบาทผู้เขียนของคณะ" icon={Users} hint={hints.roles}>{summary ? <RolesCard key={summary.revision} summary={summary} open={open} /> : <ResourceState loading={loading} error={error} retry={() => store.refresh()} />}</InsightCard>
+    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500"><span>เฉพาะ Scopus · ตามเงื่อนไขที่เลือก · ไม่รวม ThaiJO/TCI <Hint label="ขอบเขตข้อมูลและเงื่อนไขที่เลือก" text={hints.scope} /></span><div className="flex flex-wrap items-center gap-2"><button type="button" className={`${action} inline-flex min-h-9 items-center gap-1.5`} disabled={loading || !summary || Boolean(error)} onClick={exportInsights} title="ดาวน์โหลดข้อมูลบทบาทผู้เขียนและความร่วมมือระหว่างประเทศของคณะตามตัวกรองและปีที่เลือก (.xlsx)"><Download size={15} aria-hidden="true" />ส่งออกบทบาทและความร่วมมือคณะ</button><button ref={refreshRef} type="button" className="inline-flex min-h-9 items-center gap-1 rounded px-2 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={loading} onClick={() => store.refresh()}><RefreshCw size={13} />อัปเดตข้อมูลทั้ง 3 ส่วน</button></div></div>
+    {exportError && <p role="alert" className="text-sm text-red-700">{exportError}</p>}
+    <InsightCard title="บทบาทผู้เขียนของคณะ" icon={Users} hint={hints.roles}>{summary ? <RolesCard key={summary.revision} summary={summary} open={open} selected={roleYear} setSelected={setRoleYear} /> : <ResourceState loading={loading} error={error} retry={() => store.refresh()} />}</InsightCard>
     <InsightCard title="ความร่วมมือระหว่างประเทศของคณะ" icon={Globe2} hint={hints.international}>{summary ? <InternationalCard summary={summary} open={open} /> : <ResourceState loading={loading} error={error} retry={() => store.refresh()} />}</InsightCard>
-    <InsightCard title="บทบาทคณะ: ต่างประเทศและภายในประเทศ" icon={ChartPie} hint={hints.cross}>{summary ? <ComparisonCard key={summary.revision} summary={summary} open={open} /> : <ResourceState loading={loading} error={error} retry={() => store.refresh()} />}</InsightCard>
+    <InsightCard title="บทบาทคณะ: ต่างประเทศและภายในประเทศ" icon={ChartPie} hint={hints.cross}>{summary ? <ComparisonCard key={summary.revision} summary={summary} open={open} selected={comparisonYear} setSelected={setComparisonYear} query={query} /> : <ResourceState loading={loading} error={error} retry={() => store.refresh()} />}</InsightCard>
     {current && state.drilldown && <InsightDrilldown store={store} drilldown={state.drilldown} close={close} />}
   </div>;
 }
