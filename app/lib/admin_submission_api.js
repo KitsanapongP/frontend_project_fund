@@ -1,12 +1,8 @@
 // app/lib/admin_submission_api.js
+import { isExecutiveOnly } from './access_routing';
 import apiClient from './api';
 
-const isExecutiveRole = () => {
-  const user = apiClient.getUser?.();
-  if (!user) return false;
-  const role = user.role_id ?? user.role;
-  return Number(role) === 5 || String(role).toLowerCase() === 'executive';
-};
+const isExecutiveRole = () => isExecutiveOnly(apiClient.getUser?.());
 
 const getUserRoleKey = () => {
   const user = apiClient.getUser?.();

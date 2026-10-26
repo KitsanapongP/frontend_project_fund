@@ -31,7 +31,7 @@ export default function Navigation({
   const pathname = usePathname();
   const [pendingRoute, setPendingRoute] = useState("");
 
-  const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
+  const hasPermissionSnapshot = Array.isArray(user?.permissions);
   const isDeptHead = hasPermissionSnapshot
     ? hasPermission("ui.page.member.dept_review.view") || hasPermission("submission.read.department")
     : user?.role === "dept_head" || user?.user_role === "dept_head" || user?.role_id === 4;

@@ -2,6 +2,7 @@
 
 "use client";
 
+import { isExecutiveOnly } from "@/app/lib/access_routing";
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -52,14 +53,16 @@ const PAGE_PERMISSIONS_BY_ID = {
 
 function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fund-system/admin' }) {
   const { user, hasPermission } = useAuth();
-  const rawRole = user?.role_id ?? user?.role;
-  const normalizedRole = typeof rawRole === 'string' ? rawRole.toLowerCase() : rawRole;
-  const numericRole = Number(rawRole);
-  const isExecutive = normalizedRole === 5 || normalizedRole === 'executive' || numericRole === 5;
-  const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
+  const isExecutive = isExecutiveOnly(user);
+  const hasPermissionSnapshot = Array.isArray(user?.permissions);
   const [isOpen, setIsOpen] = useState(false);
   const [submenuOpen, setSubmenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(initialPage);
+  const [accessEdits, setAccessEdits] = useState({ dirty: false, saving: false });
+  const canLeaveAccessPage = useCallback(() => {
+    if (accessEdits.saving) return false;
+    return !accessEdits.dirty || window.confirm("มีการแก้ไขสิทธิ์ที่ยังไม่ได้บันทึก ต้องการออกจากหน้านี้หรือไม่?");
+  }, [accessEdits]);
   const [importTab, setImportTab] = useState('scopus');
   const [selectedFundData, setSelectedFundData] = useState(null);
   const [currentMode, setCurrentMode] = useState(null);
@@ -195,6 +198,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
   }, [normalizePage, pageFromPath]);
 
   const handleNavigate = (page, data = null, options = {}) => {
+    if (page !== currentPage && !canLeaveAccessPage()) return;
     const normalized = normalizePage(page);
 
     if (normalized === 'academic-imports' && IMPORT_TAB_MAP[page]) {
@@ -270,7 +274,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
       case 'academic-imports':
         return <AdminAcademicImports initialTab={importTab} />;
       case 'access-control':
-        return <AdminAccessControlPage />;
+        return <AdminAccessControlPage onPendingChangesChange={setAccessEdits} />;
       case 'notifications':
         return <AdminNotificationCenter />;
       default:
@@ -305,6 +309,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
       currentPage={currentPage}
       setCurrentPage={setCurrentPage}
       handleNavigate={handleNavigate}
+      onBeforeNavigate={canLeaveAccessPage}
       submenuOpen={submenuOpen}
       setSubmenuOpen={setSubmenuOpen}
       isExecutive={isExecutive}
@@ -329,6 +334,7 @@ function AdminPageContent({ initialPage = 'dashboard', basePath = '/research-fun
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}
               handleNavigate={handleNavigate}
+      onBeforeNavigate={canLeaveAccessPage}
               submenuOpen={submenuOpen}
               setSubmenuOpen={setSubmenuOpen}
               isExecutive={isExecutive}

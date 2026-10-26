@@ -179,9 +179,9 @@ function FacultyItem({ fac }) {
 
 export default function ShowDetailMouPage({ params: paramsPromise }) {
   const router = useRouter();
-  const { hasPermission, hasRole } = useAuth();
+  const { hasPermission } = useAuth();
   const canManage = hasPermission("mou.manage");
-  const canAdminister = hasRole("admin");
+  const canAdminister = hasPermission("mou.manage");
   const params = use(paramsPromise);
   const [mou, setMou] = useState(null);
   const [loading, setLoading] = useState(true);

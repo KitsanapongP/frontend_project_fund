@@ -70,7 +70,7 @@ function resolveRoleLabel(user) {
 }
 
 export default function MouLayout({ children, title, subtitle }) {
-  const { user, logout, hasPermission, hasRole, isAuthenticated, isLoading } = useAuth();
+  const { user, logout, hasPermission, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -83,7 +83,7 @@ export default function MouLayout({ children, title, subtitle }) {
   const roleLabel = resolveRoleLabel(user);
   const initials = getInitials(displayName);
   const canRead = hasPermission("mou.read");
-  const canAdminister = hasRole("admin");
+  const canAdminister = hasPermission("mou.manage");
   const visibleMenuItems = mouMenuItems.filter((item) => item.id !== "manage" || canAdminister);
 
   useEffect(() => {

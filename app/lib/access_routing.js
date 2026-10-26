@@ -40,7 +40,7 @@ export const getUserPermissionSet = (user) => {
 export const hasAdminPortalAccess = (user) => {
   const roleValue = user?.role ?? user?.role_id;
   const roleName = normalizeRoleName(roleValue);
-  if (roleName === "admin") {
+  if (!Array.isArray(user?.permissions) && roleName === "admin") {
     return true;
   }
 
@@ -49,7 +49,7 @@ export const hasAdminPortalAccess = (user) => {
     return false;
   }
 
-  if (permissionSet.has("dashboard.view.admin") || permissionSet.has("access.manage")) {
+  if (permissionSet.has("portal.admin.access") || permissionSet.has("portal.executive.access") || permissionSet.has("dashboard.view.admin") || permissionSet.has("access.manage")) {
     return true;
   }
 
@@ -74,7 +74,7 @@ export const isPrimaryAdmin = (user) =>
 export const hasMemberPortalAccess = (user) => {
   const roleValue = user?.role ?? user?.role_id;
   const roleName = normalizeRoleName(roleValue);
-  if (["teacher", "staff", "dept_head"].includes(roleName)) {
+  if (!Array.isArray(user?.permissions) && ["teacher", "staff", "dept_head"].includes(roleName)) {
     return true;
   }
 
@@ -94,4 +94,14 @@ export const hasMemberPortalAccess = (user) => {
   }
 
   return false;
+};
+
+// A user with an Admin grant can use the full portal even if their primary
+// identity is executive. This flag only selects the executive read-only UI/API.
+export const isExecutiveOnly = (user) => {
+  if (Array.isArray(user?.permissions)) {
+    const permissions = getUserPermissionSet(user);
+    return permissions.has("portal.executive.access") && !permissions.has("portal.admin.access");
+  }
+  return normalizeRoleName(user?.role_id ?? user?.role) === "executive";
 };

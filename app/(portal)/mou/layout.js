@@ -7,7 +7,7 @@ import UnauthorizedPage from "../../components/UnauthorizedPage";
 
 export default function MouLayout({ children }) {
   const pathname = usePathname();
-  const { hasPermission, hasRole, isLoading } = useAuth();
+  const { hasPermission, isLoading } = useAuth();
   const managePage = pathname === "/mou/add_mou" ||
     pathname === "/mou/add_activity_mou" ||
     pathname.startsWith("/mou/admin_edit_mou/");
@@ -17,7 +17,7 @@ export default function MouLayout({ children }) {
   return (
     <AuthGuard allowedPermissions={["mou.read"]}>
       {!isLoading && managePage && !hasPermission("mou.manage") ? <UnauthorizedPage /> :
-        !isLoading && adminPage && !hasRole("admin") ? <UnauthorizedPage /> : children}
+        !isLoading && adminPage && !hasPermission("mou.manage") ? <UnauthorizedPage /> : children}
     </AuthGuard>
   );
 }

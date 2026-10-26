@@ -11,6 +11,7 @@ import {
 } from "../permission_presentation.mjs";
 
 const CURRENT_PERMISSION_CODES = [
+ "fund.settings.read", "fund.settings.manage", "projects.manage", "academic.import.manage", "submission.manage.all", "fund.visibility.all", "submission.staff.read",
   "access.manage",
   "access.view",
   "announcement.manage",

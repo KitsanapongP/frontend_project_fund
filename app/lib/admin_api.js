@@ -1,15 +1,11 @@
 // app/lib/admin_api.js - Admin specific API methods (Updated)
 
+import { isExecutiveOnly } from './access_routing';
 import apiClient from './api';
 import { targetRolesUtils } from './target_roles_utils';
 import { uniqueSubcategoriesById } from './admin_fund_helpers.mjs';
 
-const isExecutiveRole = () => {
-  const user = apiClient.getUser?.();
-  if (!user) return false;
-  const role = user.role_id ?? user.role;
-  return Number(role) === 5 || String(role).toLowerCase() === 'executive';
-};
+const isExecutiveRole = () => isExecutiveOnly(apiClient.getUser?.());
 
 // Admin API methods for managing funds and roles
 export const adminAPI = {

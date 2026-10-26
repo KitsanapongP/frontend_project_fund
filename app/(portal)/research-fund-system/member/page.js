@@ -51,7 +51,7 @@ export function MemberPageContent({ initialPage = 'dashboard', initialMode = nul
 
   const FUND_STORAGE_KEY = "member_selected_fund";
 
-  const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
+  const hasPermissionSnapshot = Array.isArray(user?.permissions);
 
   const canViewPage = useCallback((page) => {
     const required = PAGE_PERMISSION_MAP[page];

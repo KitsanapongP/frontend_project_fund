@@ -43,4 +43,10 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Keep a running dev server's chunks intact when a production build runs.
+export default function config(phase) {
+  return {
+    ...nextConfig,
+    distDir: phase === 'phase-development-server' ? '.next-dev' : '.next',
+  };
+}

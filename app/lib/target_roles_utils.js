@@ -228,11 +228,11 @@ export const targetRolesUtils = {
       return {
         role_id: user.role_id,
         role_name: user.role?.role || ROLE_NAME_BY_ID[user.role_id] || 'unknown',
-        can_see_all_funds: user.role_id === 3,
+        can_see_all_funds: Array.isArray(user.permissions) ? user.permissions.includes("fund.visibility.all") : user.role_id === 3,
         is_teacher: user.role_id === 1,
         is_staff: user.role_id === 2,
-        is_admin: user.role_id === 3,
-        is_dept_head: user.role_id === 4 || user.role === 'dept_head',
+        is_admin: Array.isArray(user.permissions) ? user.permissions.includes("portal.admin.access") : user.role_id === 3,
+        is_dept_head: Array.isArray(user.permissions) ? user.permissions.includes("submission.read.department") : user.role_id === 4,
       };
     } catch (error) {
       console.error('Error getting user role:', error);

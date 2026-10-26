@@ -1441,9 +1441,10 @@ export const accessControlAPI = {
     return apiClient.get(`/admin/access/users/${encodeURIComponent(userId)}/overrides`);
   },
 
-  async updateUserOverrides(userId, overrides = []) {
+  async updateUserOverrides(userId, overrides = [], additionalRoleIds) {
     return apiClient.put(`/admin/access/users/${encodeURIComponent(userId)}/overrides`, {
       overrides,
+      ...(additionalRoleIds === undefined ? {} : { additional_role_ids: additionalRoleIds.map(Number) }),
     });
   },
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { isExecutiveOnly } from "@/app/lib/access_routing";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   LayoutDashboard,
@@ -476,10 +477,7 @@ function ErrorState({ message, onRetry }) {
 
 export default function DashboardContent({ onNavigate, basePath = "/admin" }) {
   const { user } = useAuth();
-  const rawRole = user?.role_id ?? user?.role;
-  const normalizedRole = typeof rawRole === "string" ? rawRole.toLowerCase() : rawRole;
-  const numericRole = Number(rawRole);
-  const isExecutive = normalizedRole === 5 || normalizedRole === "executive" || numericRole === 5;
+  const isExecutive = isExecutiveOnly(user);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

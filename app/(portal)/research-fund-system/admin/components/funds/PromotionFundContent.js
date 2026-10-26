@@ -410,7 +410,7 @@ export default function PromotionFundContent({ onNavigate }) {
       }
 
       const allCategories = response.categories;
-      const shouldBypassRoleFilter = isAdminRole(roleContext);
+      const shouldBypassRoleFilter = Boolean(roleContext?.can_see_all_funds);
 
       const visibleCategories = shouldBypassRoleFilter
         ? allCategories

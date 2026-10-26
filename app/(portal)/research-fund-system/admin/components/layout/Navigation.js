@@ -25,6 +25,7 @@ export default function Navigation({
   handleNavigate, 
   submenuOpen, 
   setSubmenuOpen,
+  onBeforeNavigate,
   isExecutive = false
 }) {
   const ADMIN_BASE_PATH = "/research-fund-system/admin";
@@ -34,7 +35,7 @@ export default function Navigation({
   const pathname = usePathname();
   const [pendingRoute, setPendingRoute] = useState("");
 
-  const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
+  const hasPermissionSnapshot = Array.isArray(user?.permissions);
 
   const menuItemsWithPermissions = ADMIN_BASE_MENU_ITEMS.map((item) => ({
     ...item,
@@ -106,6 +107,7 @@ export default function Navigation({
   }, [pathname, pendingRoute]);
 
   const navigateToRoute = (route) => {
+    if (onBeforeNavigate && !onBeforeNavigate()) return;
     if (!route || pendingRoute === route) {
       return;
     }

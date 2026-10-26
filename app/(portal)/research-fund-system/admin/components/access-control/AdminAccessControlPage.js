@@ -1,8 +1,9 @@
 "use client";
 
+import { additionalRoleIds, roleGrantPermissions } from "@/app/lib/role_grants.mjs";
 import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   BookOpenText,
@@ -22,8 +23,8 @@ import {
 import { toast, Toaster } from "react-hot-toast";
 
 import PageLayout from "../common/PageLayout";
-import UserManagementPanel from "./UserManagementPanel";
-import { accessControlAPI, usersAPI } from "../../../../../lib/api";
+import UserManagementPanel from "./UserManagementPanel.js";
+import { accessControlAPI } from "../../../../../lib/api";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
   PERMISSION_CATEGORIES,
@@ -37,10 +38,10 @@ import {
 } from "@/app/lib/permission_presentation.mjs";
 
 const TAB_ITEMS = [
-  { id: "user-management", label: "จัดการผู้ใช้", description: "เพิ่ม ค้นหา และแก้ไขข้อมูลบัญชี", icon: UserCog, area: "users" },
-  { id: "roles", label: "สิทธิ์ตามบทบาท", description: "กำหนดสิทธิ์พื้นฐานของแต่ละ Role", icon: Users, area: "access" },
-  { id: "users", label: "สิทธิ์เฉพาะบุคคล", description: "เพิ่มหรือปฏิเสธสิทธิ์เป็นรายคน", icon: UserCog, area: "access" },
-  { id: "dictionary", label: "พจนานุกรมสิทธิ์", description: "ค้นหาความหมายของสิทธิ์ทั้งหมด", icon: BookOpenText, area: "access" },
+  { id: "user-management", label: "จัดการผู้ใช้", icon: UserCog, area: "users" },
+  { id: "roles", label: "สิทธิ์ตามบทบาท", icon: Users, area: "access" },
+  { id: "users", label: "สิทธิ์เฉพาะบุคคล", icon: UserCog, area: "access" },
+  { id: "dictionary", label: "พจนานุกรมสิทธิ์", icon: BookOpenText, area: "access" },
 ];
 
 const FILTER_OPTIONS = {
@@ -261,13 +262,12 @@ function EffectiveBadge({ effective, source }) {
   );
 }
 
-export default function AdminAccessControlPage() {
+export default function AdminAccessControlPage({ onPendingChangesChange }) {
   const { hasPermission, user: currentUser } = useAuth();
-  const isLegacyAdmin = Number(currentUser?.role_id) === 3 || String(currentUser?.role || "").toLowerCase() === "admin";
-  const canViewUsers = isLegacyAdmin || hasPermission("users.view") || hasPermission("users.manage");
-  const canManageUsers = isLegacyAdmin || hasPermission("users.manage");
-  const canViewAccess = isLegacyAdmin || hasPermission("access.view") || hasPermission("access.manage") || hasPermission("ui.page.admin.access_control.view");
-  const canManageAccess = isLegacyAdmin || hasPermission("access.manage");
+  const canViewUsers = hasPermission("users.view") || hasPermission("users.manage");
+  const canManageUsers = hasPermission("users.manage");
+  const canViewAccess = hasPermission("access.view") || hasPermission("access.manage") || hasPermission("ui.page.admin.access_control.view");
+  const canManageAccess = hasPermission("access.manage");
   const visibleTabItems = useMemo(
     () => TAB_ITEMS.filter((item) => item.area === "users" ? canViewUsers : canViewAccess),
     [canViewAccess, canViewUsers],
@@ -291,12 +291,14 @@ export default function AdminAccessControlPage() {
   const [roleCategory, setRoleCategory] = useState("all");
   const [roleViewMode, setRoleViewMode] = useState("all");
 
-  const [userQuery, setUserQuery] = useState("");
-  const [userOptions, setUserOptions] = useState([]);
-  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [showTestUsers, setShowTestUsers] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const userLoadSequence = useRef(0);
   const [selectedUserRoles, setSelectedUserRoles] = useState([]);
   const [baselinePermissions, setBaselinePermissions] = useState([]);
+  const [additionalRoles, setAdditionalRoles] = useState([]);
+  const [initialAdditionalRoles, setInitialAdditionalRoles] = useState([]);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [userOverrideMap, setUserOverrideMap] = useState({});
   const [initialUserOverrideMap, setInitialUserOverrideMap] = useState({});
   const [loadingUserOverrides, setLoadingUserOverrides] = useState(false);
@@ -311,21 +313,54 @@ export default function AdminAccessControlPage() {
 
   const rolePermissionSet = useMemo(() => normalizeSet(rolePermissionCodes), [rolePermissionCodes]);
   const initialRolePermissionSet = useMemo(() => normalizeSet(initialRolePermissionCodes), [initialRolePermissionCodes]);
-  const baselinePermissionSet = useMemo(() => normalizeSet(baselinePermissions), [baselinePermissions]);
+  const draftBaselinePermissions = useMemo(() => selectedUser
+    ? roleGrantPermissions(roles, selectedUser.role_id, additionalRoles) : baselinePermissions,
+    [roles, selectedUser, additionalRoles, baselinePermissions]);
+  const baselinePermissionSet = useMemo(() => normalizeSet(draftBaselinePermissions), [draftBaselinePermissions]);
   const roleDirty = !setsEqual(rolePermissionSet, initialRolePermissionSet);
-  const userDirty = !mapsEqual(userOverrideMap, initialUserOverrideMap);
+  const userDirty = !mapsEqual(userOverrideMap, initialUserOverrideMap) || !setsEqual(new Set(additionalRoles), new Set(initialAdditionalRoles));
+
+  useEffect(() => {
+    if (!userDirty && !roleDirty) return;
+    const warn = (event) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [userDirty, roleDirty]);
+
+  useEffect(() => {
+    onPendingChangesChange?.({ dirty: userDirty || roleDirty, saving: savingUserOverrides || savingRolePermissions });
+  }, [userDirty, roleDirty, savingUserOverrides, savingRolePermissions, onPendingChangesChange]);
+  useEffect(() => () => onPendingChangesChange?.({ dirty: false, saving: false }), [onPendingChangesChange]);
+  useEffect(() => {
+    if (!userDirty && !roleDirty) return;
+    const guardLink = (event) => {
+      const link = event.target.closest?.("a[href]");
+      if (!link || link.target === "_blank" || link.href === window.location.href || link.getAttribute("href")?.startsWith("#")) return;
+      if (savingUserOverrides || savingRolePermissions || !window.confirm("มีการแก้ไขสิทธิ์ที่ยังไม่ได้บันทึก ต้องการออกจากหน้านี้หรือไม่?")) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    document.addEventListener("click", guardLink, true);
+    return () => document.removeEventListener("click", guardLink, true);
+  }, [userDirty, roleDirty, savingUserOverrides, savingRolePermissions]);
 
   const selectedRole = useMemo(
     () => roles.find((role) => String(role.role_id) === String(selectedRoleId)) || null,
     [roles, selectedRoleId],
   );
+  const selectedPrimaryRole = roles.find((role) => String(role.role_id) === String(selectedUser?.role_id))
+    || selectedUserRoles.find((role) => role.is_primary) || selectedUser;
+  const selectedAdditionalRoleViews = roles.filter((role) => additionalRoles.includes(String(role.role_id))
+    && String(role.role_id) !== String(selectedUser?.role_id));
   const permissionViews = useMemo(() => permissions.map(getPermissionPresentation), [permissions]);
   const translatedPermissionCount = useMemo(() => permissionViews.filter((permission) => permission.translated).length, [permissionViews]);
+  const roleOnlyPermissionSet = useMemo(() => resolvePreviewPermissions({ baselinePermissions: draftBaselinePermissions, implications }), [draftBaselinePermissions, implications]);
   const previewPermissionSet = useMemo(() => resolvePreviewPermissions({
-    baselinePermissions,
+    baselinePermissions: draftBaselinePermissions,
     overrides: userOverrideMap,
     implications,
-  }), [baselinePermissions, implications, userOverrideMap]);
+  }), [draftBaselinePermissions, implications, userOverrideMap]);
 
   const filterPermissions = useCallback(({ search, category, mode, context }) => {
     const keyword = normalizePermissionCode(search);
@@ -421,9 +456,11 @@ export default function AdminAccessControlPage() {
 
   const loadUserOverrideData = useCallback(async (userId, { fallbackUser = null } = {}) => {
     if (!userId) return;
+    const sequence = ++userLoadSequence.current;
     setLoadingUserOverrides(true);
     try {
       const response = await accessControlAPI.getUserOverrides(userId);
+      if (sequence !== userLoadSequence.current) return;
       const nextOverrides = {};
       (Array.isArray(response?.overrides) ? response.overrides : []).forEach((item) => {
         const code = normalizePermissionCode(item?.code);
@@ -432,18 +469,24 @@ export default function AdminAccessControlPage() {
       });
       setSelectedUser(response?.user || fallbackUser);
       setSelectedUserRoles(Array.isArray(response?.roles) ? response.roles : []);
+      setAdditionalRoles(additionalRoleIds(response?.roles || []));
+      setInitialAdditionalRoles(additionalRoleIds(response?.roles || []));
+      setAdvancedOpen(false);
       setBaselinePermissions(Array.isArray(response?.role_permissions) ? response.role_permissions : []);
       setUserOverrideMap(nextOverrides);
       setInitialUserOverrideMap(nextOverrides);
     } catch (error) {
+      if (sequence !== userLoadSequence.current) return;
       console.error("Failed to load user override data", error);
+      setSelectedUser(null);
       toast.error("ไม่สามารถโหลดสิทธิ์เฉพาะบุคคลได้");
     } finally {
-      setLoadingUserOverrides(false);
+      if (sequence === userLoadSequence.current) setLoadingUserOverrides(false);
     }
   }, []);
 
   const handleRefresh = async () => {
+    if (savingUserOverrides || savingRolePermissions) return;
     if (activeTab === "user-management") {
       setManagementRefreshKey((value) => value + 1);
       return;
@@ -481,6 +524,8 @@ export default function AdminAccessControlPage() {
       const savedCodes = Array.isArray(response?.permission_codes) ? response.permission_codes.map(normalizePermissionCode).filter(Boolean) : payload;
       setRolePermissionCodes(savedCodes);
       setInitialRolePermissionCodes(savedCodes);
+      setRoles((previous) => previous.map((role) => String(role.role_id) === String(selectedRoleId)
+        ? { ...role, permission_codes: savedCodes, permission_count: savedCodes.length } : role));
       toast.success("บันทึกแล้ว");
     } catch (error) {
       console.error("Failed to save role permissions", error);
@@ -490,38 +535,6 @@ export default function AdminAccessControlPage() {
     }
   };
 
-  const handleSearchUsers = async (event) => {
-    event?.preventDefault();
-    const query = userQuery.trim().toLowerCase();
-    if (query.length < 4 || !query.includes("@")) {
-      toast.error("กรุณากรอกอีเมลอย่างน้อย 4 ตัวอักษร");
-      return;
-    }
-    setSearchingUsers(true);
-    try {
-      const response = await usersAPI.search(query);
-      const found = (Array.isArray(response?.data) ? response.data : [])
-        .filter((item) => getUserEmail(item).toLowerCase().includes(query))
-        .sort((a, b) => getUserEmail(a).localeCompare(getUserEmail(b)));
-      setUserOptions(found);
-      if (found.length === 0) toast("ไม่พบผู้ใช้ที่ค้นหา");
-      if (found.length === 1) await handleSelectUser(found[0]);
-    } catch (error) {
-      console.error("Failed to search users", error);
-      toast.error("ค้นหาผู้ใช้ไม่สำเร็จ");
-      setUserOptions([]);
-    } finally {
-      setSearchingUsers(false);
-    }
-  };
-
-  const handleSelectUser = async (nextUser) => {
-    if (userDirty && !window.confirm("ข้อยกเว้นของผู้ใช้คนนี้ยังไม่ได้บันทึก ต้องการละทิ้งการเปลี่ยนแปลงหรือไม่?")) return;
-    setSelectedUser(nextUser);
-    setUserOptions([]);
-    await loadUserOverrideData(getUserId(nextUser), { fallbackUser: nextUser });
-  };
-
   const handleManageUserPermissions = async (nextUser) => {
     if (!canViewAccess) {
       toast.error("บัญชีนี้ไม่มีสิทธิ์ตรวจสอบสิทธิ์เฉพาะบุคคล");
@@ -529,12 +542,11 @@ export default function AdminAccessControlPage() {
     }
     if (!switchTab("users")) return;
     setSelectedUser(nextUser);
-    setUserOptions([]);
     await loadUserOverrideData(getUserId(nextUser), { fallbackUser: nextUser });
   };
 
   const handleSetOverride = (permissionCode, effect) => {
-    if (!canManageAccess) return;
+    if (!canManageAccess || savingUserOverrides) return;
     const code = normalizePermissionCode(permissionCode);
     setUserOverrideMap((previous) => {
       const next = { ...previous };
@@ -549,14 +561,14 @@ export default function AdminAccessControlPage() {
     const selectedUserId = String(getUserId(selectedUser));
     const currentUserId = String(getUserId(currentUser));
     const selfDenied = selectedUserId && selectedUserId === currentUserId
-      && (userOverrideMap["access.manage"] === "deny" || userOverrideMap["ui.page.admin.access_control.view"] === "deny");
+      && !previewPermissionSet.has("access.manage");
     if (selfDenied && !window.confirm("คุณกำลังปฏิเสธสิทธิ์จัดการการเข้าถึงของบัญชีตนเอง หลังบันทึกอาจกลับมาแก้ไขหน้านี้ไม่ได้ ต้องการดำเนินการต่อหรือไม่?")) return;
     setSavingUserOverrides(true);
     try {
       const overrides = Object.entries(userOverrideMap)
         .filter(([, effect]) => effect === "allow" || effect === "deny")
         .map(([code, effect]) => ({ code, effect }));
-      const response = await accessControlAPI.updateUserOverrides(selectedUserId, overrides);
+      const response = await accessControlAPI.updateUserOverrides(selectedUserId, overrides, additionalRoles);
       const nextOverrides = {};
       (Array.isArray(response?.overrides) ? response.overrides : []).forEach((item) => {
         const code = normalizePermissionCode(item?.code);
@@ -565,6 +577,8 @@ export default function AdminAccessControlPage() {
       });
       setSelectedUser(response?.user || selectedUser);
       setSelectedUserRoles(Array.isArray(response?.roles) ? response.roles : selectedUserRoles);
+      setAdditionalRoles(additionalRoleIds(response?.roles || []));
+      setInitialAdditionalRoles(additionalRoleIds(response?.roles || []));
       setBaselinePermissions(Array.isArray(response?.role_permissions) ? response.role_permissions : baselinePermissions);
       setUserOverrideMap(nextOverrides);
       setInitialUserOverrideMap(nextOverrides);
@@ -578,11 +592,12 @@ export default function AdminAccessControlPage() {
   };
 
   const switchTab = (tabId) => {
+    if (savingUserOverrides || savingRolePermissions) return false;
     if (tabId === activeTab) return true;
     if ((activeTab === "roles" && roleDirty) || (activeTab === "users" && userDirty)) {
       if (!window.confirm("มีการแก้ไขที่ยังไม่ได้บันทึก ต้องการออกจากส่วนนี้และละทิ้งการเปลี่ยนแปลงหรือไม่?")) return false;
       if (activeTab === "roles") setRolePermissionCodes(initialRolePermissionCodes);
-      if (activeTab === "users") setUserOverrideMap(initialUserOverrideMap);
+      if (activeTab === "users") { setUserOverrideMap(initialUserOverrideMap); setAdditionalRoles(initialAdditionalRoles); }
     }
     setActiveTab(tabId);
     return true;
@@ -638,14 +653,11 @@ export default function AdminAccessControlPage() {
                   }
                 }}
                 className={active
-                ? "flex min-h-20 cursor-pointer items-start gap-3 rounded-lg border-2 border-blue-600 bg-white px-4 py-4 text-left text-blue-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-                : "flex min-h-20 cursor-pointer items-start gap-3 rounded-lg border-2 border-slate-300 bg-white px-4 py-4 text-left text-slate-700 transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"}
+                ? "flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 border-blue-600 bg-white px-4 py-3 text-left text-blue-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                : "flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 border-slate-300 bg-white px-4 py-3 text-left text-slate-700 transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"}
               >
-                <Icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-                <span>
-                  <span className="block font-semibold">{tab.label}</span>
-                  <span className={`mt-0.5 block text-xs leading-5 ${active ? "text-blue-700" : "text-slate-500"}`}>{tab.description}</span>
-                </span>
+                <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                <span className="font-semibold">{tab.label}</span>
               </button>
             );
           })}
@@ -656,6 +668,8 @@ export default function AdminAccessControlPage() {
             canManage={canManageUsers}
             onManagePermissions={canViewAccess ? handleManageUserPermissions : null}
             refreshKey={managementRefreshKey}
+            includeTest={showTestUsers}
+            onIncludeTestChange={setShowTestUsers}
           />
         ) : null}
 
@@ -730,61 +744,74 @@ export default function AdminAccessControlPage() {
         ) : null}
 
         {activeTab === "users" ? (
-          <div id="access-panel-users" role="tabpanel" aria-labelledby="access-tab-users" className="min-h-[36rem]">
-            <div className="border-b border-slate-200 bg-slate-50 p-4 sm:p-5">
-              <form onSubmit={handleSearchUsers} className="mx-auto max-w-3xl">
-                <label htmlFor="access-user-search" className="block text-sm font-semibold text-slate-900">ค้นหาผู้ใช้งานด้วยอีเมล</label>
-                <p className="mt-1 text-sm text-slate-600">เลือกผู้ใช้เพื่อดูสิทธิ์จาก Role และกำหนดเฉพาะรายการที่ต้องการยกเว้น</p>
-                <div className="relative mt-3 flex flex-col gap-2 sm:flex-row">
-                  <div className="relative flex-1">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
-                    <input id="access-user-search" type="email" value={userQuery} onChange={(event) => setUserQuery(event.target.value)} placeholder="name@kku.ac.th" autoComplete="off" className="min-h-11 w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
-                  </div>
-                  <button type="submit" disabled={searchingUsers} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60">
-                    {searchingUsers ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Search className="h-4 w-4" aria-hidden="true" />} ค้นหาผู้ใช้
-                  </button>
-                </div>
-                {userOptions.length > 0 ? (
-                  <div className="mt-2 overflow-hidden rounded-lg border border-slate-300 bg-white" aria-label="ผลการค้นหาผู้ใช้">
-                    {userOptions.map((item) => (
-                      <button key={getUserId(item)} type="button" onClick={() => handleSelectUser(item)} className="block min-h-14 w-full border-b border-slate-200 px-3 py-2 text-left transition last:border-b-0 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500/30">
-                        <span className="block font-semibold text-slate-900">{getUserName(item)}</span>
-                        <span className="block text-sm text-slate-600">{getUserEmail(item)}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </form>
-            </div>
+          <div id="access-panel-users" role="tabpanel" aria-labelledby="access-tab-users" className="@container min-w-0">
+
 
             {loadingUserOverrides ? (
               <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-slate-600" aria-live="polite"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> กำลังตรวจสอบสิทธิ์ของผู้ใช้...</div>
             ) : selectedUser ? (
               <>
-                <section className="border-b border-slate-200 px-4 py-4 sm:px-5" aria-labelledby="selected-user-title">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700"><UserCog className="h-5 w-5" aria-hidden="true" /></div>
-                      <div>
-                        <h3 id="selected-user-title" className="font-semibold text-slate-900">{getUserName(selectedUser)}</h3>
-                        <p className="mt-0.5 text-sm text-slate-600">{getUserEmail(selectedUser)}</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {(selectedUserRoles.length > 0 ? selectedUserRoles : [{ role: selectedUser.role, role_key: selectedUser.role_key, is_primary: true }]).map((role) => {
-                            const rolePresentation = getRolePresentation(role);
-                            return <span key={`${role.role_id || role.role_key}-${role.is_primary}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700">{rolePresentation.labelTh}{role.is_primary ? " · บทบาทหลัก" : " · บทบาทเสริม"}</span>;
-                          })}
-                        </div>
+                <section aria-labelledby="selected-user-title" className="grid min-w-0 @[42rem]:grid-cols-[minmax(17rem,1fr)_minmax(0,2.5fr)]">
+                  <header className="flex items-start border-b border-slate-200 bg-white px-5 py-5 sm:px-6 @[42rem]:border-b-0 @[42rem]:border-r">
+                    <div className="mx-auto w-full max-w-sm text-left">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700"><UserCog className="h-5 w-5" aria-hidden="true" /></div>
+                      <div className="min-w-0 max-w-full">
+                        <h3 id="selected-user-title" className="break-words text-base font-semibold leading-7 text-slate-900">{getUserName(selectedUser)}</h3>
+                        <p className="mt-1 break-all text-sm text-slate-600">{getUserEmail(selectedUser)}</p>
                       </div>
                     </div>
-                    <dl className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">
-                      <div><dt className="inline">จากบทบาท </dt><dd className="inline font-semibold tabular-nums text-slate-900">{baselinePermissions.length}</dd></div>
-                      <div><dt className="inline">ข้อยกเว้น </dt><dd className="inline font-semibold tabular-nums text-blue-700">{Object.keys(userOverrideMap).length}</dd></div>
-                      <div><dt className="inline">มีผลจริง </dt><dd className="inline font-semibold tabular-nums text-green-700">{previewPermissionSet.size}</dd></div>
+                    <dl className="mt-5 grid gap-4 border-t border-slate-100 pt-5 text-sm">
+                      <div className="grid min-w-0 gap-2">
+                        <dt className="text-sm font-medium text-slate-500">บทบาทหลัก:</dt>
+                        <dd className="flex max-w-full flex-wrap justify-start gap-2"><span className="rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-600">{getRolePresentation(selectedPrimaryRole).labelTh}</span></dd>
+                      </div>
+                      <div className="grid min-w-0 gap-2">
+                        <dt className="text-sm font-medium text-slate-500">บทบาทที่ได้รับสิทธิ์เพิ่ม:</dt>
+                        <dd className="flex min-w-0 max-w-full flex-wrap justify-start gap-2" aria-live="polite">
+                          {selectedAdditionalRoleViews.length > 0 ? selectedAdditionalRoleViews.map((role) => <span key={role.role_id} className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-sm font-medium text-blue-700">{getRolePresentation(role).labelTh}</span>)
+                            : <span className="py-1 text-sm text-slate-400">ไม่มี</span>}
+                        </dd>
+                      </div>
                     </dl>
+                    </div>
+                  </header>
+                  <div className="min-w-0 px-5 py-5 sm:px-6">
+                    <fieldset disabled={!canManageAccess || savingUserOverrides}>
+                      <legend className="text-base font-semibold leading-7 text-slate-900">สิทธิ์และบทบาท</legend>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {roles.map((role) => {
+                          const id = String(role.role_id);
+                          const primary = id === String(selectedUser.role_id);
+                          const checked = primary || additionalRoles.includes(id);
+                          const disabled = primary || !canManageAccess || savingUserOverrides;
+                          return <label key={id} className={`flex min-h-20 items-start gap-3 rounded-lg border p-4 transition-colors focus-within:ring-2 focus-within:ring-blue-500/30 ${primary
+                            ? "cursor-not-allowed border-slate-200 bg-slate-100"
+                            : checked ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white"} ${!disabled ? "cursor-pointer hover:border-blue-300" : "cursor-not-allowed"}`}>
+                            <input type="checkbox" aria-label={getRolePresentation(role).labelTh} className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 accent-blue-600 disabled:cursor-not-allowed disabled:accent-slate-400" checked={checked} disabled={disabled}
+                              onChange={(event) => setAdditionalRoles((previous) => event.target.checked ? [...new Set([...previous, id])] : previous.filter((value) => value !== id))} />
+                            <span className="min-w-0">
+                              <span className={`block text-sm font-semibold leading-6 ${primary ? "text-slate-500" : checked ? "text-blue-800" : "text-slate-900"}`}>{getRolePresentation(role).labelTh}</span>
+                              <span className={`mt-1 block text-sm ${primary ? "text-slate-400" : "text-slate-600"}`}>{role.permission_count} สิทธิ์</span>
+                            </span>
+                          </label>;
+                        })}
+                      </div>
+                    </fieldset>
+                    {Object.entries(userOverrideMap).some(([code, effect]) => effect === "deny" && roleOnlyPermissionSet.has(code)) ? (
+                      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900" role="status">
+                        บางสิทธิ์จากบทบาทที่เลือกถูกปฏิเสธจากข้อยกเว้นเดิม
+                        <button type="button" className="ml-2 font-semibold underline" onClick={() => { setAdvancedOpen(true); setUserViewMode("overridden"); }}>ดูรายละเอียด</button>
+                      </div>
+                    ) : null}
+                    <button type="button" className="mt-5 flex min-h-12 w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 text-left text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30" aria-expanded={advancedOpen} aria-controls="advanced-user-permissions" onClick={() => setAdvancedOpen((value) => !value)}>
+                      <span className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4 shrink-0" aria-hidden="true" />ตั้งค่าสิทธิ์ขั้นสูง</span>
+                      <span aria-hidden="true">{advancedOpen ? "▴" : "▾"}</span>
+                    </button>
                   </div>
-                  <div className="mt-4 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm leading-6 text-blue-800"><SlidersHorizontal className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />ใช้ “ตามบทบาท” เป็นค่าเริ่มต้น เลือกอนุญาตหรือปฏิเสธเฉพาะกรณีที่ผู้ใช้นี้ต้องแตกต่างจากคนอื่นใน Role เดียวกัน</div>
                 </section>
 
+                <div id="advanced-user-permissions" hidden={!advancedOpen}>
                 <FilterToolbar search={userPermissionSearch} onSearchChange={setUserPermissionSearch} module={moduleFilter} onModuleChange={setModuleFilter} category={userPermissionCategory} onCategoryChange={setUserPermissionCategory} mode={userViewMode} onModeChange={setUserViewMode} modeOptions={FILTER_OPTIONS.user} resultCount={userFilteredPermissions.length} />
 
                 <div className="max-h-[55vh] min-h-64 overflow-y-auto overscroll-contain" aria-label="รายการสิทธิ์เฉพาะบุคคล">
@@ -807,7 +834,7 @@ export default function AdminAccessControlPage() {
                             const active = effect === option.value;
                             const activeClass = option.value === "allow" ? "border-green-300 bg-green-50 text-green-700" : option.value === "deny" ? "border-red-300 bg-red-50 text-red-700" : "border-blue-300 bg-white text-blue-700";
                             return (
-                              <button key={option.value} type="button" role="radio" aria-checked={active} onClick={() => handleSetOverride(permission.code, option.value)} disabled={!canManageAccess} className={active
+                              <button key={option.value} type="button" role="radio" aria-checked={active} onClick={() => handleSetOverride(permission.code, option.value)} disabled={!canManageAccess || savingUserOverrides} className={active
                                 ? `min-h-10 rounded-md border px-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${activeClass}`
                                 : "min-h-10 rounded-md border border-transparent px-2 text-xs font-medium text-slate-600 transition hover:bg-white hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60"}
                               >{option.label}</button>
@@ -821,12 +848,12 @@ export default function AdminAccessControlPage() {
                 />
                 </div>
 
-                <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-slate-300 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                  <p className="text-sm text-slate-600">บันทึกเฉพาะข้อยกเว้น ค่า “ตามบทบาท” จะไม่สร้างข้อมูลเพิ่มในฐานข้อมูล</p>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setUserOverrideMap(initialUserOverrideMap)} disabled={!userDirty || savingUserOverrides} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50"><RotateCcw className="h-4 w-4" aria-hidden="true" /> ยกเลิกการแก้ไข</button>
+                </div>
+                <div className="sticky bottom-0 z-10 flex justify-end border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
+                  <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
+                    <button type="button" onClick={() => { setUserOverrideMap(initialUserOverrideMap); setAdditionalRoles(initialAdditionalRoles); }} disabled={!userDirty || savingUserOverrides} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50"><RotateCcw className="h-4 w-4" aria-hidden="true" /> ยกเลิกการแก้ไข</button>
                     <button type="button" onClick={handleSaveUserOverrides} disabled={!userDirty || !canManageAccess || savingUserOverrides} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:cursor-not-allowed disabled:bg-slate-300">
-                      {savingUserOverrides ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />} บันทึกข้อยกเว้น
+                      {savingUserOverrides ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />} บันทึกสิทธิ์
                     </button>
                   </div>
                 </div>
@@ -835,7 +862,7 @@ export default function AdminAccessControlPage() {
               <div className="flex min-h-80 flex-col items-center justify-center px-6 text-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500"><UserCog className="h-6 w-6" aria-hidden="true" /></div>
                 <h3 className="mt-4 font-semibold text-slate-900">เลือกผู้ใช้เพื่อเริ่มตรวจสอบสิทธิ์</h3>
-                <p className="mt-1 max-w-md text-sm leading-6 text-slate-600">ระบบจะแสดงสิทธิ์พื้นฐานจากทุก Role ที่ active และข้อยกเว้นของผู้ใช้นั้นโดยไม่เปลี่ยนแปลงข้อมูลจนกว่าจะกดบันทึก</p>
+                <p className="mt-1 max-w-md text-sm leading-6 text-slate-600">เลือกผู้ใช้จากแท็บ “จัดการผู้ใช้” แล้วกด “สิทธิ์” เพื่อกำหนดสิทธิ์และบทบาท</p>
               </div>
             )}
           </div>

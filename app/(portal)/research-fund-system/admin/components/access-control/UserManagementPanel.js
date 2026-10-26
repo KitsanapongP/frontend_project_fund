@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
+import TestUsersSwitch from "./TestUsersSwitch.js";
 import { usersAPI } from "@/app/lib/api";
 import { getRolePresentation } from "@/app/lib/permission_presentation.mjs";
 
@@ -236,8 +237,9 @@ function UserFormDrawer({ mode, user, options, saving, onClose, onSave }) {
   );
 }
 
-export default function UserManagementPanel({ canManage, onManagePermissions, refreshKey = 0 }) {
+export default function UserManagementPanel({ canManage, onManagePermissions, refreshKey = 0, includeTest = false, onIncludeTestChange }) {
   const [users, setUsers] = useState([]);
+  const loadSequence = useRef(0);
   const [options, setOptions] = useState({ roles: [] });
   const [query, setQuery] = useState("");
   const [appliedQuery, setAppliedQuery] = useState("");
@@ -261,19 +263,25 @@ export default function UserManagementPanel({ canManage, onManagePermissions, re
   }, []);
 
   const loadUsers = useCallback(async () => {
+    const sequence = ++loadSequence.current;
     setLoading(true);
     try {
-      const response = await usersAPI.list({ q: appliedQuery || undefined, role_id: roleId || undefined, page, page_size: 20 });
+      const response = await usersAPI.list({ q: appliedQuery || undefined, role_id: roleId || undefined, include_test: includeTest, page, page_size: 20 });
+      if (sequence !== loadSequence.current) return;
       setUsers(Array.isArray(response?.data) ? response.data : []);
       setPagination(response?.pagination || { page, page_size: 20, total: 0, total_pages: 0 });
     } catch (error) {
+      if (sequence !== loadSequence.current) return;
       console.error("Failed to load managed users", error);
       toast.error("ไม่สามารถโหลดรายชื่อผู้ใช้งานได้");
       setUsers([]);
     } finally {
-      setLoading(false);
+      if (sequence === loadSequence.current) setLoading(false);
     }
-  }, [appliedQuery, page, roleId]);
+  }, [appliedQuery, page, roleId, includeTest]);
+
+  useEffect(() => { setPage(1); }, [includeTest]);
+  useEffect(() => () => { loadSequence.current += 1; }, []);
 
   useEffect(() => { loadOptions(); }, [loadOptions]);
   useEffect(() => { loadUsers(); }, [loadUsers, refreshKey]);
@@ -309,9 +317,16 @@ export default function UserManagementPanel({ canManage, onManagePermissions, re
       <div className="border-b border-slate-200 bg-slate-50 p-4 sm:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <form onSubmit={applySearch} className="grid flex-1 gap-3 md:grid-cols-[minmax(16rem,1fr)_13rem_auto]">
-            <label className="block text-sm font-medium text-slate-700">ค้นหาผู้ใช้งาน
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
+            <label className="block min-w-0 flex-1 text-sm font-medium text-slate-700">ค้นหาผู้ใช้งาน
               <span className="relative mt-1.5 block"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ชื่อ นามสกุล หรืออีเมล" className="min-h-11 w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" /></span>
             </label>
+              <TestUsersSwitch checked={includeTest} onChange={(checked) => {
+                setPage(1);
+                setAppliedQuery(query.trim());
+                onIncludeTestChange?.(checked);
+              }} />
+            </div>
             <label className="block text-sm font-medium text-slate-700">ตำแหน่ง
               <select value={roleId} onChange={(event) => { setRoleId(event.target.value); setPage(1); }} className="mt-1.5 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"><option value="">ทุกตำแหน่ง</option>{(options.roles || []).map((item) => <option key={item.role_id} value={item.role_id}>{getRolePresentation(item).labelTh}</option>)}</select>
             </label>
@@ -329,7 +344,7 @@ export default function UserManagementPanel({ canManage, onManagePermissions, re
             {!loading && users.length === 0 ? <tr><td colSpan={5} className="px-5 py-16 text-center"><UserRound className="mx-auto h-8 w-8 text-slate-400" aria-hidden="true" /><p className="mt-3 font-semibold text-slate-800">ไม่พบผู้ใช้งาน</p><p className="mt-1 text-sm text-slate-500">ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p></td></tr> : null}
             {!loading ? users.map((user) => (
               <tr key={user.user_id} className="align-top transition hover:bg-slate-50">
-                <td className="px-5 py-4"><p className="font-semibold text-slate-900">{displayName(user)}</p><p className="mt-1 text-slate-600">{user.email}</p><p className="mt-1 text-xs text-slate-400">User ID: {user.user_id}</p></td>
+                <td className="px-5 py-4"><p className="font-semibold text-slate-900">{displayName(user)}{user.is_test ? <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">user test</span> : null}</p><p className="mt-1 text-slate-600">{user.email}</p><p className="mt-1 text-xs text-slate-400">User ID: {user.user_id}</p></td>
                 <td className="px-5 py-4"><span className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">{getRolePresentation(roleLookup.get(String(user.role_id)) || { role: user.role }).labelTh}</span></td>
                 <td className="px-5 py-4"><div className="flex flex-wrap gap-1.5"><LoginBadge active={user.local_auth}>{user.local_auth ? "Local พร้อมใช้" : "Local ยังไม่มีรหัส"}</LoginBadge><LoginBadge active={user.sso_auth}>{user.sso_auth ? "KKU SSO เชื่อมแล้ว" : "KKU SSO ยังไม่เชื่อม"}</LoginBadge></div></td>
                 <td className="px-5 py-4 text-slate-600">{formatDateTime(user.last_login_at)}</td>

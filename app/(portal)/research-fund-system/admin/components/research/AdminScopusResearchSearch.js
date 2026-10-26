@@ -478,7 +478,7 @@ export default function AdminScopusResearchSearch() {
   const filteredExportReady = hasExportableData && !pubLoading && pubQuery.trim() === appliedQuery;
   const roleRaw = user?.role_id ?? user?.role;
   const isAdmin = Number(roleRaw) === 3 || String(roleRaw || "").toLowerCase() === "admin";
-  const hasPermissionSnapshot = Array.isArray(user?.permissions) && user.permissions.length > 0;
+  const hasPermissionSnapshot = Array.isArray(user?.permissions);
   const canExport = hasPermissionSnapshot
     ? hasPermission("scopus.publications.export") || hasPermission("report.export")
     : isAdmin;

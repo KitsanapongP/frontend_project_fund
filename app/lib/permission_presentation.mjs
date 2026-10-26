@@ -79,6 +79,14 @@ export const ROLE_PRESENTATION = {
 };
 
 export const PERMISSION_PRESENTATION = {
+  "fund.settings.read": { titleTh: "ดูการตั้งค่าทุน", descriptionTh: "ดูปีงบประมาณ หมวดทุน และข้อมูลอ้างอิง", category: "content_reports", kind: "view", risk: "high" },
+  "fund.settings.manage": { titleTh: "จัดการการตั้งค่าทุน", descriptionTh: "เพิ่ม แก้ไข และลบการตั้งค่าทุนและข้อมูลอ้างอิง", category: "content_reports", kind: "manage", risk: "high" },
+  "projects.manage": { titleTh: "จัดการโครงการ", descriptionTh: "เพิ่ม แก้ไข และลบโครงการและประเภทโครงการ", category: "content_reports", kind: "manage", risk: "high" },
+  "academic.import.manage": { titleTh: "จัดการการนำเข้าข้อมูล", descriptionTh: "เรียกใช้งานนำเข้า จัดประเภท และซิงค์ข้อมูล", category: "research_data", kind: "manage", risk: "high" },
+  "submission.manage.all": { titleTh: "จัดการคำขอของทุกคน", descriptionTh: "จัดการคำขอ ผู้ร่วมงาน และเอกสารของผู้ใช้ทุกคน", category: "fund_requests", kind: "manage", risk: "high" },
+  "fund.visibility.all": { titleTh: "ดูทุนทุกบทบาท", descriptionTh: "ดูทุนได้โดยไม่กรองตามบทบาทเป้าหมาย", category: "fund_requests", kind: "view", risk: "high" },
+  "submission.staff.read": { titleTh: "ดูคิวคำขอสำหรับเจ้าหน้าที่", descriptionTh: "ดูรายการคำขอสำหรับการตรวจสอบของเจ้าหน้าที่", category: "fund_requests", kind: "view", risk: "high" },
+
   "mou.read": {
     titleTh: "ดูข้อมูล MOU",
     descriptionTh: "ดูรายการ รายละเอียด กิจกรรม แดชบอร์ด และส่งออกข้อมูล MOU",
