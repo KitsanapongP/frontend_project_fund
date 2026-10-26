@@ -162,6 +162,32 @@ export default function FundSettingsContent({ onNavigate }) {
     loadYears();
   }, []);
 
+  // Refresh the active year without changing the year being prepared/edited.
+  useEffect(() => {
+    let cancelled = false;
+    let generation = 0;
+    const refreshCurrentYear = async () => {
+      if (document.visibilityState === "hidden") return;
+      const request = ++generation;
+      try {
+        const response = await systemConfigAPI.getCurrentYear();
+        const value = response?.data?.current_year ?? response?.current_year ?? null;
+        if (!cancelled && request === generation) setCurrentYearValue(value);
+      } catch {
+        if (!cancelled && request === generation) setCurrentYearValue(null);
+      }
+    };
+    window.addEventListener("budget-year-updated", refreshCurrentYear);
+    window.addEventListener("focus", refreshCurrentYear);
+    document.addEventListener("visibilitychange", refreshCurrentYear);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("budget-year-updated", refreshCurrentYear);
+      window.removeEventListener("focus", refreshCurrentYear);
+      document.removeEventListener("visibilitychange", refreshCurrentYear);
+    };
+  }, []);
+
   useEffect(() => {
     if (selectedYear) {
       loadCategories();
@@ -229,11 +255,7 @@ export default function FundSettingsContent({ onNavigate }) {
       const systemYearValue =
         currentYearRes?.current_year ?? currentYearRes?.data?.current_year ?? null;
 
-      if (systemYearValue !== undefined) {
-        setCurrentYearValue(systemYearValue ?? null);
-      } else {
-        setCurrentYearValue(new Date().getFullYear() + 543);
-      }
+      setCurrentYearValue(systemYearValue);
 
       if (!nextSelected && systemYearValue !== null) {
         nextSelected = findMatchingYear(systemYearValue);
@@ -1567,6 +1589,24 @@ export default function FundSettingsContent({ onNavigate }) {
       ]}
       loading={loading}
     >
+      <div className="sticky top-[calc(var(--portal-header-height)+0.5rem)] z-20 mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 shadow-sm" role="status" aria-live="polite">
+        <div className="flex items-center gap-4">
+          <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
+            <CalendarRange size={26} aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-blue-800">ปีงบประมาณปัจจุบันที่เปิดใช้งาน</p>
+            <p className="mt-1 text-2xl font-bold text-blue-950 sm:text-3xl">
+              {currentYearValue ? `พ.ศ. ${currentYearValue}` : loading ? 'กำลังโหลด...' : 'ยังไม่พบปีที่เปิดใช้'}
+            </p>
+            <p className="mt-1 text-xs text-blue-700">ปีที่ระบบใช้รับคำขอใหม่ การเลือกปีเพื่อแก้ไขข้อมูลทุนจะไม่เปลี่ยนปีนี้</p>
+          </div>
+        </div>
+        <button type="button" onClick={() => setActiveTab('system')} className="rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+          ตั้งค่าปีที่เปิดใช้
+        </button>
+      </div>
+
       {alertChecking ? (
         <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-200 border-t-amber-700" aria-hidden="true" />

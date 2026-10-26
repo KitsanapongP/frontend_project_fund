@@ -288,6 +288,9 @@ function ensureIncludeIds(list, ids = []) {
 export default function SystemConfigSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeYear, setActiveYear] = useState('');
+  const [yearReadiness, setYearReadiness] = useState(null);
+  const [checkingYear, setCheckingYear] = useState(false);
   const [savingSlot, setSavingSlot] = useState(null);
 
   const [form, setForm] = useState({
@@ -313,6 +316,7 @@ export default function SystemConfigSettings() {
     service_end_date: "",
   });
 
+  const changingYear = String(form.current_year) !== String(activeYear);
   const [windowInfo, setWindowInfo] = useState(null);
   const [annList, setAnnList] = useState([]);
   const [yearOptions, setYearOptions] = useState([]);
@@ -399,6 +403,8 @@ export default function SystemConfigSettings() {
   async function loadConfig() {
     const raw = await systemConfigAPI.getAdmin();
     const normalized = systemConfigAPI.normalizeWindow(raw);
+    setActiveYear(normalized.current_year ?? "");
+    setYearReadiness(null);
 
     setForm((f) => ({
       ...f,
@@ -729,6 +735,22 @@ export default function SystemConfigSettings() {
     }
   }, [hasMoreHeadHistory, showAllHeadHistory]);
 
+  const checkYearReadiness = async () => {
+    setCheckingYear(true);
+    try {
+      const response = await systemConfigAPI.getYearReadiness({ year: String(form.current_year).trim() });
+      const report = response?.data ?? response;
+      setYearReadiness(report);
+      return report;
+    } catch (error) {
+      setYearReadiness(null);
+      await Swal.fire({ icon: 'error', title: 'ตรวจความพร้อมไม่ได้', text: error.message || 'กรุณาลองใหม่' });
+      return null;
+    } finally {
+      setCheckingYear(false);
+    }
+  };
+
   // ====== บันทึกปีงบประมาณ & ช่วงเวลา (global window) ======
   const handleSave = async () => {
     if (!String(form.current_year || "").trim()) {
@@ -751,7 +773,27 @@ export default function SystemConfigSettings() {
     }
     setSaving(true);
     try {
+      let report = null;
+      if (changingYear) {
+        report = await checkYearReadiness();
+        if (!report) return;
+        if (!report.ready) {
+          await Swal.fire({
+            icon: 'warning', title: 'ปีงบประมาณยังไม่พร้อมเปิดใช้',
+            text: report.checks.filter((check) => !check.passed).map((check) => check.label).join('\n'),
+            confirmButtonText: 'กลับไปเตรียมข้อมูล',
+          });
+          return;
+        }
+        const confirmed = await Swal.fire({
+          icon: 'question', title: `เปิดใช้ปีงบประมาณ ${report.year}`,
+          text: 'คำขอใหม่ หน้ารายการทุน และการตรวจโควตาจะใช้ปีนี้พร้อมกัน คำขอและร่างที่บันทึกแล้วจะคงปีเดิม กรุณาตรวจอัตรา วงเงิน วันตัดรอบ และประกาศให้ตรงกับปีใหม่ก่อนเปิดใช้',
+          showCancelButton: true, confirmButtonText: 'เปิดใช้ปีงบประมาณนี้', cancelButtonText: 'กลับไปตรวจสอบ',
+        });
+        if (!confirmed.isConfirmed) return;
+      }
       const payload = {
+        ...(report ? { current_year_id: report.year_id } : {}),
         current_year: String(form.current_year).trim(),
         start_date: toISOOrNull(form.start_date),
         end_date: toISOOrNull(form.end_date),
@@ -759,7 +801,7 @@ export default function SystemConfigSettings() {
         max_submissions_per_year: maxSubmissions,
       };
       await systemConfigAPI.updateWindow(payload);
-      toast("success", "บันทึกปีงบประมาณ & ช่วงเวลา สำเร็จ");
+      toast("success", changingYear ? "เปิดใช้ปีงบประมาณใหม่ทั้งระบบแล้ว" : "บันทึกช่วงเวลาและการตั้งค่าสำเร็จ");
       await loadConfig();
     } catch (e) {
       toast("error", e.message || "เกิดข้อผิดพลาดในการบันทึก");
@@ -1036,16 +1078,16 @@ export default function SystemConfigSettings() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">ส่วนที่ 1</p>
                   <h3 className="text-base font-semibold text-slate-900">ปีงบประมาณและช่วงเวลา</h3>
-                  <p className="text-sm text-slate-500">กำหนดปีงบประมาณและช่วงเวลาเปิด/ปิดการยื่นคำร้องของระบบ</p>
+                  <p className="text-sm text-slate-500">เตรียมข้อมูลปีใหม่ในเมนูจัดการทุน แล้วเปิดใช้ที่นี่ครั้งเดียวสำหรับหน้าขอทุนและโควตา</p>
                 </div>
               </div>
               <button
                 onClick={handleSave}
-                disabled={saving || loading}
+                disabled={saving || loading || checkingYear}
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
               >
                 <Save size={16} />
-                {saving ? "กำลังบันทึก..." : "บันทึกปีงบประมาณและช่วงเวลา"}
+                {saving ? "กำลังบันทึก..." : changingYear ? "ตรวจความพร้อมและเปิดใช้ปีงบประมาณ" : "บันทึกช่วงเวลาและการตั้งค่า"}
               </button>
             </div>
 
@@ -1056,12 +1098,13 @@ export default function SystemConfigSettings() {
                     <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700"><CalendarRange size={18} /></span>
                     <div>
                       <h4 className="text-sm font-semibold text-slate-900">ปีงบประมาณปัจจุบัน</h4>
-                      <p className="text-xs text-slate-500">ปีหลักที่ระบบใช้อ้างอิง</p>
+                      <p className="text-xs text-slate-500">ปีที่ใช้งานอยู่: {activeYear ? `พ.ศ. ${activeYear}` : "ยังไม่กำหนด"}</p>
                     </div>
                   </div>
                   <select
                     value={form.current_year}
-                    onChange={(e) => setForm((f) => ({ ...f, current_year: e.target.value }))}
+                    onChange={(e) => { setYearReadiness(null); setForm((f) => ({ ...f, current_year: e.target.value })); }}
+                    disabled={saving || checkingYear}
                     className="w-full rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="">เลือกปีงบประมาณ</option>
@@ -1070,6 +1113,19 @@ export default function SystemConfigSettings() {
                     ))}
                   </select>
                   {selectableYearOptions.length === 0 ? <p className="mt-2 text-xs text-amber-700">เพิ่มปีงบประมาณในเมนูจัดการทุนก่อน</p> : null}
+                  <p className="mt-2 text-xs text-slate-600">เพิ่มหรือคัดลอกปีล่วงหน้าได้ ปีที่เลือกจะมีผลเมื่อกดเปิดใช้เท่านั้น</p>
+                  <button type="button" onClick={checkYearReadiness} disabled={!form.current_year || checkingYear || saving} className="mt-3 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-blue-700 disabled:opacity-60">
+                    {checkingYear ? 'กำลังตรวจ...' : 'ตรวจความพร้อมของปีที่เลือก'}
+                  </button>
+                  {yearReadiness && (
+                    <div className="mt-3 text-sm" role="status">
+                      <p className={yearReadiness.ready ? 'font-medium text-green-700' : 'font-medium text-amber-700'}>ปี {yearReadiness.year}: {yearReadiness.ready ? 'ข้อมูลพื้นฐานพร้อมเปิดใช้' : 'ยังมีข้อมูลที่ต้องเตรียม'}</p>
+                      <ul className="mt-2 space-y-1">
+                        {yearReadiness.checks.map((check) => <li key={check.key} className={check.passed ? 'text-green-700' : 'text-red-700'}>{check.passed ? '✓' : '✕'} {check.label}</li>)}
+                      </ul>
+                      <p className="mt-2 text-xs text-slate-600">ตรวจว่ามีข้อมูลแล้ว กรุณาทวนจำนวนเงิน วันตัดรอบ และประกาศให้ถูกต้องก่อนเปิดใช้</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">

@@ -92,6 +92,9 @@ export const systemConfigAPI = {
   async getAdmin() {
     return apiClient.get("/admin/system-config");
   },
+  async getYearReadiness(params = {}) {
+    return apiClient.get("/admin/system-config/year-readiness", params);
+  },
   async getCurrentYear() {
     return apiClient.get("/system-config/current-year");
   },
@@ -178,7 +181,9 @@ export const systemConfigAPI = {
     return apiClient.put("/admin/system-config", payload);
   },
   async updateWindow(payload) {
-    return apiClient.put("/admin/system-config", payload);
+    const result = await apiClient.put("/admin/system-config", payload);
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("budget-year-updated"));
+    return result;
   },
 
   /**

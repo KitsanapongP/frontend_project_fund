@@ -1699,6 +1699,14 @@ export default function GenericFundApplicationForm({
 
       await loadSystemAnnouncements();
 
+      if (!subcategoryData?.submissionId) {
+        const activeResponse = await systemConfigAPI.getCurrentYear();
+        const active = activeResponse?.data ?? activeResponse;
+        if (!active?.year_id || Number(resolvedYearId) !== Number(active.year_id)) {
+          throw new Error('ปีงบประมาณที่เปิดใช้เปลี่ยนแล้ว กรุณากลับไปเลือกทุนใหม่');
+        }
+      }
+
       let documentContext = subcategoryData;
       if (subcategoryData?.submissionId) {
         documentContext = await loadExistingSubmission(subcategoryData.submissionId);
@@ -3051,7 +3059,7 @@ export default function GenericFundApplicationForm({
   };
 
   const ensureSubmissionLimitAcknowledged = async () => {
-    const usage = submissionUsage ?? (await fetchSubmissionUsage());
+    const usage = await fetchSubmissionUsage();
     if (!usage || !usage.overLimit || !usage.maxSubmissionsPerYear) {
       return true;
     }

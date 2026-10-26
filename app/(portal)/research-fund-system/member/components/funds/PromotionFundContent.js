@@ -1,6 +1,7 @@
 // app/teacher/components/funds/PromotionFundContent.js - ทุนอุดหนุนกิจกรรม (Using New API)
 "use client";
 
+import { resolveActiveBudgetYear } from '@/app/lib/budget_year.mjs';
 import { RESEARCH_FUND_PAGE_ICONS } from "@/app/lib/research_fund_menu_presentation";
 
 import { useState, useEffect, useRef } from "react";
@@ -288,36 +289,9 @@ export default function PromotionFundContent({ onNavigate }) {
 
       setSystemConfig(configData || null);
 
-      const systemYearCandidate =
-        currentYearRes?.current_year ??
-        currentYearRes?.data?.current_year ??
-        configData?.current_year ??
-        null;
-
-      const fallbackYear = normalizedYears.length
-        ? String(normalizedYears[0].year)
-        : '';
-
-      const resolvedYearCandidate = systemYearCandidate
-        ? String(systemYearCandidate)
-        : fallbackYear;
-
-      const hasResolvedYear = normalizedYears.some(
-        (year) => String(year.year) === resolvedYearCandidate
-      );
-
-      const finalYear = hasResolvedYear ? resolvedYearCandidate : fallbackYear;
-
-      const normalizedFinalYear = finalYear ? String(finalYear) : '';
-
-      const limitedYears = normalizedFinalYear
-        ? normalizedYears.filter((year) => String(year.year) === normalizedFinalYear)
-        : normalizedYears;
-
-      const yearOptions = (limitedYears.length ? limitedYears : normalizedYears).map((year) => ({
-        ...year,
-        year: year?.year != null ? String(year.year) : year?.year,
-      }));
+      const activeYear = resolveActiveBudgetYear(currentYearRes, normalizedYears);
+      const normalizedFinalYear = activeYear.year;
+      const yearOptions = [activeYear];
 
       setYears(yearOptions);
       setCurrentYear(normalizedFinalYear);

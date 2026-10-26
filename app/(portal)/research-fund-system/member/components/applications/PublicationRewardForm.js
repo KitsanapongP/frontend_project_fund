@@ -1,6 +1,7 @@
 // app/teacher/components/applications/PublicationRewardForm.js
 "use client";
 
+import { resolveActiveBudgetYear, selectApplicationBudgetYear } from '@/app/lib/budget_year.mjs';
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -867,9 +868,9 @@ const getMaxFeeLimit = async (quartile, year = null, preloadedLimits = null) => 
   }
 
   try {
-    // หา year (พ.ศ.) จาก year_id หรือใช้ปีปัจจุบัน + 543
-    const currentYear = new Date().getFullYear() + 543;
-    const targetYear = year || currentYear.toString();
+    // The selected/saved budget year must be explicit; never use the calendar year.
+    if (!year) return 0;
+    const targetYear = String(year);
 
     // เรียก API เพื่อดึงวงเงินสูงสุด
     const response = await rewardConfigAPI.lookupMaxAmount(
@@ -1512,6 +1513,7 @@ export default function PublicationRewardForm({
   const [resolutionError, setResolutionError] = useState('');
   const [rewardRateMap, setRewardRateMap] = useState({});
   const [budgetOptionMap, setBudgetOptionMap] = useState({});
+  const [savedBudgetYear, setSavedBudgetYear] = useState(null);
   const [lockedBudgetYearLabel, setLockedBudgetYearLabel] = useState(null);
   const [lockedBudgetYearId, setLockedBudgetYearId] = useState(null);
   const [rewardRateYear, setRewardRateYear] = useState(null);
@@ -1772,10 +1774,7 @@ export default function PublicationRewardForm({
   });
 
   const resetForm = useCallback(() => {
-    let defaultYearId = lockedBudgetYearId ?? normalizedInitialYearId ?? null;
-    if (defaultYearId == null && Array.isArray(years) && years.length > 0) {
-      defaultYearId = years[0]?.year_id ?? null;
-    }
+    const defaultYearId = lockedBudgetYearId ?? null;
 
     previousYearRef.current = defaultYearId ?? null;
     previousAuthorStatusRef.current = '';
@@ -2431,9 +2430,12 @@ export default function PublicationRewardForm({
       return /^ปี/.test(raw) ? raw : `ปีงบประมาณ ${raw}`;
     };
 
-    if (lockedBudgetYearLabel) {
-      return normalizeYearLabel(lockedBudgetYearLabel);
-    }
+    const displayedYear = selectApplicationBudgetYear(
+      { year_id: lockedBudgetYearId, year: lockedBudgetYearLabel },
+      initialSubmissionId ? savedBudgetYear : null
+    );
+    if (initialSubmissionId && !savedBudgetYear) return '';
+    if (displayedYear?.year) return normalizeYearLabel(displayedYear.year);
 
     if (formData.year_id == null && years.length === 0) {
       return '';
@@ -2452,7 +2454,7 @@ export default function PublicationRewardForm({
     }
 
     return targetId ? normalizeYearLabel(targetId) : '';
-  }, [formData.year_id, years, lockedBudgetYearLabel]);
+  }, [formData.year_id, years, lockedBudgetYearLabel, lockedBudgetYearId, initialSubmissionId, savedBudgetYear]);
 
   const effectiveRewardAmount = formData.has_received_reward
     ? 0
@@ -2560,6 +2562,15 @@ export default function PublicationRewardForm({
         }
 
         setCurrentSubmissionId(payload.submission_id);
+        const savedYear = payload.year ?? payload.Year;
+        const savedYearEntry = {
+          year_id: payload.year_id,
+          year: savedYear?.year ?? savedYear?.Year ?? years.find((entry) => Number(entry.year_id) === Number(payload.year_id))?.year ?? '',
+        };
+        setSavedBudgetYear(savedYearEntry);
+        if (savedYearEntry.year) {
+          setYears((previous) => previous.some((entry) => Number(entry.year_id) === Number(savedYearEntry.year_id)) ? previous : [...previous, savedYearEntry]);
+        }
         const submissionSDGs = payload.sdgs || payload.submission_sdgs || [];
         setSelectedSDGIds(submissionSDGs.map((sdg) => Number(sdg.sdg_id)).filter(Number.isInteger));
 
@@ -3315,10 +3326,10 @@ export default function PublicationRewardForm({
           // หา year (พ.ศ.) จาก year_id
           const yearObj = years.find(y => y.year_id === formData.year_id);
           const targetYear =
-            lockedBudgetYearLabel ||
-            rewardConfigYear ||
             yearObj?.year ||
-            (new Date().getFullYear() + 543).toString();
+          rewardConfigYear ||
+          lockedBudgetYearLabel ||
+          null;
 
           const maxLimit = await getMaxFeeLimit(formData.journal_quartile, targetYear, rewardConfigMap);
 
@@ -3488,10 +3499,10 @@ export default function PublicationRewardForm({
 
         const yearObj = years.find(y => y.year_id === formData.year_id);
         const targetYear =
-          lockedBudgetYearLabel ||
-          rewardConfigYear ||
           yearObj?.year ||
-          (new Date().getFullYear() + 543).toString();
+          rewardConfigYear ||
+          lockedBudgetYearLabel ||
+          null;
         const check = await checkFeesLimit(
           formData.revision_fee,
           formData.publication_fee,
@@ -3544,10 +3555,10 @@ export default function PublicationRewardForm({
       if (formData.journal_quartile) {
         const yearObj = years.find(y => y.year_id === formData.year_id);
         const targetYear =
-          lockedBudgetYearLabel ||
-          rewardConfigYear ||
           yearObj?.year ||
-          (new Date().getFullYear() + 543).toString();
+          rewardConfigYear ||
+          lockedBudgetYearLabel ||
+          null;
         const maxLimit = await getMaxFeeLimit(formData.journal_quartile, targetYear, rewardConfigMap);
 
         // If quartile doesn't allow fees
@@ -3647,6 +3658,7 @@ export default function PublicationRewardForm({
         docTypesResponse,
         currentYearResponse,
         availableRateYearsResponse,
+        savedSubmissionResponse,
       ] = await Promise.all([
         systemAPI.getYears(),
         publicationFormAPI.getUsers(),
@@ -3659,6 +3671,7 @@ export default function PublicationRewardForm({
           console.warn('Unable to fetch publication reward rate years:', error);
           return null;
         }),
+        initialSubmissionId ? submissionAPI.getById(initialSubmissionId).catch(() => null) : Promise.resolve(null),
       ]);
 
       // === Lock current system_config to the submission time ===
@@ -3702,61 +3715,40 @@ export default function PublicationRewardForm({
         })
         .filter(Boolean);
 
+      const savedSubmission = savedSubmissionResponse?.submission ?? savedSubmissionResponse;
+      const savedYearRecord = savedSubmission?.year ?? savedSubmission?.Year;
+      const savedYearEntry = savedSubmission?.year_id && savedYearRecord?.year
+        ? { year_id: savedSubmission.year_id, year: String(savedYearRecord.year) }
+        : null;
+      if (savedYearEntry && !normalizedYears.some((entry) => Number(entry.year_id) === Number(savedYearEntry.year_id))) {
+        normalizedYears.push(savedYearEntry);
+      }
+
       if (normalizedYears.length > 0) {
         setYears(normalizedYears);
       } else {
         setYears([]);
       }
 
-      const sortedYearsDesc = normalizedYears
-        .slice()
-        .sort((a, b) => Number(String(b.year).replace(/[^0-9]/g, '')) - Number(String(a.year).replace(/[^0-9]/g, '')));
-
-      const systemYearCandidate = [
-        currentYearResponse?.current_year,
-        currentYearResponse?.data?.current_year,
-        currentYearResponse?.year,
-        currentYearResponse?.data?.year,
-      ].find((value) => value !== null && value !== undefined && value !== '') ?? null;
-
-      let lockedYearEntry = null;
-      if (systemYearCandidate != null) {
-        const targetLabel = String(systemYearCandidate);
-        lockedYearEntry = normalizedYears.find((year) => String(year.year) === targetLabel) ?? null;
+      let activeYear = null;
+      try {
+        activeYear = resolveActiveBudgetYear(currentYearResponse, normalizedYears);
+      } catch (error) {
+        if (!initialSubmissionId) throw error;
       }
-
-      if (!lockedYearEntry && sortedYearsDesc.length > 0) {
-        lockedYearEntry = sortedYearsDesc[0];
+      if (!initialSubmissionId && yearId != null && Number(yearId) !== Number(activeYear?.year_id)) {
+        throw new Error('ปีงบประมาณที่เปิดใช้เปลี่ยนแล้ว กรุณากลับไปเลือกทุนใหม่');
       }
-
-      const lockedYearLabel = lockedYearEntry ? String(lockedYearEntry.year) : systemYearCandidate ? String(systemYearCandidate) : null;
-      setLockedBudgetYearLabel(lockedYearLabel ?? null);
-      setLockedBudgetYearId(lockedYearEntry?.year_id ?? null);
-
-      let currentYear = null;
-
-      if (yearId != null) {
-        const matchedFromProp = normalizedYears.find((year) => Number(year.year_id) === Number(yearId));
-        if (matchedFromProp) {
-          currentYear = matchedFromProp;
-        }
-      }
-
-      if (!currentYear && lockedYearEntry) {
-        currentYear = lockedYearEntry;
-      }
-
-      if (!currentYear && sortedYearsDesc.length > 0) {
-        currentYear = sortedYearsDesc[0];
-      }
-
+      setLockedBudgetYearLabel(activeYear?.year ?? null);
+      setLockedBudgetYearId(activeYear?.year_id ?? null);
+      // A saved request keeps its own year; a new request always follows activation.
+      const savedContextYear = initialSubmissionId
+        ? savedYearEntry ?? normalizedYears.find((entry) => Number(entry.year_id) === Number(savedSubmission?.year_id ?? yearId))
+        : null;
+      const currentYear = selectApplicationBudgetYear(activeYear, savedContextYear);
+      const lockedYearEntry = activeYear;
       if (currentYear && !initialSubmissionId) {
-        setFormData((prev) => {
-          if (prev.year_id != null && prev.year_id !== '') {
-            return prev;
-          }
-          return { ...prev, year_id: currentYear.year_id };
-        });
+        setFormData((prev) => ({ ...prev, year_id: currentYear.year_id }));
       }
 
       // Load enabled years for this category and ensure locked year stays selectable
@@ -3803,9 +3795,8 @@ export default function PublicationRewardForm({
         }
       };
 
-      pushUniqueYear(lockedYearLabel);
-      normalizedRateYears.forEach(pushUniqueYear);
-      pushUniqueYear(new Date().getFullYear() + 543);
+      pushUniqueYear(currentYear?.year);
+      if (initialSubmissionId) normalizedRateYears.forEach(pushUniqueYear);
 
       // Fetch reward rates using prioritized years
       let resolvedRateYearLabel = null;
@@ -6135,10 +6126,10 @@ export default function PublicationRewardForm({
     if (formData.journal_quartile) {
       const yearObj = years.find(y => y.year_id === formData.year_id);
       const targetYear =
-        lockedBudgetYearLabel ||
-        rewardConfigYear ||
         yearObj?.year ||
-        (new Date().getFullYear() + 543).toString();
+          rewardConfigYear ||
+          lockedBudgetYearLabel ||
+          null;
       const feeErrors = await validateFees(
         formData.journal_quartile,
         formData.revision_fee,
@@ -6806,7 +6797,7 @@ const showSubmissionConfirmation = async () => {
   // =================================================================
 
   const ensureSubmissionLimitAcknowledged = async () => {
-    const usage = submissionUsage ?? (await fetchSubmissionUsage());
+    const usage = await fetchSubmissionUsage();
     if (!usage || !usage.overLimit || !usage.maxSubmissionsPerYear) {
       return true;
     }
