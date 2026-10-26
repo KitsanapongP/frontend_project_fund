@@ -458,10 +458,11 @@ export const adminAPI = {
     }
   },
 
-  async copyFundStructure(sourceYearId, { targetYear, targetYearId, target_budget } = {}) {
+  async copyFundStructure(sourceYearId, { targetYear, targetYearId, target_budget, copyAll = false } = {}) {
     try {
       const payload = {
         source_year_id: sourceYearId,
+        copy_all: copyAll === true,
       };
 
       if (targetYearId !== undefined && targetYearId !== null && targetYearId !== '') {

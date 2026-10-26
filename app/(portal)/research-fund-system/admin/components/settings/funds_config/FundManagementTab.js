@@ -216,6 +216,7 @@ const FundManagementTab = ({
 
   const [copyModalOpen, setCopyModalOpen] = React.useState(false);
   const [copyMode, setCopyMode] = React.useState("new");
+  const [copyAll, setCopyAll] = React.useState(true);
   const [copyNewYear, setCopyNewYear] = React.useState(nextYear?.toString() || "");
   const [copyExistingYearId, setCopyExistingYearId] = React.useState("");
   const [copyError, setCopyError] = React.useState("");
@@ -266,6 +267,7 @@ const FundManagementTab = ({
 
       onCopyToNewYear(selectedYear, {
         mode: "existing",
+        copyAll,
         yearId: copyExistingYearId,
         year: displayYear,
       });
@@ -294,6 +296,7 @@ const FundManagementTab = ({
 
     onCopyToNewYear(selectedYear, {
       mode: "new",
+      copyAll,
       year: yearValue,
     });
     setCopyModalOpen(false);
@@ -947,13 +950,24 @@ const FundManagementTab = ({
               <Copy size={18} />
             </span>
             <div>
-              <p className="text-base font-semibold text-slate-900">คัดลอกโครงสร้างทุน</p>
-              <p className="text-sm text-slate-500">นำโครงสร้างทุนจากปีที่เลือกไปยังปีใหม่หรือปีที่มีอยู่</p>
+              <p className="text-base font-semibold text-slate-900">คัดลอกข้อมูลทุนไปยังปีอื่น</p>
+              <p className="text-sm text-slate-500">นำข้อมูลจากปีที่เลือกไปเตรียมปีปลายทาง โดยยังไม่เปลี่ยนปีปัจจุบัน</p>
             </div>
           </div>
         }
       >
         <form onSubmit={handleConfirmCopy} className="space-y-5">
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <label className="flex items-start gap-3">
+              <input type="checkbox" checked={copyAll} onChange={(event) => setCopyAll(event.target.checked)} className="mt-1" />
+              <span>
+                <span className="block font-semibold text-blue-950">คัดลอกทั้งชุด</span>
+                <span className="mt-1 block text-sm text-blue-800">โครงสร้างทุนและงบประมาณ + อัตราเงินรางวัล (Reward Rates) + วงเงินค่าธรรมเนียม (Fee Limits) + วันตัดรอบการพิจารณาทุกทุน</span>
+              </span>
+            </label>
+            <p className="mt-3 text-xs text-blue-800">วันตัดรอบจะเลื่อนตามจำนวนปีที่ต่างกัน คงเดือนและเวลาเดิม งบที่ใช้แล้วเริ่มต้นเป็น 0 กรุณาทวนวันตัดรอบและวงเงินก่อนเปิดใช้ปีใหม่</p>
+            <p className="mt-1 text-xs text-blue-800">ทั้งชุดใช้ได้กับปีใหม่หรือปีที่ยังไม่มีข้อมูลเท่านั้น หากเอาเครื่องหมายออกจะคัดลอกเฉพาะโครงสร้างทุนและงบประมาณ</p>
+          </div>
           <div className="space-y-4">
             <div
               className={`rounded-xl border p-4 transition ${
@@ -1001,7 +1015,7 @@ const FundManagementTab = ({
                 />
                 <div className="space-y-1">
                   <p className="font-medium text-gray-900">เพิ่มไปยังปีที่มีอยู่</p>
-                  <p className="text-sm text-gray-600">นำโครงสร้างทุนไปเพิ่มในปีที่เลือก</p>
+                  <p className="text-sm text-gray-600">เลือกปีปลายทางที่มีอยู่แล้ว การคัดลอกทั้งชุดต้องเป็นปีที่ยังไม่มีข้อมูล</p>
                 </div>
               </label>
               <select
@@ -1040,7 +1054,7 @@ const FundManagementTab = ({
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
             >
               <Copy size={16} />
-              คัดลอก
+              {copyAll ? "คัดลอกทั้งชุด" : "คัดลอกโครงสร้างทุน"}
             </button>
           </div>
         </form>

@@ -1216,7 +1216,7 @@ export default function FundSettingsContent({ onNavigate }) {
       return;
     }
 
-    const copyOptions = {};
+    const copyOptions = { copyAll: typeof destination === "object" && destination.copyAll !== false };
     if (mode === 'existing') {
       if (normalizedTargetYearId) {
         const numericTargetId = Number(normalizedTargetYearId);
@@ -1408,7 +1408,16 @@ export default function FundSettingsContent({ onNavigate }) {
           ? `คัดลอกข้อมูลไปยังปี ${targetLabel} (เพิ่มในปีที่มีอยู่) เรียบร้อยแล้ว`
           : `คัดลอกข้อมูลไปยังปี ${targetLabel} เรียบร้อยแล้ว`;
 
-      showSuccess(successText);
+      if (copyOptions.copyAll) {
+        const copied = response?.copied ?? {};
+        await Swal.fire({
+          icon: 'success', title: `คัดลอกทั้งชุดไปปี ${targetLabel} แล้ว`,
+          text: `หมวดทุน ${copied.categories ?? 0} รายการ, ทุนย่อย ${copied.subcategories ?? 0} รายการ, งบประมาณ ${copied.budgets ?? 0} รายการ, อัตรารางวัล ${copied.reward_rates ?? 0} รายการ, วงเงินค่าธรรมเนียม ${copied.fee_limits ?? 0} รายการ และวันตัดรอบ ${copied.installments ?? 0} รายการ\nกรุณาทวนข้อมูล แล้วกดเปิดใช้ปีใหม่จากแท็บระบบเมื่อพร้อม ปีปัจจุบันยังคงเดิม`,
+          confirmButtonText: 'ตรวจสอบข้อมูลปีที่คัดลอก',
+        });
+      } else {
+        showSuccess(successText);
+      }
     } catch (error) {
       console.error('Error copying fund structure:', error);
       const message = error?.message || 'ไม่สามารถคัดลอกข้อมูลได้';
