@@ -1608,7 +1608,6 @@ export default function FundSettingsContent({ onNavigate }) {
             <p className="mt-1 text-2xl font-bold text-blue-950 sm:text-3xl">
               {currentYearValue ? `พ.ศ. ${currentYearValue}` : loading ? 'กำลังโหลด...' : 'ยังไม่พบปีที่เปิดใช้'}
             </p>
-            <p className="mt-1 text-xs text-blue-700">ปีที่ระบบใช้รับคำขอใหม่ การเลือกปีเพื่อแก้ไขข้อมูลทุนจะไม่เปลี่ยนปีนี้</p>
           </div>
         </div>
         <button type="button" onClick={() => setActiveTab('system')} className="rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
