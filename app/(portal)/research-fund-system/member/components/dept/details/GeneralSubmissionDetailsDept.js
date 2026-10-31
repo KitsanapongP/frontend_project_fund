@@ -1470,7 +1470,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
             </div>
           )}
 
-          <div className="flex items-start gap-2">
+          <div className="hidden items-start gap-2">
             <span className="text-slate-500 shrink-0">เบอร์ติดต่อ:</span>
             <span className="font-medium break-words">{contactPhone || '-'}</span>
           </div>
@@ -1531,7 +1531,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
             </div>
           )}
 
-          <div className="flex items-start gap-2 md:col-span-2 lg:col-span-3">
+          <div className="hidden items-start gap-2 md:col-span-2 lg:col-span-3">
             <span className="text-slate-500 shrink-0">ข้อมูลธนาคาร:</span>
             <div className="flex flex-col text-sm font-medium text-slate-700">
               <span>
