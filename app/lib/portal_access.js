@@ -38,6 +38,17 @@ export function getPortalItemAccess(itemId) {
   return PORTAL_ITEM_ACCESS[itemId] || DEFAULT_PORTAL_RULE;
 }
 
+export function getAccessiblePortalItems(items, accessContext) {
+  // Guests can discover every system; access is still checked when opening a card.
+  if (!accessContext.isAuthenticated) {
+    return items;
+  }
+
+  return items.filter((item) =>
+    canAccessPortalRule(getPortalItemAccess(item.id), accessContext)
+  );
+}
+
 export function canAccessPortalRule(rule, { isAuthenticated, hasAnyRole, hasAnyPermission }) {
   const resolvedRule = rule || DEFAULT_PORTAL_RULE;
 

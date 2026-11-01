@@ -21,7 +21,7 @@ import { useAuth } from "../contexts/AuthContext";
 import PublicHeader from "../components/public/PublicHeader";
 import MemberHeader from "./research-fund-system/member/components/layout/Header";
 import { getSupportFundMappings } from "../lib/support_fundmapping_api";
-import { canAccessPortalRule, getPortalItemAccess } from "../lib/portal_access";
+import { canAccessPortalRule, getAccessiblePortalItems, getPortalItemAccess } from "../lib/portal_access";
 import { hasAdminPortalAccess, hasMemberPortalAccess, isPrimaryAdmin, normalizeRoleName } from "../lib/access_routing";
 import { BRANDING } from "../config/branding";
 import { PortalBackLink } from "../components/portal/PortalChrome";
@@ -197,8 +197,8 @@ function createEmptyAdvancedFilters() {
   };
 }
 
-function PortalGridContent({ onCardClick }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+function PortalGridContent({ items, onCardClick, initialExpanded = false }) {
+  const [isExpanded, setIsExpanded] = useState(initialExpanded);
 
   const getCollapsedItemClass = (index) => {
     if (index < 3) return "";
@@ -208,15 +208,15 @@ function PortalGridContent({ onCardClick }) {
   };
 
   const toggleVisibilityClass = [
-    PORTAL_ITEMS.length <= 3 ? "hidden" : "flex",
-    PORTAL_ITEMS.length <= 6 ? "sm:hidden" : "sm:flex",
-    PORTAL_ITEMS.length <= 9 ? "xl:hidden" : "xl:flex",
+    items.length <= 3 ? "hidden" : "flex",
+    items.length <= 6 ? "sm:hidden" : "sm:flex",
+    items.length <= 9 ? "xl:hidden" : "xl:flex",
   ].join(" ");
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white/95 p-5 sm:p-6">
       <div id="portal-menu-grid" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {PORTAL_ITEMS.map((item, index) => {
+        {items.map((item, index) => {
           const Icon = item.icon;
           return (
             <button
@@ -239,7 +239,7 @@ function PortalGridContent({ onCardClick }) {
         })}
       </div>
 
-      {PORTAL_ITEMS.length > 3 && (
+      {items.length > 3 && (
         <div className={`mt-5 justify-center border-t border-slate-100 pt-4 ${toggleVisibilityClass}`}>
           <button
             type="button"
@@ -257,9 +257,9 @@ function PortalGridContent({ onCardClick }) {
               <>
                 <span>
                   ดูเพิ่มเติม (
-                  <span className="sm:hidden">{Math.max(PORTAL_ITEMS.length - 3, 0)}</span>
-                  <span className="hidden sm:inline xl:hidden">{Math.max(PORTAL_ITEMS.length - 6, 0)}</span>
-                  <span className="hidden xl:inline">{Math.max(PORTAL_ITEMS.length - 9, 0)}</span>
+                  <span className="sm:hidden">{Math.max(items.length - 3, 0)}</span>
+                  <span className="hidden sm:inline xl:hidden">{Math.max(items.length - 6, 0)}</span>
+                  <span className="hidden xl:inline">{Math.max(items.length - 9, 0)}</span>
                   {" รายการ)"}
                 </span>
                 <ChevronDown size={18} aria-hidden="true" />
@@ -1022,6 +1022,11 @@ export default function HomePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, hasAnyRole, hasAnyPermission, user } = useAuth();
+  const accessiblePortalItems = getAccessiblePortalItems(PORTAL_ITEMS, {
+    isAuthenticated,
+    hasAnyRole,
+    hasAnyPermission,
+  });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState("home");
   const portalBrandTitle =
@@ -1159,7 +1164,7 @@ export default function HomePage() {
 
   const renderPageContent = () => {
     if (currentPage === "home") {
-      return <PortalGridContent onCardClick={handlePortalCardClick} />;
+      return <PortalGridContent items={accessiblePortalItems} onCardClick={handlePortalCardClick} initialExpanded={!isAuthenticated} />;
     }
 
     const renderContentWithBack = (content) => (

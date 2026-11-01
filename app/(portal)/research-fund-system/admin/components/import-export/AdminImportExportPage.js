@@ -14,6 +14,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { apiClient } from "../../../../../lib/api";
+import { useAuth } from "@/app/contexts/AuthContext";
 import PageLayout from "../common/PageLayout";
 import SettingsModal from "../settings/common/SettingsModal";
 
@@ -186,6 +187,9 @@ function TemplateModal({
 }
 
 export default function AdminImportExportPage() {
+  const { hasPermission } = useAuth();
+  const canImportUsers = hasPermission("users.manage");
+  const canImportLegacy = hasPermission("academic.import.manage");
   const [templates, setTemplates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -202,7 +206,7 @@ export default function AdminImportExportPage() {
   const [importingType, setImportingType] = useState("");
   const [importError, setImportError] = useState("");
   const [importSuccess, setImportSuccess] = useState("");
-  const showImportSection = false;
+  const [userImportReview, setUserImportReview] = useState(null);
 
   const userImportColumns = useMemo(
     () => [
@@ -228,7 +232,7 @@ export default function AdminImportExportPage() {
       "room",
       "cp_web_id",
       "scopus_id",
-      "account_status",
+      "is_active",
     ],
     []
   );
@@ -291,9 +295,9 @@ export default function AdminImportExportPage() {
     []
   );
 
-  const renderColumnList = useCallback((columns) => (
+  const renderColumnList = useCallback((columns, label = "คอลัมน์ตามเทมเพลต:") => (
     <div className="rounded-lg border border-slate-200 bg-white/50 p-3 text-xs text-slate-700">
-      <p className="mb-2 font-semibold">คอลัมน์ที่ต้องมีตามเทมเพลต:</p>
+      <p className="mb-2 font-semibold">{label}</p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {columns.map((col) => (
           <span key={col} className="inline-flex items-center gap-2 rounded-md bg-slate-50 px-2 py-1 font-mono text-xs text-slate-700">
@@ -306,7 +310,7 @@ export default function AdminImportExportPage() {
   ), []);
 
   const handleImport = useCallback(
-    async (type) => {
+    async (type, skipDuplicates = false) => {
       setImportError("");
       setImportSuccess("");
 
@@ -322,17 +326,30 @@ export default function AdminImportExportPage() {
         payload.append("file", file);
         payload.append("template_type", type === "user" ? "user_import" : "legacy_submission");
 
-        await apiClient.post(
+        if (type === "user" && !skipDuplicates) {
+          const preview = await apiClient.post("/admin/import/users/preview", payload);
+          if (preview.preview !== true || !Array.isArray(preview.duplicates)) {
+            throw new Error("ระบบตรวจสอบไฟล์ยังไม่พร้อม ไม่มีการเพิ่มผู้ใช้ กรุณาลองใหม่");
+          }
+          if (preview.duplicates?.length) {
+            setUserImportReview(preview);
+            return;
+          }
+        }
+        if (type === "user" && skipDuplicates) payload.append("skip_duplicates", "true");
+
+        const result = await apiClient.post(
           type === "user" ? "/admin/import/users" : "/admin/import/legacy-submissions",
           payload
         );
 
         setImportSuccess(
           type === "user"
-            ? "นำเข้าผู้ใช้จากเทมเพลตสำเร็จ ข้อมูลถูกบันทึกในฐานข้อมูล"
+            ? `${result.message || "นำเข้าผู้ใช้สำเร็จ"}${result.skipped_count ? ` ข้ามรายการซ้ำ ${result.skipped_count} แถว โดยไม่เขียนทับข้อมูลเดิม` : ""}`
             : "นำเข้าประวัติทุนย้อนหลังสำเร็จ ข้อมูลถูกบันทึกในฐานข้อมูล"
         );
         if (type === "user") {
+          setUserImportReview(null);
           setUserImportFile(null);
         } else {
           setLegacyImportFile(null);
@@ -340,6 +357,17 @@ export default function AdminImportExportPage() {
       } catch (err) {
         console.error("Import failed", err);
         setImportError(err?.message || "นำเข้าข้อมูลไม่สำเร็จ กรุณาตรวจสอบไฟล์และลองใหม่");
+        // Another import may have created a user since preview. Recheck before
+        // offering confirmation again; the API has rolled back the whole batch.
+        if (type === "user" && err?.code === "USER_ALREADY_EXISTS") {
+          try {
+            const previewPayload = new FormData();
+            previewPayload.append("file", file);
+            setUserImportReview(await apiClient.post("/admin/import/users/preview", previewPayload));
+          } catch {
+            setUserImportReview(null);
+          }
+        }
       } finally {
         setImportingType("");
       }
@@ -643,8 +671,8 @@ export default function AdminImportExportPage() {
           </div>
         </div>
 
-        {/* Import section temporarily hidden */}
-        {showImportSection ? (
+        {/* Upload completed templates separately from managing template files. */}
+        {(
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3 sm:px-6">
               <div>
@@ -673,26 +701,33 @@ export default function AdminImportExportPage() {
                   <h3 className="text-base font-semibold">นำเข้าผู้ใช้จากไฟล์</h3>
                 </div>
                 <p className="text-sm text-slate-600">
-                  ใช้ไฟล์ "User Import Template" กรอกข้อมูลผู้ใช้ใหม่ให้ครบ จากนั้นัปโหลดที่นี่
+                  ใช้ไฟล์ "User Import Template" กรอกข้อมูลผู้ใช้ใหม่ให้ครบ จากนั้นอัปโหลดที่นี่
                 </p>
                 <div className="flex flex-col gap-3">
                   <input
                     type="file"
                     accept=".xlsx,.xls"
+                    aria-label="ไฟล์นำเข้าผู้ใช้"
+                    disabled={!canImportUsers || importingType !== ""}
                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    onChange={(e) => setUserImportFile(e.target.files?.[0] || null)}
+                    onChange={(e) => { setUserImportFile(e.target.files?.[0] || null); setUserImportReview(null); }}
                   />
                   <button
                     type="button"
                     onClick={() => handleImport("user")}
-                    disabled={importingType === "user"}
+                    disabled={!canImportUsers || importingType !== ""}
                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {importingType === "user" ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} />}
                     {importingType === "user" ? "กำลังนำเข้า..." : "อัปโหลด / นำเข้า"}
                   </button>
-                  <p className="text-xs text-slate-500">ระบบจะตรวจสอบคอลัมน์ตามเทมเพลตก่อนเพิ่มผู้ใช้</p>
-                  {renderColumnList(userImportColumns)}
+                  {!canImportUsers && <p className="text-sm text-amber-700">บัญชีนี้ยังไม่มีสิทธิ์จัดการผู้ใช้ กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์นำเข้าผู้ใช้</p>}
+                  <p className="text-xs text-slate-500">ระบบจะแสดงรายชื่อที่ซ้ำให้ตรวจสอบ แล้วเลือกเพิ่มเฉพาะผู้ใช้ที่ไม่ซ้ำหรือยกเลิกได้ โดยไม่เขียนทับข้อมูลเดิม</p>
+                  {renderColumnList(["user_fname", "user_lname", "email", "role_id"], "คอลัมน์บังคับ:")}
+                  <details className="text-xs text-slate-600">
+                    <summary className="cursor-pointer py-1 font-medium">ดูคอลัมน์เพิ่มเติม (ไม่บังคับ)</summary>
+                    {renderColumnList(userImportColumns.filter((column) => !["user_fname", "user_lname", "email", "role_id"].includes(column)), "คอลัมน์เพิ่มเติม:")}
+                  </details>
                 </div>
               </div>
 
@@ -708,26 +743,56 @@ export default function AdminImportExportPage() {
                   <input
                     type="file"
                     accept=".xlsx,.xls"
+                    aria-label="ไฟล์นำเข้าประวัติทุนย้อนหลัง"
+                    disabled={!canImportLegacy || importingType !== ""}
                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     onChange={(e) => setLegacyImportFile(e.target.files?.[0] || null)}
                   />
                   <button
                     type="button"
                     onClick={() => handleImport("legacy")}
-                    disabled={importingType === "legacy"}
+                    disabled={!canImportLegacy || importingType !== ""}
                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {importingType === "legacy" ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} />}
                     {importingType === "legacy" ? "กำลังนำเข้า..." : "อัปโหลด / นำเข้าประวัติทุน"}
                   </button>
+                  {!canImportLegacy && <p className="text-sm text-amber-700">บัญชีนี้ยังไม่มีสิทธิ์นำเข้าประวัติทุนย้อนหลัง</p>}
                   <p className="text-xs text-slate-500">ระบบจะตรวจสอบโครงสร้างไฟล์ตามเทมเพลตก่อนเพิ่มข้อมูล</p>
                   {renderColumnList(submissionImportColumns)}
                 </div>
               </div>
             </div>
           </div>
-        ) : null}
+        )}
       </div>
+
+      <SettingsModal
+        open={Boolean(userImportReview)}
+        onClose={() => { if (!importingType) { setUserImportReview(null); setImportError(""); } }}
+        title="พบผู้ใช้ซ้ำ กรุณาตรวจสอบก่อนเพิ่ม"
+        description="ยังไม่มีการเพิ่มผู้ใช้ รายการซ้ำทั้งหมดจะถูกข้าม และข้อมูลผู้ใช้เดิมจะไม่ถูกเขียนทับ"
+        size="xl"
+        bodyClassName="max-h-[60vh] overflow-y-auto px-4 py-5 sm:px-6"
+        closeOnBackdrop={false}
+        hideCloseButton={Boolean(importingType)}
+        footer={
+          <>
+            <button type="button" disabled={Boolean(importingType)} onClick={() => { setUserImportReview(null); setImportError(""); setImportSuccess("ยกเลิกการเพิ่มผู้ใช้แล้ว ไม่มีการบันทึกข้อมูล"); }} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium disabled:opacity-50">ยกเลิกการเพิ่ม</button>
+            <button type="button" disabled={Boolean(importingType) || !userImportReview?.new_count} onClick={() => handleImport("user", true)} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">{importingType ? "กำลังเพิ่ม..." : `เพิ่มเฉพาะผู้ใช้ที่ไม่ซ้ำ ${userImportReview?.new_count || 0} คน`}</button>
+          </>
+        }
+      >
+        <p className="mb-4 text-sm text-slate-700">พบรายการซ้ำ {userImportReview?.duplicates?.length || 0} แถว และผู้ใช้ใหม่ที่เพิ่มได้ {userImportReview?.new_count || 0} คน</p>
+        {importError && <p role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{importError}</p>}
+        <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50"><tr><th className="p-3">แถว</th><th className="p-3">ชื่อในไฟล์</th><th className="p-3">อีเมล</th><th className="p-3">สาเหตุ</th></tr></thead>
+            <tbody>{userImportReview?.duplicates?.map((item) => <tr key={item.row} className="border-t border-slate-100"><td className="p-3">{item.row}</td><td className="p-3">{item.name}</td><td className="p-3 break-all">{item.email}</td><td className="p-3">{item.reason}</td></tr>)}</tbody>
+          </table>
+        </div>
+        {!userImportReview?.new_count && <p className="mt-4 text-sm text-amber-700">ไม่มีผู้ใช้ใหม่ให้เพิ่ม กรุณายกเลิกและตรวจสอบไฟล์</p>}
+      </SettingsModal>
 
       <TemplateModal
         open={modalOpen}
