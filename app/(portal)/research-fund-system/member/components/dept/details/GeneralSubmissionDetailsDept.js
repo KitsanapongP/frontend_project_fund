@@ -28,6 +28,63 @@ import SubmissionSDGList from '../../common/SubmissionSDGList';
  * Helpers
  * ========================= */
 
+const HIDDEN_MERGED_FORM_NAME = 'แบบฟอร์มคำร้องรวม (merged pdf)';
+const HIDDEN_MERGED_FILE_REGEX = /_merged_document(?:_\d+)?\.pdf$/i;
+
+const extractFirstFilePath = (value) => {
+  if (!value || typeof value !== 'object') return null;
+
+  const candidates = [
+    value.file_path, value.path, value.url, value.file_url, value.download_url,
+    value.announcement_file_path, value.announcement_document_path,
+    value.document_path, value.document_url, value.attachment_path, value.attachment_url,
+    value.file?.file_path, value.file?.path, value.file?.url, value.file?.download_url,
+    value.document?.file_path, value.document?.path, value.document?.url,
+    value.Document?.file_path, value.Document?.path, value.Document?.url,
+    value.announcement?.file_path, value.announcement?.document_path,
+    value.Announcement?.file_path, value.Announcement?.document_path,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) return candidate.trim();
+  }
+
+  for (const collection of [value.files, value.Files, value.documents, value.Documents]) {
+    if (!Array.isArray(collection)) continue;
+    for (const entry of collection) {
+      const nested = extractFirstFilePath(entry);
+      if (nested) return nested;
+      if (typeof entry === 'string' && entry.trim()) return entry.trim();
+    }
+  }
+  return null;
+};
+
+const isMergedFormDocument = (doc) => {
+  if (!doc) return false;
+
+  const names = typeof doc === 'string' ? [doc] : [
+    doc.original_name, doc.file_name, doc.document_name, doc.name,
+    doc.document_type_name, doc.File?.file_name, doc.file?.file_name,
+  ];
+  if (names.some((name) => typeof name === 'string' && (
+    name.trim().toLowerCase() === HIDDEN_MERGED_FORM_NAME ||
+    HIDDEN_MERGED_FILE_REGEX.test(name.trim())
+  ))) return true;
+
+  const paths = typeof doc === 'string' ? [doc] : [
+    doc.file_path, doc.path, doc.url,
+    doc.File?.file_path, doc.File?.path, doc.File?.url,
+    doc.file?.file_path, doc.file?.path, doc.file?.url,
+    extractFirstFilePath(doc),
+  ];
+  return paths.some((path) =>
+    typeof path === 'string' && (
+      path.toLowerCase().includes('merge_submissions') ||
+      HIDDEN_MERGED_FILE_REGEX.test(path.trim())
+    )
+  );
+};
+
 // --- ADD THIS HELPER (near other helpers e.g., above the component) ---
 const formatCurrency = (n) =>
   Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -763,6 +820,10 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
   // attachments
   const [attachments, setAttachments] = useState([]);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const visibleAttachments = useMemo(
+    () => attachments.filter((doc) => !isMergedFormDocument(doc)),
+    [attachments],
+  );
 
   // Merged PDF
   const [merging, setMerging] = useState(false);
@@ -1354,10 +1415,10 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
   const createMergedUrl = async () => {
     setCreatingMerged(true);
     try {
-      const pdfLike = attachments.filter((d) =>
+      const pdfLike = visibleAttachments.filter((d) =>
         String(d.original_name || d.file_name || '').toLowerCase().endsWith('.pdf')
       );
-      const list = pdfLike.length ? pdfLike : attachments;
+      const list = pdfLike.length ? pdfLike : visibleAttachments;
 
       const { blob, skipped } = await mergeAttachmentsToPdf(list);
       if (mergedUrlRef.current) URL.revokeObjectURL(mergedUrlRef.current);
@@ -1593,9 +1654,9 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
                 <span>กำลังโหลดเอกสาร...</span>
               </div>
             </div>
-          ) : attachments.length > 0 ? (
+          ) : visibleAttachments.length > 0 ? (
             <div className="space-y-4">
-              {attachments.map((doc, index) => {
+              {visibleAttachments.map((doc, index) => {
                 const fileId = resolveFileId(doc);
                 const filePath = resolveFilePath(doc);
                 const fileName =
@@ -1687,12 +1748,12 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
             </div>
           )}
 
-          {attachments.length > 0 && (
+          {visibleAttachments.length > 0 && (
             <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 pt-4">
               <button
                 className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={handleViewMerged}
-                disabled={attachments.length === 0 || merging || creatingMerged}
+                disabled={visibleAttachments.length === 0 || merging || creatingMerged}
                 title="เปิดดูไฟล์แนบที่ถูกรวมเป็น PDF"
               >
                 <Eye size={16} /> ดูไฟล์รวม (PDF)
@@ -1700,7 +1761,7 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
               <button
                 className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={handleDownloadMerged}
-                disabled={attachments.length === 0 || merging || creatingMerged}
+                disabled={visibleAttachments.length === 0 || merging || creatingMerged}
                 title="ดาวน์โหลดไฟล์แนบที่ถูกรวมเป็น PDF เดียว"
               >
                 <Download size={16} /> ดาวน์โหลดไฟล์รวม
