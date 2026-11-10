@@ -3,6 +3,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { getSignedFileUrl, openSignedFileInNewTab } from '@/app/lib/file_access';
+import { openPendingWindow, closePendingWindow, showBlobInWindow, showUrlInWindow } from '@/app/lib/blob_window';
 import {
   ArrowLeft, FileText,
     User,
@@ -1284,14 +1285,14 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
     return res.blob();
   };
 
-  const fetchDocumentBlob = async (docOrFileId) => {
+  const fetchDocumentBlob = async (docOrFileId, { skipManaged = false } = {}) => {
     const doc =
       docOrFileId && typeof docOrFileId === 'object'
         ? docOrFileId
         : { file_id: docOrFileId };
     const fileId = resolveFileId(doc);
 
-    if (fileId != null) {
+    if (fileId != null && !skipManaged) {
       try {
         return await fetchManagedFileBlob(fileId);
       } catch (err) {
@@ -1335,16 +1336,16 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
       return;
     }
 
+    // Open the tab now, while still inside the tap: iOS Safari silently blocks
+    // window.open once the fetch below has taken more than ~1s.
+    const pendingWin = openPendingWindow();
     try {
       const blob = await fetchDocumentBlob(docOrFileId);
-      const fileURL = window.URL.createObjectURL(blob);
-      window.open(fileURL, '_blank');
-      setTimeout(() => {
-        try {
-          window.URL.revokeObjectURL(fileURL);
-        } catch {}
-      }, 60000);
+      if (!showBlobInWindow(pendingWin, blob)) {
+        toast.error('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง');
+      }
     } catch (e) {
+      closePendingWindow(pendingWin);
       console.error('Error viewing document:', e);
       toast.error('ไม่สามารถเปิดไฟล์ได้');
     }
@@ -1367,7 +1368,8 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
         }
       }
 
-      const blob = await fetchDocumentBlob(doc);
+      // Managed route already failed above; go straight to the signed path.
+      const blob = await fetchDocumentBlob(doc, { skipManaged: fileId != null });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -1438,8 +1440,20 @@ export default function GeneralSubmissionDetailsDept({ submissionId, onBack }) {
   };
 
   const handleViewMerged = async () => {
-    const url = mergedUrlRef.current || (await createMergedUrl());
-    if (url) window.open(url, '_blank');
+    if (mergedUrlRef.current) {
+      window.open(mergedUrlRef.current, '_blank');
+      return;
+    }
+    // Merging takes seconds; open the tab during the tap (iOS popup rule).
+    const pendingWin = openPendingWindow();
+    const url = await createMergedUrl();
+    if (!url) {
+      closePendingWindow(pendingWin);
+      return;
+    }
+    if (!showUrlInWindow(pendingWin, url)) {
+      toast.error('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง');
+    }
   };
 
   const handleDownloadMerged = async () => {

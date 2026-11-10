@@ -484,7 +484,9 @@ class APIClient {
         document.body.appendChild(link);
         link.click();
         link.remove();
-        window.URL.revokeObjectURL(downloadUrl);
+        // Revoking right after click() breaks the download on iOS Safari, which
+        // reads the blob asynchronously.
+        setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 60000);
       }
       
       return blob;

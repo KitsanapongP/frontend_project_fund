@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { openSignedFileInNewTab, getSignedFileUrl } from '@/app/lib/file_access';
+import { openPendingWindow, closePendingWindow, showBlobInWindow, showUrlInWindow } from '@/app/lib/blob_window';
 import {
   ArrowLeft,
   FileText,
@@ -1897,7 +1898,8 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
 
   const handleViewAnnouncement = async (id, annObj) => {
     // เปิดแท็บก่อน เพื่อให้ยังเป็น user-gesture (กัน popup-blocker)
-    const win = window.open('about:blank', '_blank', 'noopener,noreferrer');
+    // ('noopener' would make window.open return null, losing the handle.)
+    const win = openPendingWindow();
 
     // helper: fetch แล้วเปิดเป็น blob (มี Authorization)
     const openAsBlob = async (url) => {
@@ -1907,9 +1909,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const blob = await resp.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      if (win) win.location = blobUrl; else window.open(blobUrl, '_blank', 'noopener,noreferrer');
-      setTimeout(() => { try { URL.revokeObjectURL(blobUrl); } catch {} }, 60000);
+      showBlobInWindow(win, blob);
     };
 
     try {
@@ -1936,7 +1936,7 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
     const raw = annObj?.file_path;
     if (raw) {
       if (/^https:\/\//i.test(raw)) {
-        window.open(raw, '_blank', 'noopener,noreferrer');
+        showUrlInWindow(win, raw);
       } else {
         // ถ้าเป็น http อาจโดน block — แจ้งเตือนผู้ใช้ไว้
         toast.error('ไม่สามารถเปิดไฟล์ผ่านลิงก์ภายนอก (http) ได้บนหน้า https');
@@ -2013,10 +2013,10 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
     return await resp.blob();
   };
 
-  const fetchAttachmentBlob = async (doc) => {
+  const fetchAttachmentBlob = async (doc, { skipManaged = false } = {}) => {
     if (!doc) throw new Error('missing document');
     const fileId = resolveFileId(doc);
-    if (fileId != null) {
+    if (fileId != null && !skipManaged) {
       try {
         return await fetchManagedFileBlob(fileId);
       } catch (err) {
@@ -2032,18 +2032,6 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
     throw new Error('File not accessible');
   };
 
-  const openBlobInNewTab = (blob) => {
-    const fileURL = window.URL.createObjectURL(blob);
-    window.open(fileURL, '_blank');
-    setTimeout(() => {
-      try {
-        window.URL.revokeObjectURL(fileURL);
-      } catch (err) {
-        console.warn('revokeObjectURL failed', err);
-      }
-    }, 1000);
-  };
-
   const triggerBlobDownload = (blob, fileName) => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -2052,13 +2040,15 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
     document.body.appendChild(link);
     link.click();
     link.remove();
+    // iOS hands the blob to its download sheet asynchronously; revoking after
+    // 1s could kill it before it was read.
     setTimeout(() => {
       try {
         window.URL.revokeObjectURL(url);
       } catch (err) {
         console.warn('revokeObjectURL failed', err);
       }
-    }, 1000);
+    }, 60000);
   };
 
   // File actions
@@ -2085,10 +2075,16 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
       return;
     }
 
+    // Open the tab now, while still inside the tap: iOS Safari silently blocks
+    // window.open once the fetch below has taken more than ~1s.
+    const pendingWin = openPendingWindow();
     try {
       const blob = await fetchAttachmentBlob(doc);
-      openBlobInNewTab(blob);
+      if (!showBlobInWindow(pendingWin, blob)) {
+        toast.error('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง');
+      }
     } catch (e) {
+      closePendingWindow(pendingWin);
       console.error('Error viewing document:', e);
       toast.error('ไม่สามารถเปิดเอกสารได้');
     }
@@ -2113,7 +2109,8 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
     }
 
     try {
-      const blob = await fetchAttachmentBlob(doc);
+      // Managed route already failed above; go straight to the signed path.
+      const blob = await fetchAttachmentBlob(doc, { skipManaged: fileId != null });
       triggerBlobDownload(blob, fileName);
     } catch (e) {
       console.error('Error downloading:', e);
@@ -2199,8 +2196,20 @@ export default function PublicationSubmissionDetailsDept({ submissionId, onBack 
   };
 
   const handleViewMerged = async () => {
-    const url = mergedUrlRef.current || await createMergedUrl(visibleAttachments);
-    if (url) window.open(url, '_blank');
+    if (mergedUrlRef.current) {
+      window.open(mergedUrlRef.current, '_blank');
+      return;
+    }
+    // Merging takes seconds; open the tab during the tap (iOS popup rule).
+    const pendingWin = openPendingWindow();
+    const url = await createMergedUrl(visibleAttachments);
+    if (!url) {
+      closePendingWindow(pendingWin);
+      return;
+    }
+    if (!showUrlInWindow(pendingWin, url)) {
+      toast.error('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง');
+    }
   };
 
   const handleDownloadMerged = async () => {
